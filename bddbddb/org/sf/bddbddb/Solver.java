@@ -1228,7 +1228,7 @@ public abstract class Solver {
      * @param rt initial rule term
      * @return  list of inference rules implementing the come-from query
      */
-    List/*<InferenceRule>*/ comeFromQuery(RuleTerm rt, List extras) {
+    List/*<InferenceRule>*/ comeFromQuery(RuleTerm rt, List extras, boolean single) {
         List newRules = new LinkedList();
         
         Relation r = rt.relation;
@@ -1236,6 +1236,7 @@ public abstract class Solver {
         
         RuleTerm my_rt = new RuleTerm(r2, rt.variables);
         InferenceRule my_ir = createInferenceRule(Collections.singletonList(rt), my_rt);
+        my_ir.single = single;
         if (TRACE) out.println("Adding rule: "+my_ir);
         newRules.add(my_ir);
         
@@ -1289,6 +1290,7 @@ public abstract class Solver {
                 Relation bottomr = createRelation(r.name+"_q"+ir.id, attributes);
                 RuleTerm bottom = new RuleTerm(bottomr, vars);
                 InferenceRule newrule = createInferenceRule(terms, bottom);
+                newrule.single = single;
                 if (TRACE) out.println("Adding rule: "+newrule);
                 newRules.add(newrule);
                 
@@ -1304,6 +1306,7 @@ public abstract class Solver {
                     Assert._assert(r4 != null, "no mapping for "+r3);
                     RuleTerm rt4 = new RuleTerm(r4, rt3.variables);
                     InferenceRule newrule2 = createInferenceRule(terms2, rt4);
+                    newrule2.single = single;
                     if (TRACE) out.println("Adding rule: "+newrule2);
                     newRules.add(newrule2);
                 }
@@ -1370,7 +1373,17 @@ public abstract class Solver {
                     throw new IllegalArgumentException();
                 }
             }
-            return comeFromQuery(rt, extras);
+            boolean single = false;
+            while (st.hasMoreTokens()) {
+                String option = nextToken(st);
+                if (option.equals("single")) {
+                    single = true;
+                } else {
+                    outputError(lineNum, st.getPosition(), s, "Unknown query option \"" + option + "\"");
+                    throw new IllegalArgumentException();
+                }
+            }
+            return comeFromQuery(rt, extras, single);
         }
         List/*<RuleTerm>*/ terms = new LinkedList();
         Map varMap = new LinkedHashMap();
