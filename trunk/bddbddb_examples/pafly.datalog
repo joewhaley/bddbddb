@@ -126,16 +126,6 @@ S(v1,f,v2) :- IE(i,"java.lang.reflect.Field.put (Ljava/lang/Object;Ljava/lang/Ob
 L(v1,f,v2) :- IE(i,"java.lang.reflect.Field.get (Ljava/lang/Object;)Ljava/lang/Object;"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
               actual(i,1,v1), actual(i,2,v2).
 
-# TODO in java.lang.Class
-#   getField, getFields, getDeclaredField, getDeclaredFields
-#   getMethod, getMethods, getDeclaredMethod, getDeclaredMethods
-
-# TODO in java.lang.reflect.Method
-#   invoke
-
-# TODO in java.lang.reflect.Field
-#   get, set
-
 leadsToForName (v:V0,i:I0) output
 leadsToForName(v,i) :- IE(i,m), forName(m), actual(i,1,v).
 leadsToForName(v2,i) :- leadsToForName(v1,i), A(v1,v2).
