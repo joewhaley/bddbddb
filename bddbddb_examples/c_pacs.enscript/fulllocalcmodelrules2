@@ -1,0 +1,248 @@
+externStringManip(o:V2)
+
+####### External function models follow: ##########
+
+procAllocator(proc:V0)
+procAllocator(proc) :- modeledProc(proc,"malloc").
+procAllocator(proc) :- modeledProc(proc,"alloca"). 
+procAllocator(proc) :- modeledProc(proc,"__builtin_alloca").
+procAllocator(proc) :- modeledProc(proc,"calloc"). 
+procAllocator(proc) :- modeledProc(proc,"SSL_new"). 
+procAllocator(proc) :- modeledProc(proc,"strdup"). 
+procAllocator(proc) :- modeledProc(proc,"getcwd").
+procAllocator(proc) :- modeledProc(proc,"mmap").
+procAllocator(proc) :- modeledProc(proc,"realloc").
+procAllocator(proc) :- modeledProc(proc,"tempnam"). 
+
+pointsTo(c,o_d,1,0,o_alloc,0) :- callsProc(c,fp,proc), procAllocator(proc), indirectAlloc(fp,o_alloc), callDestination(fp,o_d,_). 
+
+procCopyToArg0(proc:V0)
+procCopyToArg0(proc) :- modeledProc(proc,"__builtin_memcpy").
+procCopyToArg0(proc) :- modeledProc(proc,"memcpy").
+procCopyToArg0(proc) :- modeledProc(proc,"memmove").
+procCopyToArg0(proc) :- modeledProc(proc,"strncpy").
+procCopyToArg0(proc) :- modeledProc(proc,"strcpy").
+procCopyToArg0(proc) :- modeledProc(proc,"strncat").
+procCopyToArg0(proc) :- modeledProc(proc,"strcat").
+procCopyToArg0(proc) :- modeledProc(proc,"sprintf").
+procCopyToArg0(proc) :- modeledProc(proc,"snprintf").
+procCopyToArg0(proc) :- modeledProc(proc,"vsprintf").
+procCopyToArg0(proc) :- modeledProc(proc,"vsnprintf").
+
+copyDst(o_cpy,o_dst,1) :- callsProc(c,fp,proc), procCopyToArg0(proc), actualArg(fp,0,o_dst), tempForCopyToArg0(fp,o_cpy). 
+
+copyDst(o_cpy,o_dst,1) :- callsProc(c,fp,proc), modeledProc(proc,"bcopy"), actualArg(fp,1,o_dst), tempForCopyToArg1(fp,o_cpy). 
+copyDst(o_cpy,o_dst,1) :- callsProc(c,fp,proc), modeledProc(proc,"strdup"  ), callDestination(fp,o_dst,_), tempForCopyToDest(fp,o_cpy). 
+
+
+procCopyArg1ToArg0(proc:V0)
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"__builtin_memcpy").
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"memcpy").
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"memmove").
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"strncpy").
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"strcpy").
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"strncat").
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"strcat").
+procCopyArg1ToArg0(proc) :- modeledProc(proc,"vsprintf").
+
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), procCopyArg1ToArg0(proc), actualArg(fp,1,o_src), tempForCopyToArg0(fp,o_cpy). 
+
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"bcopy"  ), actualArg(fp,0,o_src), tempForCopyToArg1(fp,o_cpy). 
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strdup"  ), actualArg(fp,0,o_src), tempForCopyToDest(fp,o_cpy). 
+
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"sprintf" ), pointerArg(fp,n,o_src), notZero(n), tempForCopyToArg0(fp,o_cpy).
+
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"snprintf" ), notZeroOrOne(n), pointerArg(fp,n,o_src), tempForCopyToArg0(fp,o_cpy).
+
+
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsprintf"), varArgsPtrFromArg2(fp,o_src), tempForCopyToArg0(fp,o_cpy).
+
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsnprintf"), actualArg(fp,2,o_src), tempForCopyToArg0(fp,o_cpy).
+
+copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsnprintf"), varArgsPtrFromArg3(fp,o_src), tempForCopyToArg0(fp,o_cpy).
+
+procStringManipArg0(proc:V0)
+procStringManipArg0(proc) :- modeledProc(proc,"__builtin_memcpy").
+procStringManipArg0(proc) :- modeledProc(proc,"memcpy").
+procStringManipArg0(proc) :- modeledProc(proc,"memmove").
+procStringManipArg0(proc) :- modeledProc(proc,"strncpy").
+procStringManipArg0(proc) :- modeledProc(proc,"strcpy").
+
+procStringManipArg1(proc:V0)
+procStringManipArg1(proc) :- modeledProc(proc,"__builtin_memcpy").
+procStringManipArg1(proc) :- modeledProc(proc,"memcpy").
+procStringManipArg1(proc) :- modeledProc(proc,"memmove").
+procStringManipArg1(proc) :- modeledProc(proc,"strncpy").
+procStringManipArg1(proc) :- modeledProc(proc,"strcpy").
+
+externStringManip(o_ptr) :- callsProc(c,fp,proc), procStringManipArg0(proc), actualArg(fp,0,o_ptr). 
+externStringManip(o_ptr) :- callsProc(c,fp,proc), procStringManipArg1(proc), actualArg(fp,1,o_ptr). 
+
+procStringManipArg0(proc) :- modeledProc(proc,"memcmp").
+procStringManipArg1(proc) :- modeledProc(proc,"memcmp").
+
+procStringManipArg0(proc) :- modeledProc(proc,"bcopy").
+procStringManipArg1(proc) :- modeledProc(proc,"bcopy").
+
+procStringManipArg0(proc) :- modeledProc(proc,"memset").
+
+procStringManipArg0(proc) :- modeledProc(proc,"strdup").
+
+procReturnArgPtr(proc:V0,argn:FD3)
+procReturnArgPtr(proc,0) :- modeledProc(proc,"memset").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"gets").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"fgets").
+procReturnArgPtr(proc,3) :- modeledProc(proc,"catgets").
+
+assign(o_dst,1,o_src,1) :- callsProc(c,fp,proc), procReturnArgPtr(proc,argn), callDestination(fp,o_dst,_), actualArg(fp,argn,o_src).
+
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"gets"), actualArg(fp,0,o), callerProc(fp,proc), pathInCharStr(p_load).
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"fgets"), actualArg(fp,0,o), callerProc(fp,proc), pathInCharStr(p_load).
+
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"recv"), actualArg(fp,1,o), callerProc(fp,proc), pathInCharStr(p_load).
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"recvfrom"), actualArg(fp,1,o), callerProc(fp,proc), pathInCharStr(p_load).
+
+procStoresFromModelLoc(proc:V0, o_src:V2, argn:FD3)
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"stat"), specialModelLoc("stat_struct",o_src).
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"lstat"), specialModelLoc("stat_struct",o_src).
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"statfs"), specialModelLoc("statfs_struct",o_src).
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"fstat"), specialModelLoc("stat_struct",o_src).
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"fstatfs"), specialModelLoc("statfs_struct",o_src).
+procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__lxstat"), specialModelLoc("stat_struct",o_src).
+procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__xstat"), specialModelLoc("stat_struct",o_src).
+procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__fxstat"), specialModelLoc("stat_struct",o_src).
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"stat64"), specialModelLoc("stat64_struct",o_src).
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"lstat64"), specialModelLoc("stat64_struct",o_src).
+procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"fstat64"), specialModelLoc("stat64_struct",o_src).
+procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__xstat64"), specialModelLoc("stat64_struct",o_src).
+procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__lxstat64"), specialModelLoc("stat64_struct",o_src).
+procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__fxstat64"), specialModelLoc("stat64_struct",o_src).
+
+stores(o_ptr,1,o_src,p_src,p_store) :- callsProc(c,fp,proc), procStoresFromModelLoc(proc,o_src,argn), actualArg(fp,argn,o_ptr), pathInArgPointee(fp,argn,p_store),p_src = p_store.
+
+pointsTo(c,o_ptr,1,0,o_ptee,0) :- callsProc(c,fp,proc), modeledProc(proc,"getaddrinfo"), specialModelLoc("getaddrinfo_socket",o_ptee), tempForStoreToArg3(fp,o_ptr).
+stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"getaddrinfo"), actualArg(fp,3,o_ptr), tempForStoreToArg3(fp,o_src).
+
+# "strsep": *arg0 = temp1; temp1 = temp2 + 1; temp2 = *arg0; dest = temp2 = *arg0;
+#stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), strsepTemp1(fp,o_src).
+#ptrIncr(o_dst,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), strsepTemp1(fp,o_dst), strsepTemp2(fp,o_src).
+#loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), strsepTemp2(fp,o_dst).
+#assign(o_dst,p_dst,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), callDestination(fp,o_dst,p_dst), strsepTemp2(fp,o_src).
+
+#TBD: replace this with previous rules after comparison
+loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), callDestination(fp,o_dst,_).
+
+procStringManipArg0(proc) :- modeledProc(proc,"strncat").
+procStringManipArg1(proc) :- modeledProc(proc,"strncat").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"strncat").
+
+procStringManipArg0(proc) :- modeledProc(proc,"strcat").
+procStringManipArg1(proc) :- modeledProc(proc,"strcat").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"strcat").
+
+
+loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsprintf"), actualArg(fp,2,o_ptr), varArgsPtrFromArg2(fp,o_dst).
+
+loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsnprintf"), actualArg(fp,3,o_ptr), varArgsPtrFromArg3(fp,o_dst).
+
+# "strto[d/f/l/ll/ld]": *arg1 = temp1; temp1 = arg0 + 1; temp1 = arg0; 
+procStrToNumeric(proc:V0)
+procStrToNumeric(proc) :- modeledProc(proc,"strtod").
+procStrToNumeric(proc) :- modeledProc(proc,"strtof").
+procStrToNumeric(proc) :- modeledProc(proc,"strtol").
+procStrToNumeric(proc) :- modeledProc(proc,"strtoul").
+procStrToNumeric(proc) :- modeledProc(proc,"strtoll").
+procStrToNumeric(proc) :- modeledProc(proc,"strtold").
+#stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), tempForStoreToArg1(fp,o_src).
+#ptrIncr(o_dst,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), tempForStoreToArg1(fp,o_dst), actualArg(fp,0,o_src).
+#stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), actualArg(fp,0,o_src).
+
+#TBD: replace with previous rules after comparison
+stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), actualArg(fp,0,o_src).
+
+procReturnArgPtr(proc,0) :- modeledProc(proc,"getcwd").
+
+procReturnsModelLocAddr(proc:V0,o_ptee:V3)
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"opendir"), specialModelLoc("DIR_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"opendir"), specialModelLoc("DIR_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"readdir"), specialModelLoc("dirent_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getenv"), specialModelLoc("getenv_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"fopen"), specialModelLoc("FILE_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"fdopen"), specialModelLoc("FILE_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"crypt"), specialModelLoc("crypt_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getgrgid"), specialModelLoc("group_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"gethostbyaddr"), specialModelLoc("hostent_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getpwnam"), specialModelLoc("passwd_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getpwuid"), specialModelLoc("passwd_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getservbyname"), specialModelLoc("servent_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getusershell"), specialModelLoc("getusershell_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"gmtime"), specialModelLoc("tm_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"inet_ntoa"), specialModelLoc("inet_ntoa_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"localtime"), specialModelLoc("tm_struct",o_ptee).
+
+pointsTo(c,o_ptr,1,0,o_ptee,0) :- callsProc(c,fp,proc), procReturnsModelLocAddr(proc,o_ptee), callDestination(fp,o_ptr,_).
+
+procStringManipArg0(proc) :- modeledProc(proc,"mmap").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"mmap").
+
+procStringManipArg0(proc) :- modeledProc(proc,"munmap").
+
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"__errno_location"), specialModelLoc("errno",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"asctime"), specialModelLoc("asctime_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"catgets"), specialModelLoc("catgets_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"ctime"), specialModelLoc("asctime_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getgrent"), specialModelLoc("grent_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getgrnam"), specialModelLoc("group_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"gethostbyname"), specialModelLoc("hostent_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getprotobyname"), specialModelLoc("protoent_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getspnam"), specialModelLoc("shadow_file_spwd",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"getutent"), specialModelLoc("utmp_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"popen"), specialModelLoc("FILE_struct",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"setlocale"), specialModelLoc("setlocale_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"strerror"), specialModelLoc("strerror_string",o_ptee).
+procReturnsModelLocAddr(proc,o_ptee) :- modeledProc(proc,"tmpnam"), specialModelLoc("tmpnam_string",o_ptee).
+
+procReturnArgPtr(proc,0) :- modeledProc(proc,"strchr").
+procStringManipArg0(proc) :- modeledProc(proc,"strchr").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"strrchr").
+procStringManipArg0(proc) :- modeledProc(proc,"strrchr").
+
+procReturnArgPtr(proc,0) :- modeledProc(proc,"strpbrk").
+procStringManipArg0(proc) :- modeledProc(proc,"strpbrk").
+procStringManipArg1(proc) :- modeledProc(proc,"strpbrk").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"strstr").
+procStringManipArg0(proc) :- modeledProc(proc,"strstr").
+procStringManipArg1(proc) :- modeledProc(proc,"strstr").
+
+procReturnArgPtr(proc,0) :- modeledProc(proc,"rindex").
+procStringManipArg0(proc) :- modeledProc(proc,"rindex").
+
+
+# "strtok": strtok_arg = arg0; dest = strtok_arg;
+assign(o_dst,1,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok"), specialModelLoc("strtok_initial_non-null_arg",o_dst), actualArg(fp,0,o_src).
+assign(o_dst,1,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok"), callDestination(fp,o_dst,_), specialModelLoc("strtok_initial_non-null_arg",o_src).
+procStringManipArg0(proc) :- modeledProc(proc,"strtok").
+procStringManipArg1(proc) :- modeledProc(proc,"strtok").
+
+# "strtok_r": *arg2 = arg0; dest = *arg2;
+stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok_r"), actualArg(fp,2,o_ptr), actualArg(fp,0,o_src).
+loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok_r"), callDestination(fp,o_dst,_), actualArg(fp,2,o_ptr).
+procStringManipArg0(proc) :- modeledProc(proc,"strtok_r").
+procStringManipArg1(proc) :- modeledProc(proc,"strtok_r").
+
+procReturnArgPtr(proc,0) :- modeledProc(proc,"realloc").
+procReturnArgPtr(proc,0) :- modeledProc(proc,"tmpnam").
+
+procStringManipArg1(proc) :- modeledProc(proc,"strcasecmp").
+procStringManipArg1(proc) :- modeledProc(proc,"strcmp").
+procStringManipArg1(proc) :- modeledProc(proc,"strcoll").
+procStringManipArg1(proc) :- modeledProc(proc,"strncasecmp").
+procStringManipArg1(proc) :- modeledProc(proc,"strncmp").
+
+procStringManipArg0(proc) :- modeledProc(proc,"strcasecmp").
+procStringManipArg0(proc) :- modeledProc(proc,"strcmp").
+procStringManipArg0(proc) :- modeledProc(proc,"strcoll").
+procStringManipArg0(proc) :- modeledProc(proc,"strncasecmp").
+procStringManipArg0(proc) :- modeledProc(proc,"strncmp").
+
+procStringManipArg0(proc) :- modeledProc(proc,"strlen").

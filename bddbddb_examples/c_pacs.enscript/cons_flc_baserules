@@ -1,0 +1,183 @@
+.include "fielddomains"
+.include "cons_flc_relations"
+
+#important note:
+# this may not be up to cons spec
+# see consrules to see how it differs from spec
+
+procHasContext(proc:V0,c:C0)
+procHasContext(proc,c) :- contextNumbering(_,proc,_,c).
+procHasContext(proc,0) :- entryProc(proc).
+
+localObj(o:V2)
+localObj(o) :- objLocalToProc(o,proc), procHasContext(proc,_).
+
+pointsTo(c,o,p,c2,o2,p2) :- initialPointsTo(o,p,o2,p2), objLocalToProc(o,proc), objLocalToProc(o2,proc), procHasContext(proc,c), c=c2.
+pointsTo(c,o,p,0,o2,p2)  :- initialPointsTo(o,p,o2,p2), objLocalToProc(o,proc), !localObj(o2), procHasContext(proc,c).
+pointsTo(0,o,p,c2,o2,p2)  :- initialPointsTo(o,p,o2,p2), !localObj(o), objLocalToProc(o2,proc), procHasContext(proc,c2).
+pointsTo(0,o,p,0,o2,p2)  :- initialPointsTo(o,p,o2,p2), !localObj(o), !localObj(o2).
+
+pteeprojectedPointsToSources(c2:C1, v2:V1 , v2fd:FD1 ) printsize
+pteeprojectedPointsToSources(c,o,p) :- pointsTo(c,o,p,_,_,_).
+
+projectedPointsToSources(v2:V1 , v2fd:FD1 ) printsize
+projectedPointsToSources(o,p) :- pointsTo(_,o,p,_,_,_).
+
+pteeprojectedPointsTo(c2:C1, v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) printsize
+pteeprojectedPointsTo(c,o,p,o2,p2) :- pointsTo(c,o,p,_,o2,p2).
+
+projectedPointsTo(v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) printsize
+projectedPointsTo(o,p,o2,p2) :- pointsTo(_,o,p,_,o2,p2).
+
+badInitialPointsTo(v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) printsize
+badInitialPointsTo2(v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) printsize
+badInitialPointsTo(o,p,o2,p2) :- initialPointsTo(o,p,o2,p2), !projectedPointsTo(o,p,o2,p2).
+badInitialPointsTo2(o,p,o2,p2) :- initialPointsTo(o,p,o2,p2), objLocalToProc(o,proc), objLocalToProc(o2,proc2), proc!=proc2.
+
+pointsTo(c_d,o_d,p_d,c_h,o_h,p_h) :- interContextAssign(c_d,o_d,p_d,c_s,o_s,p_s), mergePointsTo(c_s,o_s,p_s,c_h,o_h,p_h).
+
+ptrOrIntIncr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3)
+ptrOrIntDecr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3)
+
+mergePointsTo(c,o,p1,c_h,o_h,p_h) :- pointsTo(c,o,p1,c_h,o_h,p_h).
+
+mergePointsTo(c,o,p1,c_h,o_h,p_h) :- pointsTo(c,o,p2,c_h,o_h,p_h), !remainingFields(p1,p2), !remainingFields(p2,p1), canonicalPath(p1,_).
+
+CONS_subPath(i,j,k) :- subPath(i,j,k).
+distinctSubPath(i,j,k) :- remainingFields(prev_j,j), subPath(i,prev_j,k).
+fieldsFollowingPath(p,p_follows) :- canonicalPath(p_follows,p).
+fieldsFollowingPath(p,p_follows) :- canonicalPath(p_l,p), remainingFields(p_l,p_follows).
+subPathCombines(i:FD,j:FD)
+subPathCombines(i,j) :- subPath(i,j,_).
+CONS_subPath(i,j,k) :- !subPathCombines(i,j), fieldsFollowingPath(i,k), canonicalPath(j,_), !distinctSubPath(i,j,k).
+CONS_subPath(i,j,k) :- !subPathCombines(i,j), canonicalPath(k,i), canonicalPath(j,_), !distinctSubPath(i,j,k).
+
+###############
+
+initialPointsTo(o_d,p_d,o_h,p_h) :- pointsToAbstract(o_d,p_d,o_h,p_h).
+
+pointsTo(c,o_d,p_d,c_h,o_h,p_h) :- assign(o_d,p_d,o_s,p_s), mergePointsTo(c,o_s,p_s,c_h,o_h,p_h).
+
+interContextAssign(c_dst,o_dst,p_dst2,c,o_src,p_src) :- stores(o_ptr,p_ptr,o_src,p_src,p_store), mergePointsTo(c,o_ptr,p_ptr,c_dst,o_dst,p_dst1), CONS_subPath(p_dst1,p_store,p_dst2). split
+
+interContextAssign(c,o_dst,p_dst,c_src,o_src,p_src2) :- loads(o_dst,p_dst,o_ptr,p_ptr,p_load), mergePointsTo(c,o_ptr,p_ptr,c_src,o_src,p_src1), CONS_subPath(p_src1,p_load,p_src2). split
+
+pathsAfterLargestField(p_field:FD2,p_after:FD3)
+pathsAfterLargestField(p,p_after) :- fieldsFollowingPath(p,p_after), !subPath(p,_,p_after).
+#this case is for remaining elements of arrays:
+pathsAfterLargestField(p,p_after) :- canonicalPath(p_l,p), remainingFields(p_l,p_after), remainingFields(p_after,p_l).
+
+copyPair(o_cpy:V2,c1:C0,o_dst:V0,p_dst:FD0,c2:C1,o_src:V1,p_src:FD1)
+copyPair(o_cpy,c_dst,o_dst,p_dst,c_src,o_src,p_src) :- copyDst(o_cpy,o_dstptr,1), copySrc(o_cpy,o_srcptr,1), mergePointsTo(c,o_dstptr,1,c_dst,o_dst,p_dst), mergePointsTo(c,o_srcptr,1,c_src,o_src,p_src).
+
+interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(o_cpy,c1,o_dst,p_dst,c2,o_src,p_src), subPath(p_dst,p_sub,p_dst2), subPath(p_src,p_sub,p_src2). split
+interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(o_cpy,c1,o_dst,p_dst,c2,o_src,p_src), p_dst != 0, subPath(p_dst,p_sub,p_dst2), CONS_subPath(p_src,p_sub,p_src2). split
+
+interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(_,c1,o_dst,p_dst,c2,o_src,p_src), subPath(p_dst,p_sub,p_dst2),!subPathCombines(p_src,p_sub), pathsAfterLargestField(p_src,p_src2).
+interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(_,c1,o_dst,p_dst,c2,o_src,p_src), pathsAfterLargestField(p_dst,p_dst2), pathsAfterLargestField(p_src,p_src2).
+
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2_c) :- fieldAddress(o_dst,p_dst,o_src,p_src,p_sub), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h1), CONS_subPath(p_h1,p_sub,p_h2_l), canonicalPath(p_h2_l,p_h2_c). split
+
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- ptrOrIntIncr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h1), arrayPaths(p_h1,size,p_h2). split
+
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- ptrOrIntIncr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h2), arrayPaths(_,size,p_h2). split
+
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- ptrOrIntDecr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h1), arrayPaths(p_h2,size,p_h1). split
+
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- ptrOrIntDecr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h2), arrayPaths(_,size,p_h2). split
+
+#TBD: what if intIncr/Decr cannot be converted to a ptrIncr/Decr?
+ptrOrIntIncr(o_dst,p_dst,o_src,p_src,size) :- ptrIncr(o_dst,p_dst,o_src,p_src,size).
+ptrOrIntDecr(o_dst,p_dst,o_src,p_src,size) :- ptrDecr(o_dst,p_dst,o_src,p_src,size).
+ptrOrIntIncr(o_dst,p_dst,o_src,p_src,size1) :- intIncr(o_dst,p_dst,o_src,p_src,size2), sizeMult(size1,size2).
+ptrOrIntDecr(o_dst,p_dst,o_src,p_src,size1) :- intDecr(o_dst,p_dst,o_src,p_src,size2), sizeMult(size1,size2).
+
+remainingPaths(p_prev:FD2, p_next:FD4)
+remainingPaths(p_prev_c,p_next_c) :- remainingFields(p_prev_l,p_next_l), canonicalPath(p_prev_l,p_prev_c), canonicalPath(p_next_l,p_next_c).
+
+initialArrayPath(p_elem_0:FD, size:FD)
+initialArrayPath(p, size) :- arrayPaths(p,size,_).
+remainderArrayPath(p_remainder:FD, size:FD)
+remainderArrayPath(p, size) :- arrayPaths(_,size,p).
+
+#includes upperbound and bad non-upperbound increments:
+#TBD: shouldn't all increments potentially go past upper bound, unless we precisely know it is a single increment
+# and the base address was the first elem?
+badPtrIncrBase(c_dst:C0, o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3)
+badPtrIncrBase(c_src,o_dst,p_dst,o_h,p_h,size) :- ptrIncr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h), !initialArrayPath(p_h,size). split
+pointsTo(c_dst,o_dst,p_dst,c_h,o_h,p_h2) :- badPtrIncrBase(c_dst,o_dst,p_dst,o_h,p_h1,_), remainingPaths(p_h1,p_h2). split
+
+#includes lowerbound and bad non-lowerbound decrements:
+#TBD: shouldn't all decrements be considered to go past lowerbound, unless we precisely know it is a single decr?
+badPtrDecrBase(c_dst:C0, o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3)
+badPtrDecrBase(c_src,o_dst,p_dst,o_h,p_h,size) :- ptrDecr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h), !remainderArrayPath(p_h,size). split
+pointsTo(c_dst,o_dst,p_dst,c_h,o_h,p_h2) :- badPtrDecrBase(c_dst,o_dst,p_dst,o_h,p_h1,_), remainingPaths(p_h2,p_h1). split
+
+#TBD: handle bad intIncrs and intDecrs
+
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h) :- unhandledBinaryOp(o_dst,p_dst,o_src,p_src), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h).
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- unhandledBinaryOp(o_dst,p_dst,o_src,p_src), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h1), remainingPaths(p_h1,p_h2). split
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- unhandledBinaryOp(o_dst,p_dst,o_src,p_src), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h1), remainingPaths(p_h2,p_h1). split
+
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h) :- unhandledAddOp(o_dst,p_dst,o_src,p_src), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h).
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- unhandledAddOp(o_dst,p_dst,o_src,p_src), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h1), remainingPaths(p_h1,p_h2). split
+pointsTo(c_src,o_dst,p_dst,c_h,o_h,p_h2) :- unhandledAddOp(o_dst,p_dst,o_src,p_src), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h1), remainingPaths(p_h2,p_h1). split
+
+#TBD: unhandledUnaryOp ?
+
+###############
+
+refPtrs(_,o,p,p_ref) :- loads(_,_,o,p,p_ref).
+modPtrs(_,o,p,p_ref) :- stores(o,p,_,_,p_ref).
+
+usedPointers(o,p) :- modPtrs(_,o,p,_).
+usedPointers(o,p) :- refPtrs(_,o,p,_).
+usedPointers(o,p) :- fieldAddress(_,_,o,p,_).
+usedPointers(o,p) :- copySrc(_,o,p).
+usedPointers(o,p) :- copyDst(_,o,p).
+usedPointers(o,p) :- ptrIncr(_,_,o,p,_).
+usedPointers(o,p) :- ptrDecr(_,_,o,p,_).
+
+potentialPointers(o:V1 , p:FD1)
+potentialPointers(o,p) :- intIncr(_,_,o,p,_).
+potentialPointers(o,p) :- intDecr(_,_,o,p,_).
+potentialPointers(o,p) :- unhandledBinaryOp(_,_,o,p).
+potentialPointers(o,p) :- unhandledAddOp(_,_,o,p).
+potentialPointers(o,p) :- assign(_,_,o,p).
+
+###################################################################
+
+callsProc(c,fp,proc) :- callTargets(fp), mergePointsTo(c,fp, 1, _,proc, 0).
+
+contexts(c:C0) printsize
+contexts(c) :- contextNumbering(_,_,c,_).
+contexts(c) :- contextNumbering(_,_,_,c).
+
+###### Actuals to Formals ######
+interContextAssign(c_e,o_dst,p_dst,c_r,o_src,p_src) :- formalParam(proc,n,o_dst,p_dst), p_dst = p_src, callsProc(c_r,fp,proc), actualArg(fp,n,o_src), contextNumbering(fp,proc,c_r,c_e). split
+
+###### Actuals to Varargs ######
+pointsTo(c_e,o_vararg,1,c_r,o_arg,0) :- varArgsPtr(proc,o_vararg), not_hasParam(proc,n), callsProc(c_r,fp,proc), actualArg(fp,n,o_arg), contextNumbering(fp,proc,c_r,c_e). split
+
+###### Return to Destination ######
+interContextAssign(c_r,o_dst,p_dst,c_e,o_src,p_src) :- callDestination(fp,o_dst,p_dst), p_dst = p_src, callsProc(c_r,fp,proc), returnVal(proc,o_src), contextNumbering(fp,proc,c_r,c_e). split
+
+###### Add To ProcArgs:
+# callsProc(V2,V3) & actualArg(V2,-,V2_arg,-) :- procedureArgLocs(V3,V2_arg).
+
+###### Add To Proc Callees:
+# callsProc(V2,V3) & callerProc(V2,V1_proc) & definedOrModeledProc(V3) :- procCallees(C1,V1_proc,C2,V3).
+# callsProc(V2,V3) & callerProc(V2,V1_proc) & !definedOrModeledProc(V3) :- undefinedProcCallees(C1,V1_proc,C2,V3).
+
+###### Add unhandled proc return assign:
+# callsProc(V2,V3) & !definedOrModeledProc(V3) & callDestination(V2,V1_dest,-) \
+# :- unhandledReturnsBDD(V3,V1_dest).
+
+#addLoadedToMods(V1_proc,V2a,V2FDa,FD) & !var_is_local(V2a,V1_proc) & replace(V2a,V3) & replace(V2FDa,V3FD)
+#-> reflocs(V1_proc,V3,V3FD)
+
+#addLoadedToMods(V1_proc,V2,V2FD,FD)
+#-> modptrs(V1_proc,V2,V2FD,FD)
+
+.include "fulllocalcmodelrules2"
+
