@@ -45,12 +45,14 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     boolean TRACE = System.getProperty("traceinterpreter") != null;
     BDDFactory factory;
     String varorder;
+    BDDSolver solver;
     public boolean needsDomainMatch;
 
     /**
      * @param factory
      */
     public BDDOperationInterpreter(BDDSolver solver, BDDFactory factory) {
+        this.solver = solver;
         this.factory = factory;
         this.varorder = solver.VARORDER;
         this.needsDomainMatch = true;
@@ -342,6 +344,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
             }
         } catch (IOException x) {
         }
+        solver.startTime = System.currentTimeMillis();
         return null;
     }
 
