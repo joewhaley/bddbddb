@@ -406,9 +406,23 @@ public abstract class Solver {
         if (NOISY) out.print("Saving results: ");
         long time = System.currentTimeMillis();
         saveResults();
+        doCallbacks(onSave);
         time = System.currentTimeMillis() - time;
         if (NOISY) out.println("done. (" + time + " ms)");
         cleanup();
+    }
+    
+    Collection onSave = new LinkedList();
+    
+    public void addSaveHook(Runnable r) {
+        onSave.add(r);
+    }
+    
+    public void doCallbacks(Collection c) {
+        for (Iterator i = c.iterator(); i.hasNext(); ) {
+            Runnable r = (Runnable) i.next();
+            r.run();
+        }
     }
     
     /**

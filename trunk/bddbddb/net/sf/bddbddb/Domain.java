@@ -76,6 +76,15 @@ public class Domain {
     }
 
     /**
+     * Return the map for this domain if it exists, null otherwise.
+     * 
+     * @return  map for this domain, or null
+     */
+    public IndexMap getMap() {
+        return map;
+    }
+    
+    /**
      * Returns the index of the given named constant in this domain.
      * If it doesn't exist, output a warning message and add it to the domain,
      * giving it a new index.

@@ -172,6 +172,10 @@ public class BDDRelation extends Relation {
         return domainSet;
     }
 
+    public BDD getDomainSet() {
+        return domainSet;
+    }
+    
     /**
      * Do more initialization.  This initializes the values of equivalence relations.
      * Called after variable order is set, so the computation is faster.
@@ -792,6 +796,50 @@ public class BDDRelation extends Relation {
         return result;
     }
 
+    boolean add(BDD val) {
+        BDD old = relation.id();
+        relation.orWith(val);
+        boolean result = !old.equals(relation);
+        old.free();
+        return result;
+    }
+    
+    public boolean add(int a) {
+        BDDDomain d0 = (BDDDomain) domains.get(0);
+        BDD val = d0.ithVar(a);
+        return add(val);
+    }
+    
+    public boolean add(int a, int b) {
+        BDDDomain d0 = (BDDDomain) domains.get(0);
+        BDD val = d0.ithVar(a);
+        BDDDomain d1 = (BDDDomain) domains.get(1);
+        val.andWith(d1.ithVar(b));
+        return add(val);
+    }
+    
+    public boolean add(int a, int b, int c) {
+        BDDDomain d0 = (BDDDomain) domains.get(0);
+        BDD val = d0.ithVar(a);
+        BDDDomain d1 = (BDDDomain) domains.get(1);
+        val.andWith(d1.ithVar(b));
+        BDDDomain d2 = (BDDDomain) domains.get(2);
+        val.andWith(d2.ithVar(c));
+        return add(val);
+    }
+    
+    /* (non-Javadoc)
+     * @see net.sf.bddbddb.Relation#add(java.math.BigInteger[])
+     */
+    public boolean add(BigInteger[] tuple) {
+        BDD val = solver.bdd.one();
+        for (int i = 0; i < tuple.length; ++i) {
+            final BDDDomain d = (BDDDomain) domains.get(i);
+            val.andWith(d.ithVar(tuple[i]));
+        }
+        return add(val);
+    }
+    
     /**
      * Return the value of this relation in BDD form.
      * 
@@ -891,6 +939,10 @@ public class BDDRelation extends Relation {
                 f.invoke(this, oldValue);
             }
         }
+    }
+    
+    public BDDSolver getSolver() {
+        return solver;
     }
     
     /**
