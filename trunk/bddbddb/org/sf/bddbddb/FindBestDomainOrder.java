@@ -16,11 +16,12 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.io.PrintStream;
+import java.math.BigInteger;
 import java.text.NumberFormat;
 import org.sf.bddbddb.util.Assert;
+import org.sf.bddbddb.util.CombinationGenerator;
 import org.sf.bddbddb.util.EntryValueComparator;
 import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.PermutationGenerator;
 
 /**
  * FindBestDomainOrder
@@ -36,8 +37,6 @@ public class FindBestDomainOrder {
     Map/*<InferenceRule,OrderInfoCollection>*/ orderInfo_rules;
     Map/*<Relation,OrderInfoCollection>*/ orderInfo_relations;
     
-    public static FindBestDomainOrder INSTANCE = new FindBestDomainOrder();
-    
     /**
      * 
      */
@@ -47,6 +46,12 @@ public class FindBestDomainOrder {
         orderInfo_relations = new HashMap();
     }
     
+    /**
+     * Get the order info collection for the given rule.
+     * 
+     * @param r  rule
+     * @return  order info collection
+     */
     public OrderInfoCollection getOrderInfo(InferenceRule r) {
         OrderInfoCollection o = (OrderInfoCollection) orderInfo_rules.get(r);
         if (o == null) {
@@ -56,6 +61,12 @@ public class FindBestDomainOrder {
         return o;
     }
     
+    /**
+     * Get the order info collection for the given relation.
+     * 
+     * @param r  relation
+     * @return  order info collection
+     */
     public OrderInfoCollection getOrderInfo(Relation r) {
         OrderInfoCollection o = (OrderInfoCollection) orderInfo_relations.get(r);
         if (o == null) {
@@ -65,6 +76,9 @@ public class FindBestDomainOrder {
         return o;
     }
     
+    /**
+     * Dump the collected order info for rules and relations to standard output.
+     */
     public void dump() {
         for (Iterator i = orderInfo_rules.entrySet().iterator(); i.hasNext(); ) {
             Map.Entry e = (Map.Entry) i.next();
@@ -82,6 +96,12 @@ public class FindBestDomainOrder {
         }
     }
     
+    /**
+     * Generate all orders of a given list of variables.
+     * 
+     * @param vars  list of variables
+     * @return  list of all orders of those variables
+     */
     public static List/*<Order>*/ generateAllOrders(List vars) {
         if (vars.size() == 0) return null;
         LinkedList result = new LinkedList();
@@ -188,101 +208,102 @@ public class FindBestDomainOrder {
     /**
      * Iterate through all possible orders of a given list.
      * 
-     * TODO: This is buggy, it is missing some interleavings.
-     * 
      * @author jwhaley
      * @version $Id$
      */
     public static class OrderIterator implements Iterator {
         
         List orig;
-        List current;
-        PermutationGenerator g;
-        int comboCounter = 0;
+        List/*<CombinationGenerator>*/ combos;
+        int comboCounter;
         
         public OrderIterator(List a) {
             orig = new ArrayList(a);
+            combos = new ArrayList(a.size());
+            comboCounter = 0;
             gotoNextCombo();
         }
         
-        public boolean hasNextCombo() {
+        void gotoNextCombo() {
+            combos.clear();
+            int remaining = orig.size();
+            int size = 1;
+            int bits = comboCounter++;
+            while (remaining > 0) {
+                CombinationGenerator g;
+                if (remaining == size) {
+                    g = new CombinationGenerator(remaining, size);
+                    if (!combos.isEmpty()) g.getNext();
+                    combos.add(g);
+                    break;
+                }
+                if ((bits&1)==0) {
+                    g = new CombinationGenerator(remaining, size);
+                    if (!combos.isEmpty()) g.getNext();
+                    combos.add(g);
+                    remaining -= size;
+                    size = 0;
+                }
+                size++;
+                bits >>= 1;
+            }
+        }
+        
+        boolean hasNextCombo() {
             int elements = orig.size();
             return (comboCounter < (1 << (elements-1)));
         }
         
-        public static List generateCombo(int bits, List l) {
-            int elements = l.size();
-            List result = new ArrayList(elements);
-            Iterator i = l.iterator();
-            boolean lastCombine = false;
-            Object last = i.next();
-            int k = bits;
-            while (i.hasNext()) {
-                Object o = i.next();
-                boolean combine = (k & 1) == 1;
-                if (combine) {
-                    if (lastCombine) {
-                        ((Collection) last).add(o);
-                    } else {
-                        List list = new ArrayList(elements);
-                        list.add(last);
-                        list.add(o);
-                        last = list;
-                    }
-                } else {
-                    result.add(last);
-                    last = o;
-                }
-                lastCombine = combine;
-                k >>>= 1;
+        boolean hasMore() {
+            for (Iterator i = combos.iterator(); i.hasNext(); ) {
+                CombinationGenerator g = (CombinationGenerator) i.next();
+                if (g.hasMore()) return true;
             }
-            result.add(last);
-            return result;
-        }
-        
-        public void gotoNextCombo() {
-            if (!hasNextCombo()) {
-                throw new NoSuchElementException();
-            }
-            current = generateCombo(comboCounter++, orig);
-            int currentSize = current.size();
-            if (currentSize > 0)
-                g = new PermutationGenerator(currentSize);
-            else
-                g = null;
+            return false;
         }
         
         public boolean hasNext() {
-            if (g != null && g.hasMore()) return true;
-            return hasNextCombo();
+            return hasMore() || hasNextCombo();
         }
-
+        
         public Object next() {
             return nextOrder();
         }
         
         public Order nextOrder() {
-            if (g == null) {
-                if (current == null) {
-                    gotoNextCombo();
+            if (!hasMore()) {
+                if (!hasNextCombo()) {
+                    throw new NoSuchElementException();
+                }
+                gotoNextCombo();
+            }
+            List result = new LinkedList();
+            List used = new ArrayList(orig);
+            boolean carry = true;
+            for (Iterator i = combos.iterator(); i.hasNext(); ) {
+                CombinationGenerator g = (CombinationGenerator) i.next();
+                int[] p;
+                if (carry) {
+                    if (!g.hasMore()) g.reset();
+                    else carry = false;
+                    p = g.getNext();
                 } else {
-                    List result = current;
-                    current = null;
-                    return new Order(result);
+                    p = g.getCurrent();
+                }
+                if (p.length == 1) {
+                    result.add(used.remove(p[0]));
+                } else {
+                    LinkedList c = new LinkedList();
+                    for (int k = p.length-1; k >= 0; --k) {
+                        c.addFirst(used.remove(p[k]));
+                    }
+                    result.add(c);
                 }
             }
-            if (!g.hasMore()) {
-                gotoNextCombo();
-                return nextOrder();
-            }
-            int[] a = g.getNext();
-            List result = new ArrayList();
-            for (int i = 0; i < a.length; ++i) {
-                result.add(current.get(a[i]));
-            }
+            Assert._assert(!carry);
             return new Order(result);
         }
-
+        
         public void remove() {
             throw new UnsupportedOperationException();
         }
@@ -1316,19 +1337,51 @@ public class FindBestDomainOrder {
         
     }
     
+    static BigInteger binomial(int n, int k) {
+        BigInteger r = BigInteger.ONE;
+        int n_minus_k = n-k;
+        while (n > k) {
+            r = r.multiply(BigInteger.valueOf(n--));
+        }
+        while (n_minus_k > 0) {
+            r = r.divide(BigInteger.valueOf(n_minus_k--));
+        }
+        return r;
+    }
+    
+    static BigInteger recurrence(int n) {
+        if (n <= 1) return BigInteger.ONE;
+        BigInteger sum = BigInteger.ZERO;
+        for (int k = 1; k <= n; ++k) {
+            sum = sum.add(binomial(n, k).multiply(recurrence(n-k)));
+        }
+        return sum;
+    }
+    
     public static void main(String[] args) {
-        Iterator i = generateAllOrders(Arrays.asList(args)).iterator();
+        
+        for (int i = 0; i < 20; ++i) {
+            System.out.println("Recurrence A000670 ("+i+") = "+recurrence(i));
+        }
+        List orders = generateAllOrders(Arrays.asList(args));
+        System.out.println("Number of orders: "+orders.size());
+        Iterator i = getOrderIterator(Arrays.asList(args));
         int k = 0;
         while (i.hasNext()) {
             Order o = (Order) i.next();
             System.out.println((++k)+": "+o);
-            Iterator j = generateAllOrders(Arrays.asList(args)).iterator();
-            while (j.hasNext()) {
-                Order p = (Order) j.next();
-                System.out.print(" with "+p+" = ");
-                System.out.println(o.findSimilarities(p));
+            boolean b = orders.remove(o);
+            Assert._assert(b);
+            if (false) {
+                Iterator j = getOrderIterator(Arrays.asList(args));
+                while (j.hasNext()) {
+                    Order p = (Order) j.next();
+                    System.out.print(" with "+p+" = ");
+                    System.out.println(o.findSimilarities(p));
+                }
             }
         }
+        Assert._assert(orders.isEmpty());
     }
     
 }
