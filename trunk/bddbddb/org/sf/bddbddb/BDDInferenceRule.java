@@ -3,7 +3,9 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -845,51 +847,38 @@ public class BDDInferenceRule extends InferenceRule {
     
     //// FindBestDomainOrder stuff below.
     
-    static int MAX_ORDERS = 25;
-    static int MAX_DIFF = 10000;
+    public class VarOrderComparator implements Comparator {
 
-    static class PermData implements Comparable {
-        List order;
-        String varOrder;
-        long time;
-        boolean first;
-
-        /**
-         * @param order
-         * @param varOrder
-         * @param time
-         */
-        PermData(List order, String varOrder, long time) {
-            this.order = order;
-            this.varOrder = varOrder;
-            this.time = time;
+        String varorder;
+        
+        public VarOrderComparator(String vo) {
+            this.varorder = vo;
         }
-
-        /**
-         * @param that
-         * @return
+        
+        /* (non-Javadoc)
+         * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
          */
-        public int compareTo(PermData that) {
-            if (this.time < that.time) return -1;
-            if (this.time > that.time) return 1;
-            if (this.first) return -1;
-            if (that.first) return 1;
-            return this.varOrder.compareTo(that.varOrder);
+        public int compare(Object arg0, Object arg1) {
+            if (arg0 == arg1) return 0;
+            Variable v0 = (Variable) arg0;
+            Variable v1 = (Variable) arg1;
+            BDDDomain d0 = (BDDDomain) variableToBDDDomain.get(v0);
+            BDDDomain d1 = (BDDDomain) variableToBDDDomain.get(v1);
+            int index0 = varorder.indexOf(d0.getName());
+            int index1 = varorder.indexOf(d1.getName());
+            if (index0 < index1) return -1;
+            else if (index0 > index1) return 1;
+            return 0;
         }
-
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Comparable#compareTo(java.lang.Object)
-         */
-        public int compareTo(Object arg0) {
-            return this.compareTo((PermData) arg0);
-        }
+        
     }
     
     void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, Collection vars1, Collection vars2) {
         Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
-        List allVars = new LinkedList(allVarSet);
+        Object[] a = allVarSet.toArray();
+        Arrays.sort(a, new VarOrderComparator(solver.VARORDER));
+        List allVars = Arrays.asList(a);
+        
         FindBestDomainOrder fbdo = FindBestDomainOrder.INSTANCE;
         FindBestDomainOrder.OrderInfoCollection info = fbdo.getOrderInfo(this);
         if (info.numberOfGoodOrders(allVars) <= 1) {
