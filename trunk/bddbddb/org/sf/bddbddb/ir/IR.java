@@ -31,26 +31,32 @@ import org.sf.bddbddb.util.MultiMap;
  * @author Collective
  */
 public class IR {
-    
+
     public Solver solver;
+
     IterationFlowGraph graph;
-    
+
     boolean FREE_DEAD = !System.getProperty("freedead", "no").equals("no");
-    boolean CONSTANTPROP = !System.getProperty("constantprop", "no").equals("no");
+
+    boolean CONSTANTPROP = !System.getProperty("constantprop", "no").equals(
+        "no");
+
     boolean TRACE;
-    
+
     public static IR create(Stratify s) {
         return create(s.solver, s.firstSCCs, s.innerSCCs);
     }
-    
+
     public static IR create(Solver solver, List firstSCCs, MultiMap innerSCCs) {
-        IterationFlowGraph ifg = new IterationFlowGraph(solver.getRules(), firstSCCs, innerSCCs);
+        IterationFlowGraph ifg = new IterationFlowGraph(solver.getRules(),
+            firstSCCs, innerSCCs);
         IterationList list = ifg.expand();
         // Add load operations.
         if (!solver.getRelationsToLoad().isEmpty()) {
             Assert._assert(!list.isLoop());
             IterationList loadList = new IterationList(false);
-            for (Iterator j = solver.getRelationsToLoad().iterator(); j.hasNext(); ) {
+            for (Iterator j = solver.getRelationsToLoad().iterator(); j
+                .hasNext();) {
                 Relation r = (Relation) j.next();
                 loadList.addElement(new Load(r));
             }
@@ -60,7 +66,8 @@ public class IR {
         if (!solver.getRelationsToSave().isEmpty()) {
             Assert._assert(!list.isLoop());
             IterationList saveList = new IterationList(false);
-            for (Iterator j = solver.getRelationsToSave().iterator(); j.hasNext(); ) {
+            for (Iterator j = solver.getRelationsToSave().iterator(); j
+                .hasNext();) {
                 Relation r = (Relation) j.next();
                 saveList.addElement(new Save(r));
             }
@@ -68,7 +75,7 @@ public class IR {
         }
         return new IR(solver, ifg);
     }
-    
+
     public void optimize() {
         if (CONSTANTPROP) {
             DataflowSolver df_solver = new DataflowSolver();
@@ -94,6 +101,7 @@ public class IR {
                 }
             }
         }
+
         if (false) {
             DataflowSolver df_solver = new DataflowSolver();
             DefUse problem = new DefUse();
@@ -106,8 +114,8 @@ public class IR {
                 if (o instanceof Operation) {
                     Operation op = (Operation) o;
                     RelationFacts f = (RelationFacts) di.getFact();
-                    if (op.getDest() != null) {
-                        Collection uses = problem.getUses(op.getDest());
+                    if (op.getRelationDest() != null) {
+                        Collection uses = problem.getUses(op.getRelationDest());
                         if (uses.size() == 0) {
                             if (TRACE) System.out.println("Removing: " + op);
                             di.remove();
@@ -119,7 +127,8 @@ public class IR {
                         Relation src = p.getSrc();
                         DefUseFact duf = (DefUseFact) f.getFact(src);
                         if (duf.getDefs().size() == 1) {
-                            Operation op2 = (Operation) duf.getDefs().iterator().next();
+                            Operation op2 = (Operation) duf.getDefs()
+                                .iterator().next();
                         }
                     }
                 } else {
@@ -137,9 +146,9 @@ public class IR {
             List srcs = new LinkedList();
             doLiveness(list, srcs, problem);
         }
-        
+
     }
-    
+
     void doLiveness(IterationList list, List srcs, Liveness p) {
         ListIterator it = list.iterator();
         while (it.hasNext()) {
@@ -165,30 +174,46 @@ public class IR {
             }
         }
     }
-    
+
     public void interpret() {
         Interpreter interpret = solver.getInterpreter();
         IterationList list = graph.getIterationList();
         list.interpret(interpret);
     }
-    
+
     /**
-     * 
+     *  
      */
     private IR(Solver solver, IterationFlowGraph g) {
         this.solver = solver;
         this.graph = g;
     }
-    
+
     public Relation getRelation(String name) {
         return solver.getRelation(name);
     }
-    
+
     public Relation getRelation(int index) {
         return solver.getRelation(index);
     }
-    
+
     public int getNumberOfRelations() {
         return solver.getNumberOfRelations();
+    }
+
+    public void printIR() {
+        printIR(graph.getIterationList(), "");
+    }
+
+    public void printIR(IterationList list, String space) {
+        System.out.println(space + list + ":");
+        for (Iterator it = list.iterator(); it.hasNext();) {
+            Object o = it.next();
+            if (o instanceof Operation) {
+                System.out.println(space + "  " + o);
+            } else {
+                printIR((IterationList) o, space + "  ");
+            }
+        }
     }
 }
