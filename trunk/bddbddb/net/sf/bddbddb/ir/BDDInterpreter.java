@@ -1,23 +1,21 @@
-/*
- * Created on Jul 13, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
+// BDDInterpreter.java, created Mar 16, 2004 12:49:19 PM 2004 by mcarbin
+// Copyright (C) 2004 Michael Carbin
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.ir;
 
 import java.util.Iterator;
 import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.BDDSolver;
+import net.sf.bddbddb.InferenceRule;
 import net.sf.bddbddb.IterationList;
 import net.sf.bddbddb.Relation;
 import net.sf.javabdd.BDD;
 
 /**
- * @author mcarbin
+ * BDDInterpreter
  * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @author mcarbin
+ * @version $Id$
  */
 public class BDDInterpreter extends Interpreter {
     /**
@@ -34,10 +32,14 @@ public class BDDInterpreter extends Interpreter {
         interpret(ir.graph.getIterationList());
     }
 
+    int MAX_ITERATIONS = 128;
+    
     public boolean interpret(IterationList list) {
         boolean everChanged = false;
         boolean change;
+        int iterations = 0;
         for (;;) {
+            ++iterations;
             change = false;
             for (Iterator i = list.iterator(); i.hasNext();) {
                 Object o = i.next();
@@ -47,7 +49,7 @@ public class BDDInterpreter extends Interpreter {
                     if (interpret(sublist)) {
                         change = true;
                     }
-                } else {
+                } else if (o instanceof Operation) {
                     Operation op = (Operation) o;
                     BDDRelation dest = (BDDRelation) op.getRelationDest();
                     BDD oldValue = null;
@@ -62,11 +64,17 @@ public class BDDInterpreter extends Interpreter {
                         if (TRACE && change) System.out.println(changed + " Changed!");
                         oldValue.free();
                     }
+                } else if (o instanceof InferenceRule) {
+                    InferenceRule ir = (InferenceRule) o;
+                    if (ir.update()) {
+                        change = true;
+                    }
                 }
             }
             if (!change) break;
             everChanged = true;
             if (!list.isLoop()) break;
+            if (iterations == MAX_ITERATIONS) break;
             interpret(list.getLoopEdge());
         }
         return everChanged;
