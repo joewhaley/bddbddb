@@ -5,8 +5,8 @@
   <id>bddbddb</id>
   <currentVersion>1.0</currentVersion>
   <organization>
-    <name>Sourceforge</name>
-    <url>http://sourceforge.net</url>
+    <name>Stanford SUIF Compiler Group</name>
+    <url>http://sourceforge.net/</url>
     <logo>http://sourceforge.net/sflogo.php?group_id=111873&amp;type=5</logo>
   </organization>
   <inceptionYear>2004</inceptionYear>
@@ -75,7 +75,7 @@
 
   <url>http://bddbddb.sourceforge.net/</url>
   <issueTrackingUrl>
-    http://www.sourceforge.net/tracker/?group_id=111873
+    http://sourceforge.net/tracker/?group_id=111873
   </issueTrackingUrl>
   <siteAddress>bddbddb.sourceforge.net</siteAddress>
   <siteDirectory>
@@ -150,6 +150,36 @@
       <organization>Stanford University</organization>
       <roles>
         <role>Project Manager</role>
+      </roles>
+    </developer>
+
+    <developer>
+      <name>Michael Carbin</name>
+      <id>cs343</id>
+      <email>mcarbin@stanford.edu</email>
+      <organization>Stanford University</organization>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+
+    <developer>
+      <name>Chris Unkel</name>
+      <id>cunkel</id>
+      <email>cunkel@stanford.edu</email>
+      <organization>Stanford University</organization>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+
+    <developer>
+      <name>Dzintars Avots</name>
+      <id>dra</id>
+      <email>dra@suif.stanford.edu</email>
+      <organization>Stanford University</organization>
+      <roles>
+        <role>Developer</role>
       </roles>
     </developer>
 
@@ -237,13 +267,19 @@
       maven-jdepend-plugin
     </report>
     <report>
-      maven-tasklist-plugin
+      maven-dashboard-plugin
     </report>
     <report>
       maven-javadoc-plugin
     </report>
     <report>
       maven-jxr-plugin
+    </report>
+    <report>
+      maven-findbugs-plugin
+    </report>
+    <report>
+      maven-linkcheck-plugin
     </report>
 <!-- TOO EXPENSIVE
     <report>
