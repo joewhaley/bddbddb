@@ -222,12 +222,12 @@ public class PAFromSource {
     //BDD V1csets[], V1cH1equals[];
     static BDD V1set, V2set, H1set, T1set, T2set, Fset, Mset, M2set, Iset, Nset, Zset; //H2set, 
     static BDD V1V2set, V1Fset, V2Fset, V1FV2set, V1H1set, H1Fset; //, H2Fset, H1H2set, H1FH2set
-    static BDD IMset, INset, INH1set, INT2set, T2Nset, MZset;
+    static BDD IMset, INset, INH1set, INT2set, T2Nset, MZset, MZVset;
     //BDD V1cset, V2cset, H1cset, H2cset, V1cV2cset, V1cH1cset, H1cH2cset;
     //BDD V1cdomain, V2cdomain, H1cdomain, H2cdomain;
 
     static int bddminfree = Integer.parseInt(System.getProperty("bddminfree", "20"));
-    static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1_TV";//System.getProperty("bddordering"); // TODO add TV
+    static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1_TV1";//System.getProperty("bddordering"); // TODO add TV
     //int MAX_PARAMS = Integer.parseInt(System.getProperty("pas.maxparams", "4"));
     static boolean reverseLocal = System.getProperty("bddreverse", "true").equals("true"); 
     
@@ -283,7 +283,7 @@ public class PAFromSource {
         N = makeDomain("N", N_BITS);
         M = makeDomain("M", M_BITS);
         M2 = makeDomain("M2", M_BITS);
-        TV = makeDomain("TV", TV_BITS);
+        TV = makeDomain("TV1", TV_BITS);
 
         V1set = V1.set();
 
@@ -315,7 +315,7 @@ public class PAFromSource {
         //H1FH2set = H1Fset.and(H2set);
         T2Nset = T2set.and(Nset);
         MZset = Mset.and(Zset);
-        
+        MZVset = MZset.and(V1set);
 
         System.out.println("Using variable ordering "+varorder);
         int[] ordering = bdd.makeVarOrdering(reverseLocal, varorder);
@@ -875,7 +875,6 @@ public class PAFromSource {
         }
         
         public boolean visit(SimpleName arg0) {
-
             //out.println("SIMPLENAME: " + arg0);
             if (arg0.resolveBinding().getKind() == IBinding.VARIABLE) {
                 if (!arg0.resolveTypeBinding().isPrimitive()) {
@@ -2422,10 +2421,13 @@ public class PAFromSource {
 
         out.println("Relations generated from " + filesParsed + " files.");
         
-        out.println("Calling bddbddb...");
+        out.println("Calling bddbddb to generate callgraph...");
+        ran = true;
+        ExternalAppLauncher.computeCallgraph(this);
+       
+        out.println("Calling bddbddb to genericize...");
+        ExternalAppLauncher.genericize(this);   
         
-        if (ExternalAppLauncher.callBddBddb(this) == 0) ran = true;
-        else ran = false;
     }
 
     private void generateTypeRelations() {
@@ -2438,8 +2440,10 @@ public class PAFromSource {
             // otherwise do i=Vmap.get(v) first
             addToVT(i, v); 
             addToAT(v);
-            // TODO
+
+            addToLocation2TypeVar(i, v);
         }
+        out.println("TVmap size: " + TVmap.size());
         
         // hT;
         out.println("adding to hT ...");
@@ -2452,14 +2456,39 @@ public class PAFromSource {
         // TODO transitive closure on aT
         
         out.println("adding to concreteTypes ...");
-        // iterate though T
-        out.println("adding to ret2typevar ...");
-        // iterate through M, skip void
-        out.println("adding to field2typevar ...");
-        // iterate through F
-        out.println("adding to param2typevar ...");
-        // iterate thru formal
+        it = Tmap.iterator();
+        for (int i = 0; it.hasNext(); i++) {
+            Wrapper t =(Wrapper)it.next();
+            addToConcreteTypes(i, t);
+        }
+        out.println("TVmap size: " + TVmap.size());
         
+        out.println("adding to field2typevar ...");
+        it = Fmap.iterator();
+        for (int i = 0; it.hasNext(); i++) {
+            Wrapper f =(Wrapper)it.next();
+            addToField2TypeVar(i, f);
+        }
+        out.println("TVmap size: " + TVmap.size());
+        
+        out.println("adding to ret2typevar ...");
+        it = Mmap.iterator();
+        for (int i = 0; it.hasNext(); i++) {
+            Wrapper m =(Wrapper)it.next();
+            addToRet2TypeVar(i, m);
+        }
+        out.println("TVmap size: " + TVmap.size());
+        
+        out.println("adding to param2typevar ...");
+        for (it = formal.iterator(MZVset); it.hasNext(); ) {
+            BDD b = (BDD)it.next();
+            long[] l = b.scanAllVar();
+            long m = l[M.getIndex()];
+            long z = l[Z.getIndex()];
+            Wrapper tv = (Wrapper)Vmap.get((int)l[V1.getIndex()]);
+            addToParam2TypeVar(m, z, tv);
+        }
+        out.println("TVmap size: " + TVmap.size());
     }
     
     public void loadClasses(Set libs) {
@@ -3150,6 +3179,64 @@ public class PAFromSource {
         vT.orWith(bdd1);
     }
       
+    private void addToLocation2TypeVar(int V_i, Wrapper v) {
+        if (v.equals(StringWrapper.GLOBAL_THIS)) return;
+        BDD bdd1 = V1.ithVar(V_i);
+        bdd1.andWith(TV.ithVar(TVmap.get(v)));
+        if (TRACE_RELATIONS) out.println("Adding to location2typevar: "+bdd1.toStringWithDomains());
+        location2typevar.orWith(bdd1);
+        
+    }
+    
+    private void addToConcreteTypes(int T_i, Wrapper t) {
+        if (t.equals(StringWrapper.GLOBAL_THIS)) return;
+        BDD bdd1 = T1.ithVar(T_i);
+        bdd1.andWith(TV.ithVar(TVmap.get(t)));
+        if (TRACE_RELATIONS) out.println("Adding to concreteTypes: "+bdd1.toStringWithDomains());
+        concreteTypes.orWith(bdd1);
+    }
+    
+    private void addToField2TypeVar(int F_i, Wrapper f) {
+        BDD bdd1 = F.ithVar(F_i);
+        bdd1.andWith(TV.ithVar(TVmap.get(f)));
+        if (TRACE_RELATIONS) out.println("Adding to field2typevar: "+bdd1.toStringWithDomains());
+        field2typevar.orWith(bdd1);
+    }
+    
+    private void addToRet2TypeVar(int M_i, Wrapper m) {
+        if (m.equals(StringWrapper.DUMMY_METHOD)) return;    
+        if (m instanceof StringWrapper) { // remove primitive returns
+            String s = ((StringWrapper)m).getString();
+            if (s.endsWith(".<clinit>")) return;
+
+            // might catch more methods than desired if 
+            // method is contained in another method
+            if (s.lastIndexOf("/void") != -1) return;
+            if (s.lastIndexOf("/int") != -1) return; 
+            if (s.lastIndexOf("/long") != -1) return; 
+            if (s.lastIndexOf("/char") != -1) return;
+            if (s.lastIndexOf("/byte") != -1) return; 
+            if (s.lastIndexOf("/boolean") != -1) return;
+            if (s.lastIndexOf("/short") != -1) return;
+            if (s.lastIndexOf("/float") != -1) return;
+            if (s.lastIndexOf("/double") != -1) return;
+        }
+        else if (((MethodWrapper)m).getReturnType().isPrimitive()) return;
+            
+        BDD bdd1 = M.ithVar(M_i);
+        bdd1.andWith(TV.ithVar(TVmap.get(m)));
+        if (TRACE_RELATIONS) out.println("Adding to ret2typevar: "+bdd1.toStringWithDomains());
+        ret2typevar.orWith(bdd1);
+    }
+    
+    private void addToParam2TypeVar(long M_i, long z, Wrapper tv) {
+        BDD bdd1 = M.ithVar(M_i);
+        bdd1.andWith(Z.ithVar(z));
+        bdd1.andWith(TV.ithVar(TVmap.get(tv)));
+        if (TRACE_RELATIONS) out.println("Adding to param2typevar: "+bdd1.toStringWithDomains());
+        param2typevar.orWith(bdd1);
+    }
+    
     private void addToVT(int V_i, Wrapper v) {
         if (v instanceof TypeWrapper || v instanceof MethodWrapper) {
             throw new RuntimeException("ERROR: this type of node shouldn't be in V: " + v);

@@ -69,7 +69,7 @@ public class ExternalAppLauncher {
                 "-Dpa.fullcha",
                 "-Dpa.addinstancemethods",
                 "-Dpa.autodiscover=no",
-                "-Dbddordering="+varorder,
+                "-Dbddordering="+"N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1",//varorder,
                 mainClassName, "@"+tempFile.getAbsolutePath() };
             
             int r = launch(cmd);
@@ -86,7 +86,7 @@ public class ExternalAppLauncher {
         }        
     }
     
-    public static int callBddBddb(PAFromSource pa) {
+    public static int computeCallgraph(PAFromSource pa) {
         String dumpPath = System.getProperty("pas.dumppath", "");
         if (dumpPath.length() > 0) {
             String sep = System.getProperty("file.separator", "/");
@@ -115,6 +115,32 @@ public class ExternalAppLauncher {
         } catch (IOException x) {
             x.printStackTrace();
         }
+        return r;
+    }
+    
+    public static int genericize(PAFromSource pa) {
+        String dumpPath = System.getProperty("pas.dumppath", "");
+        if (dumpPath.length() > 0) {
+            String sep = System.getProperty("file.separator", "/");
+            if (!dumpPath.endsWith(sep))
+                dumpPath += sep;
+        }
+        
+        String path = dumpPath + "genericize.datalog";
+        String bddbddb = dumpPath + "bddbddb.jar";
+        
+        String[] cmd = new String[] {"java", 
+            "-jar", "-mx512m",
+            bddbddb, path }; 
+
+        int r = launch(cmd);
+        if (r != 0) {
+            pa.out.println("bddbddb failed: " + r);
+            return r;
+        }
+        
+        pa.out.println("bddbddb complete...");
+       //XXX
         return r;
     }
 }

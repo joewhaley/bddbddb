@@ -1,0 +1,153 @@
+
+#.basedir "pa.joeq"
+.include "fielddomains.pa"
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_T0_Z0_T1_H0_H1_TV0xTV1
+
+TV0 262144
+C 262144
+
+### Input relations
+vP0 (v:V0, h:H0) input 
+A (dest:V0, source:V1) input 
+S (base:V0, field:F0, src:V1) input 
+L (base:V0, field:F0, dest:V1) input 
+vT (var:V0, type:T0) input 
+#hT (heap:H0, type:T1) input 
+aT (type:T0, type:T1) input 
+cha (type:T1, name:N0, method:M0) input 
+actual (invoke:I0, num:Z0, actualparam:V1) input 
+#formal (method:M0, num:Z0, formalparam:V0) input 
+Mret (method:M0, v:V1) input 
+#Mthr (method:M0, v:V1) input 
+Iret (invoke:I0, v:V0) input 
+#Ithr (invoke:I0, v:V0) input 
+mI (method:M0, invoke:I0, name:N0) input 
+visited (method:M0) input output 
+mS (method:M0, base:V0, field:F0, src:V1) input 
+mL (method:M0, base:V0, field:F0, dest:V1) input 
+mvP (method:M0, v:V0, h:H0) input 
+
+S(v1,f,v2) :- visited(m), mS(m,v1,f,v2).
+L(v1,f,v2) :- visited(m), mL(m,v1,f,v2).
+vP0(v,h) :- visited(m), mvP(m,v,h).
+aT(t1,t3) :- aT(t1,t2), aT(t2,t3).
+
+# Statements.
+assignStatement (dest:V0, src:V1) 
+loadStatement (dest:V0, base:V1, field:F0) 
+storeStatement (base:V0, field:F0, src:V1) 
+returnStatement (method:M0, src:V0) 
+invokeMethod (invoke:I0, method:M0) 
+invokeParameter (invoke:I0, param:Z0, src:V0) 
+invokeReturn (invoke:I0, dest:V0) 
+newStatement (dest:V0, type:TV0) 
+castStatement (dest:V0, type:TV0, src:V1) 
+
+# Points-to information
+#pointsTo (context:C, var:V, object:H) input
+#objectType (object:H, type:TV) input
+
+# Map between context and base object.
+# context2baseobject (context:C, location:V, object:H) input
+
+# Class hierarchy information.
+override (supermethod:M, submethod:M)
+
+# Map between code locations and type variables.
+location2typevar (location:V, typevar:TV) input
+
+# Type variables in the source code.
+param2typevar (method:M0, param:Z0, type:TV0) input
+field2typevar (field:F0, type:TV0) input
+ret2typevar (method:M0, type:TV0) input
+
+# Some type variables correspond to concrete types.
+concreteTypes (typevar:TV0, concretetype:T0) input
+
+assignStatement(v1,v2) :- A(v1,v2).
+loadStatement(v2,v1,f) :- L(v1,f,v2).
+storeStatement(v1,f,v2) :- S(v1,f,v2).
+returnStatement(m,v) :- Mret(m,v).
+invokeMethod(i,m) :- mI(m,i,_).
+invokeParameter(i,z,v) :- actual(i,z,v).
+invokeReturn(i,v) :- Iret(i,v).
+newStatement(v,tv) :- vP0(v,h), location2typevar(v,tv).
+castStatement(v1,tv,v2) :- A(v1,v2), vT(v2,t), !vT(v1,t), concreteTypes(tv,t).
+#pointsTo(c,v,h) :- vP0(v,h).
+#objectType(h,tv) :- hT(h,t), concreteTypes(tv,t).
+override(super,sub) :- cha(t1,n,super), cha(t2,n,sub), aT(t1,t2).
+
+### Computed relations
+
+# Encodes subtyping constraints between type variables.
+#    To encode equality between types x and y, include both
+#    (x,y) and (y,x) in the subType relation.
+subType (superT:TV0, subT:TV1)
+
+# Type variables that correspond to multiple types.
+multiType (typevar:TV0) outputtuples
+
+# Type variables that correspond to a single type.
+singleType (typevar:TV0) outputtuples
+
+### Rules for adding subtype constraints.
+
+# Transitive closure.
+#subType(a,c) :- subType(a,b), subType(b,c).
+
+# Parameters of overridden methods are contravariant.
+subType(t2,t1) :- override(m1,m2), \
+                  param2typevar(m1,z,t1), param2typevar(m2,z,t2).
+
+# Return values of overridden methods are covariant.
+subType(t1,t2) :- override(m1,m2), \
+                  ret2typevar(m1,t1), ret2typevar(m2,t2).
+
+# Constraints from assignments.
+subType(t1,t2) :- assignStatement(v1,v2), location2typevar(v1,t1), \
+                  location2typevar(v2,t2).
+
+# Constraints from return statements.
+subType(t1,t2) :- ret2typevar(m,t1), returnStatement(m,v2), \
+                  location2typevar(v2,t2).
+
+# Constraints from load statements.
+subType(t1,t2) :- loadStatement(v2,v1,f), field2typevar(f,t2), \
+                  location2typevar(v2,t1).
+
+# Constraints from store statements.
+subType(t1,t2) :- storeStatement(v1,f,v2), field2typevar(f,t1), \
+                  location2typevar(v2,t2).
+
+# Constraints from invocation parameters.
+subType(t1,t2) :- param2typevar(m,z,t1), invokeMethod(i,m), invokeParameter(i,z,v2), \
+                  location2typevar(v2,t2).
+
+# Constraints from invocation return values.
+subType(t1,t2) :- ret2typevar(m,t2), invokeMethod(i,m), invokeReturn(i,v1), \
+                  location2typevar(v1,t1).
+
+# Constraints from new statements.
+subType(t1,t2) :- newStatement(v1,t2), location2typevar(v1,t1).
+
+# Constraints from cast statements.  Assumes casts always succeed!
+subType(t1,t2) :- castStatement(v1,t2,v3), location2typevar(v1,t1).
+#subType(t1,t3) :- castStatement(v1,t2,v3), location2typevar(v1,t1), location2typevar(v3,t3).
+
+# Constraints from constant statements.
+
+
+### Rules for computing the set of concrete types for each type variable.
+
+# Transitive closure over the subType relation.
+concreteTypes(t1,t) :- subType(t1,t2), concreteTypes(t2,t).
+
+multiType(t) :- concreteTypes(t,ta), concreteTypes(t,tb), ta != tb.
+
+singleType(t) :- !multiType(t), concreteTypes(t,_).
+
+#######
+# Stuff about generics
+#
+# Primitive types cannot be type parameters.
+# Parameterized types cannot inherit from java.lang.Throwable.
