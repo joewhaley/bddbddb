@@ -198,7 +198,8 @@ public class BDDSolver extends Solver {
                 bdd.setCacheSize(bdd.getNodeTableSize());
                 bdd.setCacheRatio(0.25);
             }
-            bdd.setMaxIncrease(BDDNODES/2);
+            //bdd.setMaxIncrease(BDDNODES/2);
+            bdd.setIncreaseFactor(2);
         }
         if (BDDREORDER != null) {
             try {
@@ -329,6 +330,10 @@ public class BDDSolver extends Solver {
      * @see net.sf.bddbddb.Solver#cleanup()
      */
     public void cleanup() {
+        BDDFactory.CacheStats s = bdd.getCacheStats();
+        if (s.uniqueAccess > 0) {
+            System.out.println(s);
+        }
         bdd.done();
     }
     
