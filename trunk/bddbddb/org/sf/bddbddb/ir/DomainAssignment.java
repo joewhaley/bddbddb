@@ -160,7 +160,7 @@ public abstract class DomainAssignment implements OperationVisitor {
         }
         // Equality relations are treated special here, because we don't support
         // renaming them yet.
-        for (Iterator i = s.getEquivalenceRelations().iterator(); i.hasNext();) {
+        for (Iterator i = s.getComparisonRelations().iterator(); i.hasNext();) {
             BDDRelation r = (BDDRelation) i.next();
             forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
             forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
