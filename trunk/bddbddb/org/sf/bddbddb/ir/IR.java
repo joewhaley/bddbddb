@@ -84,6 +84,8 @@ public class IR {
 
     public void optimize() {
         if (CONSTANTPROP) {
+            System.out.print("Running ConstantProp...");
+            long time = System.currentTimeMillis();
             DataflowSolver df_solver = new DataflowSolver();
             Problem problem = new ConstantProp();
             IterationList list = graph.getIterationList();
@@ -105,6 +107,7 @@ public class IR {
                     di.enter(b);
                 }
             }
+            System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
         }
         while (true) {
             if (TRACE) System.out.println("optimization pass:");
@@ -140,11 +143,14 @@ public class IR {
             liveness.run();
         }
         if (DOMAIN_ASSIGNMENT) {
+            System.out.print("Running DomainAssignment...");
+            long time = System.currentTimeMillis();
             DomainAssignment ass = new UFDomainAssignment(solver);
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
             ass.doAssignment();
             cleanUpAfterAssignment(list);
+            System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
         }
     }
 
@@ -165,6 +171,8 @@ public class IR {
     }
 
     void doPeephole(IterationList list) {
+        System.out.print("Running Peephole...");
+        long time = System.currentTimeMillis();
         for (ListIterator i = list.iterator(); i.hasNext();) {
             Object o = i.next();
             if (o instanceof Copy) {
@@ -174,9 +182,12 @@ public class IR {
                 doPeephole((IterationList) o);
             }
         }
+        System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
     }
 
     boolean doDefUse() {
+        System.out.print("Running DefUse...");
+        long time = System.currentTimeMillis();
         boolean change = false;
         DataflowSolver df_solver = new DataflowSolver();
         DefUse problem = new DefUse(this);
@@ -240,6 +251,7 @@ public class IR {
             list.removeElements(to_remove);
             change = true;
         }
+        System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
         return change;
     }
 
