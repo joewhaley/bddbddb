@@ -39,6 +39,7 @@ import net.sf.bddbddb.order.AttribToDomainMap;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
 import net.sf.bddbddb.order.ClassProbabilityEstimator;
 import net.sf.bddbddb.order.FilterTranslator;
+import net.sf.bddbddb.order.MyDiscretize;
 import net.sf.bddbddb.order.MyId3;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraint;
@@ -61,7 +62,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Discretize;
-import weka.filters.unsupervised.attribute.PKIDiscretize;
 
 /**
  * FindBestDomainOrder
@@ -1338,9 +1338,9 @@ public class FindBestDomainOrder {
             return new Discretization(cutPoint, buckets);
         }
 
-        public Discretization discretize() {
-            int numBins = (int) Math.sqrt(numInstances());
-            return discretize(new PKIDiscretize(), numBins, this.classIndex());
+        public Discretization discretize(double power) {
+            int numBins = (int) Math.pow(numInstances(), power);
+            return discretize(new MyDiscretize(power), numBins, this.classIndex());
         }
 
         public Discretization discretize(Discretize d, int numBins, int index) {
@@ -1727,8 +1727,8 @@ public class FindBestDomainOrder {
         Discretization vDis = null, aDis = null, dDis = null;
 
        // Discretize the experimental data.  null if there is no data.
-        if (DISCRETIZE1) vDis = vData.discretize();
-        if (DISCRETIZE2) aDis = aData.discretize();
+        if (DISCRETIZE1) vDis = vData.discretize(.5);
+        if (DISCRETIZE2) aDis = aData.discretize(.25);
         if (DISCRETIZE3) dDis = dData.threshold(DOMAIN_THRESHOLD);
         
         // Calculate the accuracy of each classifier using cv folds.
