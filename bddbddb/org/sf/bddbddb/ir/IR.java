@@ -62,7 +62,7 @@ public class IR {
             IterationList loadList = new IterationList(false);
             for (Iterator j = solver.getRelationsToLoad().iterator(); j.hasNext();) {
                 Relation r = (Relation) j.next();
-                loadList.addElement(new Load(r));
+                loadList.addElement(new Load(r, solver.basedir+r+".bdd", false));
             }
             list.addElement(0, loadList);
         }
@@ -73,7 +73,7 @@ public class IR {
             for (Iterator j = solver.getRelationsToSave().iterator(); j
                 .hasNext();) {
                 Relation r = (Relation) j.next();
-                saveList.addElement(new Save(r));
+                saveList.addElement(new Save(r, solver.basedir+r+".bdd", false));
             }
             list.addElement(saveList);
         }

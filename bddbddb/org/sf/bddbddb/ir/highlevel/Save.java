@@ -15,13 +15,17 @@ import org.sf.bddbddb.Relation;
  */
 public class Save extends HighLevelOperation {
     Relation r;
+    String fileName;
+    boolean tuples;
 
     /**
      * @param r
      */
-    public Save(Relation r) {
+    public Save(Relation r, String fileName, boolean tuples) {
         super();
         this.r = r;
+        this.fileName = fileName;
+        this.tuples = tuples;
     }
 
     /*
@@ -87,5 +91,19 @@ public class Save extends HighLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
+    }
+    
+    /**
+     * @return
+     */
+    public String getFileName() {
+        return fileName;
+    }
+    
+    /**
+     * @return
+     */
+    public boolean isTuples() {
+        return tuples;
     }
 }
