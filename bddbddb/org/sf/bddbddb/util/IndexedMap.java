@@ -4,7 +4,7 @@
 package org.sf.bddbddb.util;
 
 import java.util.Iterator;
-import java.io.DataOutput;
+import java.io.BufferedWriter;
 import java.io.IOException;
 
 /**
@@ -25,5 +25,5 @@ public interface IndexedMap {
 
     int size();
 
-    void dumpStrings(final DataOutput out) throws IOException;
+    void dumpStrings(final BufferedWriter out) throws IOException;
 }

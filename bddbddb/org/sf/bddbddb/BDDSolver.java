@@ -15,9 +15,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import org.sf.bddbddb.ir.BDDInterpreter;
@@ -340,15 +340,15 @@ public class BDDSolver extends Solver {
      * @throws IOException
      */
     void saveBDDDomainInfo() throws IOException {
-        DataOutputStream dos = null;
+        BufferedWriter dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(basedir + "r" + bddDomainInfoFileName));
+            dos = new BufferedWriter(new FileWriter(basedir + "r" + bddDomainInfoFileName));
             for (int i = 0; i < bdd.numberOfDomains(); ++i) {
                 BDDDomain d = bdd.getDomain(i);
                 for (Iterator j = fielddomainsToBDDdomains.keySet().iterator(); j.hasNext();) {
                     Domain fd = (Domain) j.next();
                     if (fielddomainsToBDDdomains.getValues(fd).contains(d)) {
-                        dos.writeBytes(fd.toString() + "\n");
+                        dos.write(fd.toString() + "\n");
                         break;
                     }
                 }

@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.io.DataOutput;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDSolver;
@@ -219,9 +219,9 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
     }
 
     /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.DomainAssignment#saveDomainAssignment(java.io.DataOutput)
+     * @see org.sf.bddbddb.ir.DomainAssignment#saveDomainAssignment(java.io.BufferedWriter)
      */
-    public void saveDomainAssignment(DataOutput out) throws IOException {
+    public void saveDomainAssignment(BufferedWriter out) throws IOException {
         super.saveDomainAssignment(out);
         for (Iterator it = beforeConstraints.iterator(); it.hasNext();) {
             Pair c = (Pair) it.next();
@@ -239,7 +239,7 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
             } else {
                 right = c.right.toString();
             }
-            out.writeBytes(left+" < "+right+"\n");
+            out.write(left+" < "+right+"\n");
         }
         for (Iterator it = ileavedConstraints.iterator(); it.hasNext();) {
             Pair c = (Pair) it.next();
@@ -257,7 +257,7 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
             } else {
                 right = c.right.toString();
             }
-            out.writeBytes(left+" ~ "+right+"\n");
+            out.write(left+" ~ "+right+"\n");
         }
     }
 }

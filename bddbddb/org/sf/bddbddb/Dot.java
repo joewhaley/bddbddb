@@ -10,8 +10,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import org.sf.bddbddb.RelationGraph.GraphNode;
@@ -60,28 +60,28 @@ public class Dot {
             GraphNode n = (GraphNode) worklist.pull();
             visitNode(n);
         }
-        DataOutputStream dos = null;
+        BufferedWriter dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(solver.basedir + outputFileName));
-            dos.writeBytes("digraph {\n");
-            dos.writeBytes("  size=\"7.5,10\";\n");
-            //dos.writeBytes(" rotate=90;\n");
-            dos.writeBytes("  concentrate=true;\n");
-            dos.writeBytes("  ratio=fill;\n");
-            dos.writeBytes("  rankdir=LR;");
-            dos.writeBytes("\n");
+            dos = new BufferedWriter(new FileWriter(solver.basedir + outputFileName));
+            dos.write("digraph {\n");
+            dos.write("  size=\"7.5,10\";\n");
+            //dos.write(" rotate=90;\n");
+            dos.write("  concentrate=true;\n");
+            dos.write("  ratio=fill;\n");
+            dos.write("  rankdir=LR;");
+            dos.write("\n");
             i = nodes.iterator();
             while (i.hasNext()) {
-                dos.writeBytes("  ");
-                dos.writeBytes((String) i.next());
+                dos.write("  ");
+                dos.write((String) i.next());
             }
-            dos.writeBytes("\n");
+            dos.write("\n");
             i = edges.iterator();
             while (i.hasNext()) {
-                dos.writeBytes("  ");
-                dos.writeBytes((String) i.next());
+                dos.write("  ");
+                dos.write((String) i.next());
             }
-            dos.writeBytes("}\n");
+            dos.write("}\n");
         } finally {
             if (dos != null) {
                 dos.close();

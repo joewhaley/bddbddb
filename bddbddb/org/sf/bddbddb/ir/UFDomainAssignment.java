@@ -10,7 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.io.DataOutput;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
@@ -304,7 +304,10 @@ public class UFDomainAssignment extends DomainAssignment {
         return r;
     }
 
-    public void saveDomainAssignment(DataOutput out) throws IOException {
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.DomainAssignment#saveDomainAssignment(java.io.BufferedWriter)
+     */
+    public void saveDomainAssignment(BufferedWriter out) throws IOException {
         BDDSolver s = (BDDSolver) solver;       
         for (int i = 0; i < s.getNumberOfRelations(); ++i) {
             BDDRelation r = (BDDRelation) s.getRelation(i);
@@ -315,7 +318,7 @@ public class UFDomainAssignment extends DomainAssignment {
                 Object assignment = uf.find(p);
                 BDDDomain b = (BDDDomain) physicalDomains.get(assignment);
                 if (b != null) {
-                    out.writeBytes(r+" "+a+" = "+b+"\n");
+                    out.write(r+" "+a+" = "+b+"\n");
                 } else {
                     System.out.println(p+" not assigned a domain!");
                 }

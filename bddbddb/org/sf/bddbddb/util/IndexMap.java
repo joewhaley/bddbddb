@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.io.DataInput;
-import java.io.DataOutput;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 
 /**
@@ -87,14 +87,22 @@ public class IndexMap implements IndexedMap {
         return before != size();
     }
 
-    public void dumpStrings(final DataOutput out) throws IOException {
+    public void dumpStrings(final BufferedWriter out) throws IOException {
         for (int j = 0; j < size(); ++j) {
             Object o = get(j);
-            out.writeBytes(o + "\n");
+            String s;
+            if (o != null) {
+                s = o.toString();
+                Assert._assert(s.indexOf('\n') == -1);
+                Assert._assert(s.indexOf('\r') == -1);
+            } else {
+                s = "null";
+            }
+            out.write(s + "\n");
         }
     }
 
-    public static IndexMap loadStringMap(String name, DataInput in)
+    public static IndexMap loadStringMap(String name, BufferedReader in)
         throws IOException {
         IndexMap dis = new IndexMap(name);
         for (;;) {

@@ -11,9 +11,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
@@ -324,9 +324,9 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void saveTuples(String fileName, BDD relation) throws IOException {
-        DataOutputStream dos = null;
+        BufferedWriter dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(fileName));
+            dos = new BufferedWriter(new FileWriter(fileName));
             if (relation.isZero()) {
                 return;
             }
@@ -334,21 +334,21 @@ public class BDDRelation extends Relation {
             int[] a = ss.scanSetDomains();
             ss.free();
             BDD allDomains = solver.bdd.one();
-            dos.writeBytes("#");
+            dos.write("#");
             System.out.print(fileName + " domains {");
             for (Iterator i = domains.iterator(); i.hasNext();) {
                 BDDDomain d = (BDDDomain) i.next();
                 System.out.print(" " + d.toString());
-                dos.writeBytes(" " + d.toString() + ":" + d.varNum());
+                dos.write(" " + d.toString() + ":" + d.varNum());
             }
-            dos.writeBytes("\n");
+            dos.write("\n");
             System.out.println(" } = " + relation.nodeCount() + " nodes, " + dsize() + " elements");
             if (relation.isOne()) {
                 for (Iterator j = domains.iterator(); j.hasNext();) {
                     BDDDomain d = (BDDDomain) j.next();
-                    dos.writeBytes("* ");
+                    dos.write("* ");
                 }
-                dos.writeBytes("\n");
+                dos.write("\n");
                 return;
             }
             for (int i = 0; i < a.length; ++i) {
@@ -373,15 +373,15 @@ public class BDDRelation extends Relation {
                         BDDDomain d = (BDDDomain) j.next();
                         int jj = d.getIndex();
                         if (Arrays.binarySearch(b, jj) < 0) {
-                            dos.writeBytes("* ");
+                            dos.write("* ");
                             t.andWith(d.domain());
                         } else {
-                            dos.writeBytes(v[jj] + " ");
+                            dos.write(v[jj] + " ");
                             t.andWith(d.ithVar(v[jj]));
                         }
                     }
                     q.applyWith(t, BDDFactory.diff);
-                    dos.writeBytes("\n");
+                    dos.write("\n");
                     ++lines;
                 }
                 q.free();
