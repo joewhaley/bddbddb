@@ -115,11 +115,13 @@ public class OrderConstraintSet {
     }
     
     void addPrecedenceConstraint(Object a, Object b) {
+        Assert._assert(!a.equals(b));
         OrderConstraint o = OrderConstraint.makePrecedenceConstraint(a, b);
         addPrecedenceConstraint(o);
     }
     void addPrecedenceConstraint(OrderConstraint c) {
         Assert._assert(c instanceof BeforeConstraint || c instanceof AfterConstraint);
+        Assert._assert(!c.a.equals(c.b));
         if (set.contains(c)) return;
         set.add(c);
         Collection c1 = objToConstraints.getValues(c.a);
@@ -135,6 +137,7 @@ public class OrderConstraintSet {
         }
     }
     void addPrecedenceConstraints(Object a, Object b, Collection ocs) {
+        Assert._assert(!a.equals(b));
         // Make a backup to avoid ConcurrentModificationException
         ocs = new ArrayList(ocs);
         for (Iterator i = ocs.iterator(); i.hasNext(); ) {
@@ -251,7 +254,7 @@ public class OrderConstraintSet {
         for (int k = 2; k <= num; ++k) {
             // Do all interleaves combining k elements.
             Collection combo = new LinkedList();
-            CombinationGenerator cg = new CombinationGenerator(k, num);
+            CombinationGenerator cg = new CombinationGenerator(num, k);
             while (cg.hasMore()) {
                 int[] p = cg.getNext();
                 for (int x = 0; x < p.length; ++x) {
@@ -295,8 +298,11 @@ public class OrderConstraintSet {
     
     public List generateAllOrders(Collection vars, Set skip) {
         
+        //System.out.println("Generating all orders for "+this);
+        
         // Find the set of earliest elements (no predecessors)
         List earliest = findAllEarliest(vars, skip);
+        //System.out.println("findAllEarliest("+vars+","+skip+") = "+earliest);
         
         if (skip == null) skip = new HashSet();
         

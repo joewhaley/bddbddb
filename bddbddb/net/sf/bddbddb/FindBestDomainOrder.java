@@ -686,10 +686,11 @@ public class FindBestDomainOrder {
          */
         TrialCollection collection;
         
-        /*
+        /**
          * The predicted results for this trial.
          */
         TrialPrediction pred;
+        
         /**
          * Construct a new TrialInfo.
          * 
@@ -739,6 +740,10 @@ public class FindBestDomainOrder {
                 result = this.order.compareTo(that.order);
             }
             return result;
+        }
+        
+        public boolean isMax() {
+            return cost == BDDInferenceRule.LONG_TIME;
         }
         
         public static String PREDICTION_VAR1 = "LowerBound";
@@ -1362,7 +1367,9 @@ public class FindBestDomainOrder {
     
     void addToInstances(Instances data, TrialCollection tc, OrderTranslator t) {
         if (tc.size() == 0) return;
-        double best = (double) tc.getMinimum().cost+1;
+        double best;
+        if (tc.getMinimum().isMax()) best = 1;
+        else best = (double) tc.getMinimum().cost + 1;
         for (Iterator j = tc.trials.values().iterator(); j.hasNext(); ) {
             TrialInfo ti = (TrialInfo) j.next();
             double score = (double) (ti.cost+1) / best;
@@ -1885,12 +1892,15 @@ public class FindBestDomainOrder {
         }
         
         // Calculate the mean value of each of the discretized buckets.
-        double [] vBucketMeans = new double[vDis == null ? 0 : vDis.buckets.length];
-        double [] aBucketMeans = new double[aDis == null ? 0 : aDis.buckets.length];
-        double [] dBucketMeans = new double[dDis == null ? 0 : dDis.buckets.length];
+        double[] vBucketMeans = new double[vDis == null ? 0 : vDis.buckets.length];
+        double[] aBucketMeans = new double[aDis == null ? 0 : aDis.buckets.length];
+        double[] dBucketMeans = new double[dDis == null ? 0 : dDis.buckets.length];
         if(TRACE > 2) out.print("Var Bucket Means: ");
         for(int i = 0; i < vBucketMeans.length; ++i){
-            vBucketMeans[i] = vDis.buckets[i].meanOrMode(vDis.buckets[i].classIndex());
+            if (vDis.buckets[i].numInstances() == 0)
+                vBucketMeans[i] = Double.MAX_VALUE;
+            else
+                vBucketMeans[i] = vDis.buckets[i].meanOrMode(vDis.buckets[i].classIndex());
             if(TRACE > 2) out.print(vBucketMeans[i] + " ");
         }
         if(TRACE > 2) {
@@ -1898,7 +1908,10 @@ public class FindBestDomainOrder {
             out.print("Attr Bucket Means: ");
         }
         for(int i = 0; i < aBucketMeans.length; ++i){
-            aBucketMeans[i] = aDis.buckets[i].meanOrMode(aData.classIndex());
+            if (aDis.buckets[i].numInstances() == 0)
+                aBucketMeans[i] = Double.MAX_VALUE;
+            else
+                aBucketMeans[i] = aDis.buckets[i].meanOrMode(aData.classIndex());
             if(TRACE > 2) out.print(aBucketMeans[i] + " ");
         }
         if(TRACE > 2) {
@@ -1906,7 +1919,10 @@ public class FindBestDomainOrder {
             out.print("Domain Bucket Means: ");
         }
         for(int i = 0; i < dBucketMeans.length; ++i){
-            dBucketMeans[i] = dDis.buckets[i].meanOrMode(dData.classIndex());
+            if (dDis.buckets[i].numInstances() == 0)
+                dBucketMeans[i] = Double.MAX_VALUE;
+            else
+                dBucketMeans[i] = dDis.buckets[i].meanOrMode(dData.classIndex());
             if(TRACE > 2) out.print(dBucketMeans[i] + " ");
         }
         if(TRACE > 2) out.println();
@@ -1927,10 +1943,11 @@ public class FindBestDomainOrder {
         // Grab the best from the classifiers and try to build an optimal order.
         Collection never = neverAgain.getValues(ir);
         MyId3 v = (MyId3) vClassifier, a = (MyId3) aClassifier, d = (MyId3) dClassifier;
-        int end = 1;
+        int end = 5;
         int vBuckets = vDis == null ? 1 : vDis.buckets.length;
         int aBuckets = aDis == null ? 1 : aDis.buckets.length;
         int dBuckets = dDis == null ? 1 : dDis.buckets.length;
+        boolean[][][] done = new boolean[vBuckets][aBuckets][dBuckets];
         for (;;) {
             int numV = Math.min(end, vBuckets);
             int numA = Math.min(end, aBuckets);
@@ -1969,21 +1986,25 @@ public class FindBestDomainOrder {
             for (int z = 0; z < p; ++z) {
                 double bestScore = combos[z][0];
                 double bestProb = combos[z][1];
-                double vClass = combos[z][2];
-                double aClass = combos[z][3];
-                double dClass = combos[z][4];
-                if (TRACE > 2) out.println("v="+vClass+" a="+aClass+" d="+dClass+": "+format(bestScore)+" prob "+format(bestProb));
+                double vClass = combos[z][2]; int vi = (int) vClass;
+                double aClass = combos[z][3]; int ai = (int) aClass;
+                double dClass = combos[z][4]; int di = (int) dClass;
                 // If one of them reaches the highest index, we need to break.
-                if (vClass == end || aClass == end || dClass == end) {
-                    if (TRACE > 2) out.println("reached "+end+", trying again with more points.");
-                    break;
+                if (numV < end || numA < end || numD < end) {
+                    if (vi == numV || ai == numA || di == numD) {
+                        if (TRACE > 1) out.println("reached end ("+vi+","+ai+","+di+"), trying again with a higher cutoff.");
+                        break;
+                    }
                 }
+                if (done[vi][ai][di]) continue;
+                done[vi][ai][di] = true;
+                if (TRACE > 1) out.println("v="+vClass+" a="+aClass+" d="+dClass+": "+format(bestScore)+" prob "+format(bestProb));
                 OrderConstraintSet ocs = tryConstraints(v, vClass, vData, a, aClass, aData, d, dClass, dData, a2v, d2v);
                 if (ocs == null) {
                     if (TRACE > 2) out.println("Constraints cannot be combined.");
                     continue;
                 }
-                if (TRACE > 2) out.println("Constraints: "+ocs);
+                if (TRACE > 1) out.println("Constraints: "+ocs);
                 TrialGuess guess = genGuess(ocs, allVars, bestScore, bestProb, vClass, aClass, dClass,
                     vDis, aDis, dDis, tc, never);
                 if (guess != null) {
@@ -1993,6 +2014,18 @@ public class FindBestDomainOrder {
             }
             if (end > vBuckets && end > aBuckets && end > dBuckets) {
                 if (TRACE > 1) out.println("Reached end, no possible guesses!");
+                // TODO: we can do something better here!
+                OrderIterator i = new OrderIterator(allVars);
+                while (i.hasNext()) {
+                    Order o_v = i.nextOrder();
+                    if (tc != null && tc.contains(o_v)) continue;
+                    if (never != null && never.contains(o_v)) continue;
+                    if (TRACE > 1) out.println("Just trying "+o_v);
+                    // todo: we should compute a real prediction.
+                    TrialPrediction pred = new TrialPrediction(0, Double.MAX_VALUE, 0, Double.MAX_VALUE, 0, Double.MAX_VALUE);
+                    TrialGuess guess = new TrialGuess(o_v, pred);
+                    return guess;
+                }
                 return null;
             }
             end *= 2;
@@ -2004,11 +2037,13 @@ public class FindBestDomainOrder {
         double vClass, double aClass, double dClass,
         Discretization vDis, Discretization aDis, Discretization dDis,
         TrialCollection tc, Collection never) {
+        if (TRACE > 1) out.println("Generating orders for "+allVars);
         List orders = ocs.generateAllOrders(allVars);
         for (Iterator m = orders.iterator(); m.hasNext(); ) {
             Order best = (Order) m.next();
             if (never.contains(best)) continue;
             if (tc == null || !tc.contains(best)) {
+                if (TRACE > 1) out.println("Using order "+best);
                 double vLowerBound,vUpperBound, aLowerBound,aUpperBound, dLowerBound,dUpperBound;
                 vLowerBound = vUpperBound = aLowerBound = aUpperBound = dLowerBound = dUpperBound = -1;
                 if (vDis != null && !Double.isNaN(vClass) && vClass != NO_CLASS) {
