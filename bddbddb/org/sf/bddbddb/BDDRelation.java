@@ -50,8 +50,8 @@ public class BDDRelation extends Relation {
     // Called before variable order is set.
     public void initialize() {
         if (name.startsWith("!")) {
-            if (solver.TRACE) solver.out.println("Skipping initialization of negated BDDRelation " + name + " because normal " + negated.name
-                + " is/will be initialized.");
+            if (solver.TRACE) solver.out.println("Skipping initialization of negated BDDRelation " + name);
+            if (solver.TRACE) solver.out.println(" because normal " + negated.name + " is/will be initialized.");
             return;
         }
         this.relation = solver.bdd.zero();
