@@ -1051,6 +1051,9 @@ public abstract class Solver {
         return ir;
     }
 
+    /**
+     * Flag that is set if a rule term has repeated variables.
+     */
     boolean hasDuplicateVars;
     /**
      * Parse a term of an inference rule.
