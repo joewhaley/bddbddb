@@ -1003,30 +1003,30 @@ public abstract class Solver {
             } else if (option.equals("findbestorder")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.find_best_order = true;
-            }else if(option.equals("learnbestorder")) {
+            } else if (option.equals("learnbestorder")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.learn_best_order = true;
                 LEARN_BEST_ORDER = true;
-            }else if(option.equals("training_set_size")){
+            } else if (option.equals("training_set_size")) {
                 nextToken(st);
                 String sizeToken= nextToken(st);
-                try{
+                try {
                     System.out.println("size: " + sizeToken);
                     int size = Integer.parseInt(sizeToken);
                     BDDInferenceRule r = (BDDInferenceRule) ir;
                     r.getLearnedOrder().SIZE_OF_TRAINING_SET = size;
-                }catch(NumberFormatException e){
+                } catch (NumberFormatException e){
                     outputError(lineNum, st.getPosition(), s, "Invalid number format for training_set_size \"" + option + "\"");
                     throw new IllegalArgumentException();
                 }
-            }else if(option.equals("min_confidence")){
+            } else if (option.equals("min_confidence")) {
                 nextToken(st);
                 String confToken= nextToken(st);
-                try{
+                try {
                     double conf = Double.parseDouble(confToken);
                     BDDInferenceRule r = (BDDInferenceRule) ir;
                     r.getLearnedOrder().MIN_CONFIDENCE = conf;
-                }catch(NumberFormatException e){
+                } catch (NumberFormatException e) {
                     outputError(lineNum, st.getPosition(), s, "Invalid number format for min_confidence \"" + option + "\"");
                     throw new IllegalArgumentException();
                 }
@@ -1043,9 +1043,15 @@ public abstract class Solver {
                 throw new IllegalArgumentException();
             }
         }
+        if (hasDuplicateVars && !(ir instanceof NumberingRule)) {
+            outputError(lineNum, st.getPosition(), s, "Variable repeated multiple times in a single term");
+            throw new IllegalArgumentException();
+        }
+        hasDuplicateVars = false;
         return ir;
     }
 
+    boolean hasDuplicateVars;
     /**
      * Parse a term of an inference rule.
      * 
@@ -1142,7 +1148,7 @@ public abstract class Solver {
             throw new IllegalArgumentException();
         }
         if (negated) r = r.makeNegated(this);
-        List/* <Variable> */vars = new LinkedList();
+        List/*<Variable>*/ vars = new LinkedList();
         for (;;) {
             if (r.attributes.size() <= vars.size()) {
                 outputError(lineNum, st.getPosition(), s, "Too many fields for " + r);
@@ -1152,9 +1158,8 @@ public abstract class Solver {
             Domain fd = a.attributeDomain;
             String varName = nextToken(st);
             Variable var = parseVariable(fd, nameToVar, varName);
-            if (false && vars.contains(var)) { // temporarily disabled to handle "number" rules.
-                outputError(lineNum, st.getPosition(), s, "Duplicate variable " + var);
-                throw new IllegalArgumentException();
+            if (vars.contains(var)) {
+                hasDuplicateVars = true;
             }
             vars.add(var);
             if (var.domain == null) var.domain = fd;
