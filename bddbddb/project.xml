@@ -11,7 +11,7 @@
     <logo>http://sourceforge.net/sflogo.php?group_id=111873&amp;type=5</logo>
   </organization>
   <inceptionYear>2004</inceptionYear>
-  <package>org.sf.bddbddb</package>
+  <package>net.sf.bddbddb</package>
 
   <shortDescription>BDD-Based Deductive DataBase</shortDescription>
 
