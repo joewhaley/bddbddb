@@ -3,9 +3,9 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.util;
 
+import java.util.Iterator;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * Interface for an indexed map.  An indexed map provides a mapping

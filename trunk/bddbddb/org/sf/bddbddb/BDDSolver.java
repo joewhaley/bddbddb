@@ -14,21 +14,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
-
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.MultiMap;
-
+import org.sf.bddbddb.util.Pair;
+import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;

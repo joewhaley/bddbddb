@@ -6,7 +6,6 @@
  */
 package org.sf.bddbddb.util;
 
-import java.math.BigInteger;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -20,10 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.Pair;
+import java.math.BigInteger;
 
 /**
  * SCCPathNumbering

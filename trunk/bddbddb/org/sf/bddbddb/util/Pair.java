@@ -3,8 +3,8 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.util;
 
-import java.io.Serializable;
 import java.util.AbstractList;
+import java.io.Serializable;
 
 /**
  * List of two elements.

@@ -4,7 +4,6 @@
 package org.sf.bddbddb;
 
 import java.util.List;
-
 import java.io.IOException;
 
 /**

@@ -7,17 +7,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
-
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.PathNumbering;
 import org.sf.bddbddb.util.SCCPathNumbering;
-
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 

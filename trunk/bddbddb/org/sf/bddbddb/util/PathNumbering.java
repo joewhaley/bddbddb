@@ -3,14 +3,14 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.util;
 
-import java.io.DataOutput;
-import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.math.BigInteger;
 
 /**
  * PathNumbering

@@ -3,15 +3,13 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.util;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import org.sf.bddbddb.util.Assert;
+import java.io.Serializable;
 
 /**
  * <code>SCCTopSortedGraph</code> represents a

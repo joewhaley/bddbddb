@@ -4,7 +4,6 @@
 package org.sf.bddbddb.util;
 
 import java.util.Collection;
-
 import java.io.Serializable;
 
 /** <code>CollectionFactory</code> is a <code>Collection</code>

@@ -3,6 +3,12 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -11,15 +17,8 @@ import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.sf.bddbddb.util.Pair;
 import org.sf.bddbddb.util.MyStringTokenizer;
+import org.sf.bddbddb.util.Pair;
 import org.sf.bddbddb.util.SystemProperties;
 
 /**
