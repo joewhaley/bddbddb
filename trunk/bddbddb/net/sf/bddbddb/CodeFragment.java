@@ -193,7 +193,8 @@ public class CodeFragment {
             
             String cp = System.getProperty("java.class.path");
             Process javac = Runtime.getRuntime().exec(
-                new String[] { javacName, "-classpath", cp, className+".java" }, null, path);
+                new String[] { javacName, "-source", "1.3", "-target", "1.3",
+                    "-classpath", cp, className+".java" }, null, path);
             new InputStreamGobbler(javac.getInputStream(), System.out).start();
             new InputStreamGobbler(javac.getErrorStream(), System.err).start();
             javac.waitFor();
