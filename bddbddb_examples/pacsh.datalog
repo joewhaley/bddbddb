@@ -1,0 +1,59 @@
+### Context-sensitive inclusion-based pointer analysis cloning heap objects
+# 
+# Assumes that the context numbering is done offline and is stored
+# in the IEfilter relation.
+# 
+# Author: John Whaley
+
+.basedir "pa.joeq"
+
+### Domains
+
+.include "fielddomains.pa"
+
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_VC1xVC0_T0_Z0_T1_H0_H1
+
+### Relations
+
+vP0 (v:V0, h:H0) input
+A (dest:V0, source:V1) input
+S (base:V0, field:F0, src:V1) input
+L (base:V0, field:F0, dest:V1) input
+actual (invoke:I0, num:Z0, actualparam:V1) input
+formal (method:M0, num:Z0, formalparam:V0) input
+Mret (method:M0, v:V1) input
+Mthr (method:M0, v:V1) input
+Iret (invoke:I0, v:V0) input
+Ithr (invoke:I0, v:V0) input
+mI (method:M0, invoke:I0, name:N0) input
+IE0 (invoke:I0, target:M0) input
+vT (var:V0, type:T0) input
+hT (heap:H0, type:T1) input
+aT (type:T0, type:T1) input
+cha (type:T1, name:N0, method:M0) input
+hP0 (ha:H0, field:F0, hb:H1) input
+IEfilter (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0) input
+
+vPfilter (v:V0, h:H0)
+IEcs (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0)
+cA (vcdest:VC0, dest:V0, vcsrc:VC1, source:V1)
+
+cvP (vc:VC0, v:V0, hc:VC1, h:H0) output
+hP (hac:VC0, ha:H0, field:F0, hbc:VC1, hb:H1) output
+IE (invoke:I0, target:M0) output
+
+### Rules
+
+cvP(_,v,_,h) :- vP0(v,h).
+cA(_,v1,_,v2) :- A(v1,v2).
+IEcs(vc2,i,vc1,m) :- IE0(i,m), IEfilter(vc2,i,vc1,m).
+vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
+cA(vc1,v1,vc2,v2) :- formal(m,z,v1), IEcs(vc2,i,vc1,m), actual(i,z,v2).
+cA(vc2,v2,vc1,v1) :- Mret(m,v1), IEcs(vc2,i,vc1,m), Iret(i,v2).
+cA(vc2,v2,vc1,v1) :- Mthr(m,v1), IEcs(vc2,i,vc1,m), Ithr(i,v2).
+
+cvP(vc1,v1,hc,h) :- cA(vc1,v1,vc2,v2), cvP(vc2,v2,hc,h), vPfilter(v1,h).
+hP(hc1,h1,f,hc2,h2) :- S(v1,f,v2), cvP(vc1,v1,hc1,h1), cvP(vc1,v2,hc2,h2).
+cvP(vc1,v2,hc2,h2) :- L(v1,f,v2), cvP(vc1,v1,hc1,h1), hP(hc1,h1,f,hc2,h2), vPfilter(v2,h2). split
+
+IE(i,m) :- IEcs(_,i,_,m).
