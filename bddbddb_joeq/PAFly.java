@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -110,6 +112,113 @@ public class PAFly {
         // Add the default static variables (System in/out/err...)
         GlobalNode.GLOBAL.addDefaultStatics();
         
+        if (subtypes != null) {
+            OfflineSubtypeHelper subtypeHelper = new OfflineSubtypeHelper();
+            for (Iterator i = subtypeHelper.allClasses().iterator(); i.hasNext(); ) {
+                String className = (String) i.next();
+                String cn = canonicalizeClassName(className.trim());
+                jq_Type t1 = jq_Type.parseType(cn);
+                if (t1 instanceof jq_Class) {
+                    Collection st = subtypeHelper.getSubtypes((jq_Class) t1);
+                    if (st == null){
+                        System.err.println("No subtypes for class " + t1.getName());
+                        continue;
+                    }
+                    int T1_i = Tmap.get(t1.toString());
+                    for (Iterator typeIter = st.iterator(); typeIter.hasNext();){
+                        jq_Class t2 = (jq_Class) typeIter.next();
+                        int T2_i = Tmap.get(t2.toString());
+                        if (TRACE_RELATIONS) out.println("Adding to subtypes: "+T1_i+","+T2_i);
+                        subtypes.add(T1_i, T2_i);
+                    }
+                }
+            }
+        }
+    }
+    
+    static String canonicalizeClassName(String s) {
+        if (s.endsWith(".class")) s = s.substring(0, s.length() - 6);
+        s = s.replace('.', '/');
+        String desc = "L" + s + ";";
+        return desc;
+    }
+    
+    public static class OfflineSubtypeHelper {
+        static final String subtypeFileName = "reversed_subclasses.txt";
+        Map classes2subclasses = new HashMap();
+        Set allClasses = new HashSet();
+        private boolean initialized = false;
+        //final static String kind = OFFLINE;
+        public OfflineSubtypeHelper() {
+        }
+        
+        Collection allClasses() {
+            return allClasses;
+        }
+        
+        void initializeSubclasses() throws IOException {
+            if(initialized) return;
+            BufferedReader r = new BufferedReader(new FileReader(subtypeFileName));
+            String s = null;
+            String className = null;
+            Collection subclassList = null;
+            while ((s = r.readLine()) != null) {
+                if(s.startsWith("CLASS ")){                    
+                    className = s.substring("CLASS ".length(), s.indexOf(" ", "CLASS ".length() + 1));
+                    subclassList = new LinkedList();
+                    // add the class itself to the list of subclasses
+                    subclassList.add(className);
+                    classes2subclasses.put(className, subclassList);
+                    allClasses.add(className);
+                }else{
+                    int index = s.indexOf("SUBCLASS ");
+                    if(index != -1){
+                        String subclass = s.substring(index + "SUBCLASS ".length(), s.length());
+                        subclassList.add(subclass);
+                        allClasses.add(subclass);
+                    }
+                }
+            }
+            initialized = true;
+        }
+
+        /* (non-Javadoc)
+         * @see joeq.Compiler.Analysis.IPA.SubtypeHelper#getSubtypes(joeq.Class.jq_Class)
+         */
+        public Collection getSubtypes(jq_Class clazz) {
+            if(TRACE) System.out.println("Requesting subtypes of class " + clazz);
+            String className = clazz.getName();
+            try {
+                initializeSubclasses();         // lazily initialize the subclasses
+            } catch (IOException e) {
+                Assert._assert(false, e.toString());
+                return null;
+            }
+            
+            Collection subtypeNames = (Collection) classes2subclasses.get(className);
+            if(subtypeNames == null){
+                System.err.println("No match for class \"" + className + "\" in " + subtypeFileName);
+                return null;
+            }
+            Collection result = new LinkedList();
+            for(Iterator iter = subtypeNames.iterator(); iter.hasNext();){
+                String subtypeName = (String) iter.next();
+                String canonicalName = canonicalizeClassName(subtypeName.trim());
+                
+                try {
+                    jq_Class subtypeClass = (jq_Class) jq_Class.parseType(canonicalName);
+                    subtypeClass.prepare();
+                    result.add(subtypeClass);
+                } catch (java.lang.NoClassDefFoundError e){
+                    if(TRACE) System.err.println("Can't load " + subtypeName + ": " + e);
+                    continue;
+                }
+            }
+            Assert._assert(result.size() <= subtypeNames.size());
+            
+            if(TRACE) System.out.println("Returning " + result.size() + " subtypes.");
+            return result;
+        }
     }
     
     static void saveAll(BDDSolver s) throws IOException {
@@ -216,6 +325,40 @@ public class PAFly {
         prevH = r.getBDD().id();
     }
     
+    static BDD prevC;
+    public static void addToClassObjectType(BDDRelation r) {
+        Attribute a = r.getAttribute("heap");
+        BDDDomain H = r.getBDDDomain(a);
+        BDD Hset = H.set();
+        BDD newValues;
+        if (prevC == null) {
+            newValues = r.getBDD().exist(Hset);
+        } else {
+            newValues = r.getBDD().exist(Hset);
+            newValues.applyWith(prevC, BDDFactory.diff);
+        }
+        a = r.getAttribute("type");
+        BDDDomain T = r.getBDDDomain(a);
+        BDD Tset = T.set();
+        for (BDDIterator i = newValues.iterator(Tset); i.hasNext(); ) {
+            BDD b = (BDD) i.next();
+            BigInteger T_i = b.scanVar(T);
+            b.free();
+            String T_s = a.getDomain().toString(T_i);
+            System.out.println("NEW CLASS OBJECT: "+T_s);
+            if (T_s != null && !T_s.equals("null") && !T_s.equals("NULL_TYPE")) {
+                jq_Reference t = (jq_Reference) jq_Type.parseType(T_s);
+                if (t instanceof jq_Class) {
+                    jq_Class c = (jq_Class) t;
+                    addClassInitializer(c);
+                }
+            }
+        }
+        Tset.free();
+        prevC = r.getBDD().exist(Hset);
+        Hset.free();
+    }
+    
     public static PrintStream out = System.out;
     public static boolean TRACE = !System.getProperty("pa.trace", "no").equals("no");
     public static boolean TRACE_RELATIONS = !System.getProperty("pa.tracerelations", "no").equals("no");
@@ -228,6 +371,7 @@ public class PAFly {
     
     static BDDRelation vP0, L, S, A, actual, formal, Mret, Iret, Mthr, Ithr, IE0, vT, hT, aT, cha, mI, roots, IE;
     static BDDRelation stringToType, stringToField, stringToMethod, defaultConstructor, allConstructors, mapIH, skipMethod;
+    static BDDRelation subtypes;
     static IndexMap Vmap, Fmap, Hmap, Mmap, Imap, Tmap, Nmap;
     static Collection stringNodes = new LinkedList();
     
