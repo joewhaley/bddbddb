@@ -1252,18 +1252,19 @@ public class FindBestDomainOrder {
     static Instances discretize(Instances data) {
         // TODO: there is probably a better way of doing this other than
         // reconstructing everything.
-        PKIDiscretize d = new PKIDiscretize();
-        d.setAttributeIndices("last");
         try {
-            int attribIndex = data.numAttributes()-1;
+            PKIDiscretize d = new PKIDiscretize();
+            d.setAttributeIndices("last");
             d.setInputFormat(data);
             for (Enumeration e = data.enumerateInstances(); e.hasMoreElements(); ) {
                 TrialInstance ti = (TrialInstance) e.nextElement();
                 d.input(ti);
             }
             d.batchFinished();
-            int nClusters = d.getBins();
+            int nClusters = //d.getBins();   weka getBins() is BROKEN
+                           (int)(Math.sqrt(data.numInstances()));
             
+            int attribIndex = data.numAttributes()-1;
             FastVector newAttributes = new FastVector(attribIndex+1);
             weka.core.Attribute a = makeBucketAttribute(nClusters);
             for (int i = 0; i < attribIndex; ++i) {
@@ -1445,13 +1446,15 @@ public class FindBestDomainOrder {
             Instances varData = dis.buildVarBasedInstances(allVars, ir);
             Instances attribData = dis.buildAttribBasedInstances(allVars, ir);
             
-            Instances dvarData = dis.discretize(varData, true);
-            Instances dattribData = dis.discretize(attribData, true);
-            varData = dis.discretize(varData, false);
-            attribData = dis.discretize(attribData, false);
-            
             System.out.println("Var data points: "+varData.numInstances());
             System.out.println("Attrib data points: "+attribData.numInstances());
+            
+            if (varData.numInstances() == 0 && attribData.numInstances() == 0) continue;
+            
+            Instances dvarData = varData.numInstances() > 0 ? dis.discretize(varData, true) : null;
+            Instances dattribData = attribData.numInstances() > 0 ? dis.discretize(attribData, true) : null;
+            if (varData.numInstances() > 0) varData = dis.discretize(varData, false);
+            if (attribData.numInstances() > 0) attribData = dis.discretize(attribData, false);
             
             Collection varClassifiers = new LinkedList();
             Collection dvarClassifiers = new LinkedList();
@@ -1465,7 +1468,7 @@ public class FindBestDomainOrder {
             String[] dclassifiers = new String[] {
                 "weka.classifiers.trees.Id3",
                 "weka.classifiers.trees.J48",
-                "weka.classifiers.trees.LMT",
+                //"weka.classifiers.trees.LMT", // TOO SLOW
             };
             
             for (int k = 0; k < classifiers.length; ++k) {
@@ -1483,12 +1486,12 @@ public class FindBestDomainOrder {
             }
             for (int k = 0; k < dclassifiers.length; ++k) {
                 Classifier c;
-                if (dattribData.numInstances() > 0) {
+                if (dattribData != null && dattribData.numInstances() > 0) {
                     c = dis.buildClassifier(dclassifiers[k], dattribData);
                     if (c != null)
                         dattribClassifiers.add(c);
                 }
-                if (dvarData.numInstances() > 0) {
+                if (dvarData != null && dvarData.numInstances() > 0) {
                     c = dis.buildClassifier(dclassifiers[k], dvarData);
                     if (c != null)
                         dvarClassifiers.add(c);
@@ -1500,7 +1503,7 @@ public class FindBestDomainOrder {
             while (it.hasNext()) {
                 Order o = it.nextOrder();
                 OrderInstance inst = new OrderInstance(attribData, t.translate(o));
-                out.println("Order "+inst.o+" instance "+inst);
+                if (!attribClassifiers.isEmpty()) out.println("Order "+inst.o+" instance "+inst);
                 for (Iterator k = attribClassifiers.iterator(); k.hasNext(); ) {
                     Classifier classifier = (Classifier) k.next();
                     try {
@@ -1510,18 +1513,21 @@ public class FindBestDomainOrder {
                         out.println("    "+classifier.getClass()+"\texception: "+x);
                     }
                 }
-                OrderInstance dinst = new OrderInstance(attribData, t.translate(o));
-                for (Iterator k = dattribClassifiers.iterator(); k.hasNext(); ) {
-                    Classifier classifier = (Classifier) k.next();
-                    try {
-                        double score = classifier != null ? classifier.classifyInstance(dinst) : 0.;
-                        out.println("    "+classifier.getClass()+"\tscore = "+score);
-                    } catch (Exception x) {
-                        out.println("    "+classifier.getClass()+"\texception: "+x);
+                if (dattribData != null) {
+                    OrderInstance dinst = new OrderInstance(dattribData, t.translate(o));
+                    if (!dattribClassifiers.isEmpty()) out.println("Order "+dinst.o+" instance "+dinst);
+                    for (Iterator k = dattribClassifiers.iterator(); k.hasNext(); ) {
+                        Classifier classifier = (Classifier) k.next();
+                        try {
+                            double score = classifier != null ? classifier.classifyInstance(dinst) : 0.;
+                            out.println("    "+classifier.getClass()+"\tscore = "+score);
+                        } catch (Exception x) {
+                            out.println("    "+classifier.getClass()+"\texception: "+x);
+                        }
                     }
                 }
                 OrderInstance inst2 = new OrderInstance(varData, o);
-                out.println("Order "+inst2.o+" instance "+inst2);
+                if (!varClassifiers.isEmpty()) out.println("Order "+inst2.o+" instance "+inst2);
                 for (Iterator k = varClassifiers.iterator(); k.hasNext(); ) {
                     Classifier classifier = (Classifier) k.next();
                     try {
@@ -1531,14 +1537,17 @@ public class FindBestDomainOrder {
                         out.println("    "+classifier.getClass()+"\texception: "+x);
                     }
                 }
-                OrderInstance dinst2 = new OrderInstance(varData, o);
-                for (Iterator k = dvarClassifiers.iterator(); k.hasNext(); ) {
-                    Classifier classifier = (Classifier) k.next();
-                    try {
-                        double score = classifier != null ? classifier.classifyInstance(dinst2) : 0.;
-                        out.println("    "+classifier.getClass()+"\tscore = "+score);
-                    } catch (Exception x) {
-                        out.println("    "+classifier.getClass()+"\texception: "+x);
+                if (dvarData != null) {
+                    OrderInstance dinst2 = new OrderInstance(dvarData, o);
+                    if (!dvarClassifiers.isEmpty()) out.println("Order "+dinst2.o+" instance "+dinst2);
+                    for (Iterator k = dvarClassifiers.iterator(); k.hasNext(); ) {
+                        Classifier classifier = (Classifier) k.next();
+                        try {
+                            double score = classifier != null ? classifier.classifyInstance(dinst2) : 0.;
+                            out.println("    "+classifier.getClass()+"\tscore = "+score);
+                        } catch (Exception x) {
+                            out.println("    "+classifier.getClass()+"\texception: "+x);
+                        }
                     }
                 }
             }
