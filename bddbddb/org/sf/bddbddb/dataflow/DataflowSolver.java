@@ -21,7 +21,7 @@ import org.sf.bddbddb.ir.dynamic.If;
  */
 public class DataflowSolver {
     boolean TRACE = false;
-    boolean WORKLIST = false;
+    boolean WORKLIST = true;
     
     /** Matches blocks to their dataflow information. */
     Map/* <IterationList,Fact> */blockToFact;
