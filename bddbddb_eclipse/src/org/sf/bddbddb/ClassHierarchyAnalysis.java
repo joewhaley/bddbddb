@@ -49,8 +49,8 @@ public class ClassHierarchyAnalysis {
         int N_i = Nmap.get(pa.new MethodWrapper(name));
         int M_i = Mmap.get(pa.new MethodWrapper(target));
         
-        System.out.println("adding to CHA: "+pa.new TypeWrapper(type)+" / "
-            +pa.new MethodWrapper(name)+" / "+pa.new MethodWrapper(target));
+        //System.out.println("adding to CHA: "+pa.new TypeWrapper(type)+" / "
+        //    +pa.new MethodWrapper(name)+" / "+pa.new MethodWrapper(target));
         
         BDD b = T.ithVar(T_i).andWith(N.ithVar(N_i)).andWith(M.ithVar(M_i));
         cha.orWith(b);
@@ -59,7 +59,9 @@ public class ClassHierarchyAnalysis {
     BDD calculateCHA() {
         for (Iterator i = Nmap.iterator(); i.hasNext(); ) {
             Object o = i.next();
-            if (!(o instanceof MethodWrapper)) continue;
+            if (!(o instanceof MethodWrapper)) {
+                continue;
+            }
             MethodWrapper mw = (MethodWrapper) o;
             IMethodBinding name = mw.getBinding();
             calculateCHA(name);
@@ -75,6 +77,7 @@ public class ClassHierarchyAnalysis {
                 TypeWrapper tw = (TypeWrapper) o;
                 type = tw.getType();
             } else {
+                if (pa.GLOBAL_THIS.equals(o)) continue;
                 type = OBJECT;
             }
             //System.out.println(type.getBinaryName());
@@ -102,14 +105,13 @@ public class ClassHierarchyAnalysis {
             }
             if (method != null) {
                 int mod = method.getModifiers();
-                if (!Modifier.isAbstract(mod) && !Modifier.isPrivate(mod) && !Modifier.isStatic(mod)) {
-                    return method;
-                }
+                if (Modifier.isAbstract(mod) || Modifier.isPrivate(mod) || Modifier.isStatic(mod)) return null;
+                return method;
             }
-            if (type.getKey().equals(OBJECT.getKey())) break;
+            //if (type.getKey().equals(OBJECT.getKey())) break;
             type = type.getSuperclass();
+            if (type == null) return null;
         }
-        return null;
     }
 
     boolean typesMatch(ITypeBinding[] types1, ITypeBinding[] types2) {

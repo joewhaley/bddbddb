@@ -904,7 +904,6 @@ public class PAFromSource {
             Expression left = arg0.getLeftHandSide();            
             ITypeBinding rType = right.resolveTypeBinding();
             if (rType == null) { 
-                out.println("ERROR: bindings unresolved");
                 throw new RuntimeException("unresolved bindings");
             }
             else {
@@ -1205,7 +1204,8 @@ public class PAFromSource {
                             IMethodBinding[] methods =supClass.getDeclaredMethods(); 
                             IMethodBinding method = null;
                             for (int i = 0; i < methods.length; i++) {
-                                if (methods[i].getKey().indexOf("void()") != -1) {
+                                if (methods[i].isConstructor() && 
+                                    methods[i].getParameterTypes().length == 0) {
                                     method = methods[i];
                                     break;
                                 }
@@ -1356,7 +1356,9 @@ public class PAFromSource {
             declStack.push(arg0);
             classes.add(arg0);
             
-            addBindingToAT(classBinding); 
+            // do aT last, more expensive but more accurate when 
+            // source isn't available for libraries. 
+            //addBindingToAT(classBinding); 
             
             boolean outerthis = hasOuterThis(classBinding);
             IMethodBinding[] bindings = classBinding.getDeclaredMethods();
@@ -1664,12 +1666,14 @@ public class PAFromSource {
                 thisParams = processEnclosedMethod(arg0.getExpression(), 
                     stat, (MethodDeclaration)decl);               
             }
-            ASTNodeWrapper name = stat ? new ASTNodeWrapper(null) :
-                    new MethodWrapper(method);       
+            ASTNodeWrapper name = (stat || isPrivate(method)) 
+                ? new ASTNodeWrapper(null) : new MethodWrapper(method);       
 
             List args = arg0.arguments();
             addMethodInvocation(thisParams, n, method, args, 
                 enclosingMethods, name);
+            
+           
             
             return true; 
         }
@@ -1831,6 +1835,38 @@ public class PAFromSource {
             }
             
             I_bdd.free();
+            
+            
+            // link start() with run()
+            if (invocationBinding.getName().equals("start") 
+                && invocationBinding.getReturnType().getKey().equals("void") 
+                && invocationBinding.getParameterTypes().length == 0) {// thread start()
+                ITypeBinding declClass = invocationBinding.getDeclaringClass();
+                IMethodBinding[] methods = declClass.getDeclaredMethods();
+                IMethodBinding run = null;
+                for (int i = 0; i < methods.length; i++) {
+                    if (methods[i].getName().equals("run") 
+                        && methods[i].getParameterTypes().length == 0 
+                        && methods[i].getReturnType().getKey().equals("void")) {
+                        run = methods[i];
+                        break;
+                    }   
+                }
+
+                StringWrapper runInv = 
+                    new StringWrapper("DummyRun()Invocation derived from " 
+                        + I_i + " : "+ invocation);
+
+                for (Iterator j = thisParams.iterator(); j.hasNext(); ) {     
+                    addToActual(runInv, 0, (ASTNodeWrapper)j.next());
+                }
+                
+                for (Iterator j = enclosingMethods.iterator(); j.hasNext(); ) {
+                    addToMI((ASTNodeWrapper)j.next(), 
+                        runInv, new MethodWrapper(run));
+                }
+            }
+            
         }
         
         public boolean visit(Initializer arg0) {
@@ -2115,6 +2151,13 @@ public class PAFromSource {
             //out.println("adding to actual " + I_bdd.toStringWithDomains() + " / " + z + " / " + v);
             if (TRACE_RELATIONS) out.println("Adding to actual: "+bdd1.toStringWithDomains());
             actual.orWith(bdd1);
+        }
+        
+        void addToActual(ASTNodeWrapper inv, int z, ASTNodeWrapper v) {
+            int I_i = Imap.get(inv);
+            BDD I_bdd = I.ithVar(I_i);
+            addToActual(I_bdd, z, v);
+            I_bdd.free();
         }
 
 
@@ -2531,6 +2574,13 @@ public class PAFromSource {
         }
         
         
+        void addToMI(ASTNodeWrapper m, ASTNodeWrapper inv, ASTNodeWrapper target) {
+            BDD I_bdd = I.ithVar(Imap.get(inv));
+            addToMI(m, I_bdd, target);
+            I_bdd.free();
+        }
+        
+        
 
         void addToMI(ASTNodeWrapper m, BDD I_bdd, ASTNodeWrapper target) {
             BDD M_bdd = M.ithVar(Mmap.get(m));
@@ -2653,6 +2703,10 @@ public class PAFromSource {
         return Modifier.isStatic(b.getModifiers());
     }
     
+    private boolean isPrivate(IBinding b) {
+        return Modifier.isPrivate(b.getModifiers());
+    }
+    
     // Read in default properties.
     static { SystemProperties.read("pas.properties"); }
     
@@ -2754,7 +2808,7 @@ public class PAFromSource {
             // note: requires iterator to iterate in order of index
             // otherwise do i=Vmap.get(v) first
             addToVT(i, v); 
-            addArrayToAT(v);
+            addToAT(v);
         }
         
         // hT
@@ -2942,10 +2996,20 @@ public class PAFromSource {
     
     
     boolean isInVisited(IMethodBinding binding) {
-        String k = binding.getKey();
-        return (isStatic(binding) && k.indexOf("voidmain(java/lang/String1)") != -1) 
-                    || (k.indexOf("voidfinalize()") != -1) 
-                    || (k.indexOf("voidrun()") != -1);
+        String name = binding.getName();
+        //out.println(name);
+        if (binding.getReturnType().getKey().equals("void")) {
+            ITypeBinding[] params = binding.getParameterTypes();
+            if (params.length == 0) {
+                if (name.equals("finalize") || name.equals("run")) return true;
+            }
+            else if (params.length == 1 && isStatic(binding)) {
+                //out.println(params[0].getKey());
+                if (params[0].getKey().equals("java/lang/String1") 
+                    && name.equals("main")) return true;
+            }
+        }
+        return false;
     }
 
     private void writeMethod(BufferedWriter writer, IMethodBinding mb) throws IOException {
@@ -3024,11 +3088,19 @@ public class PAFromSource {
     class CallGraphPrinter extends ASTVisitor {
         BufferedWriter writer;
         MultiMap ie;
-        
+
         CallGraphPrinter(BufferedWriter w, MultiMap mm) { 
             super(false); 
             writer = w; 
             ie = mm;
+        }
+        
+        // don't traverse inner types. will be taken care of by other printers
+        public boolean visit(AnonymousClassDeclaration node) {
+            return false;
+        }
+        public boolean visit(TypeDeclaration node) {
+            return false;
         }
         
         public void endVisit(SuperMethodInvocation arg0) { 
@@ -3482,12 +3554,13 @@ public class PAFromSource {
     }
 
 
-    private void addArrayToAT(ASTNodeWrapper w) {
+    private void addToAT(ASTNodeWrapper w) {
         //Expression e = (Expression) w.getNode();
         //if (e == null) return;
         ITypeBinding t = w.getType();//.resolveTypeBinding();
         if (t == null) return;
         if (t.isArray()) addArrayToAT(t);
+        else addBindingToAT(t);
     }
 
     private void addArrayToAT(ITypeBinding array) {
