@@ -333,8 +333,13 @@ public class Interactive {
                 loadedRelations.addAll(solver.relationsToLoad);
                 loadedRelations.addAll(solver.relationsToLoadTuples);
             }
-            if (solver.NOISY) solver.out.println("Solving: ");
+            if (solver.NOISY) solver.out.println("Stratifying: ");
             long time = System.currentTimeMillis();
+            solver.stratify();
+            time = System.currentTimeMillis() - time;
+            if (solver.NOISY) solver.out.println("done. (" + time + " ms)");
+            if (solver.NOISY) solver.out.println("Solving: ");
+            time = System.currentTimeMillis();
             solver.solve();
             time = System.currentTimeMillis() - time;
             if (solver.NOISY) solver.out.println("done. (" + time + " ms)");
