@@ -116,6 +116,11 @@ public abstract class Solver {
         String inputFilename = System.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
         
+        if (inputFilename == null) {
+            printUsage();
+            return;
+        }
+        
         String solverName = System.getProperty("solver", "org.sf.bddbddb.BDDSolver");
         
         Solver dis;
@@ -165,6 +170,25 @@ public abstract class Solver {
         time = System.currentTimeMillis() - time;
         if (dis.NOISY) dis.out.println("done. ("+time+" ms)");
         
+    }
+    
+    public static void printUsage() {
+        System.out.println("Usage: java {properties} "+Solver.class.getName()+" <datalog file>");
+        System.out.println("System properties:");
+        System.out.println("  -Dnoisy           Print rules as they are applied.");
+        System.out.println("  -Dtracesolve      Turn on trace information.");
+        System.out.println("  -Dfulltracesolve  Also print contents of relations.");
+        System.out.println("  -Dsolver          Solver class name.");
+        System.out.println("  -Ddatalog         Datalog file name, if not specified on command line.");
+        System.out.println("  -Dbddinfo         BDD info file name.");
+        System.out.println("  -Dbddvarorder     BDD variable order.");
+        System.out.println("  -Dbddnodes        BDD initial node table size.");
+        System.out.println("  -Dbddcache        BDD operation cache size.");
+        System.out.println("  -Dbddminfree      BDD minimum free parameter.");
+        System.out.println("  -Dincremental     Incrementalize all rules by default.");
+        System.out.println("  -Dfindbestorder   Find best BDD domain order.");
+        System.out.println("  -Ddumpnumberinggraph  Dump the context numbering in dot graph format.");
+        System.out.println("  -Ddumprulegraph   Dump the graph of rules in dot format.");
     }
     
     public static class MyReader {
