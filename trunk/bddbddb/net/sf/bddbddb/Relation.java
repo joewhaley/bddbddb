@@ -10,6 +10,7 @@ import java.util.Map;
 import java.io.IOException;
 import java.math.BigInteger;
 import net.sf.bddbddb.dataflow.PartialOrder.Constraints;
+import org.jdom.Element;
 
 /**
  * Represents a relation in bddbddb.
@@ -314,5 +315,15 @@ public abstract class Relation {
             nameToAttrib.put(a.attributeName, a);
         }
         return nameToAttrib;
+    }
+    
+    public static Relation fromXMLElement(Element e, XMLFactory f) {
+        // TODO.
+        return null;
+    }
+    
+    public Element toXMLElement() {
+        // TODO.
+        return null;
     }
 }

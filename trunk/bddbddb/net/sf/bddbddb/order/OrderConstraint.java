@@ -3,6 +3,12 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.order;
 
+import net.sf.bddbddb.Attribute;
+import net.sf.bddbddb.InferenceRule;
+import net.sf.bddbddb.Variable;
+import net.sf.bddbddb.XMLFactory;
+import org.jdom.Element;
+
 /**
  * OrderConstraint
  * 
@@ -23,5 +29,30 @@ public abstract class OrderConstraint {
     
     public abstract boolean isOpposite(OrderConstraint that);
     public abstract OrderConstraint getOpposite();
+    public abstract boolean obeyedBy(Order order);
+    public abstract Element toXMLElement(InferenceRule ir);
     
+    private static Element toXMLElement(Object o, InferenceRule ir) {
+        if (o instanceof Variable) {
+            return ((Variable) o).toXMLElement(ir);
+        } else if (o instanceof Attribute) {
+            return ((Attribute) o).toXMLElement();
+        } else {
+            return null;
+        }
+    }
+    
+    protected void addXMLContent(Element e, InferenceRule ir) {
+        e.addContent(toXMLElement(a, ir));
+        e.addContent(toXMLElement(b, ir));
+    }
+    
+    protected static Object getElement(Element e, XMLFactory f) {
+        if (e.getName().equals("variable"))
+            return Variable.fromXMLElement(e, f);
+        else if (e.getName().equals("attribute"))
+            return Attribute.fromXMLElement(e, f);
+        else
+            return null;
+    }
 }

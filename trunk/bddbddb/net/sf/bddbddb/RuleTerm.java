@@ -4,7 +4,11 @@
 package net.sf.bddbddb;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import jwutil.util.Assert;
+import org.jdom.Element;
 
 /**
  * A term in a Datalog rule.
@@ -95,6 +99,31 @@ public class RuleTerm {
      * @return  attribute of the given variable
      */
     public Attribute getAttribute(Variable v) {
-        return relation.getAttribute(getVariableIndex(v));
+        int index = getVariableIndex(v);
+        if (index < 0) return null;
+        return relation.getAttribute(index);
+    }
+    
+    public static RuleTerm fromXMLElement(Element e, Solver s, Map nameToVar) {
+        Relation r = s.getRelation(e.getAttributeValue("relation"));
+        List vars = new LinkedList();
+        for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
+            Element e2 = (Element) i.next();
+            Variable v = (Variable) nameToVar.get(e2.getName());
+            Domain d = r.getAttribute(vars.size()).getDomain();
+            if (v == null) nameToVar.put(e2.getName(), new Variable(e2.getName(), d));
+            Assert._assert(v.getDomain() == d);
+        }
+        return new RuleTerm(r, vars);
+    }
+    
+    public Element toXMLElement() {
+        Element e = new Element("ruleTerm");
+        e.setAttribute("relation", relation.toString());
+        for (Iterator i = variables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            e.addContent(new Element(v.toString()));
+        }
+        return e;
     }
 }

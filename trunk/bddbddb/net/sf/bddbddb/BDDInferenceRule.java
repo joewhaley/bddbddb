@@ -1064,7 +1064,7 @@ public class BDDInferenceRule extends InferenceRule {
             System.out.println("Complete order "+vOrder);
             time = fbo.tryOrder(true, vOrder);
             bestTime = Math.min(time, bestTime);
-            info2.registerNewTrial(o, time);
+            info2.registerNewTrial(o, time, info2.trials);
         }
         fbo.cleanup();
         
