@@ -136,6 +136,7 @@ public class BDDRelation extends Relation {
      */
     // Called after variable order is set.
     public void initialize2() {
+        Assert._assert(isInitialized);
         boolean is_equiv = solver.equivalenceRelations.values().contains(this);
         if (is_equiv) {
             BDDDomain d1 = (BDDDomain) domains.get(0);
@@ -189,6 +190,7 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void load(String filename) throws IOException {
+        Assert._assert(isInitialized);
         BDD r2 = solver.bdd.load(filename);
         if (r2 != null) {
             if (r2.isZero()) {
@@ -230,6 +232,7 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void loadTuples(String filename) throws IOException {
+        Assert._assert(isInitialized);
         BufferedReader in = null;
         try {
             in = new BufferedReader(new FileReader(filename));
@@ -282,6 +285,7 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void save(String filename) throws IOException {
+        Assert._assert(isInitialized);
         System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
         solver.bdd.save(filename, relation);
     }
@@ -292,6 +296,7 @@ public class BDDRelation extends Relation {
      * @see org.sf.bddbddb.Relation#saveNegated()
      */
     public void saveNegated() throws IOException {
+        Assert._assert(isInitialized);
         System.out.println("Relation " + this + ": " + relation.not().nodeCount() + " nodes");
         solver.bdd.save(solver.basedir + "not" + name + ".rbdd", relation.not());
     }
@@ -326,6 +331,7 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void saveTuples(String fileName, BDD relation) throws IOException {
+        Assert._assert(isInitialized);
         BufferedWriter dos = null;
         try {
             dos = new BufferedWriter(new FileWriter(fileName));
