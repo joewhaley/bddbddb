@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,11 +32,21 @@ public class Interactive {
         this.solver = s;
     }
     
-    public static void main(String[] args) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+    public static void main(String[] args) throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException {
         String solverName = System.getProperty("solver", "org.sf.bddbddb.BDDSolver");
         Solver dis = (Solver) Class.forName(solverName).newInstance();
-        dis.initializeBasedir("");
+        String file = "";
+        if (args.length > 0) {
+            file = args[0];
+        }
+        dis.initializeBasedir(file);
         Interactive a = new Interactive(dis);
+        if (file.length() > 0) {
+            MyReader in = new MyReader(new LineNumberReader(new FileReader(file)));
+            System.out.println("Reading "+file+"...");
+            dis.readDatalogProgram(in);
+            in.close();
+        }
         a.interactive();
     }
     
@@ -87,26 +98,40 @@ public class Interactive {
                     System.out.println("Log dumped. ("+log.size()+" lines)");
                     continue;
                 }
+                if (s.equalsIgnoreCase("solve")) {
+                    changed = true;
+                    solve();
+                    continue;
+                }
+                if (s.equalsIgnoreCase("rules")) {
+                    listRules();
+                    continue;
+                }
+                if (s.equalsIgnoreCase("relations")) {
+                    listRelations();
+                    continue;
+                }
+                if (s.startsWith("deleterule")) {
+                    if (s.length() <= 11) {
+                        System.out.println("Usage: deleterule #{,#}");
+                    } else {
+                        List rules = parseRules(s.substring(11).trim());
+                        if (rules != null && !rules.isEmpty()) {
+                            solver.rules.removeAll(rules);
+                        }
+                    }
+                    continue;
+                }
                 if (s.startsWith("save")) {
                     if (s.length() <= 5) {
                         System.out.println("Usage: save <relation>{,<relation}>");
                     } else {
-                        String relationName = s.substring(5);
-                        List relations = new LinkedList();
-                        while (s.length() != 0) {
-                            Relation r = solver.getRelation(s);
-                            if (r == null) {
-                                System.out.println("Unknown relation \""+s+"\"");
-                                continue outer;
-                            }
-                            relations.add(r);
-                            int i = s.indexOf(',');
-                            if (i == -1) break;
-                            s = s.substring(i).trim();
+                        List relations = parseRelations(s.substring(5).trim());
+                        if (relations != null && !relations.isEmpty()) {
+                            solver.relationsToDump.addAll(relations);
+                            solve();
+                            solver.relationsToDump.removeAll(relations);
                         }
-                        solver.relationsToDump.addAll(relations);
-                        solve();
-                        solver.relationsToDump.removeAll(relations);
                     }
                     continue;
                 }
@@ -136,6 +161,62 @@ public class Interactive {
         }
     }
 
+    List parseRelations(String s) {
+        List relations = new LinkedList();
+        while (s.length() != 0) {
+            int i = s.indexOf(',');
+            String relationName;
+            if (i == -1) relationName = s;
+            else relationName = s.substring(0, i);
+            Relation r = solver.getRelation(relationName);
+            if (r == null) {
+                System.out.println("Unknown relation \""+relationName+"\"");
+                return null;
+            }
+            relations.add(r);
+            if (i == -1) break;
+            s = s.substring(i+1).trim();
+        }
+        return relations;
+    }
+    
+    void listRules() {
+        int k = 0;
+        for (Iterator i = solver.rules.iterator(); i.hasNext(); ) {
+            InferenceRule r = (InferenceRule) i.next();
+            ++k;
+            System.out.println(k+": "+r);
+        }
+    }
+    
+    void listRelations() {
+        System.out.println(solver.nameToRelation.keySet());
+    }
+    
+    List parseRules(String s) {
+        String ruleNum = null;
+        try {
+            List rules = new LinkedList();
+            for (;;) {
+                int i = s.indexOf(',');
+                if (i == -1) ruleNum = s;
+                else ruleNum = s.substring(0, i);
+                int k = Integer.parseInt(ruleNum);
+                if (k < 1 || k > solver.rules.size()) {
+                    System.out.println("Rule number out of range: "+k);
+                    return null;
+                }
+                rules.add(solver.rules.get(k-1));
+                if (i == -1) break;
+                s = s.substring(i+1).trim();
+            }
+            return rules;
+        } catch (NumberFormatException x) {
+            System.out.println("Not a number: \""+ruleNum+"\"");
+        }
+        return null;
+    }
+    
     Set loadedRelations = new HashSet();
     
     void solve() throws IOException {
