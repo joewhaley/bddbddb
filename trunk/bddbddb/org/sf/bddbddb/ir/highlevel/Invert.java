@@ -1,52 +1,47 @@
-// Project.java, created Jun 29, 2004 12:25:38 PM 2004 by jwhaley
+// Invert.java, created Jul 1, 2004 11:04:17 PM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
- * Project
+ * Invert
  * 
- * @author jwhaley
+ * @author John Whaley
  * @version $Id$
  */
-public class Project extends Operation {
+public class Invert extends HighLevelOperation {
     Relation r0, r1;
-    List/* <Attribute> */attributes;
 
     /**
      * @param r0
      * @param r1
      */
-    public Project(Relation r0, Relation r1) {
+    public Invert(Relation r0, Relation r1) {
         super();
         this.r0 = r0;
         this.r1 = r1;
-        this.attributes = new LinkedList(r1.getAttributes());
-        this.attributes.removeAll(r0.getAttributes());
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see java.lang.Object#toString()
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
+     */
+    public Object visit(HighLevelOperationVisitor i) {
+        return i.visit(this);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#toString()
      */
     public String toString() {
-        return r0.toString() + " = project(" + r1.toString() + ","
-            + attributes.toString() + ")";
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
-     */
-    public Object visit(OperationVisitor i) {
-        return i.visit(this);
+        return r0.toString() + " = invert(" + r1.toString() + ")";
     }
 
     /*
@@ -65,5 +60,12 @@ public class Project extends Operation {
      */
     public List getSrcs() {
         return Collections.singletonList(r1);
+    }
+    
+    /**
+     * @return Returns the source relation.
+     */
+    public Relation getSrc() {
+        return r1;
     }
 }

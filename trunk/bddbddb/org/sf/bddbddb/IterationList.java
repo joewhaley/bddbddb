@@ -96,6 +96,10 @@ public class IterationList implements IterationElement {
         elements.add(elem);
     }
 
+    public void addElement(int j, IterationElement elem) {
+        elements.add(j, elem);
+    }
+
     public void removeElement(IterationElement elem) {
         elements.remove(elem);
     }
@@ -110,21 +114,6 @@ public class IterationList implements IterationElement {
 
     public boolean contains(IterationElement elem) {
         return getAllNestedElements().contains(elem);
-    }
-
-    public boolean update() {
-        boolean everChanged = false;
-        boolean changed;
-        do {
-            changed = false;
-            for (Iterator it = elements.iterator(); it.hasNext();) {
-                IterationElement elem = (IterationElement) it.next();
-                boolean b = elem.update();
-                changed = changed ? changed : b;
-                everChanged = everChanged ? everChanged : changed;
-            }
-        } while (changed && isLoop);
-        return everChanged;
     }
 
     public boolean interpret(Interpreter interpret) {

@@ -1,9 +1,3 @@
-/*
- * Created on Jul 5, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
 package org.sf.bddbddb.dataflow;
 
 import java.util.Iterator;
@@ -11,24 +5,24 @@ import java.util.List;
 import java.util.Map;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.IR;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.util.BitString;
 
 /**
  * @author Administrator
- * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
  */
 public class Liveness extends OperationProblem {
+    public IR ir;
     public LivenessFacts currentFacts;
     IterationList currentLocation;
     Operation lastOp;
     int numRelations;
     boolean TRACE = false;
 
-    public Liveness(int numRelations) {
-        this.numRelations = numRelations;
+    public Liveness(IR ir) {
+        this.ir = ir;
+        this.numRelations = ir.getNumberOfRelations();
     }
 
     public boolean direction() {
@@ -136,7 +130,7 @@ public class Liveness extends OperationProblem {
             StringBuffer sb = new StringBuffer();
             for (int i = 0; i < fact.size(); i++) {
                 if (fact.get(i)) {
-                    sb.append(Relation.idToRelation.get(new Integer(i)));
+                    sb.append(ir.getRelation(i));
                     sb.append(" ");
                 }
             }

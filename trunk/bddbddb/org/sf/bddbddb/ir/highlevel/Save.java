@@ -1,25 +1,25 @@
-// Free.java, created Jul 1, 2004 12:42:19 PM 2004 by jwhaley
+// Save.java, created Jul 3, 2004 12:54:37 PM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
- * Free
+ * Save
  * 
- * @author jwhaley
+ * @author John Whaley
  * @version $Id$
  */
-public class Free extends Operation {
+public class Save extends HighLevelOperation {
     Relation r;
 
     /**
      * @param r
      */
-    public Free(Relation r) {
+    public Save(Relation r) {
         super();
         this.r = r;
     }
@@ -27,9 +27,9 @@ public class Free extends Operation {
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
      */
-    public Object visit(OperationVisitor i) {
+    public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
 
@@ -39,7 +39,7 @@ public class Free extends Operation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return "free(" + r.toString() + ")";
+        return "save(" + r.toString() + ")";
     }
 
     /*
@@ -58,5 +58,12 @@ public class Free extends Operation {
      */
     public List getSrcs() {
         return Collections.singletonList(r);
+    }
+    
+    /**
+     * @return Returns the source relation.
+     */
+    public Relation getSrc() {
+        return r;
     }
 }

@@ -3,9 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.io.IOException;
 
 /**
@@ -18,8 +16,6 @@ public abstract class Relation {
     String name;
     List/* <Attribute> */attributes;
     Relation negated;
-    public static Map idToRelation = new HashMap();
-    static int relationNum;
     public int id;
 
     /**
@@ -28,12 +24,11 @@ public abstract class Relation {
      * @param name
      * @param attributes
      */
-    public Relation(String name, List attributes) {
+    public Relation(Solver solver, String name, List attributes) {
         super();
         this.name = name;
         this.attributes = attributes;
-        this.id = ++relationNum;
-        idToRelation.put(new Integer(this.id), this);
+        this.id = solver.registerRelation(this);
     }
 
     public abstract void initialize();

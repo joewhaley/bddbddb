@@ -11,23 +11,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.io.IOException;
 import java.io.PrintStream;
-import org.sf.bddbddb.dataflow.Liveness;
-import org.sf.bddbddb.dataflow.ConstantProp;
-import org.sf.bddbddb.dataflow.DataflowSolver;
-import org.sf.bddbddb.dataflow.Problem;
-import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
-import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
-import org.sf.bddbddb.dataflow.Liveness.LivenessFact;
-import org.sf.bddbddb.ir.BDDInterpreter;
-import org.sf.bddbddb.ir.Free;
-import org.sf.bddbddb.ir.Load;
-import org.sf.bddbddb.ir.Operation;
-import org.sf.bddbddb.ir.Save;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.DumpDotGraph;
 import org.sf.bddbddb.util.Filter;
@@ -48,14 +35,10 @@ public class Stratify {
     boolean USE_NESTED_SCCS = true;
     boolean TRACE;
     boolean TRACE_FULL = System.getProperty("tracestratify") != null;
-    boolean USE_IR = !System.getProperty("useir", "no").equals("no");
-    boolean FREE_DEAD = !System.getProperty("freedead", "no").equals("no");
-    boolean CONSTANTPROP = !System.getProperty("constantprop", "no").equals(
-        "no");
     PrintStream out;
-    Solver solver;
-    List/* <SCComponent> */firstSCCs;
-    MultiMap innerSCCs;
+    public Solver solver;
+    public List/* <SCComponent> */firstSCCs;
+    public MultiMap innerSCCs;
 
     Stratify(Solver solver) {
         this.solver = solver;
@@ -405,7 +388,7 @@ public class Stratify {
         return anyChange;
     }
 
-    public void solve() {
+    public void stratify() {
         Iterator i;
         Set inputs = new HashSet();
         inputs.addAll(solver.relationsToLoad);
@@ -432,104 +415,20 @@ public class Stratify {
             outputs.addAll(((Dot) i.next()).getUsedRelations());
         }
         stratify(solver.rules, inputs, outputs);
-        if (USE_IR) {
-            IterationFlowGraph ifg = new IterationFlowGraph(solver.rules,
-                firstSCCs, innerSCCs);
-            IterationList list = ifg.expand();
-            // Add load operations.
-            if (!solver.relationsToLoad.isEmpty()) {
-                Assert._assert(!list.isLoop());
-                IterationList loadList = new IterationList(false);
-                for (Iterator j = solver.relationsToLoad.iterator(); j
-                    .hasNext();) {
-                    Relation r = (Relation) j.next();
-                    loadList.elements.add(new Load(r));
-                }
-                list.elements.add(0, loadList);
-            }
-            // Add save operations.
-            if (!solver.relationsToDump.isEmpty()) {
-                Assert._assert(!list.isLoop());
-                IterationList saveList = new IterationList(false);
-                for (Iterator j = solver.relationsToDump.iterator(); j
-                    .hasNext();) {
-                    Relation r = (Relation) j.next();
-                    saveList.elements.add(new Save(r));
-                }
-                list.elements.add(saveList);
-            }
-            if (CONSTANTPROP) {
-                DataflowSolver df_solver = new DataflowSolver();
-                Problem problem = new ConstantProp();
-                df_solver.solve(problem, list);
-                DataflowIterator di = df_solver.getIterator(problem, list);
-                while (di.hasNext()) {
-                    Object o = di.next();
-                    if (TRACE) System.out.println("Next: " + o);
-                    if (o instanceof Operation) {
-                        Operation op = (Operation) o;
-                        ConstantPropFacts f = (ConstantPropFacts) di.getFact();
-                        Operation op2 = ((ConstantProp) problem)
-                            .simplify(op, f);
-                        if (op != op2) {
-                            if (TRACE) System.out.println("Replacing " + op
-                                + " with " + op2);
-                            di.set(op2);
-                        }
-                    } else {
-                        IterationList b = (IterationList) o;
-                        di.enter(b);
-                    }
-                }
-            }
-            if (FREE_DEAD) {
-                DataflowSolver df_solver = new DataflowSolver();
-                Liveness problem = new Liveness(Relation.relationNum);
-                df_solver.solve(problem, list);
-                DataflowIterator di = df_solver.getIterator(problem, list);
-                List srcs = new LinkedList();
-                doLiveness(list, srcs, problem);
-            }
-            BDDInterpreter interpret = new BDDInterpreter();
-            list.interpret(interpret);
-        } else {
-            i = firstSCCs.iterator();
-            for (int a = 1; i.hasNext(); ++a) {
-                SCComponent first = (SCComponent) i.next();
-                if (solver.NOISY) out.println("Solving stratum #" + a + "...");
-                for (;;) {
-                    iterate(first, false);
-                    if (!again) break;
-                }
+    }
+    
+    public void solve() {
+        Iterator i = firstSCCs.iterator();
+        for (int a = 1; i.hasNext(); ++a) {
+            SCComponent first = (SCComponent) i.next();
+            if (solver.NOISY) out.println("Solving stratum #" + a + "...");
+            for (;;) {
+                iterate(first, false);
+                if (!again) break;
             }
         }
     }
 
-    public void doLiveness(IterationList list, List srcs, Liveness p) {
-        ListIterator it = list.iterator();
-        while (it.hasNext()) {
-            Object o = it.next();
-            if (TRACE) System.out.println("Next: " + o);
-            if (o instanceof Operation) {
-                Operation op = (Operation) o;
-                LivenessFact fact = (LivenessFact) p.currentFacts.getFact(op);
-                for (Iterator it2 = srcs.iterator(); it2.hasNext();) {
-                    Relation r = (Relation) it2.next();
-                    if (!fact.isAlive(r)) {
-                        Free free = new Free(r);
-                        if (TRACE) System.out.println("Adding a free for " + r);
-                        it.previous();
-                        it.add(free);
-                        it.next();
-                    }
-                }
-                srcs = op.getSrcs();
-            } else {
-                IterationList b = (IterationList) o;
-                doLiveness(b, srcs, p);
-            }
-        }
-    }
     static boolean DUMP_DOTGRAPH = !System.getProperty("dumprulegraph", "no")
         .equals("no");
 

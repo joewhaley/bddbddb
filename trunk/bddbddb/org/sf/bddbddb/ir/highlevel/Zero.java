@@ -1,35 +1,35 @@
-// Load.java, created Jul 4, 2004 3:47:13 AM by joewhaley
+// Zero.java, created Jul 1, 2004 11:10:38 PM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
- * Load
+ * Zero
  * 
  * @author John Whaley
  * @version $Id$
  */
-public class Load extends Operation {
-    Relation r0;
+public class Zero extends HighLevelOperation {
+    Relation r;
 
     /**
-     * @param r0
+     * @param r
      */
-    public Load(Relation r0) {
+    public Zero(Relation r) {
         super();
-        this.r0 = r0;
+        this.r = r;
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
      */
-    public Object visit(OperationVisitor i) {
+    public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
 
@@ -39,7 +39,7 @@ public class Load extends Operation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = load()";
+        return r.toString() + " = zero()";
     }
 
     /*
@@ -48,7 +48,7 @@ public class Load extends Operation {
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
-        return r0;
+        return r;
     }
 
     /*

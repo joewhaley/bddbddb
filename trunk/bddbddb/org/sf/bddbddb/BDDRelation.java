@@ -36,7 +36,7 @@ public class BDDRelation extends Relation {
      * @param attributes
      */
     public BDDRelation(BDDSolver solver, String name, List attributes) {
-        super(name, attributes);
+        super(solver, name, attributes);
         this.solver = solver;
     }
 
@@ -546,7 +546,7 @@ public class BDDRelation extends Relation {
      */
     public Relation copy() {
         List a = new LinkedList(attributes);
-        BDDRelation that = new BDDRelation(solver, name + '\'', a);
+        Relation that = solver.createRelation(name + '\'', a);
         return that;
     }
 

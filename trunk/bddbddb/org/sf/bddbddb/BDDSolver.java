@@ -20,8 +20,9 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
-import org.sf.bddbddb.dataflow.ConstantProp;
-import org.sf.bddbddb.dataflow.DataflowSolver;
+import org.sf.bddbddb.ir.BDDInterpreter;
+import org.sf.bddbddb.ir.IR;
+import org.sf.bddbddb.ir.Interpreter;
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
@@ -54,6 +55,7 @@ public class BDDSolver extends Solver {
      *  
      */
     public BDDSolver() {
+        super();
         System.out.println("Initializing BDD library (" + BDDNODES
             + " nodes, cache size " + BDDCACHE + ", min free " + BDDMINFREE
             + "%)");
@@ -204,7 +206,14 @@ public class BDDSolver extends Solver {
      */
     public void solve() {
         Stratify s = new Stratify(this);
-        s.solve();
+        s.stratify();
+        if (USE_IR) {
+            IR ir = IR.create(s);
+            ir.optimize();
+            ir.interpret();
+        } else {
+            s.solve();
+        }
     }
 
     /*
@@ -422,9 +431,16 @@ public class BDDSolver extends Solver {
      *      java.util.List, java.util.List, java.util.List)
      */
     Relation createRelation(String name, List attributes) {
+        while (nameToRelation.containsKey(name)) {
+            name = mungeName(name);
+        }
         return new BDDRelation(this, name, attributes);
     }
 
+    String mungeName(String name) {
+        return name+'#'+relations.size();
+    }
+    
     /*
      * (non-Javadoc)
      * 
@@ -621,4 +637,12 @@ public class BDDSolver extends Solver {
         System.out.println("FINAL_NODES=" + final_node_size);
         super.reportStats();
     }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#getInterpreter()
+     */
+    public Interpreter getInterpreter() {
+        BDDInterpreter interpret = new BDDInterpreter(this.bdd);
+        return interpret;
+   }
 }
