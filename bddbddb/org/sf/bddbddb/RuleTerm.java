@@ -57,4 +57,35 @@ public class RuleTerm {
     public List getVariables() {
         return variables;
     }
+    
+    /**
+     * @return
+     */
+    public int numberOfVariables() {
+        return variables.size();
+    }
+    
+    /**
+     * @param i
+     * @return
+     */
+    public Variable getVariable(int i) {
+        return (Variable) variables.get(i);
+    }
+    
+    /**
+     * @param v
+     * @return
+     */
+    public int getVariableIndex(Variable v) {
+        return variables.indexOf(v);
+    }
+
+    /**
+     * @param v
+     * @return
+     */
+    public Attribute getAttribute(Variable v) {
+        return relation.getAttribute(getVariableIndex(v));
+    }
 }
