@@ -219,6 +219,7 @@ public abstract class InferenceRule {
             if (s.TRACE) s.out.println("Necessary variables: "+newRule.necessaryVariables);
             //s.rules.add(newRule);
             newRules.add(newRule);
+            newRule.copyOptions(this);
             // Now include the bottom of the new rule on the top of our rule.
             top.add(0, newBottom);
             // Reinitialize this rule because the terms have changed.
@@ -265,6 +266,9 @@ public abstract class InferenceRule {
             }
             if (vals.isEmpty()) i.remove();
         }
+    }
+    
+    public void copyOptions(InferenceRule r) {
     }
     
     public static class DependenceNavigator implements Navigator {

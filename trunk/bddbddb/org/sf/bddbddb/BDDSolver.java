@@ -61,8 +61,9 @@ public class BDDSolver extends Solver {
     
     public void initialize() {
         loadBDDDomainInfo();
-        setVariableOrdering();
         super.initialize();
+        setVariableOrdering();
+        initialize2(); // Do some more initialization after variable ordering is set.
     }
     
     void loadBDDDomainInfo() {
@@ -82,6 +83,21 @@ public class BDDSolver extends Solver {
         } catch (IOException x) {
         } finally {
             if (in != null) try { in.close(); } catch (IOException _) { }
+        }
+    }
+    
+    public void initialize2() {
+        for (Iterator i = nameToRelation.values().iterator(); i.hasNext(); ) {
+            BDDRelation r = (BDDRelation) i.next();
+            r.initialize2();
+        }
+        for (Iterator i = equivalenceRelations.values().iterator(); i.hasNext(); ) {
+            BDDRelation r = (BDDRelation) i.next();
+            r.initialize2();
+        }
+        for (Iterator i = notequivalenceRelations.values().iterator(); i.hasNext(); ) {
+            BDDRelation r = (BDDRelation) i.next();
+            r.initialize2();
         }
     }
     
@@ -108,7 +124,7 @@ public class BDDSolver extends Solver {
                 domains.remove(dName);
                 continue;
             }
-            System.out.println("Adding missing domain \""+dName+"\" from bddvarorder.");
+            System.out.println("Adding missing domain \""+dName+"\" to bddvarorder.");
             String baseName = dName;
             for (;;) {
                 char c = baseName.charAt(baseName.length()-1);
