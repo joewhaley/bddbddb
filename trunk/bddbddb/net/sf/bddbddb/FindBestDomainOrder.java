@@ -1346,7 +1346,7 @@ public class FindBestDomainOrder {
      
  }
  
- // JDK1.4 only.
+ // Since JDK1.4 only.
  public static final int compare(double d1, double d2) {
      if (d1 < d2)
          return -1;       // Neither val is NaN, thisVal is smaller
@@ -1387,6 +1387,7 @@ public class FindBestDomainOrder {
      }
      
      public Discretization threshold(double thres, int index) {
+         if (numInstances() == 0) return null;
          FastVector clusterValues = new FastVector(2);
          TrialInstances [] buckets = new TrialInstances[2];
          FastVector origAttributes = (FastVector) this.m_Attributes.copy(); //shared across all buckets
@@ -1423,6 +1424,7 @@ public class FindBestDomainOrder {
      }
      
      public Discretization discretize(Discretize d, int numBins, int index) {
+         if (numInstances() <= 1) return null;
          try {
              int classIndex = this.classIndex();
              setClassIndex(-1); // clear class instance for discretization.
@@ -1497,13 +1499,13 @@ public class FindBestDomainOrder {
  }
  
  TrialInstances buildVarInstances(InferenceRule ir, List allVars) {
-     if (allVars.size() <= 1) return null;
      FastVector attributes = new FastVector();
      WekaInterface.addAllPairs(attributes, allVars);
      attributes.addElement(new weka.core.Attribute("score"));
      int capacity = 30;
      OrderTranslator filter = new FilterTranslator(allVars);
      TrialInstances data = new TrialInstances("Var Ordering Constraints", attributes, capacity);
+     if (allVars.size() <= 1) return data;
      for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
          TrialCollection tc2 = (TrialCollection) i.next();
          InferenceRule ir2 = tc2.getRule(solver);
@@ -1517,12 +1519,12 @@ public class FindBestDomainOrder {
  TrialInstances buildAttribInstances(InferenceRule ir, List allVars) {
      List allAttribs = VarToAttribMap.convert(allVars, ir);
      if (TRACE > 1) out.println("Attribs: "+allAttribs);
-     if (allAttribs.size() <= 1) return null;
      FastVector attributes = new FastVector();
      WekaInterface.addAllPairs(attributes, allAttribs);
      attributes.addElement(new weka.core.Attribute("score"));
      int capacity = 30;
      TrialInstances data = new TrialInstances("Attribute Ordering Constraints", attributes, capacity);
+     if (allAttribs.size() <= 1) return data;
      for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
          TrialCollection tc2 = (TrialCollection) i.next();
          InferenceRule ir2 = tc2.getRule(solver);
@@ -1537,12 +1539,12 @@ public class FindBestDomainOrder {
  TrialInstances buildDomainInstances(InferenceRule ir, List allVars) {
      List allDomains = AttribToDomainMap.convert(VarToAttribMap.convert(allVars, ir));
      if (TRACE > 1) out.println("Domains: "+allDomains);
-     if (allDomains.size() <= 1) return null;
      FastVector attributes = new FastVector();
      WekaInterface.addAllPairs(attributes, allDomains);
      attributes.addElement(new weka.core.Attribute("score"));
      int capacity = 30;
      TrialInstances data = new TrialInstances("Domain Ordering Constraints", attributes, capacity);
+     if (allDomains.size() <= 1) return data;
      for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
          TrialCollection tc2 = (TrialCollection) i.next();
          InferenceRule ir2 = tc2.getRule(solver);
@@ -1601,22 +1603,24 @@ public class FindBestDomainOrder {
      return weight;
  }
  public void adjustWeights(TrialInstances vData, TrialInstances aData, TrialInstances dData){
-     varClassWeight = computeWeight(TrialPrediction.VARIABLE, vData);
-     attrClassWeight = computeWeight(TrialPrediction.ATTRIBUTE, aData);
-     domClassWeight = computeWeight(TrialPrediction.DOMAIN, dData);
- 
+     if (vData != null)
+         varClassWeight = computeWeight(TrialPrediction.VARIABLE, vData);
+     if (aData != null)
+         attrClassWeight = computeWeight(TrialPrediction.ATTRIBUTE, aData);
+     if (dData != null)
+         domClassWeight = computeWeight(TrialPrediction.DOMAIN, dData);
  }
  public static int NUM_CV_FOLDS = 10;
 
  public double genAccuracy(String cClassName, Instances data0) {
+     if (data0.numInstances() < NUM_CV_FOLDS)
+         return Double.NaN; //more folds than elements
+     if (data0.numInstances() == 0)
+         return Double.NaN; //no instances
      Instances data = new Instances(data0);
      //should stratify
      data.randomize(new Random(System.currentTimeMillis()));
      Assert._assert(data.classAttribute() != null);
-     if (data.numInstances() < NUM_CV_FOLDS)
-         return Double.NaN; //more folds than elements
-     if (data.numInstances() == 0)
-         return Double.NaN; //no instances
      double[] estimates = new double[NUM_CV_FOLDS];
      for (int i = 0; i < NUM_CV_FOLDS; ++i) {
          Instances trainData = data.trainCV(NUM_CV_FOLDS, i);
@@ -1722,9 +1726,9 @@ public class FindBestDomainOrder {
          out.println("Domain classifier: "+dClassifier);
      }
      
-     double [] vBucketMeans = new double[vDis.buckets.length];
-     double [] aBucketMeans = new double[aDis.buckets.length];
-     double [] dBucketMeans = new double[dDis.buckets.length];
+     double [] vBucketMeans = new double[vDis == null ? 0 : vDis.buckets.length];
+     double [] aBucketMeans = new double[aDis == null ? 0 : aDis.buckets.length];
+     double [] dBucketMeans = new double[dDis == null ? 0 : dDis.buckets.length];
      if(TRACE > 2) out.print("Var Bucket Means: ");
      for(int i = 0; i < vBucketMeans.length; ++i){
          vBucketMeans[i] = vDis.buckets[i].meanOrMode(vDis.buckets[i].classIndex());
@@ -1771,7 +1775,7 @@ public class FindBestDomainOrder {
              } catch (Exception x) {
                  out.println("Exception while predicting "+vInst+" "+o_v+":\n"+x);
              }
-             if (TRACE > 2) out.println("Order "+vInst.getOrder()+" score = "+vScore);
+             if (TRACE > 2) out.println("Order "+vInst.getOrder()+" class = "+vClass);
          }
          
          Order o_a = v2a.translate(o_v);
@@ -1782,7 +1786,7 @@ public class FindBestDomainOrder {
              } catch (Exception x) {
                  out.println("Exception while predicting "+aInst+" "+o_a+":\n"+x);
              }
-             if (TRACE > 2) out.println("Order "+aInst.getOrder()+" score = "+aScore);
+             if (TRACE > 2) out.println("Order "+aInst.getOrder()+" class = "+aClass);
          }
          
          if (dClassifier != null) {
@@ -1793,7 +1797,7 @@ public class FindBestDomainOrder {
              } catch (Exception x) {
                  out.println("Exception while predicting "+dInst+" "+o_d+":\n"+x);
              }
-             if (TRACE > 2) out.println("Order "+dInst.getOrder()+" score = "+dScore);
+             if (TRACE > 2) out.println("Order "+dInst.getOrder()+" class = "+dClass);
          }
          
          vScore = vClass == NO_CLASS ? NO_CLASS_SCORE : vBucketMeans[(int) vClass];
@@ -1811,16 +1815,16 @@ public class FindBestDomainOrder {
              double vLowerBound,vUpperBound, aLowerBound,aUpperBound, dLowerBound, dUpperBound;
              vLowerBound = vUpperBound = aLowerBound = aUpperBound = dLowerBound = dUpperBound = -1;
             
-             if (!Double.isNaN(vClass) && vClass != NO_CLASS){
+             if (vDis != null && !Double.isNaN(vClass) && vClass != NO_CLASS){
                  vLowerBound = vDis.cutPoints == null || vClass == 0 ? 0 : vDis.cutPoints[(int) vClass - 1];
                  vUpperBound = vDis.cutPoints == null || vClass == vDis.cutPoints.length ?  Double.MAX_VALUE : vDis.cutPoints[(int) vClass];  
              }
             
-             if (!Double.isNaN(aClass) && aClass != NO_CLASS){
+             if (aDis != null && !Double.isNaN(aClass) && aClass != NO_CLASS){
                  aLowerBound = aDis.cutPoints == null || aClass == 0 ? 0 : aDis.cutPoints[(int) aClass - 1];
                   aUpperBound = aDis.cutPoints == null || aClass == aDis.cutPoints.length ? Double.MAX_VALUE : aDis.cutPoints[(int) aClass];
              }
-             if(!Double.isNaN(dClass) && dClass != NO_CLASS){
+             if (dDis != null && !Double.isNaN(dClass) && dClass != NO_CLASS){
                  dLowerBound = dDis.cutPoints == null || dClass == 0 ? 0 : dDis.cutPoints[(int) dClass - 1];
                  dUpperBound = dDis.cutPoints != null || dClass == dDis.cutPoints.length ? Double.MAX_VALUE : dDis.cutPoints[(int) dClass];
              }
