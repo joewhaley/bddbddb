@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.ListIterator;
 import org.sf.bddbddb.ir.Interpreter;
 import org.sf.bddbddb.ir.Operation;
+import org.sf.bddbddb.ir.dynamic.IRBoolean;
 import org.sf.javabdd.BDD;
 
 /**
@@ -19,17 +20,32 @@ import org.sf.javabdd.BDD;
  */
 public class IterationList implements IterationElement {
     List /* IterationElement */elements;
+
     List allNestedElems = null;
-    boolean isLoop = false;
+
+    //    boolean isLoop = false;
+    IRBoolean loopBool;
+
+    IterationList loopEdge;
+
     int index;
+
     static int blockNumber;
 
     public IterationList(boolean isLoop) {
         this(isLoop, new LinkedList());
     }
 
+    public IterationList getLoopEdge() {
+        return loopEdge;
+    }
+
     public IterationList(boolean isLoop, List elems) {
-        this.isLoop = isLoop;
+        //       this.isLoop = isLoop;
+        if (isLoop) {
+            loopBool = new IRBoolean(toString() + "_bool", false);
+            loopEdge = new IterationList(false);
+        }
         this.elements = elems;
         this.index = ++blockNumber;
     }
@@ -42,7 +58,7 @@ public class IterationList implements IterationElement {
             if (o instanceof IterationList) {
                 IterationList list = (IterationList) o;
                 newElements.add(list.unroll());
-            } else if (isLoop) {
+            } else if (isLoop()) {
                 InferenceRule rule = (InferenceRule) o;
                 List ir = rule.generateIR();
                 newElements.addAll(ir);
@@ -105,11 +121,11 @@ public class IterationList implements IterationElement {
     }
 
     public String toString() {
-        return (isLoop ? "loop" : "list") + index;
+        return (isLoop() ? "loop" : "list") + index;
     }
 
     public String toString_full() {
-        return (isLoop ? "(loop) " : "") + elements.toString();
+        return (isLoop() ? "(loop) " : "") + elements.toString();
     }
 
     public boolean contains(IterationElement elem) {
@@ -131,7 +147,7 @@ public class IterationList implements IterationElement {
                     }
                 } else {
                     Operation op = (Operation) o;
-                    BDDRelation dest = (BDDRelation) op.getDest();
+                    BDDRelation dest = (BDDRelation) op.getRelationDest();
                     BDD oldValue = null;
                     Relation changed = null;
                     if (!change && dest != null && dest.getBDD() != null) {
@@ -148,13 +164,13 @@ public class IterationList implements IterationElement {
             }
             if (!change) break;
             everChanged = true;
-            if (!isLoop) break;
+            if (!isLoop()) break;
         }
         return everChanged;
     }
 
     public boolean isLoop() {
-        return isLoop;
+        return loopBool != null;
     }
 
     public ListIterator iterator() {
@@ -164,6 +180,7 @@ public class IterationList implements IterationElement {
     public ListIterator reverseIterator() {
         return new ReverseIterator(elements.listIterator(elements.size()));
     }
+
     class ReverseIterator implements ListIterator {
         ListIterator it;
 
@@ -223,5 +240,12 @@ public class IterationList implements IterationElement {
             allNestedElems = list;
         }
         return allNestedElems;
+    }
+
+    /**
+     * @return Returns the loopBool.
+     */
+    public IRBoolean getLoopBool() {
+        return loopBool;
     }
 }

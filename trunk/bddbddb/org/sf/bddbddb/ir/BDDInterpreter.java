@@ -9,6 +9,7 @@ import java.util.Map;
 import java.io.IOException;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
+import org.sf.bddbddb.ir.dynamic.If;
 import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Difference;
 import org.sf.bddbddb.ir.highlevel.Free;
@@ -41,14 +42,14 @@ public class BDDInterpreter implements Interpreter {
     boolean TRACE = System.getProperty("traceinterpreter") != null;
 
     BDDFactory factory;
-    
+
     /**
      * @param factory
      */
     public BDDInterpreter(BDDFactory factory) {
         this.factory = factory;
     }
-    
+
     protected BDD makeDomainsMatch(BDD b, BDDRelation r1, BDDRelation r2) {
         boolean any = false;
         BDDPairing pair = factory.makePair();
@@ -74,7 +75,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Join)
      */
     public Object visit(Join op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc1();
         BDDRelation r2 = (BDDRelation) op.getSrc2();
         BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
@@ -92,7 +93,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Project)
      */
     public Object visit(Project op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         List attributes = op.getAttributes();
         BDD b = factory.one();
@@ -117,7 +118,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Rename)
      */
     public Object visit(Rename op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         Map renames = op.getRenameMap();
         boolean any = false;
@@ -151,7 +152,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Union)
      */
     public Object visit(Union op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc1();
         BDDRelation r2 = (BDDRelation) op.getSrc2();
         BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
@@ -169,7 +170,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Difference)
      */
     public Object visit(Difference op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc1();
         BDDRelation r2 = (BDDRelation) op.getSrc2();
         BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
@@ -187,13 +188,13 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.JoinConstant)
      */
     public Object visit(JoinConstant op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         Attribute a = op.getAttribute();
         long value = op.getValue();
         BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
-        if (TRACE) System.out.println("   And " + r1 + ","
-            + r0.getBDDDomain(a) + ":" + value);
+        if (TRACE) System.out.println("   And " + r1 + "," + r0.getBDDDomain(a)
+            + ":" + value);
         r.andWith(r0.getBDDDomain(a).ithVar(value));
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -206,11 +207,11 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.GenConstant)
      */
     public Object visit(GenConstant op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         Attribute a = op.getAttribute();
         long value = op.getValue();
-        if (TRACE) System.out.println("   Ithvar " + r0.getBDDDomain(a)
-            + ":" + value);
+        if (TRACE) System.out.println("   Ithvar " + r0.getBDDDomain(a) + ":"
+            + value);
         BDD r = r0.getBDDDomain(a).ithVar(value);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -237,7 +238,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Zero)
      */
     public Object visit(Zero op) {
-        BDDRelation r = (BDDRelation) op.getDest();
+        BDDRelation r = (BDDRelation) op.getRelationDest();
         BDD b = factory.zero();
         if (TRACE) System.out.println("   Zero " + r);
         r.setBDD(b);
@@ -251,7 +252,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Universe)
      */
     public Object visit(Universe op) {
-        BDDRelation r = (BDDRelation) op.getDest();
+        BDDRelation r = (BDDRelation) op.getRelationDest();
         BDD b = factory.one();
         for (Iterator i = r.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
@@ -270,7 +271,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Invert)
      */
     public Object visit(Invert op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         if (TRACE) System.out.println("   Not " + r1);
         BDD r = makeDomainsMatch(r1.getBDD().not(), r1, r0);
@@ -285,7 +286,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelInterpreter#visit(org.sf.bddbddb.ir.Copy)
      */
     public Object visit(Copy op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         if (TRACE) System.out.println("   Id " + r1);
         BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
@@ -300,7 +301,7 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Load)
      */
     public Object visit(Load op) {
-        BDDRelation r = (BDDRelation) op.getDest();
+        BDDRelation r = (BDDRelation) op.getRelationDest();
         try {
             r.load();
         } catch (IOException x) {
@@ -322,11 +323,13 @@ public class BDDInterpreter implements Interpreter {
         return null;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.ApplyEx)
      */
     public Object visit(ApplyEx op) {
-        BDDRelation r0 = (BDDRelation) op.getDest();
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc1();
         BDDRelation r2 = (BDDRelation) op.getSrc2();
         BDDOp bddop = op.getOp();
@@ -338,6 +341,10 @@ public class BDDInterpreter implements Interpreter {
         b1.free(); b2.free(); b3.free();
         r0.setBDD(b);
         if (TRACE) System.out.println("   ---> Nodes: " + b.nodeCount());
+        return null;
+    }
+
+    public Object visit(If op) {
         return null;
     }
 }
