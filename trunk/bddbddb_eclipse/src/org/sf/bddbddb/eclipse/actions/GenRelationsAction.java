@@ -88,6 +88,7 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
                         MessageDialog.openInformation(window.getShell(),
                             "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());   
                     }
+
                     path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
                     path = path.append(o.getJavaProject().getOutputLocation());
                     path = path.makeAbsolute();

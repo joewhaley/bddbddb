@@ -12,7 +12,7 @@ import java.io.PrintStream;
 /**
  * Based on http://www.javaworld.com/javaworld/jw-12-2000/jw-1229-traps.html
  * 
- * @author jimz
+ * @author jzhuang
  */
 
 public class StreamGobbler extends Thread
