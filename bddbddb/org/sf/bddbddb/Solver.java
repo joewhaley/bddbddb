@@ -34,7 +34,8 @@ public abstract class Solver {
         SystemProperties.read("solver.properties");
     }
     boolean NOISY = !System.getProperty("noisy", "yes").equals("no");
-    boolean SPLIT_ALL_RULES = false;
+    boolean SPLIT_ALL_RULES = !System.getProperty("split_all_rules", "no").equals("no");
+    boolean SPLIT_NO_RULES = !System.getProperty("split_no_rules", "no").equals("no");
     boolean REPORT_STATS = true;
     boolean TRACE = System.getProperty("tracesolve") != null;
     boolean TRACE_FULL = System.getProperty("fulltracesolve") != null;
@@ -589,7 +590,7 @@ public abstract class Solver {
     InferenceRule parseRuleOptions(int lineNum, String s, InferenceRule ir, MyStringTokenizer st) {
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
-            if (option.equals("split")) {
+            if (option.equals("split") && !SPLIT_NO_RULES) {
                 if (TRACE) out.println("Splitting rule " + ir);
                 ir.split = true;
             } else if (option.equals("number")) {
@@ -776,7 +777,7 @@ public abstract class Solver {
         List newRules = new LinkedList();
         for (Iterator i = rules.iterator(); i.hasNext();) {
             InferenceRule r = (InferenceRule) i.next();
-            if (SPLIT_ALL_RULES || r.split) newRules.addAll(r.split(rules.indexOf(r)));
+            if (!SPLIT_NO_RULES && (SPLIT_ALL_RULES || r.split)) newRules.addAll(r.split(rules.indexOf(r)));
         }
         rules.addAll(newRules);
     }
