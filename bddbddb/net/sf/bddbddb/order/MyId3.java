@@ -16,8 +16,11 @@ import weka.core.UnsupportedClassTypeException;
 import weka.core.Utils;
 
 /**
- * Class implementing an Id3 decision tree classifier. For more
- * information, see<p>
+ * Class implementing an Id3 decision tree classifier.
+ * This version differs from the weka one in that it supports
+ * missing attributes.
+ * 
+ * For more information, see<p>
  *
  * R. Quinlan (1986). <i>Induction of decision
  * trees</i>. Machine Learning. Vol.1, No.1, pp. 81-106.<p>
@@ -49,8 +52,8 @@ public class MyId3 extends Classifier {
   public String globalInfo() {
 
     return  "Class for constructing an unpruned decision tree based on the ID3 "
-      + "algorithm. Can only deal with nominal attributes. No missing values "
-      + "allowed. Empty leaves may result in unclassified instances. For more "
+      + "algorithm. Can only deal with nominal attributes. "
+      + "Empty leaves may result in unclassified instances. For more "
       + "information see: \n\n"
       + " R. Quinlan (1986). \"Induction of decision "
       + "trees\". Machine Learning. Vol.1, No.1, pp. 81-106";
@@ -101,7 +104,6 @@ public class MyId3 extends Classifier {
     while (attEnum.hasMoreElements()) {
       Attribute att = (Attribute) attEnum.nextElement();
       infoGains[att.index()] = computeInfoGain(data, att);
-      System.out.println("infoGains["+att+"] = "+infoGains[att.index()]);
     }
     m_Attribute = data.attribute(Utils.maxIndex(infoGains));
     
@@ -112,7 +114,7 @@ public class MyId3 extends Classifier {
         splitData = splitData(data, m_Attribute);
         for (int i = 0; i < splitData.length; ++i) {
             if (splitData[i].numInstances() == data.numInstances()) {
-                System.out.println("When splitting on attrib "+m_Attribute+", child "+i+" is same size as current, making into leaf.");
+                //System.out.println("When splitting on attrib "+m_Attribute+", child "+i+" is same size as current, making into leaf.");
                 makeLeaf = true;
                 break;
             }
