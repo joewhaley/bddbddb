@@ -117,7 +117,7 @@ public class RelationGraph implements Graph {
          * @see java.lang.Object#equals(java.lang.Object)
          */
         public boolean equals(GraphNode that) {
-            return this.v == that.v && this.number == that.number;
+            return this.v == that.v && this.number.equals(that.number);
         }
 
         /* (non-Javadoc)
