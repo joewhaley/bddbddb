@@ -898,9 +898,12 @@ public abstract class Solver {
      * @param st
      * @return
      */
-    RuleTerm parseRuleTerm(int lineNum, String s, Map/* <String,Variable> */nameToVar, MyStringTokenizer st) {
+    RuleTerm parseRuleTerm(int lineNum, String s, Map/*<String,Variable>*/ nameToVar, MyStringTokenizer st) {
         boolean negated = false;
         String relationName = nextToken(st);
+        if (relationName.equals("?")) {
+            return null;
+        }
         if (relationName.equals("!")) {
             negated = true;
             relationName = nextToken(st);
@@ -1037,7 +1040,7 @@ public abstract class Solver {
      * @param rt
      * @return
      */
-    List/*<InferenceRule>*/ comeFromQuery(RuleTerm rt) {
+    List/*<InferenceRule>*/ comeFromQuery(RuleTerm rt, List extras) {
         List newRules = new LinkedList();
         
         Relation r = rt.relation;
@@ -1145,7 +1148,19 @@ public abstract class Solver {
                 outputError(lineNum, st.getPosition(), s, "Expected \":-\", got \"" + sep + "\"");
                 throw new IllegalArgumentException();
             }
-            return comeFromQuery(rt);
+            List/*<RuleTerm>*/ extras = new LinkedList();
+            for (;;) {
+                RuleTerm rt2 = parseRuleTerm(lineNum, s, nameToVar, st);
+                if (rt2 == null) break;
+                extras.add(rt2);
+                String sep2 = nextToken(st);
+                if (sep2.equals("?")) break;
+                if (!sep2.equals(",")) {
+                    outputError(lineNum, st.getPosition(), s, "Expected \",\", got \"" + sep2 + "\"");
+                    throw new IllegalArgumentException();
+                }
+            }
+            return comeFromQuery(rt, extras);
         }
         List/*<RuleTerm>*/ terms = new LinkedList();
         Map varMap = new LinkedHashMap();
