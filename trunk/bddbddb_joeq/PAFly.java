@@ -935,7 +935,7 @@ public class PAFly {
                 return null;
             }
         } catch (NoClassDefFoundError e) {
-            System.out.println(stringConst+" : "+e);
+            //System.out.println(stringConst+" : "+e);
         } catch (java.lang.ClassCircularityError e) {
             System.out.println(stringConst+" CCE: "+e);
         }
