@@ -4,6 +4,7 @@
   <name>bddbddb</name>
   <id>bddbddb</id>
   <currentVersion>1.0</currentVersion>
+  <logo>/images/bddbddb_logo_1.png</logo> 
   <organization>
     <name>Stanford SUIF Compiler Group</name>
     <url>http://sourceforge.net/</url>
