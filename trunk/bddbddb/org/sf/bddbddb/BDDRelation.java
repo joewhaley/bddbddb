@@ -40,6 +40,7 @@ public class BDDRelation extends Relation {
     public BDDRelation(BDDSolver solver, String name, List attributes) {
         super(solver, name, attributes);
         this.solver = solver;
+        if (solver.TRACE) solver.out.println("Created BDDRelation "+this);
     }
 
     /*
