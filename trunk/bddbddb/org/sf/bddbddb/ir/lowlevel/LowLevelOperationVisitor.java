@@ -7,15 +7,16 @@ package org.sf.bddbddb.ir.lowlevel;
  * LowLevelOperationVisitor
  * 
  * @author John Whaley
- * @version $Id$
+ * @version $Id: LowLevelOperationVisitor.java,v 1.3 2004/07/12 09:06:30
+ *          joewhaley Exp $
  */
 public interface LowLevelOperationVisitor {
-   /**
+    /**
      * @param op
      * @return
      */
     public abstract Object visit(ApplyEx op);
-    
+
     /**
      * @param op
      * @return

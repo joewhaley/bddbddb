@@ -9,6 +9,7 @@ import java.util.List;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
@@ -22,10 +23,9 @@ import org.sf.javabdd.BDDFactory.BDDOp;
  * @version $Id$
  */
 public class ApplyEx extends LowLevelOperation {
-
     BDDRelation r0, r1, r2;
     BDDOp op;
-    List/*<Attribute>*/ attributes;
+    List/* <Attribute> */attributes;
 
     /**
      * @param r0
@@ -70,8 +70,7 @@ public class ApplyEx extends LowLevelOperation {
         String opName;
         if (op == BDDFactory.and) opName = "relprod";
         else opName = op.toString() + "Ex";
-        return opName + "(" + r1.toString() + "," + r2.toString() + ","
-            + attributes + ")";
+        return opName + "(" + r1.toString() + "," + r2.toString() + "," + attributes + ")";
     }
 
     /*
@@ -132,19 +131,28 @@ public class ApplyEx extends LowLevelOperation {
     public BDDOp getOp() {
         return op;
     }
-    
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r1 == r_old) r1 = (BDDRelation) r_new;
         if (r2 == r_old) r2 = (BDDRelation) r_new;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
         this.r0 = (BDDRelation) r0;
+    }
+
+    public Operation copy() {
+        return new ApplyEx(r0, r1, op, r2);
     }
 }
