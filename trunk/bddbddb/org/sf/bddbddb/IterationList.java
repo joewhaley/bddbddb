@@ -159,7 +159,7 @@ public class IterationList implements IterationElement {
     public ListIterator reverseIterator() {
         return new ReverseIterator(elements.listIterator(elements.size()));
     }
-    class ReverseIterator implements ListIterator {
+    static class ReverseIterator implements ListIterator {
         ListIterator it;
 
         public ReverseIterator(ListIterator it) {
