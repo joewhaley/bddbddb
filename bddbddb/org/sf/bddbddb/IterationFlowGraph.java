@@ -1,8 +1,8 @@
 /*
  * Created on Jun 29, 2004
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
+ * 
+ * TODO To change the template for this generated file go to Window -
+ * Preferences - Java - Code Style - Code Templates
  */
 package org.sf.bddbddb;
 
@@ -15,133 +15,133 @@ import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.HashWorklist;
 import org.sf.bddbddb.util.Pair;
+
 /**
  * @author mcarbin
- *
- * TODO To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Style - Code Templates
+ * 
+ * TODO To change the template for this generated type comment go to Window -
+ * Preferences - Java - Code Style - Code Templates
  */
 public class IterationFlowGraph {
+    IterationList iterationElements;
+    MultiMap innerSCCs;
+    List firstSCCs, rules, loops;
+    MultiMap containedBy;
+    MultiMap dependencies;
 
-	IterationList iterationElements;
-	MultiMap 	innerSCCs;
-	List		firstSCCs, rules, loops;
-	MultiMap 	containedBy;
-	MultiMap 	dependencies;
-	
-	public IterationFlowGraph(List rules, List firstSCCs, MultiMap innerSCCs){
-		this.firstSCCs = firstSCCs;
-		this.innerSCCs = innerSCCs;
-		this.rules = rules;
-		dependencies = new GenericMultiMap();
-		loops = new LinkedList();
-		iterationElements = new IterationList(false);
-		containedBy = new GenericMultiMap();
-		constructStrataLoops();
-		constructDependencies();
+    public IterationFlowGraph(List rules, List firstSCCs, MultiMap innerSCCs) {
+        this.firstSCCs = firstSCCs;
+        this.innerSCCs = innerSCCs;
+        this.rules = rules;
+        dependencies = new GenericMultiMap();
+        loops = new LinkedList();
+        iterationElements = new IterationList(false);
+        containedBy = new GenericMultiMap();
+        constructStrataLoops();
+        constructDependencies();
     }
 
-	private void constructStrataLoops(){
-		for(Iterator it = firstSCCs.iterator(); it.hasNext();){
-			SCComponent scc = (SCComponent) it.next();
-			IterationList loop = buildIterationList(scc,scc.isLoop());
-			iterationElements.addElement(loop);
-		}
-	}
-	
-	private void constructDependencies(){
-		constructRuleDependencies();
-		constructListDependencies(iterationElements);
-	}
-	
-	private void constructRuleDependencies(){
-		InferenceRule.DependenceNavigator depNav = new InferenceRule.DependenceNavigator(rules);
-		
-		HashWorklist w = new HashWorklist(true);
-		for(Iterator it = rules.iterator(); it.hasNext();){
-			Object rule = it.next();
-			w.add(new Pair(rule,rule));
-		}
-		//transitive closure
-		while(!w.isEmpty()){
-			Pair pair = (Pair) w.pull();
-			Object link = pair.get(0);
-			Object initRule = pair.get(1);
-			Collection usedRelations = depNav.prev(link);
-			for(Iterator it2 = usedRelations.iterator(); it2.hasNext();){
-				Collection definingRules = depNav.prev(it2.next());
-				for(Iterator it3 = definingRules.iterator(); it3.hasNext();){
-					Object o = it3.next();
-					dependencies.add(initRule,o);
-					w.add(new Pair(o,initRule));
-				}	
-			}
-		}
-	}
-	
-	
-	private void constructListDependencies(IterationList list){
-		for(Iterator it = list.iterator(); it.hasNext();){
-			IterationElement elem = (IterationElement) it.next();
-			if(elem instanceof InferenceRule){
-				Collection ruleDepends = dependencies.getValues(elem);
-				for(Iterator it2 = ruleDepends.iterator(); it2.hasNext();){
-					IterationElement elem2 = (IterationElement) it2.next();
-					//nothing
-				}
-			}else if(elem instanceof IterationList){
-				constructListDependencies((IterationList) elem);
-				Collection listDepends = dependencies.getValues(elem);
-				for(Iterator it2 = listDepends.iterator(); it2.hasNext();){
-					IterationElement elem2 = (IterationElement) it2.next();
-					//nothing
-				}
-			}
-		}
-	}
-	
-	IterationList buildIterationList(SCComponent scc, boolean isLoop) {
-		IterationList list = new IterationList(isLoop);
-	   	while(scc != null){
-	    	Collection c = innerSCCs.getValues(scc);
-			if(c.isEmpty()){
-				for(Iterator it = scc.nodeSet().iterator(); it.hasNext(); ){
-					Object o = it.next();
-					if(o instanceof InferenceRule){
-							InferenceRule rule = (InferenceRule) o;
-							list.addElement(rule);
-							containedBy.add(rule,list);
-						}
-					}
-			}else{
-				for(Iterator it = c.iterator(); it.hasNext();){
-					SCComponent scc2 = (SCComponent) it.next();
-					IterationList childLoop = buildIterationList(scc2,scc.isLoop());	
-					list.addElement(childLoop);
-					Collection childElems = childLoop.getAllNestedElements();
-					for(Iterator it2 = childElems.iterator();it2.hasNext();){
-						containedBy.add(it2.next(),list);
-					}
-				}
-			}
-			scc = scc.nextTopSort();
-	    }
-	   	if(list.isLoop()) loops.add(list);
-	   	return list;
-	}
-	
-	public String toString(){
-		return iterationElements.toString();
-	}
-	
-	public boolean dependsOn(IterationElement e1, IterationElement e2){
-		return dependencies.getValues(e1).contains(e2);
-	}
-	
-	public void iterate(){
-		for(Iterator it = iterationElements.iterator(); it.hasNext();){
-			IterationElement elem = (IterationElement) it.next();
-			elem.update();
-		}
-	}
+    private void constructStrataLoops() {
+        for (Iterator it = firstSCCs.iterator(); it.hasNext();) {
+            SCComponent scc = (SCComponent) it.next();
+            IterationList loop = buildIterationList(scc, scc.isLoop());
+            iterationElements.addElement(loop);
+        }
+    }
+
+    private void constructDependencies() {
+        constructRuleDependencies();
+        constructListDependencies(iterationElements);
+    }
+
+    private void constructRuleDependencies() {
+        InferenceRule.DependenceNavigator depNav = new InferenceRule.DependenceNavigator(
+            rules);
+        HashWorklist w = new HashWorklist(true);
+        for (Iterator it = rules.iterator(); it.hasNext();) {
+            Object rule = it.next();
+            w.add(new Pair(rule, rule));
+        }
+        //transitive closure
+        while (!w.isEmpty()) {
+            Pair pair = (Pair) w.pull();
+            Object link = pair.get(0);
+            Object initRule = pair.get(1);
+            Collection usedRelations = depNav.prev(link);
+            for (Iterator it2 = usedRelations.iterator(); it2.hasNext();) {
+                Collection definingRules = depNav.prev(it2.next());
+                for (Iterator it3 = definingRules.iterator(); it3.hasNext();) {
+                    Object o = it3.next();
+                    dependencies.add(initRule, o);
+                    w.add(new Pair(o, initRule));
+                }
+            }
+        }
+    }
+
+    private void constructListDependencies(IterationList list) {
+        for (Iterator it = list.iterator(); it.hasNext();) {
+            IterationElement elem = (IterationElement) it.next();
+            if (elem instanceof InferenceRule) {
+                Collection ruleDepends = dependencies.getValues(elem);
+                for (Iterator it2 = ruleDepends.iterator(); it2.hasNext();) {
+                    IterationElement elem2 = (IterationElement) it2.next();
+                    //nothing
+                }
+            } else if (elem instanceof IterationList) {
+                constructListDependencies((IterationList) elem);
+                Collection listDepends = dependencies.getValues(elem);
+                for (Iterator it2 = listDepends.iterator(); it2.hasNext();) {
+                    IterationElement elem2 = (IterationElement) it2.next();
+                    //nothing
+                }
+            }
+        }
+    }
+
+    IterationList buildIterationList(SCComponent scc, boolean isLoop) {
+        IterationList list = new IterationList(isLoop);
+        while (scc != null) {
+            Collection c = innerSCCs.getValues(scc);
+            if (c.isEmpty()) {
+                for (Iterator it = scc.nodeSet().iterator(); it.hasNext();) {
+                    Object o = it.next();
+                    if (o instanceof InferenceRule) {
+                        InferenceRule rule = (InferenceRule) o;
+                        list.addElement(rule);
+                        containedBy.add(rule, list);
+                    }
+                }
+            } else {
+                for (Iterator it = c.iterator(); it.hasNext();) {
+                    SCComponent scc2 = (SCComponent) it.next();
+                    IterationList childLoop = buildIterationList(scc2, scc
+                        .isLoop());
+                    list.addElement(childLoop);
+                    Collection childElems = childLoop.getAllNestedElements();
+                    for (Iterator it2 = childElems.iterator(); it2.hasNext();) {
+                        containedBy.add(it2.next(), list);
+                    }
+                }
+            }
+            scc = scc.nextTopSort();
+        }
+        if (list.isLoop()) loops.add(list);
+        return list;
+    }
+
+    public String toString() {
+        return iterationElements.toString();
+    }
+
+    public boolean dependsOn(IterationElement e1, IterationElement e2) {
+        return dependencies.getValues(e1).contains(e2);
+    }
+
+    public void iterate() {
+        for (Iterator it = iterationElements.iterator(); it.hasNext();) {
+            IterationElement elem = (IterationElement) it.next();
+            elem.update();
+        }
+    }
 }
