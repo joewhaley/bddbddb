@@ -149,20 +149,51 @@ public class FindBestDomainOrder {
         return new OrderIterator(vars);
     }
     
+    /**
+     * Translate from one order to another.  Used when orders have different names.
+     * 
+     * @author jwhaley
+     * @version $Id$
+     */
     public interface OrderTranslator {
+        /**
+         * Translate the given order.  Always generates a new Order object, even if
+         * the order does not change.
+         * 
+         * @param o  order
+         * @return  translated order
+         */
         Order translate(Order o);
     }
     
+    /**
+     * The identity translation.
+     * 
+     * @author jwhaley
+     * @version $Id$
+     */
     public static class IdentityTranslator implements OrderTranslator {
+        /**
+         * Singleton instance.
+         */
         public static final IdentityTranslator INSTANCE = new IdentityTranslator();
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.FindBestDomainOrder.OrderTranslator#translate(org.sf.bddbddb.FindBestDomainOrder.Order)
+         */
         public Order translate(Order o) { return new Order(new LinkedList(o)); }
     }
     
+    /**
+     * Translator based on a map.
+     * 
+     * @author jwhaley
+     * @version $Id$
+     */
     public static class MapBasedTranslator implements OrderTranslator {
         
         Map m;
         
-        MapBasedTranslator(Map m) {
+        public MapBasedTranslator(Map m) {
             this.m = m;
         }
         
@@ -170,11 +201,11 @@ public class FindBestDomainOrder {
          * direction == true means map from rule to relation.
          * direction == false means map from relation to rule.
          * 
-         * @param ir
-         * @param r
-         * @param direction
+         * @param ir  rule
+         * @param r  relation
+         * @param direction  true=rule->relation, false=relation->rule
          */
-        MapBasedTranslator(InferenceRule ir, Relation r, boolean direction) {
+        public MapBasedTranslator(InferenceRule ir, Relation r, boolean direction) {
             m = new HashMap();
             for (Iterator i = ir.top.iterator(); i.hasNext(); ) {
                 RuleTerm rt = (RuleTerm) i.next();
@@ -193,6 +224,9 @@ public class FindBestDomainOrder {
             }
         }
         
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.FindBestDomainOrder.OrderTranslator#translate(org.sf.bddbddb.FindBestDomainOrder.Order)
+         */
         public Order translate(Order o) {
             LinkedList result = new LinkedList();
             for (Iterator i = o.iterator(); i.hasNext(); ) {
@@ -534,6 +568,9 @@ public class FindBestDomainOrder {
          * 1.0 means that the orders are exactly the same, and 0.0 means they have no
          * similarities.
          * 
+         * Precedence constraints are weighted by the factor "PRECEDENCE_WEIGHT", and
+         * interleave constraints are weighted by the factor "INTERLEAVE_WEIGHT".
+         * 
          * @param that
          * @return  similarity measure between 0.0 and 1.0
          */
@@ -550,7 +587,7 @@ public class FindBestDomainOrder {
         public static double PRECEDENCE_WEIGHT = 1.;
         public static double INTERLEAVE_WEIGHT = 3.;
         
-        double similarity0(Order that) {
+        private double similarity0(Order that) {
             Collection dis_preds = this.getAllPrecedenceConstraints();
             Collection dis_inters = this.getAllInterleaveConstraints();
             Collection dat_preds = that.getAllPrecedenceConstraints();
@@ -578,7 +615,13 @@ public class FindBestDomainOrder {
         public static double[] COMPLEXITY_MULTI = 
         { 0., 2., 4., 8., 16., 32., 64., 128., 256., 512., 1024., 2048., 4096., 8192., 16384., 32768. } ;
         
-        double complexity() {
+        /**
+         * Returns a measure of the complexity of this order.  Higher numbers are
+         * more complex (i.e. have more constraints)
+         * 
+         * @return a measure of the complexity of this order
+         */
+        public double complexity() {
             int n = Math.min(list.size(), COMPLEXITY_SINGLE.length-1);
             double total = COMPLEXITY_SINGLE[n];
             for (Iterator i = list.iterator(); i.hasNext(); ) {
@@ -591,9 +634,19 @@ public class FindBestDomainOrder {
             return total;
         }
         
+        /**
+         * @param arg0
+         * @return
+         */
         public int compareTo(Object arg0) {
             return compareTo((Order) arg0);
         }
+        /**
+         * Compares orders lexigraphically. 
+         * 
+         * @param that  order to compare to
+         * @return  -1, 0, or 1 if this order is less than, equal to, or greater than
+         */
         public int compareTo(Order that) {
             return this.toString().compareTo(that.toString());
         }
@@ -601,6 +654,9 @@ public class FindBestDomainOrder {
         public boolean equals(Order that) {
             return list.equals(that.list);
         }
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object obj) {
             if (!(obj instanceof Order)) return false;
             return equals((Order) obj);
@@ -684,6 +740,12 @@ public class FindBestDomainOrder {
     }
     
     static NumberFormat nf;
+    /**
+     * Format a double as a percentage.
+     * 
+     * @param d  double
+     * @return  string representation
+     */
     public static String format(double d) {
         if (nf == null) {
             nf = NumberFormat.getPercentInstance();
@@ -714,6 +776,9 @@ public class FindBestDomainOrder {
         
         /**
          * A measure of the confidence of this score.  Higher is better.
+         * This is also a measure of how much time was spent on the measured operations.
+         * Longer operations have higher confidence ratings.  Therefore,
+         * the confidence can also be used as the importance.
          */
         double confidence;
         
@@ -730,6 +795,11 @@ public class FindBestDomainOrder {
             this.confidence = c;
         }
         
+        /**
+         * Construct a new OrderInfo that is a clone of another.
+         * 
+         * @param that  other OrderInfo to clone from
+         */
         public OrderInfo(OrderInfo that) {
             this.order = that.order;
             this.score = that.score;
@@ -746,10 +816,14 @@ public class FindBestDomainOrder {
             update(that.order, that.score, that.confidence);
         }
         public void update(Order that_order, double that_score, double that_confidence) {
-            if (this.confidence + that_confidence < 0.0001) return;
+            if (this.confidence + that_confidence < 0.0001) {
+                // Do not update the score if the confidence is too low.
+                return;
+            }
             double newScore = (this.score * this.confidence + that_score * that_confidence) /
                               (this.confidence + that_confidence);
-            // todo: this confidence calculation seems bogus.
+            // todo: this confidence calculation seems slightly bogus, but seems
+            // to give reasonable answers.
             double diff = (this.score - newScore);
             double diffSquared = diff * diff;
             double newConfidence = (this.confidence + that_confidence) / (diffSquared + 1.);
@@ -772,6 +846,13 @@ public class FindBestDomainOrder {
         public int compareTo(Object arg0) {
             return compareTo((OrderInfo) arg0);
         }
+        /**
+         * Comparison operator for OrderInfo objects.  Score is most important, followed
+         * by confidence.  If both are equal, we compare the order lexigraphically.
+         * 
+         * @param that  OrderInfo to compare to
+         * @return  -1, 0, or 1 if this OrderInfo is less than, equal to, or greater than the other
+         */
         public int compareTo(OrderInfo that) {
             int result = (int) Math.signum(this.score - that.score);
             if (result == 0) {
@@ -824,6 +905,14 @@ public class FindBestDomainOrder {
         public int compareTo(Object arg0) {
             return compareTo((TrialInfo) arg0);
         }
+        
+        /**
+         * Comparison operator for TrialInfo objects.  Comparison is based on cost.
+         * If the cost is equal, we compare the order lexigraphically.
+         * 
+         * @param that  TrialInfo to compare to
+         * @return  -1, 0, or 1 if this TrialInfo is less than, equal to, or greater than the other
+         */
         public int compareTo(TrialInfo that) {
             int result = Long.signum(this.cost - that.cost);
             if (result == 0) {
@@ -840,34 +929,82 @@ public class FindBestDomainOrder {
      * @version $Id$
      */
     public static class TrialCollection {
+        /**
+         * Name of the test.
+         */
         String name;
+        
+        /**
+         * Map from orders to their trial information.
+         */
         Map/*<Order,TrialInfo>*/ trials;
+        
+        /**
+         * Trial info sorted by cost.  Updated automatically when necessary.
+         */
         transient TrialInfo[] sorted;
         
+        /**
+         * Construct a new collection of trials with the given test name.
+         * 
+         * @param n  test name
+         */
         public TrialCollection(String n) {
             name = n;
             trials = new LinkedHashMap();
             sorted = null;
         }
         
+        /**
+         * Add the information about a trial to this collection.
+         * 
+         * @param i  trial info
+         */
         public void addTrial(TrialInfo i) {
             if (TRACE > 1) out.println(this+": Adding trial "+i);
             trials.put(i.order, i);
             sorted = null;
         }
+        
+        /**
+         * Add the information about a trial to this collection.
+         * 
+         * @param o  order
+         * @param cost  cost of operation
+         */
         public void addTrial(Order o, long cost) {
             addTrial(new TrialInfo(o, cost));
         }
         
+        /**
+         * Returns true if this collection contains a trial with the given order,
+         * false otherwise.
+         * 
+         * @param o  order
+         * @return  true if this collection contains it, false otherwise
+         */
         public boolean contains(Order o) {
             return trials.containsKey(o);
         }
         
+        /**
+         * Given an order, make a prediction based on the other trials about
+         * the cost of the order on the tested operation.  We should not have
+         * already tested this order.  The result contains both a score and
+         * a confidence rating.
+         * 
+         * This works by computing the similarities between the given order and
+         * the tested orders and weighing each score based on the amount of
+         * similarity.  It may not be entirely accurate as it weighs all
+         * similarities equally, but it is a rough approximation.
+         * 
+         * @param o  order to predict
+         * @return  predicted score and confidence rating of that prediction
+         */
         public OrderInfo predict(Order o) {
-            OrderInfo result = (OrderInfo) trials.get(o);
-            if (result != null) return result;
+            Assert._assert(!trials.containsKey(o));
             if (TRACE > 2) out.println(this+": Predicting "+o);
-            result = new OrderInfo(o, 0.5, 0.);
+            OrderInfo result = new OrderInfo(o, 0.5, 0.);
             if (size() >= 2) {
                 TrialInfo[] sorted = getSorted();
                 long min = sorted[0].cost;
@@ -884,10 +1021,16 @@ public class FindBestDomainOrder {
             return result;
         }
         
+        /**
+         * @return  the standard deviation of the trials
+         */
         public double getStdDev() {
             return Math.sqrt(getVariance());
         }
         
+        /**
+         * @return  the variance of the trials
+         */
         public double getVariance() {
             double sum = 0.;
             double sumOfSquares = 0.;
@@ -903,6 +1046,9 @@ public class FindBestDomainOrder {
             return variance;
         }
         
+        /**
+         * @return  the minimum cost trial
+         */
         public TrialInfo getMinimum() {
             TrialInfo best = null;
             for (Iterator i = trials.values().iterator(); i.hasNext(); ) {
@@ -913,6 +1059,9 @@ public class FindBestDomainOrder {
             return best;
         }
         
+        /**
+         * @return  the maximum cost trial
+         */
         public TrialInfo getMaximum() {
             TrialInfo best = null;
             for (Iterator i = trials.values().iterator(); i.hasNext(); ) {
@@ -923,6 +1072,9 @@ public class FindBestDomainOrder {
             return best;
         }
         
+        /**
+         * @return  the mean of the trials
+         */
         public long getAverage() {
             long total = 0;
             int count = 0;
@@ -934,6 +1086,9 @@ public class FindBestDomainOrder {
             else return total / count;
         }
         
+        /**
+         * @return  the trials sorted by increasing cost
+         */
         public TrialInfo[] getSorted() {
             if (sorted == null) {
                 sorted = (TrialInfo[]) trials.values().toArray(new TrialInfo[trials.size()]);
@@ -942,10 +1097,16 @@ public class FindBestDomainOrder {
             return sorted;
         }
         
+        /**
+         * @return the number of trials in this collection
+         */
         public int size() {
-            return trials.size();
+             return trials.size();
         }
         
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
         public String toString() {
             return name+"@"+Integer.toHexString(this.hashCode());
         }
@@ -960,25 +1121,61 @@ public class FindBestDomainOrder {
      */
     public static class OrderInfoCollection {
         
+        /**
+         * Name of this order info collection (i.e. name of the relation or rule)
+         */
         String name;
+        
+        /**
+         * Map from orders to their info.
+         */
         Map/*<Order,OrderInfo>*/ infos;
+        
+        /**
+         * Order info sorted by cost.  Updated automatically when necessary.
+         */
         transient OrderInfo[] sorted;
         
-        OrderInfoCollection(String s) {
+        /**
+         * Construct a new OrderInfoCollection with the given name
+         * 
+         * @param s  name
+         */
+        public OrderInfoCollection(String s) {
             name = s;
             infos = new LinkedHashMap();
             sorted = null;
         }
         
-        OrderInfoCollection(OrderInfoCollection that) {
+        /**
+         * Construct a new OrderInfoCollection that is the clone of another one.
+         * 
+         * @param that  OrderInfoCollection to clone
+         */
+        public OrderInfoCollection(OrderInfoCollection that) {
             this.name = that.name;
             this.infos = new LinkedHashMap(that.infos);
             this.sorted = null;
         }
         
+        /**
+         * Incorporate the given collection into this one, scaling all of the confidences
+         * in the given collection by the given number.
+         * 
+         * @param that  collection to incorporate
+         * @param confidence  confidence level to scale the info in the given collection by
+         */
         public void incorporateInfoCollection(OrderInfoCollection that, double confidence) {
             incorporateInfoCollection(that, IdentityTranslator.INSTANCE, confidence);
         }
+        /**
+         * Incorporate the given collection into this one, translating orders using
+         * the given translator and scaling all of the confidences by the given number.
+         * 
+         * @param that  collection to incorporate
+         * @param t  order translator
+         * @param confidence  confidence level to scale the info in the given collection by
+         */
         public void incorporateInfoCollection(OrderInfoCollection that, OrderTranslator t, double confidence) {
             if (TRACE > 0) out.println(this+": incorporating info collection "+that+" with confidence "+format(confidence));
             for (Iterator i = that.infos.values().iterator(); i.hasNext(); ) {
@@ -990,9 +1187,25 @@ public class FindBestDomainOrder {
             }
         }
         
+        /**
+         * Incorporate trials into this info collection using the given confidence
+         * rating for the trials.
+         * 
+         * @param c  trial collection to incorporate
+         * @param confidence  confidence rating for trials
+         */
         public void incorporateTrials(TrialCollection c, double confidence) {
             incorporateTrials(c, IdentityTranslator.INSTANCE, confidence);
         }
+        
+        /**
+         * Incorporate trials into this info collection using the given confidence
+         * rating for the trials, translating orders with the given translator. 
+         * 
+         * @param c  trial collection to incorporate
+         * @param t  order translator
+         * @param confidence  confidence rating for trials
+         */
         public void incorporateTrials(TrialCollection c, OrderTranslator t, double confidence) {
             if (c.size() > 0) {
                 if (TRACE > 0) out.println(this+": incorporating trials "+c+" with confidence "+format(confidence));
@@ -1010,6 +1223,13 @@ public class FindBestDomainOrder {
             }
         }
         
+        /**
+         * Incorporate a single data point of order info.
+         * 
+         * @param o  order
+         * @param s  score
+         * @param c  confidence
+         */
         public void incorporateInfo(Order o, double s, double c) {
             OrderInfo info = (OrderInfo) infos.get(o);
             if (info == null) {
@@ -1021,6 +1241,12 @@ public class FindBestDomainOrder {
             }
             sorted = null;
         }
+        
+        /**
+         * Incorporate a single data point of order info.
+         * 
+         * @param i  order info to incorporate
+         */
         public void incorporateInfo(OrderInfo i) {
             OrderInfo info = (OrderInfo) infos.get(i.order);
             if (info == null) {
@@ -1033,10 +1259,25 @@ public class FindBestDomainOrder {
             sorted = null;
         }
         
+        /**
+         * Get the order info for the given total order.
+         * Returns null if there is no info for the given order.
+         * 
+         * @param o  total order
+         * @return  order info, or null if there is none.
+         */
         public OrderInfo getTotalOrderInfo(Order o) {
             return (OrderInfo) infos.get(o);
         }
         
+        /**
+         * Get order info for the given partial order.  Combines the 
+         * information from all orders that match.
+         * Returns null if no orders match.
+         * 
+         * @param p  partial order
+         * @return  order info, or null if no orders match.
+         */
         public OrderInfo getPartialOrderInfo(Order p) {
             OrderInfo result = null;
             for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
@@ -1050,6 +1291,12 @@ public class FindBestDomainOrder {
         }
         
         
+        /**
+         * Create an updatable version of this order collection.  The updatable
+         * one can be updated based on trials.
+         * 
+         * @return  updatable version of this order
+         */
         public UpdatableOrderInfoCollection createUpdatable() {
             UpdatableOrderInfoCollection i = new UpdatableOrderInfoCollection(this);
             return i;
@@ -1057,18 +1304,38 @@ public class FindBestDomainOrder {
         
         static double HIGH_CONFIDENCE = 10000.;
         
+        /**
+         * Register the given order as good.
+         * This gives it a high score with a high confidence.
+         * 
+         * @param o  order to register as good
+         */
         public void registerAsGood(Order o) {
             if (TRACE > 0) out.println(this+": Registering as a known good order: "+o);
             infos.put(o, new OrderInfo(o, 1., HIGH_CONFIDENCE));
             sorted = null;
         }
         
+        /**
+         * Register the given order as bad.
+         * This gives it a low score with a high confidence.
+         * 
+         * @param o  order to register as good
+         */
         public void registerAsBad(Order o) {
             if (TRACE > 0) out.println(this+": Registering as a known bad order: "+o);
             infos.put(o, new OrderInfo(o, 0., HIGH_CONFIDENCE));
             sorted = null;
         }
         
+        /**
+         * Returns the number of orders that are potentially "good".  A potentially
+         * "good" order is one that has not been tested, a score greater than 5%, or a
+         * confidence less than 1.
+         * 
+         * @param variables  list of variables in the order
+         * @return  number of potentially good orders
+         */
         public int numberOfGoodOrders(List/*<Variable>*/ variables) {
             Iterator i = generateAllOrders(variables).iterator();
             int count = 0;
@@ -1090,6 +1357,8 @@ public class FindBestDomainOrder {
          */
         public Order gimmeAGoodOrder(List/*<Variable>*/ variables) {
             Iterator i = generateAllOrders(variables).iterator();
+            // Find the order with the highest score.
+            // todo: should be also consider the confidence?
             Order bestOrder = null; double bestScore = 0.;
             while (i.hasNext()) {
                 Order o = (Order) i.next();
@@ -1105,11 +1374,13 @@ public class FindBestDomainOrder {
         }
         
         /**
-         * Return a measure of the probable "goodness" of the given order.
-         * The number is between 0.0 and 1.0, with higher numbers being better.
+         * Return a measure of the probable "goodness" of the given order, and
+         * a confidence of that score.
+         * The score is between 0.0 and 1.0, with higher numbers being better.
+         * If we already have info about a given order, use it.
          * 
          * @param o  order
-         * @return  probable goodness
+         * @return  probable goodness and confidence of that rating
          */
         public OrderInfo orderGoodness(Order o) {
             OrderInfo result = (OrderInfo) infos.get(o);
@@ -1147,7 +1418,12 @@ public class FindBestDomainOrder {
             return result;
         }
         
-        OrderInfo[] getSorted() {
+        /**
+         * Get the order info sorted by score.
+         * 
+         * @return  sorted array of OrderInfo[]
+         */
+        public OrderInfo[] getSorted() {
             if (sorted == null) {
                 sorted = (OrderInfo[]) infos.values().toArray(new OrderInfo[infos.size()]);
                 Arrays.sort(sorted);
@@ -1158,7 +1434,10 @@ public class FindBestDomainOrder {
         Collection/*<OrderInfo>*/ goodCharacteristics;
         Collection/*<OrderInfo>*/ badCharacteristics;
         
-        void calculateCharacteristics() {
+        /**
+         * Compute the prevaling characteristics of "good" and "bad" orders.
+         */
+        public void calculateCharacteristics() {
             if (infos.isEmpty()) return;
             if (TRACE > 0) out.println(this+": updating characteristics...");
             
@@ -1228,6 +1507,9 @@ public class FindBestDomainOrder {
             if (TRACE > 0) out.println(this+": finished update.");
         }
         
+        /**
+         * Dump the order info to the screen.
+         */
         public void dump() {
             OrderInfo[] sorted = getSorted();
             System.out.println("Best orders:");
@@ -1243,6 +1525,9 @@ public class FindBestDomainOrder {
             System.out.println("Bad order characteristics: "+badCharacteristics);
         }
         
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
         public String toString() {
             return name + "@" + Integer.toHexString(this.hashCode());
         }
@@ -1258,11 +1543,19 @@ public class FindBestDomainOrder {
      */
     public static class UpdatableOrderInfoCollection extends OrderInfoCollection {
         
+        /**
+         * Collection of trials.
+         */
         TrialCollection trials;
         
         static long MIN_COST = 0L;
         static long MAX_COST = 10000000L;
         
+        /**
+         * Construct an UpdatableOrderInfoCollection with the given name.
+         * 
+         * @param s  name
+         */
         UpdatableOrderInfoCollection(String s) {
             super(s);
             trials = new TrialCollection(s);
@@ -1273,6 +1566,12 @@ public class FindBestDomainOrder {
             trials = new TrialCollection(that.name);
         }
         
+        /**
+         * Register a new trial.
+         * 
+         * @param o  order tried
+         * @param cost  cost of trial
+         */
         public void registerNewTrial(Order o, long cost) {
             if (cost >= MAX_COST) {
                 registerAsBad(o);
@@ -1283,12 +1582,18 @@ public class FindBestDomainOrder {
             trials.addTrial(i);
         }
         
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.FindBestDomainOrder.OrderInfoCollection#registerAsGood(org.sf.bddbddb.FindBestDomainOrder.Order)
+         */
         public void registerAsGood(Order o) {
             super.registerAsGood(o);
             TrialInfo i = new TrialInfo(o, MIN_COST);
             trials.addTrial(i);
         }
         
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.FindBestDomainOrder.OrderInfoCollection#registerAsBad(org.sf.bddbddb.FindBestDomainOrder.Order)
+         */
         public void registerAsBad(Order o) {
             super.registerAsBad(o);
             TrialInfo i = new TrialInfo(o, MAX_COST);
@@ -1302,10 +1607,10 @@ public class FindBestDomainOrder {
          * @return  an order that seems good, or null if there aren't any.
          */
         public Order tryNewGoodOrder(List/*<Variables>*/ variables) {
-            //calculateCharacteristics();
-            // Find an order that has some of the good order characteristics
-            // without any of the bad ones.
             if (TRACE > 1) out.println(this+": generating new orders for "+variables);
+            // Find the order with the highest score that we haven't tried yet
+            // and that is still possibly good.
+            // todo: should be also consider the confidence?
             Iterator i = generateAllOrders(variables).iterator();
             Order bestOrder = null; double bestScore = 0.;
             while (i.hasNext()) {
@@ -1326,6 +1631,9 @@ public class FindBestDomainOrder {
             return bestOrder;
         }
         
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.FindBestDomainOrder.OrderInfoCollection#orderGoodness(org.sf.bddbddb.FindBestDomainOrder.Order)
+         */
         public OrderInfo orderGoodness(Order o) {
             OrderInfo result = super.orderGoodness(o);
             OrderInfo predicted = trials.predict(o);
