@@ -101,6 +101,8 @@ public class BDDSolver extends Solver {
         }
         initialize2(); // Do some more initialization after variable ordering is set.
         isInitialized = true;
+        
+        fbo.loadTrials("trials.xml");
     }
 
     /**
