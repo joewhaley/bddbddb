@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin
+   id="org.sf.bddbddb"
+   name="bddbddb Eclipse Plug-in"
+   version="1.0.0"
+   provider-name=""
+   class="org.sf.bddbddb.eclipse.EclipsePlugin">
+
+   <runtime>
+      <library name="bddbddb_eclipse.jar">
+         <export name="*"/>
+      </library>
+      <library name="bddbddb.jar">
+         <export name="*"/>
+      </library>
+      <library name="javabdd.jar">
+         <export name="*"/>
+      </library>
+   </runtime>
+
+   <requires>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.core.resources"/>
+      <import plugin="org.eclipse.jdt.core"/>
+   </requires>
+   <extension
+         point="org.eclipse.ui.actionSets">
+      <actionSet
+            label="bddbddb Action Set"
+            visible="true"
+            id="org.sf.bddbddb.eclipse.actionSet">
+         <menu
+               label="&amp;bddbddb"
+               id="bddbddbMenu">
+            <separator name="bddbddbGroup"/>
+         </menu>
+         <action
+               toolbarPath="bddbddbGroup"
+               label="&amp;Generate relations"
+               class="org.sf.bddbddb.eclipse.actions.GenRelationsAction"
+               tooltip="Generate relations from input program"
+               icon="icons/sample.gif"
+               menubarPath="bddbddbMenu/bddbddbGroup"
+               id="org.sf.bddbddb.eclipse.actions.GenRelationsAction"/>
+      </actionSet>
+   </extension>
+
+</plugin>
