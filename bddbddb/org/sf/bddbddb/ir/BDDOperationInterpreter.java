@@ -58,7 +58,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         this.needsDomainMatch = true;
     }
 
-    public static boolean CHECK = true;
+    public static boolean CHECK = !System.getProperty("checkir", "no").equals("no");
     
     protected BDD makeDomainsMatch(BDD b, BDDRelation r1, BDDRelation r2) {
         if (CHECK) { r1.verify(); r2.verify(); }
