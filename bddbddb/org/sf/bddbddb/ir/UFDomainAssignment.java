@@ -37,7 +37,7 @@ public class UFDomainAssignment extends DomainAssignment {
      */
     public UFDomainAssignment(Solver s) {
         super(s);
-        uf = new UnionFind(4096);
+        uf = new UnionFind(16384);
         neq_constraints = new LinkedList();
         this.initialize();
     }
