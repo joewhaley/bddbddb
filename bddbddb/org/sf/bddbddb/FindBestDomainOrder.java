@@ -30,7 +30,7 @@ import org.sf.bddbddb.util.PermutationGenerator;
  */
 public class FindBestDomainOrder {
     
-    public static int TRACE = 1;
+    public static int TRACE = 2;
     public static PrintStream out = System.out;
     
     Map/*<InferenceRule,OrderingInfo>*/ orderInfo_rules;
@@ -65,6 +65,42 @@ public class FindBestDomainOrder {
         return o;
     }
     
+    public static List/*<Order>*/ generateAllOrders(List vars) {
+        if (vars.size() == 0) return null;
+        LinkedList result = new LinkedList();
+        if (vars.size() == 1) {
+            result.add(new Order(vars));
+            return result;
+        }
+        Object car = vars.get(0);
+        List recurse = generateAllOrders(vars.subList(1, vars.size()));
+        for (Iterator i = recurse.iterator(); i.hasNext(); ) {
+            Order order = (Order) i.next();
+            for (int j = 0; j <= order.size(); ++j) {
+                Order myOrder = new Order(order);
+                myOrder.add(j, car);
+                result.add(myOrder);
+            }
+        }
+        for (Iterator i = recurse.iterator(); i.hasNext(); ) {
+            Order order = (Order) i.next();
+            for (int j = 0; j < order.size(); ++j) {
+                Order myOrder = new Order(order);
+                Object o = myOrder.get(j);
+                List c = new LinkedList();
+                c.add(car);
+                if (o instanceof Collection) {
+                    c.addAll((Collection)o);
+                } else {
+                    c.add(o);
+                }
+                myOrder.set(j, c);
+                result.add(myOrder);
+            }
+        }
+        return result;
+    }
+    
     /**
      * Return an iterator that iterates through all orders of a given list,
      * including interleavings.
@@ -72,7 +108,7 @@ public class FindBestDomainOrder {
      * @param vars  list
      * @return  iterator of all orders
      */
-    public static OrderIterator generateAllOrders(List vars) {
+    public static OrderIterator getOrderIterator(List vars) {
         return new OrderIterator(vars);
     }
     
@@ -134,6 +170,8 @@ public class FindBestDomainOrder {
     
     /**
      * Iterate through all possible orders of a given list.
+     * 
+     * TODO: This is buggy, it is missing some interleavings.
      * 
      * @author jwhaley
      * @version $Id$
@@ -994,12 +1032,12 @@ public class FindBestDomainOrder {
         }
         
         public int numberOfGoodOrders(List/*<Variable>*/ variables) {
-            OrderIterator i = generateAllOrders(variables);
+            Iterator i = generateAllOrders(variables).iterator();
             int count = 0;
             while (i.hasNext()) {
-                Order o = i.nextOrder();
-                OrderInfo score = orderGoodness(o);
-                if (score.score > 0.05) {
+                Order o = (Order) i.next();
+                OrderInfo score = (OrderInfo) infos.get(o);
+                if (score == null || score.score > 0.05 || score.confidence < 1.) {
                     ++count;
                 }
             }
@@ -1013,10 +1051,10 @@ public class FindBestDomainOrder {
          * @return  an order that seems good, or null if there aren't any.
          */
         public Order gimmeAGoodOrder(List/*<Variable>*/ variables) {
-            OrderIterator i = generateAllOrders(variables);
-            Order bestOrder = null; double bestScore = 0.05;
+            Iterator i = generateAllOrders(variables).iterator();
+            Order bestOrder = null; double bestScore = 0.;
             while (i.hasNext()) {
-                Order o = i.nextOrder();
+                Order o = (Order) i.next();
                 OrderInfo score = orderGoodness(o);
                 if (TRACE > 1) out.println(this+": "+score);
                 if (score.score > bestScore) {
@@ -1214,13 +1252,17 @@ public class FindBestDomainOrder {
             //calculateCharacteristics();
             // Find an order that has some of the good order characteristics
             // without any of the bad ones.
-            if (TRACE > 0) out.println(this+": generating new orders for "+variables);
-            OrderIterator i = generateAllOrders(variables);
-            Order bestOrder = null; double bestScore = 0.05;
+            if (TRACE > 1) out.println(this+": generating new orders for "+variables);
+            Iterator i = generateAllOrders(variables).iterator();
+            Order bestOrder = null; double bestScore = 0.;
             while (i.hasNext()) {
-                Order o = i.nextOrder();
+                Order o = (Order) i.next();
                 if (trials.contains(o)) continue;
-                OrderInfo score = orderGoodness(o);
+                OrderInfo score = (OrderInfo) infos.get(o);
+                if (score != null && score.score < 0.05 && score.confidence >= 1.) {
+                    continue;
+                }
+                score = orderGoodness(o);
                 if (TRACE > 2) out.println(this+": "+score);
                 if (score.score > bestScore) {
                     bestScore = score.score;
@@ -1234,23 +1276,23 @@ public class FindBestDomainOrder {
         public OrderInfo orderGoodness(Order o) {
             OrderInfo result = super.orderGoodness(o);
             OrderInfo predicted = trials.predict(o);
-            if (TRACE > 2) out.print(this+": "+result+", trial score "+format(predicted.score)+" conf "+format(predicted.confidence));
+            if (TRACE > 1) out.print(this+": "+result+", trial score "+format(predicted.score)+" conf "+format(predicted.confidence));
             result.update(predicted);
-            if (TRACE > 2) out.println(", total score "+format(result.score)+" conf "+format(result.confidence));
+            if (TRACE > 1) out.println(", total score "+format(result.score)+" conf "+format(result.confidence));
             return result;
         }
         
     }
     
     public static void main(String[] args) {
-        OrderIterator i = generateAllOrders(Arrays.asList(args));
+        Iterator i = generateAllOrders(Arrays.asList(args)).iterator();
         int k = 0;
         while (i.hasNext()) {
-            Order o = i.nextOrder();
+            Order o = (Order) i.next();
             System.out.println((++k)+": "+o);
-            OrderIterator j = generateAllOrders(Arrays.asList(args));
+            Iterator j = generateAllOrders(Arrays.asList(args)).iterator();
             while (j.hasNext()) {
-                Order p = j.nextOrder();
+                Order p = (Order) j.next();
                 System.out.print(" with "+p+" = ");
                 System.out.println(o.findSimilarities(p));
             }
