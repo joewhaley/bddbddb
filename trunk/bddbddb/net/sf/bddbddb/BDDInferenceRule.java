@@ -19,6 +19,7 @@ import jwutil.util.Assert;
 import net.sf.bddbddb.order.MapBasedTranslator;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderTranslator;
+import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
@@ -1027,12 +1028,13 @@ public class BDDInferenceRule extends InferenceRule {
         List allVars = Arrays.asList(a);
         
         FindBestDomainOrder fbdo = solver.fbo;
-        FindBestDomainOrder.OrderInfoCollection ruleinfo = fbdo.getOrderInfo(this);
-        if (ruleinfo.numberOfGoodOrders(allVars) <= 1) {
+        VarToAttribTranslator t = new VarToAttribTranslator(this);
+        if (fbdo.numberOfGoodOrders(allVars, t) <= 1) {
             return;
         }
         System.out.println("Finding best order for "+vars1+","+vars2);
         long time = System.currentTimeMillis();
+        FindBestDomainOrder.TrialCollection tc = fbdo.getNewTrialCollection("rule"+this.id, time);
         FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
         try {
             fbo.init(b1, b2, b3, BDDFactory.and);
@@ -1042,21 +1044,11 @@ public class BDDInferenceRule extends InferenceRule {
             return;
         }
         System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
-        FindBestDomainOrder.UpdatableOrderInfoCollection info2 = ruleinfo.createUpdatable();
-        
-        // Incorporate relation ordering info into our decisions.
-        // Relation ordering info is not nearly as accurate, so use a low confidence level.
-        OrderTranslator t1 = new MapBasedTranslator(r1, false);
-        FindBestDomainOrder.OrderInfoCollection r1info = fbdo.getOrderInfo(r1.relation);
-        OrderTranslator t2 = new MapBasedTranslator(r2, false);
-        FindBestDomainOrder.OrderInfoCollection r2info = fbdo.getOrderInfo(r2.relation);
-        info2.incorporateInfoCollection(r1info, t1, 0.1);
-        info2.incorporateInfoCollection(r2info, t2, 0.1);
         
         int count = 8;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
-            Order o = info2.tryNewGoodOrder(allVars);
+            Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
             if (o == null) break;
             String vOrder = o.toVarOrderString(variableToBDDDomain);
             System.out.println("Trying order "+vOrder);
@@ -1064,25 +1056,17 @@ public class BDDInferenceRule extends InferenceRule {
             System.out.println("Complete order "+vOrder);
             time = fbo.tryOrder(true, vOrder);
             bestTime = Math.min(time, bestTime);
-            info2.registerNewTrial(o, time, info2.trials);
+            tc.addTrial(o, time);
         }
         fbo.cleanup();
         
-        // todo: this should be the relative weight of this rule.
-        // this metric (weight = number of seconds) is pretty lame.
-        double confidence = (double) bestTime / 1000;
-        ruleinfo.incorporateTrials(info2.trials, confidence, true);
-        // Also incorporate into relation info.
-        OrderTranslator u1 = new MapBasedTranslator(r1, true);
-        OrderTranslator u2 = new MapBasedTranslator(r2, true);
-        r1info.incorporateTrials(info2.trials, u1, confidence, false);
-        r2info.incorporateTrials(info2.trials, u2, confidence, false);
+        fbdo.incorporateTrial(tc);
         
         // Keep a cache of all the trials we have done, for informational purposes.
-        fbdo.allTrials.add(info2.trials);
+        fbdo.allTrials.add(tc);
         
-        FindBestDomainOrder.dumpXML("fbo.xml", fbdo.toXMLElement());
-        FindBestDomainOrder.dumpXML("trials.xml", fbdo.trialsToXMLElement());
+        XMLFactory.dumpXML("fbo.xml", fbdo.toXMLElement());
+        XMLFactory.dumpXML("trials.xml", fbdo.trialsToXMLElement());
     }
     
 }

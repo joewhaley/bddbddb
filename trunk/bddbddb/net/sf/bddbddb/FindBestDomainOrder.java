@@ -3,7 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +24,6 @@ import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraint;
 import net.sf.bddbddb.order.OrderIterator;
 import net.sf.bddbddb.order.OrderTranslator;
-import net.sf.bddbddb.order.BeforeConstraint;
 import net.sf.bddbddb.order.VarToAttribTranslator;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -150,6 +148,10 @@ public class FindBestDomainOrder {
         }
     }
     
+    void incorporateTrial(TrialCollection c) {
+        constraintInfo.addTrials(c);
+    }
+    
     /**
      * Dump the collected order info for rules and relations to standard output.
      */
@@ -161,6 +163,19 @@ public class FindBestDomainOrder {
             ConstraintInfo info = (ConstraintInfo) e.getValue();
             info.dump();
         }
+    }
+    
+    /**
+     * Starts a new trial collection and returns it.
+     * 
+     * @param id  name of trial collection
+     * @param timeStamp  time of trial collection
+     * @return  new trial collection
+     */
+    public TrialCollection getNewTrialCollection(String id, long timeStamp) {
+        TrialCollection c = new TrialCollection(id, timeStamp);
+        allTrials.add(c);
+        return c;
     }
     
     /**
@@ -241,6 +256,21 @@ public class FindBestDomainOrder {
             return numTrials;
         }
         
+        public static double getVariance(Collection cis) {
+            double sum = 0.;
+            double sumOfSquares = 0.;
+            int n = 0;
+            for (Iterator i = cis.iterator(); i.hasNext(); ) {
+                ConstraintInfo ci = (ConstraintInfo) i.next();
+                sum += ci.sumNormalizedCost;
+                sumOfSquares += ci.sumNormalizedCostSq;
+                n += ci.numTrials;
+            }
+            // variance = (n*sum(X^2) - (sum(X)^2))/n^2
+            double variance = (sumOfSquares * n - sum * sum) / (n * n);
+            return variance;
+        }
+        
         /**
          * The variance of the normalized times used in the computation of the score.
          */
@@ -268,6 +298,10 @@ public class FindBestDomainOrder {
          */
         public double getWeightedMean() {
             return sumCost / sumMinimumCost;
+        }
+        
+        public double getMinimumCost() {
+            return sumMinimumCost;
         }
         
         /**
@@ -303,6 +337,22 @@ public class FindBestDomainOrder {
                 trials.add(t);
                 numTrials++;
             }
+        }
+        
+        public int compareTo(Object o) {
+            return compareTo((ConstraintInfo) o);
+        }
+        
+        public int compareTo(ConstraintInfo that) {
+            if (this == that) return 0;
+            int result = signum(that.getWeightedMean() - this.getWeightedMean());
+            if (result == 0) {
+                result = (int) signum(this.getVariance() - that.getVariance());
+                if (result == 0) {
+                    result = this.c.compareTo(that.c);
+                }
+            }
+            return result;
         }
         
         /**
@@ -401,58 +451,6 @@ public class FindBestDomainOrder {
             this.infoGain = that.infoGain;
         }
         
-        public void update(ConstraintInfo info) {
-            update(info.score, info.confidence);
-        }
-        
-        /**
-         * Update the score and confidence to take into account another order info.
-         * Assumes that the two are referring to the same order.
-         * 
-         * @param that  order to incorporate
-         */
-        public void update(OrderInfo that) {
-            update(that.score, that.confidence);
-        }
-        public void update(double that_score, double that_confidence) {
-            if (this.confidence + that_confidence < 0.0001) {
-                // Do not update the score if the confidence is too low.
-                return;
-            }
-            double newScore = (this.score * this.confidence + that_score * that_confidence) /
-                              (this.confidence + that_confidence);
-            // todo: this confidence calculation seems slightly bogus, but seems
-            // to give reasonable answers.
-            double diff = (this.score - newScore);
-            double diffSquared = diff * diff;
-            double newConfidence = (this.confidence + that_confidence) / (diffSquared + 1.);
-            if (TRACE > 4) out.println("Updating info: "+this+" * score "+format(that_score)+" confidence "+format(that_confidence)+
-                                       " -> score "+format(newScore)+" confidence "+format(newConfidence));
-            this.score = newScore;
-            this.confidence = newConfidence;
-        }
-        
-        public void unupdate(ConstraintInfo that) {
-            update(that.score, that.confidence);
-        }
-        public void unupdate(double that_score, double that_confidence) {
-            if (this.confidence + that_confidence < 0.0001) {
-                // Do not update the score if the confidence is too low.
-                return;
-            }
-            double newScore = (this.score * this.confidence + that_score * that_confidence) /
-                              (this.confidence + that_confidence);
-            // todo: this confidence calculation seems slightly bogus, but seems
-            // to give reasonable answers.
-            double diff = (this.score - newScore);
-            double diffSquared = diff * diff;
-            double newConfidence = (this.confidence + that_confidence) / (diffSquared + 1.);
-            if (TRACE > 4) out.println("Updating info: "+this+" * score "+format(that_score)+" confidence "+format(that_confidence)+
-                                       " -> score "+format(newScore)+" confidence "+format(newConfidence));
-            this.score = newScore;
-            this.confidence = newConfidence;
-        }
-        
         /* (non-Javadoc)
          * @see java.lang.Object#toString()
          */
@@ -475,7 +473,7 @@ public class FindBestDomainOrder {
          */
         public int compareTo(OrderInfo that) {
             if (this == that) return 0;
-            int result = signum(this.score - that.score);
+            int result = signum(that.score - this.score);
             if (result == 0) {
                 result = (int) signum(this.infoGain - that.infoGain);
                 if (result == 0) {
@@ -483,6 +481,10 @@ public class FindBestDomainOrder {
                 }
             }
             return result;
+        }
+        
+        public boolean isGoodOrder() {
+            return score < 100.;
         }
         
         /**
@@ -514,6 +516,7 @@ public class FindBestDomainOrder {
      */
     public static List/*<OrderInfo>*/ generateOrders(List vars,
         double bestScore, ConstraintInfoCollection constraints) {
+        /*
         if (vars.size() == 0) return null;
         LinkedList result = new LinkedList();
         if (vars.size() == 1) {
@@ -529,14 +532,14 @@ public class FindBestDomainOrder {
         // Precompute the individual scores for precedence constraints.
         Iterator it = vars.iterator();
         Object car = it.next();
-        ArrayList/*<OrderInfo>*/ beforeConstraints = new ArrayList(vars.size()-1);
-        ArrayList/*<OrderInfo>*/ afterConstraints = new ArrayList(vars.size()-1);
+        ArrayList/*<OrderInfo>*//* beforeConstraints = new ArrayList(vars.size()-1);
+        ArrayList/*<OrderInfo>*//* afterConstraints = new ArrayList(vars.size()-1);
         while (it.hasNext()) {
             Object cadr = it.next();
-            BeforeConstraint before = new BeforeConstraint(car, cadr);
+            OrderConstraint before = OrderConstraint.makePrecedenceConstraint(car, cadr);
             ConstraintInfo before_i = constraints.getInfo(before);
             beforeConstraints.add(before_i);
-            BeforeConstraint after = new BeforeConstraint(cadr, car);
+            OrderConstraint after = OrderConstraint.makePrecedenceConstraint(cadr, car);
             ConstraintInfo after_i = constraints.getInfo(after);
             afterConstraints.add(after_i);
         }
@@ -603,6 +606,8 @@ public class FindBestDomainOrder {
             }
         }
         return result;
+        */
+        return null;
     }
     
     /**
@@ -823,8 +828,8 @@ public class FindBestDomainOrder {
          * @param o  order
          * @param cost  cost of operation
          */
-        public void addTrial(Order o, long cost, TrialCollection col) {
-            addTrial(new TrialInfo(o, cost, col));
+        public void addTrial(Order o, long cost) {
+            addTrial(new TrialInfo(o, cost, this));
         }
         
         /**
@@ -1049,6 +1054,32 @@ public class FindBestDomainOrder {
             }
         }
         
+        public OrderInfo predict(Order o, OrderTranslator trans) {
+            if (trans != null) o = trans.translate(o);
+            double score = 0.;
+            int numTrialCollections = 0, numTrials = 0;
+            Collection cinfos = new LinkedList();
+            for (Iterator i = o.getConstraints().iterator(); i.hasNext(); ) {
+                OrderConstraint c = (OrderConstraint) i.next();
+                ConstraintInfo ci = getInfo(c);
+                if (ci == null) continue;
+                cinfos.add(ci);
+                score += ci.getWeightedMean();
+                numTrialCollections++;
+                numTrials += ci.getNumberOfTrials();
+            }
+            if (numTrialCollections == 0)
+                score = 0.;
+            else
+                score = score / numTrialCollections;
+            double infoGain = ConstraintInfo.getVariance(cinfos) / numTrials;
+            return new OrderInfo(o, score, infoGain);
+        }
+        
+    }
+    
+    public OrderInfo predict(Order o, OrderTranslator trans) {
+        return constraintInfo.predict(o, trans);
     }
     
     public static void main(String[] args) {
@@ -1088,7 +1119,7 @@ public class FindBestDomainOrder {
             Map.Entry e = (Map.Entry) i.next();
             OrderConstraint oc = (OrderConstraint) e.getKey();
             ConstraintInfo c = (ConstraintInfo) e.getValue();
-            Element constraintInfo = c.toXMLElement();
+            Element constraintInfo = c.toXMLElement(solver);
             constraintInfoCollection.addContent(constraintInfo);
         }
         
@@ -1112,5 +1143,44 @@ public class FindBestDomainOrder {
             trialCollections.addContent(c.toXMLElement());
         }
         return trialCollections;
+    }
+
+    /**
+     * @param allVars
+     * @param t
+     * @return
+     */
+    public int numberOfGoodOrders(List allVars, VarToAttribTranslator t) {
+        // TODO: improve this code.
+        OrderIterator i = new OrderIterator(allVars);
+        int k = 0;
+        while (i.hasNext()) {
+            Order o = i.nextOrder();
+            OrderInfo oi = predict(o, t);
+            if (oi.isGoodOrder()) ++k;
+        }
+        return k;
+    }
+
+    /**
+     * @param tc
+     * @param allVars
+     * @param t
+     * @return
+     */
+    public Order tryNewGoodOrder(TrialCollection tc, List allVars, VarToAttribTranslator t) {
+        // TODO: improve this code.
+        OrderInfo best = null;
+        OrderIterator i = new OrderIterator(allVars);
+        while (i.hasNext()) {
+            Order o = i.nextOrder();
+            if (tc.contains(o)) continue;
+            OrderInfo oi = predict(o, t);
+            if (best == null || best.compareTo(oi) < 0) {
+                best = oi;
+            }
+        }
+        if (best == null) return null;
+        return best.order;
     }
 }
