@@ -164,11 +164,21 @@ public class BDDRelation extends Relation {
     public void initialize2() {
         Assert._assert(isInitialized);
         boolean is_equiv = solver.equivalenceRelations.values().contains(this);
-        if (is_equiv) {
+        boolean is_lt = solver.lessThanRelations.values().contains(this);
+        boolean is_gt = solver.greaterThanRelations.values().contains(this);
+        if (is_equiv || is_lt || is_gt) {
             BDDDomain d1 = (BDDDomain) domains.get(0);
             BDDDomain d2 = (BDDDomain) domains.get(1);
             relation.free();
-            BDD b = d1.buildEquals(d2);
+            BDD b;
+            if (is_equiv) {
+                b = d1.buildEquals(d2);
+            } else if (is_lt) {
+                b = buildLessThan(d1,d2);
+            } else {
+                b = buildLessThan(d2,d1);
+            }
+            
             relation = b;
             if (negated != null) {
                 BDDRelation bddn = (BDDRelation) negated;
@@ -176,6 +186,24 @@ public class BDDRelation extends Relation {
                 bddn.relation = b.not();
             }
         }
+    }
+
+    /**
+     * build d1 < d2
+     * @param d1
+     * @param d2
+     * @return
+     */
+    private BDD buildLessThan(BDDDomain d1, BDDDomain d2) {
+        BDD leftwardBitsEqual = solver.bdd.one();
+        BDD result = solver.bdd.zero();
+        for (long i=d1.size()-1; i>=0; i--) {
+            BDD v1 = d1.ithVar(i);
+            BDD v2 = d2.ithVar(i);
+            result.orWith(v2.and(v1.not()).and(leftwardBitsEqual));
+            leftwardBitsEqual.andWith(v1.biimp(v2));
+        }        
+        return result;
     }
 
     /*

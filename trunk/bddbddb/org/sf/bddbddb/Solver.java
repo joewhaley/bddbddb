@@ -74,6 +74,10 @@ public abstract class Solver {
     Map/*<String,Relation>*/ nameToRelation;
     /** Map between domains and equivalence relations. */
     Map/*<Domain,Relation>*/ equivalenceRelations;
+    /** Map between domains and less than relations. */
+    Map/*<Domain,Relation>*/ lessThanRelations;
+    /** Map between domains and greater than relations. */
+    Map/*<Domain,Relation>*/ greaterThanRelations;
     /** List of inference rules. */
     List/*<InferenceRule>*/ rules;
     
@@ -106,6 +110,22 @@ public abstract class Solver {
      * @return  new equivalence relation
      */
     abstract Relation createEquivalenceRelation(Domain fd);
+
+    /**
+     * Create a new equivalence relation.
+     * 
+     * @param fd  domain of relation
+     * @return  new equivalence relation
+     */
+    abstract Relation createLessThanRelation(Domain fd);
+
+    /**
+     * Create a new equivalence relation.
+     * 
+     * @param fd  domain of relation
+     * @return  new equivalence relation
+     */
+    abstract Relation createGreaterThanRelation(Domain fd);
 
     /**
      * Create a new relation.
@@ -154,6 +174,8 @@ public abstract class Solver {
         nameToDomain = new HashMap();
         nameToRelation = new HashMap();
         equivalenceRelations = new HashMap();
+        greaterThanRelations = new HashMap();
+        lessThanRelations = new HashMap();
         rules = new LinkedList();
         relationsToLoad = new LinkedList();
         relationsToLoadTuples = new LinkedList();
@@ -230,8 +252,12 @@ public abstract class Solver {
      * 
      * @return  collection of equivalence relations
      */
-    public Collection getEquivalenceRelations() {
-        return equivalenceRelations.values();
+    public Collection getComparisonRelations() {
+        Collection set = new LinkedList();
+        set.addAll(equivalenceRelations.values());
+        set.addAll(lessThanRelations.values());
+        set.addAll(greaterThanRelations.values());
+        return set;
     }
     
     /**
@@ -894,7 +920,7 @@ public abstract class Solver {
      * @return  new inference rule
      */
     InferenceRule parseRule(int lineNum, String s) {
-        MyStringTokenizer st = new MyStringTokenizer(s, " \t(,/).=!", true);
+        MyStringTokenizer st = new MyStringTokenizer(s, " \t(,/).=!<>", true);
         Map/* <String,Variable> */nameToVar = new HashMap();
         RuleTerm bottom = parseRuleTerm(lineNum, s, nameToVar, st);
         String sep = nextToken(st);
@@ -982,24 +1008,35 @@ public abstract class Solver {
         }
         String openParen = nextToken(st);
         boolean flip = false;
+        boolean less = false;
+        boolean greater = false;
         if (openParen.equals("!")) {
             flip = true;
             openParen = nextToken(st);
         }
-        if (openParen.equals("=")) {
+        else if (openParen.equals("<")) {
+            less = true;
+            openParen = nextToken(st);
+        }
+        else if (openParen.equals(">")) {
+            less = true;
+            openParen = nextToken(st);
+        }
+        if (openParen.equals("=") || less || greater) {
             if (negated) {
                 outputError(lineNum, st.getPosition(), s, "Unexpected \"!\"");
                 throw new IllegalArgumentException();
             }
             // "a = b".
+            boolean equals = openParen.equals("=");
             String varName1 = relationName;
-            String varName2 = nextToken(st);
+            String varName2 = equals ? nextToken(st) : openParen;
             Variable var1 = (Variable) nameToVar.get(varName1);
             Variable var2 = (Variable) nameToVar.get(varName2);
             Domain fd;
             if (var1 == null) {
                 if (var2 == null) {
-                    outputError(lineNum, st.getPosition(), s, "Cannot use \"=\" on two unbound variables.");
+                    outputError(lineNum, st.getPosition(), s, "Cannot use \"=\", \"!=\", \"<\", \"<=\", \">\", \">=\", on two unbound variables.");
                     throw new IllegalArgumentException();
                 }
                 fd = var2.domain;
@@ -1013,8 +1050,15 @@ public abstract class Solver {
             if (var1.domain != var2.domain) {
                 outputError(lineNum, st.getPosition(), s, "Variable " + var1 + " and " + var2 + " have different field domains.");
                 throw new IllegalArgumentException();
+            }            
+            Relation r;
+            if (less) {
+                r = equals ? getLessThanOrEqualRelation(fd) : getLessThanRelation(fd);
+            } else if (greater) {
+                r = equals ? getGreaterThanOrEqualRelation(fd) : getGreaterThanRelation(fd);
+            } else {
+                r = flip ? getNotEquivalenceRelation(fd) : getEquivalenceRelation(fd);
             }
-            Relation r = flip ? getNotEquivalenceRelation(fd) : getEquivalenceRelation(fd);
             List vars = new Pair(var1, var2);
             RuleTerm rt = new RuleTerm(r, vars);
             return rt;
@@ -1066,6 +1110,7 @@ public abstract class Solver {
         RuleTerm rt = new RuleTerm(r, vars);
         return rt;
     }
+
 
     /**
      * Parse a variable or a constant.
@@ -1305,6 +1350,47 @@ public abstract class Solver {
      */
     Relation getNotEquivalenceRelation(Domain fd) {
         Relation r = getEquivalenceRelation(fd);
+        return r.makeNegated(this);
+    }
+    /**
+     * @param fd
+     * @return
+     */
+    Relation getGreaterThanOrEqualRelation(Domain fd) {
+        Relation r = getLessThanRelation(fd);
+        return r.makeNegated(this);
+    }
+
+    /**
+     * @param fd
+     * @return
+     */
+    Relation getGreaterThanRelation(Domain fd) {
+        Relation r = (Relation) greaterThanRelations.get(fd);
+        if (r == null) {
+            greaterThanRelations.put(fd, r = createGreaterThanRelation(fd));
+        }
+        return r;
+    }
+
+    /**
+     * @param fd
+     * @return
+     */
+    Relation getLessThanRelation(Domain fd) {
+        Relation r = (Relation) lessThanRelations.get(fd);
+        if (r == null) {
+            lessThanRelations.put(fd, r = createLessThanRelation(fd));
+        }
+        return r;
+    }
+
+    /**
+     * @param fd
+     * @return
+     */
+    Relation getLessThanOrEqualRelation(Domain fd) {
+        Relation r = getGreaterThanRelation(fd);
         return r.makeNegated(this);
     }
 
