@@ -135,7 +135,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         b.free();
         BDD b1 = makeDomainsMatch(r, r1, r0);
         r0.setBDD(b1);
-        if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount()+" Domains: "+r0.activeDomains(b));
+        if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount()+" Domains: "+r0.activeDomains(b1));
         return null;
     }
 
