@@ -120,7 +120,6 @@ import org.sf.javabdd.BDDFactory;
  */
 public class PAFromSource {
     static final String IMPLICITSUPERCALL = "ImplicitSuperCall in ";
-    int filesParsed = 0;
     
     public PrintStream out = System.out;
     
@@ -311,89 +310,12 @@ public class PAFromSource {
         int[] ordering = bdd.makeVarOrdering(reverseLocal, varorder);
         bdd.setVarOrder(ordering);
         
-        /*
-        V1ctoV2c = bdd.makePair();
-        V1ctoV2c.set(V1c, V2c);
-        V1cV2ctoV2cV1c = bdd.makePair();
-        V1cV2ctoV2cV1c.set(V1c, V2c);
-        V1cV2ctoV2cV1c.set(V2c, V1c);
-        if (OBJECT_SENSITIVE) {
-            V1cH1ctoV2cV1c = bdd.makePair();
-            V1cH1ctoV2cV1c.set(V1c, V2c);
-            V1cH1ctoV2cV1c.set(H1c, V1c);
-        }
-        T2toT1 = bdd.makePair(T2, T1);
-        T1toT2 = bdd.makePair(T1, T2);
-        V1toV2 = bdd.makePair();
-        V1toV2.set(V1, V2);
-        V1toV2.set(V1c, V2c);
-        V2toV1 = bdd.makePair();
-        V2toV1.set(V2, V1);
-        V2toV1.set(V2c, V1c);
-        H1toH2 = bdd.makePair();
-        H1toH2.set(H1, H2);
-        H1toH2.set(H1c, H2c);
-        H2toH1 = bdd.makePair();
-        H2toH1.set(H2, H1);
-        H2toH1.set(H2c, H1c);
-        V1H1toV2H2 = bdd.makePair();
-        V1H1toV2H2.set(V1, V2);
-        V1H1toV2H2.set(H1, H2);
-        V1H1toV2H2.set(V1c, V2c);
-        V1H1toV2H2.set(H1c, H2c);
-        V2H2toV1H1 = bdd.makePair();
-        V2H2toV1H1.set(V2, V1);
-        V2H2toV1H1.set(H2, H1);
-        V2H2toV1H1.set(V2c, V1c);
-        V2H2toV1H1.set(H2c, H1c);
-        */
-        
         V1set = V1.set();
-        /*
-        if (V1c.length > 0) {
-            V1cset = bdd.one();
-            V1cdomain = bdd.one();
-            for (int i = 0; i < V1c.length; ++i) {
-                V1cset.andWith(V1c[i].set());
-                V1cdomain.andWith(V1c[i].domain());
-            }
-            V1set.andWith(V1cset.id());
-        }
-        */
+
         V2set = V2.set();
-        /*
-        if (V2c.length > 0) {
-            V2cset = bdd.one();
-            V2cdomain = bdd.one();
-            for (int i = 0; i < V2c.length; ++i) {
-                V2cset.andWith(V2c[i].set());
-                V2cdomain.andWith(V2c[i].domain());
-            }
-            V2set.andWith(V2cset.id());
-        }
-        */
+
         H1set = H1.set();
-        /*
-        if (H1c.length > 0) {
-            H1cset = bdd.one();
-            H1cdomain = bdd.one();
-            for (int i = 0; i < H1c.length; ++i) {
-                H1cset.andWith(H1c[i].set());
-                H1cdomain.andWith(H1c[i].domain());
-            }
-            H1set.andWith(H1cset.id());
-        }
-        H2set = H2.set();
-        if (H2c.length > 0) {
-            H2cset = bdd.one();
-            H2cdomain = bdd.one();
-            for (int i = 0; i < H2c.length; ++i) {
-                H2cset.andWith(H2c[i].set());
-                H2cdomain.andWith(H2c[i].domain());
-            }
-            H2set.andWith(H2cset.id());
-        }
-        */
+
         T1set = T1.set();
         T2set = T2.set();
         Fset = F.set();
@@ -402,14 +324,7 @@ public class PAFromSource {
         Nset = N.set();
         Iset = I.set();
         Zset = Z.set();
-        /*
-        V1cV2cset = (V1c.length > 0) ? V1cset.and(V2cset) : bdd.zero();
-        H1cH2cset = (H1c.length > 0) ? H1cset.and(H2cset) : bdd.zero();
-        if (V1c.length > 0) {
-            V1cH1cset = (H1c.length > 0) ? V1cset.and(H1cset) : V1cset;
-        } else {
-            V1cH1cset = (H1c.length > 0) ? H1cset : bdd.zero();
-        }*/
+
         V1V2set = V1set.and(V2set);
         V1FV2set = V1V2set.and(Fset);
         V1H1set = V1set.and(H1set);
@@ -427,7 +342,7 @@ public class PAFromSource {
         MZset = Mset.and(Zset);
     }
 
-    static BDDDomain makeDomain(String name, int bits) {
+    private static BDDDomain makeDomain(String name, int bits) {
         Assert._assert(bits < 64);
         BDDDomain d = bdd.extDomain(new long[] { 1L << bits })[0];
         d.setName(name);
@@ -453,7 +368,7 @@ public class PAFromSource {
         return bdd.zero();
     }
     
-    public void resetBDDs() {
+    private void resetBDDs() {
         A = initBDD("A");
         vP = initBDD("vP0");
         S = initBDD("S");
@@ -466,12 +381,6 @@ public class PAFromSource {
         mIE = initBDD("mIE");
         mvP = initBDD("mvP");
         
-        /*
-        if (FILTER_HP) {
-            fT = bdd.zero();
-            fC = bdd.zero();
-        }
-        */
         actual = initBDD("actual");
         formal = initBDD("formal");
         Iret = initBDD("Iret");
@@ -479,56 +388,8 @@ public class PAFromSource {
         Ithr = initBDD("Ithr");
         Mthr = initBDD("Mthr");
         mI = initBDD("mI");
-        //mV = bdd.zero();
-        //sync = bdd.zero();
         IE = initBDD("IE0");
-        //hP = bdd.zero();
         visited = initBDD("visited");
-        /*
-        if (OBJECT_SENSITIVE || CARTESIAN_PRODUCT) staticCalls = bdd.zero();
-        
-        if (THREAD_SENSITIVE) threadRuns = bdd.zero();
-        
-        if (INCREMENTAL1) {
-            old1_A = bdd.zero();
-            old1_S = bdd.zero();
-            old1_L = bdd.zero();
-            old1_vP = bdd.zero();
-            old1_hP = bdd.zero();
-        }
-        if (INCREMENTAL2) {
-            old2_myIE = bdd.zero();
-            old2_visited = bdd.zero();
-        }
-        if (INCREMENTAL3) {
-            old3_t3 = bdd.zero();
-            old3_vP = bdd.zero();
-            old3_t4 = bdd.zero();
-            old3_hT = bdd.zero();
-            old3_t6 = bdd.zero();
-            old3_t9 = new BDD[MAX_PARAMS];
-            for (int i = 0; i < old3_t9.length; ++i) {
-                old3_t9[i] = bdd.zero();
-            }
-        }
-        
-        if (CARTESIAN_PRODUCT && false) {
-            H1toV1c = new BDDPairing[MAX_PARAMS];
-            V1ctoH1 = new BDDPairing[MAX_PARAMS];
-            V1csets = new BDD[MAX_PARAMS];
-            V1cH1equals = new BDD[MAX_PARAMS];
-            for (int i = 0; i < MAX_PARAMS; ++i) {
-                H1toV1c[i] = bdd.makePair(H1, V1c[i]);
-                V1ctoH1[i] = bdd.makePair(V1c[i], H1);
-                V1csets[i] = V1c[i].set();
-                V1cH1equals[i] = H1.buildEquals(V1c[i]);
-            }
-        }
-        
-        if (USE_VCONTEXT) {
-            IEcs = bdd.zero();
-        }
-        */
     }
    
 
@@ -549,7 +410,7 @@ public class PAFromSource {
      */
     class PAASTVisitor extends ASTVisitor {
         
-        final boolean libs;
+        final boolean useMrelations;
         final boolean generateVisited;
         
         Stack/*MethodDeclaration, TypeDeclaration, AnonymousClassDeclaration*/ declStack = new Stack();
@@ -570,21 +431,14 @@ public class PAFromSource {
         }
         
         // TODO handle outer this
-        
-        /*
-        public PAASTVisitor(int i, int s) {
-            super(false); // avoid comments
-            id = i;
-            scope = s;
-        }
-         */
+
         public PAASTVisitor(boolean l, boolean r) { 
             super(false); 
-            libs = l;
+            useMrelations = l;
             generateVisited = r;
             /*this(0,0);*/
             
-            if (libs) addToMVP(StringWrapper.DUMMY_METHOD, 
+            if (useMrelations) addToMVP(StringWrapper.DUMMY_METHOD, 
                 StringWrapper.GLOBAL_THIS, StringWrapper.GLOBAL_THIS);   
             else addToVP(StringWrapper.GLOBAL_THIS, 
                 StringWrapper.GLOBAL_THIS);    
@@ -595,7 +449,7 @@ public class PAFromSource {
         // vP
         public boolean visit(ArrayCreation arg0) {
             ASTNodeWrapper node = new ASTNodeWrapper(arg0);
-            if (libs) {
+            if (useMrelations) {
                 addToMVP(node, node);
             }
             else addToVP(node, node);
@@ -603,7 +457,7 @@ public class PAFromSource {
         }
         public boolean visit(StringLiteral arg0) {
             ASTNodeWrapper node = new ASTNodeWrapper(arg0);
-            if (libs) {
+            if (useMrelations) {
                 addToMVP(node, node);
             }
             else addToVP(node, node);          
@@ -615,7 +469,7 @@ public class PAFromSource {
         public void endVisit(InfixExpression arg0) {
             if (arg0.resolveTypeBinding().isPrimitive()) return;
             ASTNodeWrapper node = new ASTNodeWrapper(arg0);
-            if (libs) {
+            if (useMrelations) {
                 addToMVP(node, node);
             }
             else addToVP(node, node);
@@ -652,7 +506,7 @@ public class PAFromSource {
                     Collections.singletonList(new MethodWrapper((MethodDeclaration)decl));         
             }
             
-            if (libs) {
+            if (useMrelations) {
                 addToMVP(enclosingMethods, n, n);
             }
             else addToVP(n, n);
@@ -681,7 +535,7 @@ public class PAFromSource {
                 if (rType.isPrimitive() || rType.isNullType()) return;
                 // string +=
                 if (arg0.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
-                    if (libs) {
+                    if (useMrelations) {
                         addToMVP(new ASTNodeWrapper(left), 
                             new ASTNodeWrapper(arg0));
                     }
@@ -896,7 +750,7 @@ public class PAFromSource {
                 case ASTNode.SUPER_METHOD_INVOCATION: 
                 case ASTNode.CAST_EXPRESSION:
                 case ASTNode.ARRAY_ACCESS:
-                    if (libs) {
+                    if (useMrelations) {
                         addToMS(new ASTNodeWrapper(qualifier), field, rhs);
                     }
                     else addToS(new ASTNodeWrapper(qualifier), field, 
@@ -927,7 +781,7 @@ public class PAFromSource {
                 case ASTNode.SUPER_METHOD_INVOCATION: 
                 case ASTNode.CAST_EXPRESSION:
                 case ASTNode.ARRAY_ACCESS:
-                    if (libs) {
+                    if (useMrelations) {
                         addToMS(StringWrapper.GLOBAL_THIS, new ASTNodeWrapper(field), rhs);
                     }
                     else addToS(StringWrapper.GLOBAL_THIS, 
@@ -1011,7 +865,7 @@ public class PAFromSource {
                 // load
                 Name f = arg0.getName();  
                 if (isStatic(f)) {
-                    if (libs) {
+                    if (useMrelations) {
                         addToML(StringWrapper.GLOBAL_THIS, 
                             new ASTNodeWrapper(f), arg0);
                     }
@@ -1023,7 +877,7 @@ public class PAFromSource {
                         addToL(t, f, new ASTNodeWrapper(arg0));
                     }
                     else {
-                        if (libs) {
+                        if (useMrelations) {
                             addToML(new ASTNodeWrapper(expr), 
                                 new ASTNodeWrapper(f), arg0);
                         }
@@ -1040,7 +894,7 @@ public class PAFromSource {
                 if (!arg0.resolveTypeBinding().isPrimitive()) {
                     if (isField(arg0)) { // load, implicit this
                         if (isStatic(arg0)) {
-                            if (libs) {
+                            if (useMrelations) {
                                 addToML(StringWrapper.GLOBAL_THIS, new ASTNodeWrapper(arg0), 
                                     arg0);
                             }
@@ -1061,7 +915,7 @@ public class PAFromSource {
                 && !arg0.resolveTypeBinding().isPrimitive()) {
                 if (isStatic(arg0)) {
                     // load, treat as static field access
-                    if (libs) {
+                    if (useMrelations) {
                         addToML(StringWrapper.GLOBAL_THIS, 
                             new ASTNodeWrapper(arg0.getName()), arg0);
                     }
@@ -1073,7 +927,7 @@ public class PAFromSource {
                         addToL(t, arg0.getName(), new ASTNodeWrapper(arg0));
                     }
                     else {
-                        if (libs) {
+                        if (useMrelations) {
                             addToML(new ASTNodeWrapper(arg0.getQualifier()), 
                                 new ASTNodeWrapper(arg0.getName()), arg0);
                             
@@ -1092,7 +946,7 @@ public class PAFromSource {
         public void endVisit(ArrayAccess arg0) {
             if (!arg0.resolveTypeBinding().isPrimitive()) {
                 // load
-                if (libs) {
+                if (useMrelations) {
                     addToML(new ASTNodeWrapper(arg0.getArray()), 
                         StringWrapper.ARRAY_FIELD, arg0);
                 }
@@ -1152,7 +1006,7 @@ public class PAFromSource {
                     addToFormal(M_bdd, 
                         binding.getParameterTypes().length + 1, 
                         StringWrapper.OUTER_THIS_FIELD);
-                    if (libs) {
+                    if (useMrelations) {
                         addToMS(new MethodWrapper(bindings[i]), 
                             thisParam, StringWrapper.OUTER_THIS_FIELD, 
                             StringWrapper.OUTER_THIS_FIELD);
@@ -1533,7 +1387,7 @@ public class PAFromSource {
                     ExceptionWrapper ew = new ExceptionWrapper(inv, exs[i]);
                     addToIthr(I_bdd, ew); 
                     if (nat) {
-                        if (libs) addToMVP(enclosingMethods, ew, ew);
+                        if (useMrelations) addToMVP(enclosingMethods, ew, ew);
                         else addToVP(ew, ew);
                     }
                     
@@ -1580,7 +1434,7 @@ public class PAFromSource {
             if (!retType.isPrimitive()) {
                 addToIret(I_bdd, invocation);
                 if (nat) { // treat as new instantiation site
-                    if (libs) addToMVP(enclosingMethods, invocation, invocation);
+                    if (useMrelations) addToMVP(enclosingMethods, invocation, invocation);
                     else addToVP(invocation, invocation);
                 }
                 
@@ -1593,7 +1447,7 @@ public class PAFromSource {
             
             // IE
             if (!(methodName instanceof MethodWrapper)) {
-                if (libs) {
+                if (useMrelations) {
                     for (Iterator i = enclosingMethods.iterator(); i.hasNext(); ) {
                         addToMIE((Wrapper)i.next(), I_bdd, invocationBinding);
                     }
@@ -2015,7 +1869,7 @@ public class PAFromSource {
                 IMethodBinding[] methods = p.getDeclaredMethods();
                 for (int i = 0; i < methods.length; i++) {
                     if (methods[i].isConstructor()) {
-                        if (libs) {
+                        if (useMrelations) {
                             addToMS(new MethodWrapper(methods[i]), 
                                 new ThisWrapper(methods[i], e), 
                                 new ASTNodeWrapper(f), v2);
@@ -2026,7 +1880,7 @@ public class PAFromSource {
                 }
             }
             else {// method decl
-                if (libs) {
+                if (useMrelations) {
                     addToMS(new MethodWrapper((MethodDeclaration)n), 
                         new ThisWrapper((MethodDeclaration)n, e), 
                         new ASTNodeWrapper(f), v2);
@@ -2051,7 +1905,7 @@ public class PAFromSource {
                 IMethodBinding[] methods = p.getDeclaredMethods();
                 for (int i = 0; i < methods.length; i++) {
                     if (methods[i].isConstructor()) {
-                        if (libs) {
+                        if (useMrelations) {
                             addToMS(new MethodWrapper(methods[i]), v1, 
                                 f, new ThisWrapper(methods[i], e));
                         }
@@ -2060,7 +1914,7 @@ public class PAFromSource {
                 }
             }
             else {// method decl
-                if (libs) {
+                if (useMrelations) {
                     addToMS(new MethodWrapper((MethodDeclaration)n), v1, 
                         f, new ThisWrapper((MethodDeclaration)n, e));
                 }
@@ -2082,7 +1936,7 @@ public class PAFromSource {
                 IMethodBinding[] methods = p.getDeclaredMethods();
                 for (int i = 0; i < methods.length; i++) {
                     if (methods[i].isConstructor()) {
-                        if (libs) {
+                        if (useMrelations) {
                             addToMS(new MethodWrapper(methods[i]), 
                                 new ThisWrapper(methods[i], e), 
                                 new ASTNodeWrapper(f), 
@@ -2097,7 +1951,7 @@ public class PAFromSource {
             }
             else {
                 MethodDeclaration decl = (MethodDeclaration)n;
-                if (libs) {
+                if (useMrelations) {
                     addToMS(new MethodWrapper(decl), new ThisWrapper(decl, e), 
                         new ASTNodeWrapper(f), 
                         new ThisWrapper(decl, e2));  
@@ -2201,7 +2055,7 @@ public class PAFromSource {
                 IMethodBinding[] methods = p.getDeclaredMethods();
                 for (int i = 0; i < methods.length; i++) {
                     if (methods[i].isConstructor()) {
-                        if (libs) {
+                        if (useMrelations) {
                             addToML(new MethodWrapper(methods[i]), 
                                 new ThisWrapper(methods[i], v1), fw, v2); 
                         }
@@ -2210,7 +2064,7 @@ public class PAFromSource {
                 }
             }
             else {// method decl
-                if (libs) {
+                if (useMrelations) {
                     addToML(new MethodWrapper((MethodDeclaration)n), 
                         new ThisWrapper((MethodDeclaration)n, v1), fw, v2);
                 }
@@ -2424,7 +2278,7 @@ public class PAFromSource {
     }
     
 
-    Initializer getInitializer(ASTNode n) {
+    private Initializer getInitializer(ASTNode n) {
         do {
             n = n.getParent();
         } while (n.getNodeType() != ASTNode.INITIALIZER 
@@ -2481,12 +2335,27 @@ public class PAFromSource {
 
     Set dotJava;
     Set dotClass;
-    Map/*<ICompilationUnit, CompilationUnit>*/ javaASTs;
+    Map/*<ICompilationUnit, CompilationUnit>*/ javaASTs = new HashMap();
+    private boolean ran = false;
+    private int filesParsed = 0;
     
     public PAFromSource(Set j, Set c) {
-        javaASTs = new HashMap();
-        dotJava = j;
-        dotClass = c;
+        this();
+        parse(j, c);
+    }
+    
+    public PAFromSource() {
+        dotJava = new HashSet();
+        dotClass = new HashSet();
+        
+        // TODO clear files?
+        resetBDDs();
+        initializeMaps();
+    }
+
+    public SourceTransformation getTransformation() {
+        if (ran) return new SourceTransformation(this);
+        return null;
     }
     
     public static void main(String[] args) throws IOException {
@@ -2505,7 +2374,7 @@ public class PAFromSource {
     }
 
     
-    static Set readClassesFromFile(String fname) 
+    private static Set readClassesFromFile(String fname) 
         throws IOException {
         
         BufferedReader r = null;
@@ -2527,53 +2396,29 @@ public class PAFromSource {
      * @throws IOException
      */
     public void run() throws IOException {
-        filesParsed = 0;
-        System.out.println(dotJava.size() + " .java files to parse.");
-        System.out.println(dotClass.size() + " .class files to parse.");
-        
-        Collection classes = new LinkedList();
-        for (Iterator i = dotClass.iterator(); i.hasNext(); ) {
-            IClassFile f = (IClassFile) i.next();
-            String s = EclipseUtil.getFullyQualifiedClassName(f);
-            classes.add(s);
-        }
-        if (!classes.isEmpty())
-            ExternalAppLauncher.callJoeqGenRelations(classes);
-        
-        resetBDDs();
-        initializeMaps();
-
-        // Start timing.
-        long time = System.currentTimeMillis();
-        
-        int count = 1;
-        
-        out.println("Processing .java files");
-        for (Iterator i = dotJava.iterator(); i.hasNext(); ) {
-            ICompilationUnit o = (ICompilationUnit)i.next();
-            out.println("Starting file " + count++);
-            CompilationUnit cu = parseAST(o);
-            if (cu != null) {
-                javaASTs.put(o, cu);
-                generateRelations(cu, true, true);
-            }
-        }
-        
-        if (false) {
-            out.println("Processing .class files");
-            for (Iterator i = dotClass.iterator(); i.hasNext(); ) {
-                Object o = i.next();
-                out.println("Starting file " + count++);
-                CompilationUnit cu = parseAST(o);
-                if (cu != null) generateRelations(cu, true, true);
-            }
-        }
-               
         if (filesParsed == 0) {
             out.println("nothing to generate relations for");
             return;
         }
+        // Start timing.
+        long time = System.currentTimeMillis();
+        generateTypeRelations();
+        System.out.println("Time spent : "+(System.currentTimeMillis()-time)/1000.);
         
+        System.out.println("Writing relations...");
+        time = System.currentTimeMillis();
+        dumpBDDRelations();
+        System.out.println("Time spent writing: "+(System.currentTimeMillis()-time)/1000.);
+
+        out.println("Relations generated from " + filesParsed + " files.");
+        
+        out.println("Calling bddbddb...");
+        
+        if (ExternalAppLauncher.callBddBddb(this) == 0) ran = true;
+        else ran = false;
+    }
+
+    private void generateTypeRelations() {
         // vT, aT
         Iterator it = Vmap.iterator();
         for (int i = 0; it.hasNext(); i++) {
@@ -2590,22 +2435,65 @@ public class PAFromSource {
             Wrapper h =(Wrapper)it.next();
             addToHT(i, h);
         }
-    
-        // TODO transitive closure on aT
-        
-        System.out.println("Time spent : "+(System.currentTimeMillis()-time)/1000.);
-        
-        System.out.println("Writing relations...");
-        time = System.currentTimeMillis();
-        dumpBDDRelations();
-        System.out.println("Time spent writing: "+(System.currentTimeMillis()-time)/1000.);
 
-        out.println("Relations generated from " + filesParsed + " files.");
-        
-        out.println("Calling bddbddb...");
-        ExternalAppLauncher.callBddBddb(this);
+        // TODO transitive closure on aT
     }
 
+    public void parse(Set sources, Set libs) {
+        // dont repeat work
+        sources.removeAll(dotJava);
+        libs.removeAll(dotClass);
+        
+        System.out.println(sources.size() + " .java files to parse.");
+        System.out.println(libs.size() + " .class files to parse.");
+        
+        if (!libs.isEmpty()) {
+            Collection classes = new LinkedList();
+            for (Iterator i = libs.iterator(); i.hasNext(); ) {
+                IClassFile f = (IClassFile) i.next();
+                String s = EclipseUtil.getFullyQualifiedClassName(f);
+                classes.add(s);
+            }
+         
+            ExternalAppLauncher.callJoeqGenRelations(classes, varorder);
+            dotClass.addAll(libs);
+            
+            // load stuff back in
+            resetBDDs();
+            initializeMaps();
+        }
+
+        // Start timing.
+        long time = System.currentTimeMillis();
+        
+        int count = 1;
+        out.println("Processing .java files");
+        for (Iterator i = sources.iterator(); i.hasNext(); ) {
+            ICompilationUnit o = (ICompilationUnit)i.next();
+            out.println("Starting file " + count++);
+            CompilationUnit cu = parseAST(o);
+            if (cu != null) {
+                javaASTs.put(o, cu);
+                dotJava.add(o);
+                generateRelations(cu, true, true);
+            }
+        }
+        
+        if (false) {
+            out.println("Processing .class files");
+            for (Iterator i = libs.iterator(); i.hasNext(); ) {
+                Object o = i.next();
+                out.println("Starting file " + count++);
+                CompilationUnit cu = parseAST(o);
+                if (cu != null) {
+                    dotClass.add(o);
+                    generateRelations(cu, true, true);
+                }
+            }
+        }
+
+        System.out.println("Time spent : "+(System.currentTimeMillis()-time)/1000.);
+    }
     
     public void writeCallgraph(String file, MultiMap mm) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
@@ -2641,7 +2529,7 @@ public class PAFromSource {
             
             
             if (!staticinits.isEmpty()) {
-                writer.write(" METHOD: <clinit> ()V ROOT\n");
+                writer.write(" METHOD <clinit> ()V ROOT\n");
                 for (Iterator j = staticinits.iterator(); j.hasNext(); ) {
                     Initializer in = (Initializer)j.next();
                     in.accept(new CallGraphPrinter(writer, mm));
@@ -2730,7 +2618,7 @@ public class PAFromSource {
     }
     
     
-    boolean isInVisited(IMethodBinding binding) {
+    private boolean isInVisited(IMethodBinding binding) {
         String name = binding.getName();
         //out.println(name);
         if (binding.getReturnType().getKey().equals("void")) {
@@ -2748,7 +2636,7 @@ public class PAFromSource {
     }
 
     private void writeMethod(BufferedWriter writer, IMethodBinding mb) throws IOException {
-        writer.write(" METHOD: ");
+        writer.write(" METHOD ");
         writer.write(getFormattedName(mb));
         if (isInVisited(mb)) {
             writer.write(" ROOT");
@@ -2863,7 +2751,7 @@ public class PAFromSource {
         }
     }
   
-    public void dumpBDDRelations() throws IOException {     
+    private void dumpBDDRelations() throws IOException {     
         cha = new ClassHierarchyAnalysis(this).calculateCHA();
         
         // difference in compatibility
@@ -3048,7 +2936,7 @@ public class PAFromSource {
 
     }
     
-    IndexedMap makeMap(String name, int bits) {
+    private IndexedMap makeMap(String name, int bits) {
         String dumpPath = System.getProperty("pas.dumppath", "");
         if (dumpPath.length() > 0) {
             File f = new File(dumpPath);
@@ -3147,7 +3035,7 @@ public class PAFromSource {
 
     }
     
-    static CompilationUnit readSourceFile(String fname) {        
+    private static CompilationUnit readSourceFile(String fname) {        
         System.out.print("parsing file: " + fname);
  
         StringBuffer sb = new StringBuffer();
@@ -3183,7 +3071,7 @@ public class PAFromSource {
         return cu;
     }
 
-    void addToVT(StringWrapper v, ITypeBinding type) {
+    private void addToVT(StringWrapper v, ITypeBinding type) {
         int V_i = Vmap.get(v);
         BDD bdd1 = V1.ithVar(V_i);
         TypeWrapper tw = new TypeWrapper(type);
@@ -3195,7 +3083,7 @@ public class PAFromSource {
         vT.orWith(bdd1);
     }
       
-    void addToVT(int V_i, Wrapper v) {
+    private void addToVT(int V_i, Wrapper v) {
         if (v instanceof TypeWrapper || v instanceof MethodWrapper) {
             throw new RuntimeException("ERROR: this type of node shouldn't be in V: " + v);
             //return;
@@ -3234,7 +3122,7 @@ public class PAFromSource {
         }
     }
     
-    void addToHT(int H_i, Wrapper h) {
+    private void addToHT(int H_i, Wrapper h) {
         if (h.equals(StringWrapper.GLOBAL_THIS)) return;
         if (h instanceof StringWrapper) {
             // From Joeq.
@@ -3262,7 +3150,7 @@ public class PAFromSource {
     }
     
     // supertype, subtype
-    void addToAT(Wrapper t1, Wrapper t2) {
+    private void addToAT(Wrapper t1, Wrapper t2) {
         int T1_i = Tmap.get(t1);
         int T2_i = Tmap.get(t2);
         BDD T1_bdd = T1.ithVar(T1_i);
@@ -3404,7 +3292,7 @@ public class PAFromSource {
     }
 
     
-    List/*IMethodBinding*/ getConstructors(ASTNode n) {
+    private List/*IMethodBinding*/ getConstructors(ASTNode n) {
         ArrayList l = new ArrayList();
         
         ITypeBinding p;
@@ -3428,7 +3316,7 @@ public class PAFromSource {
         return l;
     }
     
-    List/*MethodWrapper*/ getWrappedConstructors(ASTNode n) {
+    private List/*MethodWrapper*/ getWrappedConstructors(ASTNode n) {
         ArrayList l = new ArrayList();
         ITypeBinding p;
         if (n.getNodeType() == ASTNode.TYPE_DECLARATION) {
@@ -3447,7 +3335,7 @@ public class PAFromSource {
         return l;
     }
     
-    boolean hasOuterThis(ITypeBinding binding) {
+    private boolean hasOuterThis(ITypeBinding binding) {
         // TODO need isclass check?
         return binding.isNested() && binding.isClass() && !isStatic(binding);
     }

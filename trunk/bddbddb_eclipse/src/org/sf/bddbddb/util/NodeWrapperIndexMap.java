@@ -98,6 +98,7 @@ public class NodeWrapperIndexMap implements IndexedMap {
         return before != size();
     }
 
+        
     public void dumpStrings(final BufferedWriter out) throws IOException {
         for (Iterator j =iterator(); j.hasNext(); ) {
             Object o = j.next();

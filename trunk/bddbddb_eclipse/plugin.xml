@@ -37,23 +37,38 @@
                id="bddbddbMenu">
             <separator name="bddbddbGroup"/>
          </menu>
-         <action
+            <action
                toolbarPath="bddbddbGroup"
                label="&amp;Transform source"
-               icon="icons/sample.gif"
+               icon="icons/3.GIF"
                tooltip="Transforms the source code after analysis"
                class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
                menubarPath="bddbddbMenu/bddbddbGroup"
                id="Transform"/>
-         <action
+            <action
                toolbarPath="bddbddbGroup"
                label="&amp;Generate relations"
                class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
                tooltip="Generate relations from input program"
-               icon="icons/sample.gif"
+               icon="icons/2.GIF"
                menubarPath="bddbddbMenu/bddbddbGroup"
                id="GenRelations"/>
-
+            <action
+               toolbarPath="bddbddbGroup"
+               label="&amp;Parse files"
+               icon="icons/1.GIF"
+               tooltip="Parse the selected files (does not overwrite already parsed files)"
+               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               menubarPath="bddbddbMenu/bddbddbGroup"
+               id="Parse"/>
+            <action
+               toolbarPath="bddbddbGroup"
+               label="&amp;Reset"
+               icon="icons/0.GIF"
+               tooltip="Reset everything"
+               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               menubarPath="bddbddbMenu/bddbddbGroup"
+               id="Reset"/>
       </actionSet>
    </extension>
 

@@ -25,7 +25,7 @@ public class SourceTransformation {
 
     private PAFromSource pa;
     
-    public SourceTransformation(PAFromSource p) {
+    SourceTransformation(PAFromSource p) {
         pa = p;
         
     }
@@ -133,6 +133,78 @@ public class SourceTransformation {
                 cast.setExpression(ast.newNullLiteral());
                 arg0.setInitializer(e);
             }
+        }
+        public void endVisit(AnonymousClassDeclaration arg0) {
+   
+        }
+        public void endVisit(ArrayAccess arg0) {
+
+        }
+        public void endVisit(ArrayCreation arg0) {
+    
+        }
+        public void endVisit(ArrayInitializer arg0) {
+ 
+        }
+        public void endVisit(CatchClause arg0) {
+     
+        }
+        public void endVisit(ConditionalExpression arg0) {
+   
+        }
+        public void endVisit(ConstructorInvocation arg0) {
+      
+        }
+        public void endVisit(DoStatement arg0) {
+
+        }
+        public void endVisit(ExpressionStatement arg0) {
+   
+        }
+        public void endVisit(FieldAccess arg0) {
+    
+        }
+        public void endVisit(ForStatement arg0) {
+    
+        }
+        public void endVisit(IfStatement arg0) {
+   
+        }
+        public void endVisit(InfixExpression arg0) {
+
+        }
+        public void endVisit(InstanceofExpression arg0) {
+  
+        }
+        public void endVisit(MethodDeclaration arg0) {
+
+        }
+        public void endVisit(MethodInvocation arg0) {
+
+        }
+        public void endVisit(ParenthesizedExpression arg0) {
+
+        }
+        public void endVisit(QualifiedName arg0) {
+  
+        }
+        public void endVisit(ReturnStatement arg0) {
+
+        }
+        public void endVisit(SuperConstructorInvocation arg0) {
+ 
+        }
+        public void endVisit(SuperFieldAccess arg0) {
+ 
+        }
+        public void endVisit(SuperMethodInvocation arg0) {
+
+        }
+        public void endVisit(VariableDeclarationExpression arg0) {
+
+        }
+        public void endVisit(WhileStatement arg0) {
+
         }
     }
     

@@ -1,26 +1,18 @@
 package org.sf.bddbddb.eclipse.actions;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.io.IOException;
 import org.eclipse.core.internal.resources.File;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IClassFile;
-import org.eclipse.jdt.core.IClasspathContainer;
-import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.internal.core.JavaProject;
-import org.eclipse.jdt.internal.core.PackageFragment;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
@@ -41,13 +33,14 @@ import org.sf.bddbddb.SourceTransformation;
 public class GenerifyAction implements IWorkbenchWindowActionDelegate {
     private IWorkbenchWindow window;
     private ISelection selection;
-    static private PAFromSource pa = null;
+    static private PAFromSource pa = new PAFromSource();
     
 
     /**
      * The constructor.
      */
     public GenerifyAction() {
+        
     }
 
     /**
@@ -61,29 +54,77 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
         if (id.equals("GenRelations")) {
             genRelations();
         }
+        else if (id.equals("Parse")) {
+            parse();
+        }
+        else if (id.equals("Reset")) {
+            pa = new PAFromSource();
+        }
         else if (id.equals("Transform")) {
-            if (pa == null) {
-                MessageDialog.openInformation(window.getShell(),
-                    "bddbddb Eclipse Plug-in", 
-                    "Relations must be generated before the source can be transformed!");
+            SourceTransformation st = pa.getTransformation();
+            if (st == null) {
+                showDialog("Relations must be generated before the source can be transformed!");
                 return;
             }
-            
-            SourceTransformation st = new SourceTransformation(pa);
             st.test();
         }
         else {
-            MessageDialog.openInformation(window.getShell(),
-                "bddbddb Eclipse Plug-in", "Unrecognized action!");
+            showDialog("Unrecognized action!");
         }
     }
 
     private void genRelations() {
         if (selection instanceof IStructuredSelection && !selection.isEmpty()) {
-            HashSet classes = new HashSet(); // no dups
-            HashSet libs = new HashSet();    // no dups            
             IStructuredSelection is = (IStructuredSelection) selection;
+         
             IPath path = null;
+            Iterator i = is.iterator();
+            while (i.hasNext()) {
+                Object elem = i.next();
+                if (elem instanceof File) continue;
+                try {
+                    IJavaElement o = (IJavaElement)elem;
+                    System.out.println("Selected: "+o.toString().split("\n", 2)[0]);
+                   
+                    path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
+                    path = path.append(o.getJavaProject().getOutputLocation());
+                    path = path.makeAbsolute();
+                    break;
+                } catch (JavaModelException x) {
+                    System.err.println(x);
+                    x.printStackTrace();
+                } catch (ClassCastException x) {
+                    showDialog("Type unsupported: "+ elem.getClass());              
+                }
+            }
+
+            System.out.println("Dumping to path: \""+path+"\"");
+            if (path != null)
+                System.setProperty("pas.dumppath", path.toOSString());
+
+            try {
+                pa.run();
+            } catch (IOException x) {
+                showDialog("IO Exception occurred! "+x.toString());
+            }
+        }
+        else {
+            showDialog("Need selection to determine dump path.");
+            
+        }
+    }
+
+    private void showDialog(String s) {
+        MessageDialog.openInformation(window.getShell(),
+            "bddbddb Eclipse Plug-in", s);  
+    }
+    
+    private void parse() {
+        if (selection instanceof IStructuredSelection && !selection.isEmpty()) {          
+            IStructuredSelection is = (IStructuredSelection) selection;
+            
+            HashSet classes = new HashSet(), libs = new HashSet();
+            
             for (Iterator i = is.iterator(); i.hasNext();) {
                 Object elem = i.next();
                 if (elem instanceof File) continue;
@@ -99,47 +140,27 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
                     else if (o instanceof IJavaProject){
                         IPackageFragment[] pf = ((IJavaProject) o).getPackageFragments();
                         for (int j = 0; j < pf.length; j++) {
-                            //System.out.println(j + " " + pf[j]);
                             addPackageFragment(classes, libs, pf[j]);
                         }
                     }
-                    /*else if (o instanceof IMember){
-                        classes.add(((IMember) o).getCompilationUnit());
-                    }*/
                     else if (o instanceof IPackageFragment) {
                         addPackageFragment(classes, libs, (IPackageFragment)o);
                     }
                     else {
-                        MessageDialog.openInformation(window.getShell(),
-                            "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());   
+                        showDialog("Type unsupported: "+ elem.getClass());
                     }
-
-                    path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
-                    path = path.append(o.getJavaProject().getOutputLocation());
-                    path = path.makeAbsolute();
-
                 } catch (JavaModelException x) {
                     // todo!
                     System.err.println(x);
                     x.printStackTrace();
                 } catch (ClassCastException x) {
-                    MessageDialog.openInformation(window.getShell(),
-                        "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());              
+                    showDialog("Type unsupported: "+ elem.getClass());
                 }
             }
-            System.out.println("Dumping to path: \""+path+"\"");
-            if (path != null)
-                System.setProperty("pas.dumppath", path.toOSString());
-            pa = new PAFromSource(classes, libs);
-            try {
-                pa.run();
-            } catch (IOException x) {
-                MessageDialog.openInformation(window.getShell(),
-                    "bddbddb Eclipse Plug-in", "IO Exception occurred! "+x.toString());
-            }
+            pa.parse(classes, libs);
+            
         } else {
-            MessageDialog.openInformation(window.getShell(),
-                "bddbddb Eclipse Plug-in", "Nothing is selected!");
+            showDialog("Nothing is selected!");
         }
     }
 
