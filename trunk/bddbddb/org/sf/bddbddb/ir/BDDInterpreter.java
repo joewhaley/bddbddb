@@ -304,7 +304,11 @@ public class BDDInterpreter implements Interpreter {
     public Object visit(Load op) {
         BDDRelation r = (BDDRelation) op.getRelationDest();
         try {
-            r.load();
+            if (op.isTuples()) {
+                r.loadTuples(op.getFileName());
+            } else {
+                r.load(op.getFileName());
+            }
         } catch (IOException x) {
         }
         return null;
@@ -318,7 +322,11 @@ public class BDDInterpreter implements Interpreter {
     public Object visit(Save op) {
         BDDRelation r = (BDDRelation) op.getSrc();
         try {
-            r.save();
+            if (op.isTuples()) {
+                r.saveTuples(op.getFileName());
+            } else {
+                r.save(op.getFileName());
+            }
         } catch (IOException x) {
         }
         return null;
@@ -345,6 +353,9 @@ public class BDDInterpreter implements Interpreter {
         return null;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor#visit(org.sf.bddbddb.ir.dynamic.If)
+     */
     public Object visit(If op) {
         return null;
     }

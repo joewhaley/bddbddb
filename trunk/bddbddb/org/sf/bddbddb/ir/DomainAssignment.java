@@ -4,6 +4,8 @@
 package org.sf.bddbddb.ir;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import org.sf.bddbddb.Attribute;
@@ -43,37 +45,52 @@ public abstract class DomainAssignment implements OperationVisitor {
     Solver solver;
     MultiMap/*<Domain,Attribute>*/ domainToAttributes;
     
-    boolean TRACE = false;
+    boolean TRACE = true;
 
     ListIterator currentBlock;
     
     public abstract void doAssignment();
     
-    public void addConstraints(IterationList list) {
-        // TODO: a better order to add the constraints.
+    private void addConstraints(List loops, int loopDepth, IterationList list) {
         if (TRACE) System.out.println("Entering: "+list);
+        List s;
+        if (loopDepth >= loops.size()) {
+            loops.add(s = new LinkedList());
+        } else {
+            s = (List) loops.get(loopDepth);
+        }
+        s.add(list);
         for (Iterator i = list.iterator(); i.hasNext(); ) {
             Object o = i.next();
             if (o instanceof IterationList) {
                 IterationList that = (IterationList) o;
-                if (that.isLoop()) {
-                    addConstraints(that);
+                addConstraints(loops, loopDepth+(that.isLoop()?1:0), that);
+            }
+        }
+    }
+    
+    public void addConstraints(IterationList list) {
+        // TODO: a better order to add the constraints.
+        List loops = new LinkedList();
+        addConstraints(loops, 0, list);
+        
+        while (!loops.isEmpty()) {
+            int index = loops.size()-1;
+            List s = (List) loops.remove(index);
+            if (TRACE) System.out.println("Doing loop depth "+index);
+            for (Iterator j = s.iterator(); j.hasNext(); ) {
+                list = (IterationList) j.next();
+                if (TRACE) System.out.println("Doing "+list);
+                for (ListIterator i = list.iterator(); i.hasNext(); ) {
+                    Object o = i.next();
+                    if (o instanceof Operation) {
+                        Operation op = (Operation) o;
+                        currentBlock = i;
+                        op.visit(this);
+                    }
                 }
             }
         }
-        if (TRACE) System.out.println("Doing: "+list);
-        for (ListIterator i = list.iterator(); i.hasNext(); ) {
-            Object o = i.next();
-            if (o instanceof IterationList) {
-                IterationList that = (IterationList) o;
-                addConstraints(that);
-            } else {
-                Operation op = (Operation) o;
-                currentBlock = i;
-                op.visit(this);
-            }
-        }
-        if (TRACE) System.out.println("Exiting: "+list);
     }
     
     public abstract double validAssignments(Relation r);
@@ -181,7 +198,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                     if (!forceEqual(r1, a1, r2, a2, true)) {
                         // Assignment failed, rename required.
                         // TODO: we have a choice whether to rename r1 or r2.
-                        if (true) {
+                        if (false) {
                             r1 = insertReplaceBefore(op, r1);
                         } else {
                             r2 = insertReplaceBefore(op, r2);
@@ -190,7 +207,9 @@ public abstract class DomainAssignment implements OperationVisitor {
                     }
                 } else if (a1.getDomain() == a2.getDomain()) {
                     if (!forceEqual(r1, a1, r2, a2, false)) {
-                        if (true) {
+                        // Assignment failed, rename required.
+                        // TODO: we have a choice whether to rename r1 or r2.
+                        if (false) {
                             r1 = insertReplaceBefore(op, r1);
                         } else {
                             r2 = insertReplaceBefore(op, r2);
@@ -217,7 +236,6 @@ public abstract class DomainAssignment implements OperationVisitor {
                 if (a0 == a2) {
                     if (!forceEqual(r0, a0, r2, a2, true)) {
                         // Assignment failed, rename required.
-                        // TODO: we have a choice whether to rename r0 or r2.
                         r0 = insertReplaceAfter(op, r0);
                         return visitBooleanOp(op, r0, r1, r2);
                     }

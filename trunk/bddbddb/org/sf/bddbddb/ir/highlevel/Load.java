@@ -15,13 +15,17 @@ import org.sf.bddbddb.Relation;
  */
 public class Load extends HighLevelOperation {
     Relation r0;
+    String fileName;
+    boolean tuples;
 
     /**
      * @param r0
      */
-    public Load(Relation r0) {
+    public Load(Relation r0, String fileName, boolean tuples) {
         super();
         this.r0 = r0;
+        this.fileName = fileName;
+        this.tuples = tuples;
     }
 
     /*
@@ -39,7 +43,7 @@ public class Load extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = load()";
+        return r0.toString() + " = load(\""+fileName+"\")";
     }
 
     /*
@@ -48,7 +52,7 @@ public class Load extends HighLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
-        return "load(" + r0.toString() + ")";
+        return "load(" + r0.toString() + ",\""+fileName+"\")";
     }
 
     /*
@@ -80,5 +84,19 @@ public class Load extends HighLevelOperation {
      */
     public void setRelationDest(Relation r0) {
         this.r0 = r0;
+    }
+    
+    /**
+     * @return
+     */
+    public String getFileName() {
+        return fileName;
+    }
+    
+    /**
+     * @return
+     */
+    public boolean isTuples() {
+        return tuples;
     }
 }

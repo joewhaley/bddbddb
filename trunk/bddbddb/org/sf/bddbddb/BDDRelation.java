@@ -286,8 +286,7 @@ public class BDDRelation extends Relation {
     public void saveNegated() throws IOException {
         System.out.println("Relation " + this + ": "
             + relation.not().nodeCount() + " nodes");
-        solver.bdd
-            .save(solver.basedir + "not" + name + ".rbdd", relation.not());
+        solver.bdd.save(solver.basedir + "not" + name + ".rbdd", relation.not());
     }
 
     /*
@@ -296,11 +295,15 @@ public class BDDRelation extends Relation {
      * @see org.sf.bddbddb.Relation#saveTuples()
      */
     public void saveTuples() throws IOException {
+        saveTuples(solver.basedir + name + ".rtuples", relation);
+    }
+
+    public void saveTuples(String filename) throws IOException {
         System.out.println("Relation " + this + ": " + relation.nodeCount()
             + " nodes, " + dsize() + " elements");
         saveTuples(solver.basedir + name + ".rtuples", relation);
     }
-
+    
     /*
      * (non-Javadoc)
      * 

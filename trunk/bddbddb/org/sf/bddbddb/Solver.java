@@ -42,7 +42,7 @@ public abstract class Solver {
     boolean USE_IR = !System.getProperty("useir", "no").equals("no");
     boolean PRINT_IR = System.getProperty("printir") != null;
     PrintStream out = System.out;
-    String basedir = System.getProperty("basedir");
+    public String basedir = System.getProperty("basedir");
 
     IndexMap/*<Relation>*/ relations;
     Map/* <String,Domain> */nameToDomain;
