@@ -46,9 +46,6 @@ singleType_os(c:H, v:V0) printsize
 
 ### Rules
 
-nullType(x) :- x = "null".
-nullType(x) :- x = "NULL_TYPE".
-
 nullType("NULL_TYPE").
 nullType("null").
 
