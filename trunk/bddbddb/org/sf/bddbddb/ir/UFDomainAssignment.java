@@ -96,7 +96,7 @@ public class UFDomainAssignment extends DomainAssignment {
         }
         for (int i = 0; i < s.getNumberOfRelations(); ++i) {
             BDDRelation r = (BDDRelation) s.getRelation(i);
-            System.out.print("Assigning relation "+i+": "+r+"                                   \r");
+            System.out.print(i+": "+r+" ");
             List domAssign = new ArrayList(r.getAttributes().size());
             for (Iterator j = r.getAttributes().iterator(); j.hasNext();) {
                 Attribute a = (Attribute) j.next();
@@ -119,6 +119,7 @@ public class UFDomainAssignment extends DomainAssignment {
                 domAssign.add(b);
             }
             if (TRACE) System.out.println("Relation " + r + " domains: " + domAssign);
+            System.out.print(domAssign+"                        \r");
             r.setDomainAssignment(domAssign);
         }
     }
