@@ -38,8 +38,8 @@ roots (method:M0) input
 mI0 (method:M0, invoke:I0)
 IEnum (invoke:I0, target:M0, ccaller:VC1, ccallee:VC0)
 vPfilter (v:V0, h:H0)
-IEcs (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0)
-cA (vcdest:VC0, dest:V0, vcsrc:VC1, source:V1)
+IEcs (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0) output
+cA (vcdest:VC0, dest:V0, vcsrc:VC1, source:V1) output
 
 cvP (vc:VC0, v:V0, h:H0) output
 hP (ha:H0, field:F0, hb:H1) output
