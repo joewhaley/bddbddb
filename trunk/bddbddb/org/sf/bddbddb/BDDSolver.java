@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import org.sf.bddbddb.ir.BDDInterpreter;
 import org.sf.bddbddb.ir.IR;
-import org.sf.bddbddb.ir.Interpreter;
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
@@ -199,7 +198,8 @@ public class BDDSolver extends Solver {
             IR ir = IR.create(s);
             ir.optimize();
             if (PRINT_IR) ir.printIR();
-            ir.interpret();
+            BDDInterpreter interpreter = new BDDInterpreter(ir);
+            interpreter.interpret();
         } else {
             s.solve();
         }
@@ -626,13 +626,10 @@ public class BDDSolver extends Solver {
         super.reportStats();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#getInterpreter()
+    /**
+     * @return
      */
-    public Interpreter getInterpreter() {
-        BDDInterpreter interpret = new BDDInterpreter(this, this.bdd);
-        return interpret;
+    public BDDFactory getBDDFactory() {
+        return this.bdd;
     }
 }

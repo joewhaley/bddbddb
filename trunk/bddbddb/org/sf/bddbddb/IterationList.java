@@ -8,10 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import org.sf.bddbddb.ir.Interpreter;
-import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.dynamic.IRBoolean;
-import org.sf.javabdd.BDD;
 
 /**
  * IterationList
@@ -149,49 +146,6 @@ public class IterationList implements IterationElement {
 
     public boolean contains(IterationElement elem) {
         return getAllNestedElements().contains(elem);
-    }
-
-    public boolean interpret(Interpreter interpret) {
-        boolean everChanged = false;
-        boolean change;
-        long elapsedTime = 0L, currentTime = System.currentTimeMillis();
-        for (;;) {
-            change = false;
-            for (Iterator i = elements.iterator(); i.hasNext();) {
-                Object o = i.next();
-                if (TRACE) System.out.println(o);
-                if (o instanceof IterationList) {
-                    IterationList list = (IterationList) o;
-                    elapsedTime += System.currentTimeMillis() - currentTime;
-                    if (list.interpret(interpret)) {
-                        change = true;
-                    }
-                    currentTime = System.currentTimeMillis();
-                } else {
-                    Operation op = (Operation) o;
-                    BDDRelation dest = (BDDRelation) op.getRelationDest();
-                    BDD oldValue = null;
-                    Relation changed = null;
-                    if (!change && dest != null && dest.getBDD() != null) {
-                        oldValue = dest.getBDD().id();
-                        changed = dest;
-                    }
-                    op.visit(interpret);
-                    if (oldValue != null) {
-                        change = !oldValue.equals(dest.getBDD());
-                        if (TRACE && change) System.out.println(changed + " Changed!");
-                        oldValue.free();
-                    }
-                }
-            }
-            if (!change) break;
-            everChanged = true;
-            if (!isLoop()) break;
-            getLoopEdge().interpret(interpret);
-        }
-        elapsedTime += System.currentTimeMillis() - currentTime;
-        System.out.println(this+" time: "+elapsedTime);
-        return everChanged;
     }
 
     public boolean isLoop() {

@@ -5,6 +5,7 @@ package org.sf.bddbddb;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.HashWorklist;
@@ -30,7 +31,7 @@ public class IterationFlowGraph {
         this.innerSCCs = innerSCCs;
         this.rules = rules;
         dependencies = new GenericMultiMap();
-        //        loops = new LinkedList();
+        loops = new LinkedList();
         iterationElements = new IterationList(false);
         containedBy = new GenericMultiMap();
         constructStrataLoops();
@@ -120,9 +121,9 @@ public class IterationFlowGraph {
             }
             scc = scc.nextTopSort();
         }
-        /*
-         * if(list.isLoop()){ loops.add(list); }
-         */
+        if (list.isLoop()) {
+            loops.add(list);
+        }
         return list;
     }
 
@@ -148,5 +149,12 @@ public class IterationFlowGraph {
             iterationElements.expand(true);
         }
         return iterationElements;
+    }
+
+    /**
+     * @return Returns the loops.
+     */
+    public List getLoops() {
+        return loops;
     }
 }
