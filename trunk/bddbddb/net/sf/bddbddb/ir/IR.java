@@ -149,7 +149,7 @@ public class IR {
         if (DOMAIN_ASSIGNMENT) {
             System.out.print("Running DomainAssignment...");
             long time = System.currentTimeMillis();
-           /* DataflowSolver solver = new DataflowSolver();
+          /*  DataflowSolver solver = new DataflowSolver();
             PartialOrder p = new PartialOrder(this);
             solver.solve(p, graph.getIterationList());
             IndexMap relations =  this.solver.getRelations();
@@ -159,7 +159,7 @@ public class IR {
                 Relation r = (Relation) it.next();
                 constraintsMap[r.id] = r.getConstraints();
             }*/
-            //DomainAssignment ass = new PartialOrderDomainAssignment(this.solver, constraintsMap);
+           // DomainAssignment ass = new PartialOrderDomainAssignment(this.solver, constraintsMap);
             DomainAssignment ass = new UFDomainAssignment(this.solver);
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
