@@ -477,8 +477,9 @@ public class BDDInferenceRule extends InferenceRule {
             BDD b = relationValues[j];
             if (!canNowQuantify.isOne()) {
                 if (TRACE) {
-                    solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
-                    solver.out.print("("+canNowQuantify.toStringWithDomains()+")");
+                    solver.out.print(" (relprod " + b.nodeCount());
+                    solver.out.print(" ("+domainsOf(b)+")/");
+                    solver.out.print("("+domainsOf(canNowQuantify)+")");
                 }
                 if (TRACE || find_best_order) ttime = System.currentTimeMillis();
                 BDD topBdd = result.relprod(b, canNowQuantify);
@@ -489,8 +490,9 @@ public class BDDInferenceRule extends InferenceRule {
                 }
                 b.free();
                 if (TRACE) {
-                    solver.out.print("=" + topBdd.nodeCount() + ")");
-                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    solver.out.print("=" + topBdd.nodeCount());
+                    solver.out.print(" (" + domainsOf(topBdd) + ")");
+                    solver.out.print(") (" + (System.currentTimeMillis() - ttime) + " ms)");
                 }
                 result.free();
                 result = topBdd;
