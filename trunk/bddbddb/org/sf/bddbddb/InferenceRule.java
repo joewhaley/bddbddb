@@ -13,17 +13,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.sf.bddbddb.ir.GenConstant;
+import org.sf.bddbddb.ir.Invert;
 import org.sf.bddbddb.ir.Join;
 import org.sf.bddbddb.ir.JoinConstant;
 import org.sf.bddbddb.ir.Project;
 import org.sf.bddbddb.ir.Rename;
 import org.sf.bddbddb.ir.Union;
+import org.sf.bddbddb.ir.Universe;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.LinearMap;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Navigator;
-import org.sf.bddbddb.util.Pair;
 
 /**
  * InferenceRule
@@ -31,7 +32,7 @@ import org.sf.bddbddb.util.Pair;
  * @author jwhaley
  * @version $Id$
  */
-public abstract class InferenceRule implements IterationElement{
+public abstract class InferenceRule implements IterationElement {
     
     List/*<RuleTerm>*/ top;
     RuleTerm bottom;
@@ -603,6 +604,20 @@ public abstract class InferenceRule implements IterationElement{
             if (solver.TRACE)
                 solver.out.println("Generated: "+u);
             ir.add(u);
+        } else {
+            // No constants: Universal set.
+            Universe u = new Universe(bottom.relation);
+            if (solver.TRACE)
+                solver.out.println("Generated: "+u);
+            ir.add(u);
+        }
+        
+        if (bottom.relation.negated != null) {
+            // Update negated.
+            Invert i = new Invert(bottom.relation.negated, bottom.relation);
+            if (solver.TRACE)
+                solver.out.println("Generated: "+i);
+            ir.add(i);
         }
         
         return ir;

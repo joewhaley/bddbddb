@@ -177,5 +177,47 @@ public class BDDInterpreter extends Interpreter {
         r.free();
         return null;
     }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Interpreter#perform(org.sf.bddbddb.ir.Zero)
+     */
+    public Object perform(Zero op) {
+        BDDRelation r = (BDDRelation) op.r;
+        BDD b = r.getBDD().getFactory().zero();
+        if (TRACE) System.out.println("   Zero "+r);
+        r.setBDD(b);
+        if (TRACE) System.out.println("   ---> Nodes: "+b.nodeCount());
+        return null;
+    }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Interpreter#perform(org.sf.bddbddb.ir.Universe)
+     */
+    public Object perform(Universe op) {
+        BDDRelation r = (BDDRelation) op.r;
+        BDD b = r.getBDD().getFactory().one();
+        for (Iterator i = r.getAttributes().iterator(); i.hasNext(); ) {
+            Attribute a = (Attribute) i.next();
+            BDDDomain d = r.getBDDDomain(a);
+            b.andWith(d.domain());
+        }
+        if (TRACE) System.out.println("   Domain "+r);
+        r.setBDD(b);
+        if (TRACE) System.out.println("   ---> Nodes: "+b.nodeCount());
+        return null;
+    }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Interpreter#perform(org.sf.bddbddb.ir.Invert)
+     */
+    public Object perform(Invert op) {
+        BDDRelation r0 = (BDDRelation) op.r0;
+        BDDRelation r1 = (BDDRelation) op.r1;
+        if (TRACE) System.out.println("   Not "+r1);
+        BDD r = makeDomainsMatch(r1.getBDD().not(), r1, r0);
+        r0.setBDD(r);
+        if (TRACE) System.out.println("   ---> Nodes: "+r.nodeCount());
+        return null;
+    }
+
 }

@@ -9,17 +9,17 @@
 
 ### Relations
 
-vP (v:V0, h:H0) input
-vT (v:V0, t:T0) input
+vP (vP_v:V0, vP_h:H0) input
+vT (vT_v:V0, vT_t:T0) input
 ovP (c:H2, v:V0, h:H0) input
 cvP (c:VC0, v:V0, h:H0) input
 ccvP (c1:VC0, v:V0, c2:HC0, h:H0) input
 vTc (c:VC0, v:V0, t:T0) input
-hT (h:H0, t:T1) input
-aT (t1:T0, t2:T1) input
+hT (hT_h:H0, hT_t:T1) input
+aT (aT_t1:T0, aT_t2:T1) input
 mV (m:M0, v:V0) input
 
-nullType (t:T0) input
+nullType (nt_t:T0)
 
 notVarType (v:V0, t:T0)
 notVarType_cs (c:VC0, v:V0, t:T0)

@@ -58,4 +58,22 @@ public abstract class Interpreter {
      * @return
      */
     public abstract Object perform(Free op);
+    
+    /**
+     * @param op
+     * @return
+     */
+    public abstract Object perform(Universe op);
+
+    /**
+     * @param op
+     * @return
+     */
+    public abstract Object perform(Zero op);
+
+    /**
+     * @param op
+     * @return
+     */
+    public abstract Object perform(Invert op);
 }
