@@ -45,6 +45,15 @@ public class Free extends HighLevelOperation {
     /*
      * (non-Javadoc)
      * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return toString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
@@ -59,7 +68,7 @@ public class Free extends HighLevelOperation {
     public List getSrcs() {
         return Collections.singletonList(r);
     }
-    
+
     /**
      * @return Returns the source relation.
      */

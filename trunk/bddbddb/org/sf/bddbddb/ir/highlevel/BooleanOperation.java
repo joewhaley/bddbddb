@@ -39,8 +39,16 @@ public abstract class BooleanOperation extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = " + getName() + "(" + r1.toString() + ","
-            + r2.toString() + ")";
+        return r0.toString() + " = " + getExpressionString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return getName() + "(" + r1.toString() + "," + r2.toString() + ")";
     }
 
     /*
@@ -60,14 +68,14 @@ public abstract class BooleanOperation extends HighLevelOperation {
     public List getSrcs() {
         return new Pair(r1, r2);
     }
-    
+
     /**
      * @return Returns the source relation.
      */
     public Relation getSrc1() {
         return r1;
     }
-    
+
     /**
      * @return Returns the source relation.
      */

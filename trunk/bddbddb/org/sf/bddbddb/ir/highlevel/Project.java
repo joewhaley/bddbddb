@@ -16,6 +16,7 @@ import org.sf.bddbddb.Relation;
  */
 public class Project extends HighLevelOperation {
     Relation r0, r1;
+
     List/* <Attribute> */attributes;
 
     /**
@@ -36,8 +37,16 @@ public class Project extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = project(" + r1.toString() + ","
-            + attributes.toString() + ")";
+        return r0.toString() + " = " + getExpressionString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return "project(" + r1.toString() + "," + attributes.toString() + ")";
     }
 
     /*
@@ -73,11 +82,11 @@ public class Project extends HighLevelOperation {
     public Relation getSrc() {
         return r1;
     }
-    
+
     /**
      * @return
      */
-    public List/*<Attribute>*/ getAttributes() {
+    public List/* <Attribute> */getAttributes() {
         return attributes;
     }
 

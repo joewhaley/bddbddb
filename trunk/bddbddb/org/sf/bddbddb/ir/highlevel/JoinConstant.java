@@ -16,7 +16,9 @@ import org.sf.bddbddb.Relation;
  */
 public class JoinConstant extends HighLevelOperation {
     Relation r0, r1;
+
     Attribute a;
+
     long value;
 
     /**
@@ -39,8 +41,17 @@ public class JoinConstant extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = restrict(" + r1.toString() + ","
-            + a.toString() + "=" + value + ")";
+        return r0.toString() + " = " + getExpressionString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return "restrict(" + r1.toString() + "," + a.toString() + "=" + value
+            + ")";
     }
 
     /*
@@ -69,7 +80,7 @@ public class JoinConstant extends HighLevelOperation {
     public List getSrcs() {
         return Collections.singletonList(r1);
     }
-    
+
     /**
      * @return Returns the source relation.
      */
@@ -83,7 +94,7 @@ public class JoinConstant extends HighLevelOperation {
     public long getValue() {
         return value;
     }
-    
+
     /**
      * @return
      */

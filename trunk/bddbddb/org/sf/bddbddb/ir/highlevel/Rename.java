@@ -17,6 +17,7 @@ import org.sf.bddbddb.Relation;
  */
 public class Rename extends HighLevelOperation {
     Relation r0, r1;
+
     Map/* <Pair,Attribute> */renames;
 
     /**
@@ -36,9 +37,17 @@ public class Rename extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
+        return r0.toString() + " = " + getExpressionString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
         StringBuffer sb = new StringBuffer();
-        sb.append(r0.toString());
-        sb.append(" = rename(");
+        sb.append("rename(");
         sb.append(r1.toString());
         for (Iterator i = renames.entrySet().iterator(); i.hasNext();) {
             Map.Entry p = (Map.Entry) i.next();
@@ -77,14 +86,14 @@ public class Rename extends HighLevelOperation {
     public List getSrcs() {
         return Collections.singletonList(r1);
     }
-    
+
     /**
      * @return Returns the source relation.
      */
     public Relation getSrc() {
         return r1;
     }
-    
+
     /**
      * @return
      */

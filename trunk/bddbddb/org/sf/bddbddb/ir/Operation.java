@@ -15,6 +15,7 @@ import org.sf.bddbddb.Relation;
  */
 public abstract class Operation implements IterationElement {
     static int opNumber = 0;
+
     public final int id;
 
     public Operation() {
@@ -42,5 +43,10 @@ public abstract class Operation implements IterationElement {
     /**
      * @return
      */
-    public abstract List/*<Relation>*/ getSrcs();
+    public abstract List/* <Relation> */getSrcs();
+
+    /**
+     * @return
+     */
+    public abstract String getExpressionString();
 }

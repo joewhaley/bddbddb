@@ -18,7 +18,9 @@ import org.sf.bddbddb.ir.OperationVisitor;
  */
 public class GenConstant extends Operation {
     Relation r0;
+
     Attribute a;
+
     long value;
 
     /**
@@ -39,7 +41,16 @@ public class GenConstant extends Operation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = const(" + a.toString() + "=" + value + ")";
+        return r0.toString() + " = " + getExpressionString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return "const(" + a.toString() + "=" + value + ")";
     }
 
     /*
@@ -75,7 +86,7 @@ public class GenConstant extends Operation {
     public long getValue() {
         return value;
     }
-    
+
     /**
      * @return
      */

@@ -41,7 +41,16 @@ public class Invert extends HighLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#toString()
      */
     public String toString() {
-        return r0.toString() + " = invert(" + r1.toString() + ")";
+        return r0.toString() + " = " + getExpressionString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return "invert(" + r1.toString() + ")";
     }
 
     /*
@@ -61,7 +70,7 @@ public class Invert extends HighLevelOperation {
     public List getSrcs() {
         return Collections.singletonList(r1);
     }
-    
+
     /**
      * @return Returns the source relation.
      */
