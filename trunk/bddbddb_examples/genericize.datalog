@@ -1,4 +1,11 @@
 
+.basedir "pa.joeq"
+.include "fielddomains.pa"
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_T0_Z0_T1_H0_H1_TV0xTV1
+
+TV 262144
+C 262144
+
 ### Input relations
 
 # Statements.
@@ -30,6 +37,9 @@ methodParameter (method:M, param:Z, type:TV) input
 field (field:F, type:TV) input
 returnValue (method:M, type:TV) input
 
+# Some type variables correspond to concrete types.
+concreteTypes (typevar:TV, concretetype:T) input
+
 ### Computed relations
 
 # Encodes subtyping constraints between type variables.
@@ -37,10 +47,16 @@ returnValue (method:M, type:TV) input
 #    (x,y) and (y,x) in the subType relation.
 subType (superT:TV, subT:TV)
 
+# Type variables that correspond to multiple types.
+multiType (typevar:TV) outputtuples
+
+# Type variables that correspond to a single type.
+singleType (typevar:TV) outputtuples
+
 ### Rules for adding subtype constraints.
 
 # Transitive closure.
-subType(a,c) :- subType(a,b), subType(b,c).
+#subType(a,c) :- subType(a,b), subType(b,c).
 
 # Parameters of overridden methods are contravariant.
 subType(t2,t1) :- override(m1,m2), \
@@ -67,7 +83,7 @@ subType(t1,t2) :- storeStatement(v1,f,v2), field(f,t1), \
                   location2typevar(v2,t2).
 
 # Constraints from invocation parameters.
-subType(t1,t2) :- parameter(m,z,t1), invokeMethod(i,m), invokeParameter(i,z,v2), \
+subType(t1,t2) :- methodParameter(m,z,t1), invokeMethod(i,m), invokeParameter(i,z,v2), \
                   location2typevar(v2,t2).
 
 # Constraints from invocation return values.
@@ -77,13 +93,21 @@ subType(t1,t2) :- returnValue(m,t2), invokeMethod(i,m), invokeReturn(i,v1), \
 # Constraints from new statements.
 subType(t1,t2) :- newStatement(v1,t2), location2typevar(v1,t1).
 
-# Constraints from cast statements.
-### TODO: assumes casts always succeed!
+# Constraints from cast statements.  Assumes casts always succeed!
 subType(t1,t2) :- castStatement(v1,t2,v3), location2typevar(v1,t1).
 #subType(t1,t3) :- castStatement(v1,t2,v3), location2typevar(v1,t1), location2typevar(v3,t3).
 
 # Constraints from constant statements.
 
+
+### Rules for computing the set of concrete types for each type variable.
+
+# Transitive closure over the subType relation.
+concreteTypes(t1,t) :- subType(t1,t2), concreteTypes(t2,t).
+
+multiType(t) :- concreteTypes(t,ta), concreteTypes(t,tb), ta != tb.
+
+singleType(t) :- !multiType(t), concreteTypes(t,_).
 
 #######
 # Stuff about generics
