@@ -67,7 +67,7 @@ public abstract class Relation {
             Attribute a = (Attribute) i.next();
             if (a.relation == null) a.relation = this;
         }
-        constraints = new Constraints(this.attributes);
+        constraints = new Constraints();
     }
 
     /**
