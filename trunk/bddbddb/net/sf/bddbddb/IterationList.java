@@ -18,7 +18,7 @@ import net.sf.bddbddb.ir.dynamic.IRBoolean;
  */
 public class IterationList implements IterationElement {
     boolean TRACE = false;
-    List /* IterationElement */elements;
+    List /*IterationElement*/ elements;
     List allNestedElems = null;
     //    boolean isLoop = false;
     IRBoolean loopBool;
@@ -30,10 +30,6 @@ public class IterationList implements IterationElement {
         this(isLoop, new LinkedList());
     }
 
-    public IterationList getLoopEdge() {
-        return loopEdge;
-    }
-
     public IterationList(boolean isLoop, List elems) {
         //       this.isLoop = isLoop;
         this.elements = elems;
@@ -42,6 +38,10 @@ public class IterationList implements IterationElement {
             loopBool = new IRBoolean("loop" + Integer.toString(this.index) + "_bool", false);
             loopEdge = new IterationList(false);
         }
+    }
+
+    public IterationList getLoopEdge() {
+        return loopEdge;
     }
 
     // Return a list that has the IR for all of the loops.
