@@ -690,6 +690,8 @@ public abstract class Solver {
                     basedir += sep;
                 }
                 if (TRACE) out.println("Base directory is now \"" + basedir + "\"");
+                Assert._assert(includedirs != null);
+                includedirs += System.getProperty("path.separator") + basedir;
             }
         } else {
             outputError(lineNum, 0, s, "Unknown directive \"" + s + "\"");

@@ -80,6 +80,7 @@ public class FindBestDomainOrder {
     }
     
     public static class IdentityTranslator implements OrderTranslator {
+        public static final IdentityTranslator INSTANCE = new IdentityTranslator();
         public Order translate(Order o) { return new Order(new LinkedList(o)); }
     }
     
@@ -430,6 +431,7 @@ public class FindBestDomainOrder {
          * @return  similarity measure between 0.0 and 1.0
          */
         public double similarity(Order that) {
+            if (this.isEmpty() || that.isEmpty()) return 1.;
             Collection thisFlat = this.getFlattened();
             Collection thatFlat = this.getFlattened();
             if (thisFlat.size() < thatFlat.size())
@@ -444,14 +446,14 @@ public class FindBestDomainOrder {
         double similarity0(Order that) {
             Collection dis_preds = this.getAllPrecedenceConstraints();
             Collection dis_inters = this.getAllInterleaveConstraints();
-            Collection dat_preds = this.getAllPrecedenceConstraints();
-            Collection dat_inters = this.getAllInterleaveConstraints();
+            Collection dat_preds = that.getAllPrecedenceConstraints();
+            Collection dat_inters = that.getAllInterleaveConstraints();
             
             // Calculate the maximum number of similarities.
             int nPred = dis_preds.size();
             int nInter = dis_inters.size();
             
-            // Find all similarities between these orders.
+            // Find all similarities between the orders.
             dis_preds.removeAll(dat_preds);
             dis_inters.removeAll(dat_inters);
             int nPred2 = dis_preds.size();
@@ -459,7 +461,9 @@ public class FindBestDomainOrder {
 
             double total = nPred * PRECEDENCE_WEIGHT + nInter * INTERLEAVE_WEIGHT;
             double unsimilar = nPred2 * PRECEDENCE_WEIGHT + nInter2 * INTERLEAVE_WEIGHT;
-            return (total - unsimilar) / total;
+            double sim = (total - unsimilar) / total;
+            if (TRACE) out.println("Similarity ("+this+" and "+that+") = "+sim);
+            return sim;
         }
         
         public static double[] COMPLEXITY_SINGLE = 
@@ -565,6 +569,19 @@ public class FindBestDomainOrder {
         }
     }
     
+    public static class OrderInfo {
+        /**
+         * A measure of how good this order is.  Ranges from 0.0 to 1.0.
+         * 0.0 is the worst possible, and 1.0 is the best.
+         */
+        double score;
+        
+        /**
+         * A measure of the confidence of this score.  Higher is better.
+         */
+        double confidence;
+    }
+    
     /**
      * Holds ordering info that persists across multiple trials,
      * e.g. ordering info for a relation or a rule.
@@ -605,7 +622,12 @@ public class FindBestDomainOrder {
             return i;
         }
         
+        public void incorporate(OrderingInfo info) {
+            incorporate(info, IdentityTranslator.INSTANCE);
+        }
         public void incorporate(OrderingInfo info, OrderTranslator t) {
+            this.calculateCharacteristics();
+            info.calculateCharacteristics();
             for (Iterator i = info.goodOrderCharacteristics.iterator(); i.hasNext(); ) {
                 Order c = (Order) i.next();
                 if (TRACE) out.println(this+": incorporating good order "+c+" from "+info);
@@ -682,7 +704,7 @@ public class FindBestDomainOrder {
             // Find an order that has some of the good order characteristics
             // without any of the bad ones.
             OrderIterator i = generateAllOrders(variables);
-            Order bestOrder = null; double bestScore = Double.MAX_VALUE;
+            Order bestOrder = null; double bestScore = -1.;
             while (i.hasNext()) {
                 Order o = i.nextOrder();
                 double score = orderGoodness(o);
@@ -707,6 +729,7 @@ public class FindBestDomainOrder {
          * @return  probable goodness
          */
         public double orderGoodness(Order o) {
+            if (TRACE) out.println(this+": Calculating goodness of "+o+" with good="+goodOrderCharacteristics+" bad="+badOrderCharacteristics);
             double score = 0.;
             double min = 0., max = 0.;
             for (Iterator i = goodOrderCharacteristics.iterator(); i.hasNext(); ) {
@@ -721,7 +744,12 @@ public class FindBestDomainOrder {
                 score += howSimilar * BAD_FACTOR;
                 min += BAD_FACTOR;
             }
-            return (score - min) / (max - min);
+            double result = (max == min) ? 0. : ((score - min) / (max - min)); 
+            if (TRACE) out.println(this+": similarity="+result);
+            return result;
+        }
+        
+        void calculateCharacteristics() {
         }
         
         public String toString() {
@@ -761,6 +789,10 @@ public class FindBestDomainOrder {
         }
         
         public void registerNewRawData(Order o, long cost) {
+            if (cost >= MAX_COST) {
+                registerAsBad(o);
+                return;
+            }
             if (TRACE) out.println(this+": registering new raw data "+o+" score "+cost);
             rawData.put(o, new Long(cost));
             needsUpdate = true;
@@ -788,8 +820,9 @@ public class FindBestDomainOrder {
             calculateCharacteristics();
             // Find an order that has some of the good order characteristics
             // without any of the bad ones.
+            if (TRACE) out.println(this+": generating all orders for "+variables);
             OrderIterator i = generateAllOrders(variables);
-            Order bestOrder = null; double bestScore = Double.MAX_VALUE;
+            Order bestOrder = null; double bestScore = -1.;
             while (i.hasNext()) {
                 Order o = i.nextOrder();
                 if (rawData.containsKey(o)) continue;
@@ -835,14 +868,12 @@ public class FindBestDomainOrder {
             
             // Find outstanding characteristics of the "good" and "bad" sets.
             Map/*<Order,Integer>*/ goodSim = calcSimilarities(good);
+            Map/*<Order,Integer>*/ badSim = calcSimilarities(bad);
+            
             Map.Entry[] sortedGoodSim = (Map.Entry[]) goodSim.entrySet().toArray(new Map.Entry[goodSim.size()]);
             Arrays.sort(sortedGoodSim, EntryValueComparator.INSTANCE);
             if (TRACE) out.println(this+": similarities of good set: "+Arrays.toString(sortedGoodSim));
-            
-            Map/*<Order,Integer>*/ badSim = calcSimilarities(bad);
-            Map.Entry[] sortedBadSim = (Map.Entry[]) badSim.entrySet().toArray(new Map.Entry[badSim.size()]);
-            Arrays.sort(sortedBadSim, EntryValueComparator.INSTANCE);
-            if (TRACE) out.println(this+": similarities of bad set: "+Arrays.toString(sortedGoodSim));
+            if (TRACE) out.println(this+": similarities of bad set: "+badSim);
             
             goodOrderCharacteristics.clear();
             badOrderCharacteristics.clear();
@@ -850,12 +881,22 @@ public class FindBestDomainOrder {
             // For now, use the median to differentiate between important/unimportant.
             // In the future, we may want to use a better metric.
             int goodMedianIndex = (sortedGoodSim.length) / 2;
-            for (int i = sortedGoodSim.length-1; i > goodMedianIndex; --i) {
-                if (TRACE) out.println("Good: "+sortedGoodSim[i]+" score: "+sortedGoodSim[i].getValue());
-                goodOrderCharacteristics.add(sortedGoodSim[i].getKey());
+            for (int i = sortedGoodSim.length-1; i >= goodMedianIndex; --i) {
+                Order o = (Order) sortedGoodSim[i].getKey();
+                Integer howGood = (Integer) sortedGoodSim[i].getValue();
+                Integer howBad = (Integer) badSim.get(o);
+                if (howBad == null || howGood.intValue() > howBad.intValue()) {
+                    if (TRACE) out.println("Good: "+sortedGoodSim[i]);
+                    goodOrderCharacteristics.add(sortedGoodSim[i].getKey());
+                    badSim.remove(o);
+                }
             }
+            
+            Map.Entry[] sortedBadSim = (Map.Entry[]) badSim.entrySet().toArray(new Map.Entry[badSim.size()]);
+            Arrays.sort(sortedBadSim, EntryValueComparator.INSTANCE);
+            
             int badMedianIndex = (sortedBadSim.length) / 2;
-            for (int i = sortedBadSim.length-1; i > badMedianIndex; --i) {
+            for (int i = sortedBadSim.length-1; i >= badMedianIndex; --i) {
                 if (TRACE) out.println("Bad: "+sortedBadSim[i]+" score: "+sortedBadSim[i].getValue());
                 badOrderCharacteristics.add(sortedBadSim[i].getKey());
             }
