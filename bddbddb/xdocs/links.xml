@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<document>
+
+  <properties>
+    <title>Links</title>
+    <author email="joewhaley@users.sourceforge.net">John Whaley</author> 
+  </properties>
+
+  <body>
+     <section name="Links">
+      <p>Other implementations of Datalog/Prolog:
+      <ul>
+       <li><a href="http://www.cs.wisc.edu/coral/">Coral</a>
+        <ul>
+         <li>Developed at U.Wisconsin-Madison by Raghu Ramakrishnan's group</li>
+         <li>bottom-up and top-down evaluation strategies</li>
+        </ul>
+       </li>
+       <li><a href="http://www.cs.ucla.edu/ldl/ldl_intro.html">LDL</a>
+        <ul>
+         <li>Developed at the MCC by Carlo Zaniolo's group</li>
+         <li>top-down evaluation</li>
+        </ul>
+       </li>
+       <li><a href="http://xsb.sourceforge.net/">XSB</a>
+        <ul>
+         <li>Developed at Stony Brook University</li>
+         <li>bottom-up and top-down evaluation strategies</li>
+        </ul>
+       </li>
+      </ul>
+      </p>
+      <p>Datalog Development Environment:
+      <ul>
+       <li><a href="http://members.lycos.co.uk/datalogide/">DIE (Datalog Integrated Environment</a></li>
+      </ul>
+      </p>
+      <p>Books on Datalog:
+      <ul>
+       <li>
+        S. Ceri, G. Gottlob and L. Tanca, Logic Programming and Databases, Springer-Verlag, 1990, Surveys in Computer Science, Berlin, Heidelberg, New York.
+       </li>
+       <li>
+        C.J. Date, An Introduction to Database Systems, 6th ed., 1995, Addison-Wesley
+       </li>
+       <li>
+        R. Elmasri and S. B. Navathe, Fundamentals of Database Systems, 2nd ed., 1994, Benjamin/Cummings
+       </li>
+      </ul>
+      </p>
+    </section>
+  </body>
+</document>

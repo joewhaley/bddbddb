@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="JavaBDD">
+<project name="bddbddb">
   <title>bddbddb: BDD-Based Deductive DataBase</title>
   <organizationLogo href="http://sourceforge.net/sflogo.php?group_id=111873&amp;type=5" />
   <body>
@@ -9,5 +9,15 @@
       <item name="Stanford SUIF Group" 
             href="http://suif.stanford.edu" />
     </links>
+    <menu name="Documentation">
+      <item name="What is it?"
+            href="index.html"/>
+      <item name="Links"
+            href="links.html"/>
+      <item name="PLDI'04 paper"
+            href="http://www.stanford.edu/~jwhaley/papers/pldi04.pdf"/>
+      <item name="Datalog examples"
+            href="http://cvs.sourceforge.net/viewcvs.py/bddbddb/bddbddb_examples/"/>
+    </menu>
   </body>
 </project>
