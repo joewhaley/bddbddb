@@ -36,6 +36,8 @@ IEfilter (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0) input
 mV (method:M0, var:V0) input
 mC (method:M0, context:VC0) input
 
+noHeapContext (heap:H0)
+
 vPfilter (v:V0, h:H0)
 IEcs (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0)
 cA (vcdest:VC0, dest:V0, vcsrc:VC1, source:V1)
@@ -46,7 +48,10 @@ IE (invoke:I0, target:M0) output
 
 ### Rules
 
+noHeapContext(0).
+
 cvP(vc,v,hc,h) :- vP0(v,h), mV(m,v), mC(m,vc), vc=hc.
+cvP(c,v,_,h) :- cvP(c,v,_,h), noHeapContext(h).
 cA(_,v1,_,v2) :- A(v1,v2).
 IEcs(vc2,i,vc1,m) :- IE0(i,m), IEfilter(vc2,i,vc1,m).
 vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
