@@ -704,6 +704,9 @@ public class PartialOrder extends OperationProblem {
             return beforeConstraints.isEmpty() && interleavedConstraints.isEmpty();
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object o) {
             if (o instanceof Constraints) {
                 Constraints that = (Constraints) o;
@@ -713,6 +716,15 @@ public class PartialOrder extends OperationProblem {
             return false;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode() {
+            return this.attributes.hashCode() ^ 
+                   this.beforeConstraints.hashCode() ^
+                   this.interleavedConstraints.hashCode();
+        }
+        
         public String toString() {
             return "[before constraints: " + beforeConstraints + " interleaved constraints: " + interleavedConstraints + "]";
         }
