@@ -15,6 +15,8 @@ import org.sf.bddbddb.Relation;
  */
 public abstract class Operation implements IterationElement {
     static int opNumber = 0;
+    
+    public static int getNumberOfOperations() { return opNumber; }
 
     public final int id;
 

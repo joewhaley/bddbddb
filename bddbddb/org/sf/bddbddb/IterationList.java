@@ -3,6 +3,7 @@
 //Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -117,9 +118,31 @@ public class IterationList implements IterationElement {
     }
 
     public void removeElement(IterationElement elem) {
-        elements.remove(elem);
+        for (Iterator i = elements.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (elem.equals(o)) {
+                i.remove();
+                return;
+            }
+            if (o instanceof IterationList) {
+                ((IterationList) o).removeElement(elem);
+            }
+        }
     }
 
+    public void removeElements(Collection elems) {
+        for (Iterator i = elements.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (elems.contains(o)) {
+                i.remove();
+                continue;
+            }
+            if (o instanceof IterationList) {
+                ((IterationList) o).removeElements(elems);
+            }
+        }
+    }
+    
     public String toString() {
         return (isLoop() ? "loop" : "list") + index;
     }
