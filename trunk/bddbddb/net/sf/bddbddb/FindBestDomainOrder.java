@@ -582,7 +582,7 @@ public class FindBestDomainOrder {
      * @return XML element
      */
     public Element trialsToXMLElement() {
-        Element trialCollections = new Element("trialCollections");
+        Element trialCollections = new Element("episodeCollections");
         if (solver.inputFilename != null)
             trialCollections.setAttribute("datalog", solver.inputFilename);
         for (Iterator i = allTrials.iterator(); i.hasNext();) {
@@ -1643,7 +1643,6 @@ public class FindBestDomainOrder {
                      orders.add(elem.ocs.generateRandomOrder(domains));
                  }
              } else {
-                 Assert.UNREACHABLE();
                  orders = elem.ocs.generateAllOrders(domains);
              }
              for (Iterator j = orders.iterator(); j.hasNext(); ) {
@@ -1677,7 +1676,7 @@ public class FindBestDomainOrder {
                Collection invalidConstraints = new LinkedList();
                if(TRACE > 3) out.println("Adding constraints: " + constraints);
                boolean worked = newElem.ocs.constrain(constraints, invalidConstraints);
-               newElem.pathCost += (invalidConstraints.size() / constraints.size()) * (rule.totalTime) / constraintScore;
+               newElem.pathCost += invalidConstraints.size()  * (rule.totalTime) / constraintScore;
                newElem.pathScore = newElem.pathCost;
                
                //if(!worked) continue;//newElem.ocs = backupOcs;

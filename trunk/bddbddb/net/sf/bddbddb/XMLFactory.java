@@ -44,7 +44,7 @@ public class XMLFactory {
     public Object fromXML(Element e) {
         String name = e.getName();
         Object o;
-        if (name.equals("trialCollections")) {
+        if (name.equals("trialCollections") || name.equals("episodeCollections")) {
             String fn = e.getAttributeValue("datalog");
             List results = new LinkedList();
             if (fn.equals(solver.inputFilename)) {
@@ -52,14 +52,14 @@ public class XMLFactory {
                     Object q = i.next();
                     if (q instanceof Element) {
                         Element e2 = (Element) q;
-                        if (e2.getName().equals("trialCollection")) {
+                        if (name.equals("trialCollection") || e2.getName().equals("episodeCollection")) {
                             results.add(fromXML(e2));
                         }
                     }
                 }
             }
             o = results;
-        } else if (name.equals("trialCollection")) {
+        } else if (name.equals("trialCollection") || name.equals("episodeCollection")) {
             EpisodeCollection tc = EpisodeCollection.fromXMLElement(e, solver);
             o = tc;
         } else if (name.equals("findBestOrder")) {
