@@ -90,7 +90,7 @@ public class ClassHierarchyAnalysis {
                 if (name.getName().equals(methods[i].getName())) {
                     ITypeBinding[] types1 = name.getParameterTypes();
                     ITypeBinding[] types2 = methods[i].getParameterTypes();
-                    if (Arrays.equals(types1, types2)) {
+                    if (typesMatch(types1, types2)) {
                         method = methods[i];
                         break;
                     }
@@ -106,6 +106,16 @@ public class ClassHierarchyAnalysis {
             type = type.getSuperclass();
         }
         return null;
+    }
+
+    boolean typesMatch(ITypeBinding[] types1, ITypeBinding[] types2) {
+        if (types1.length != types2.length) return false;
+        
+        for (int i = 0; i < types1.length; i++) {
+            if (!types1[i].getKey().equals(types2[i].getKey())) return false;
+        }
+        
+        return true;
     }
     
 }

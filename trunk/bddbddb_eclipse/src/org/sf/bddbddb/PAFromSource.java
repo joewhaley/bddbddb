@@ -733,6 +733,7 @@ public class PAFromSource {
     
     final StringWrapper GLOBAL_THIS = new StringWrapper("GlobalThis"); 
     final StringWrapper ARRAY_FIELD = new StringWrapper("ArrayField");
+    final StringWrapper DUMMY_METHOD = new StringWrapper("DummyMethod");
    
     final StringWrapper OUTER_THIS_FIELD = new StringWrapper("OuterThisField");
     
@@ -782,6 +783,11 @@ public class PAFromSource {
             libs = l;
             generateVisited = r;
             /*this(0,0);*/
+            
+            if (libs) addToMVP(DUMMY_METHOD, GLOBAL_THIS, GLOBAL_THIS);   
+            else addToVP(GLOBAL_THIS, GLOBAL_THIS);    
+            
+            if (generateVisited) addToVisited(DUMMY_METHOD);
         }
         
         // vP
@@ -2097,8 +2103,7 @@ public class PAFromSource {
                     nw = getClinit();  
                 } 
                 else {
-                    addToMS(getWrappedConstructors(decl), 
-                        q, f, r);
+                    addToMS(getWrappedConstructors(decl), q, f, r);
                     return;
                 }
             }
@@ -3181,12 +3186,13 @@ public class PAFromSource {
         Vmap.get(GLOBAL_THIS);
         Imap = makeMap("Invokes", I_BITS);
         Hmap = makeMap("Heaps", H_BITS);
+        Hmap.get(GLOBAL_THIS);
         Fmap = makeMap("Fields", F_BITS);
         Tmap = makeMap("Types", T_BITS);
         Tmap.get(GLOBAL_THIS);
         Nmap = makeMap("Names", N_BITS);
         Mmap = makeMap("Methods", M_BITS);
-        Mmap.get(new StringWrapper("DummyMethod")); 
+        Mmap.get(DUMMY_METHOD); 
     }
 
     private void generateASTs(Set files) {
