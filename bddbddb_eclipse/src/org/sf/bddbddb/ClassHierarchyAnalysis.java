@@ -5,7 +5,6 @@ package org.sf.bddbddb;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Modifier;
@@ -74,6 +73,7 @@ public class ClassHierarchyAnalysis {
             if (!(o instanceof TypeWrapper)) continue;
             TypeWrapper tw = (TypeWrapper) o;
             ITypeBinding type = tw.getType();
+            //System.out.println(type.getBinaryName());
             IMethodBinding target = calculateVirtualTarget(type, name);
             if (target != null) {
                 addToCHA(type, name, target);
