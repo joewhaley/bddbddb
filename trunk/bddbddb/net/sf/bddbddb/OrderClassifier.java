@@ -515,7 +515,7 @@ public class OrderClassifier {
     public FastVector getAttributes(){
         return attributes;
     }
-    class MyAttribute extends weka.core.Attribute{
+    static class MyAttribute extends weka.core.Attribute{
         Pair pair;
         /*
         public MyAttribute(Pair pair, FastVector options, int index){
