@@ -3,15 +3,10 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -26,7 +21,6 @@ import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.ListFactory;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
 
@@ -53,6 +47,8 @@ public class BDDSolver extends Solver {
      * Map from a field domain to the set of BDD domains we have allocated for that field domain.
      */
     MultiMap fielddomainsToBDDdomains;
+    
+    FindBestDomainOrder fbo;
     
     /**
      * Initial size of BDD node table.
@@ -87,6 +83,7 @@ public class BDDSolver extends Solver {
         fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
         bdd.setMaxIncrease(BDDNODES / 2);
         bdd.setMinFreeNodes(BDDMINFREE);
+        fbo = new FindBestDomainOrder();
     }
 
     /*
@@ -244,7 +241,7 @@ public class BDDSolver extends Solver {
             saveBDDDomainInfo();
         } catch (IOException x) {
         }
-        FindBestDomainOrder.INSTANCE.dump();
+        fbo.dump();
     }
 
     /* (non-Javadoc)
