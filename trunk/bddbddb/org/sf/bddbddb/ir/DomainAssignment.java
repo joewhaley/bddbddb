@@ -429,7 +429,9 @@ public abstract class DomainAssignment implements OperationVisitor {
      * @see org.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.highlevel.Invert)
      */
     public Object visit(Invert op) {
-        return null;
+        Relation r0 = op.getRelationDest();
+        Relation r1 = op.getSrc();
+        return visitUnaryOp(op, r0, r1);
     }
 
     /*
