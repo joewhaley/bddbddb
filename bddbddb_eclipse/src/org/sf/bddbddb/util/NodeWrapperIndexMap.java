@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.io.DataInput;
-import java.io.DataOutput;
-import org.sf.bddbddb.StringWrapper;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import org.sf.bddbddb.StringWrapper;
 
 /**
  * An IndexMap for Wrappers. Always prefer other wrappers 
@@ -98,14 +98,14 @@ public class NodeWrapperIndexMap implements IndexedMap {
         return before != size();
     }
 
-    public void dumpStrings(final DataOutput out) throws IOException {
+    public void dumpStrings(final BufferedWriter out) throws IOException {
         for (Iterator j =iterator(); j.hasNext(); ) {
             Object o = j.next();
-            out.writeBytes(o + "\n");
+            out.write(o + "\n");
         }
     }
 
-    public static NodeWrapperIndexMap loadStringWrapperMap(String name, DataInput in)
+    public static NodeWrapperIndexMap loadStringWrapperMap(String name, BufferedReader in)
         throws IOException {
         NodeWrapperIndexMap dis = new NodeWrapperIndexMap(name);
         for (;;) {

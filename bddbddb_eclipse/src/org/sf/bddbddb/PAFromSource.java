@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -16,12 +17,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
-import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,13 +27,87 @@ import java.io.PrintStream;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.compiler.IProblem;
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.AssertStatement;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.ConstructorInvocation;
+import org.eclipse.jdt.core.dom.ContinueStatement;
+import org.eclipse.jdt.core.dom.DoStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
+import org.eclipse.jdt.core.dom.LabeledStatement;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.PackageDeclaration;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.SwitchCase;
+import org.eclipse.jdt.core.dom.SwitchStatement;
+import org.eclipse.jdt.core.dom.SynchronizedStatement;
+import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclarationStatement;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.WhileStatement;
 import org.sf.bddbddb.util.Assert;
+import org.sf.bddbddb.util.EclipseUtil;
+import org.sf.bddbddb.util.ExternalAppLauncher;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.IndexedMap;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.NodeWrapperIndexMap;
-import org.sf.bddbddb.util.StreamGobbler;
 import org.sf.bddbddb.util.SystemProperties;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
@@ -50,7 +122,7 @@ public class PAFromSource {
     static final String IMPLICITSUPERCALL = "ImplicitSuperCall in ";
     int filesParsed = 0;
     
-    PrintStream out = System.out;
+    public PrintStream out = System.out;
     
     static boolean TRACE_RELATIONS = !System.getProperty("pas.tracerelations", "no").equals("no");
     static boolean UNIFY_STRING_CONSTS = !System.getProperty("pas.unifystringconsts", "yes").equals("no");
@@ -362,18 +434,37 @@ public class PAFromSource {
         return d;
     }
     
+    public BDD initBDD(String name) {
+        String dumpPath = System.getProperty("pas.dumppath", "");
+        if (dumpPath.length() > 0) {
+            File f = new File(dumpPath);
+            if (!f.exists()) f.mkdirs();
+            String sep = System.getProperty("file.separator", "/");
+            if (!dumpPath.endsWith(sep))
+                dumpPath += sep;
+        }
+        try {
+            String fn = dumpPath+name+".bdd";
+            if (new File(fn).exists()) {
+                return bdd.load(fn);
+            }
+        } catch (IOException x) {
+        }
+        return bdd.zero();
+    }
+    
     public void resetBDDs() {
-        A = bdd.zero();
-        vP = bdd.zero();
-        S = bdd.zero();
-        L = bdd.zero();
-        vT = bdd.zero();
-        hT = bdd.zero();
-        aT = bdd.zero();
-        mL = bdd.zero();
-        mS = bdd.zero();
-        mIE = bdd.zero();
-        mvP = bdd.zero();
+        A = initBDD("A");
+        vP = initBDD("vP0");
+        S = initBDD("S");
+        L = initBDD("L");
+        vT = initBDD("vT");
+        hT = initBDD("hT");
+        aT = initBDD("aT");
+        mL = initBDD("mL");
+        mS = initBDD("mS");
+        mIE = initBDD("mIE");
+        mvP = initBDD("mvP");
         
         /*
         if (FILTER_HP) {
@@ -381,18 +472,18 @@ public class PAFromSource {
             fC = bdd.zero();
         }
         */
-        actual = bdd.zero();
-        formal = bdd.zero();
-        Iret = bdd.zero();
-        Mret = bdd.zero();
-        Ithr = bdd.zero();
-        Mthr = bdd.zero();
-        mI = bdd.zero();
+        actual = initBDD("actual");
+        formal = initBDD("formal");
+        Iret = initBDD("Iret");
+        Mret = initBDD("Mret");
+        Ithr = initBDD("Ithr");
+        Mthr = initBDD("Mthr");
+        mI = initBDD("mI");
         //mV = bdd.zero();
         //sync = bdd.zero();
-        IE = bdd.zero();
+        IE = initBDD("IE0");
         //hP = bdd.zero();
-        visited = bdd.zero();
+        visited = initBDD("visited");
         /*
         if (OBJECT_SENSITIVE || CARTESIAN_PRODUCT) staticCalls = bdd.zero();
         
@@ -2433,14 +2524,21 @@ public class PAFromSource {
     
     
     /**
-     * @param dotJava
-     * @param dotClass
      * @throws IOException
      */
     public void run() throws IOException {
         filesParsed = 0;
         System.out.println(dotJava.size() + " .java files to parse.");
         System.out.println(dotClass.size() + " .class files to parse.");
+        
+        Collection classes = new LinkedList();
+        for (Iterator i = dotClass.iterator(); i.hasNext(); ) {
+            IClassFile f = (IClassFile) i.next();
+            String s = EclipseUtil.getFullyQualifiedClassName(f);
+            classes.add(s);
+        }
+        if (!classes.isEmpty())
+            ExternalAppLauncher.callJoeqGenRelations(classes);
         
         resetBDDs();
         initializeMaps();
@@ -2451,10 +2549,6 @@ public class PAFromSource {
         int count = 1;
         
         out.println("Processing .java files");
-        //generateASTs(dotJava);
-        //while (!todo.isEmpty()) {
-        //    generateRelations(true, true);
-        //}
         for (Iterator i = dotJava.iterator(); i.hasNext(); ) {
             ICompilationUnit o = (ICompilationUnit)i.next();
             out.println("Starting file " + count++);
@@ -2465,17 +2559,14 @@ public class PAFromSource {
             }
         }
         
-        
-        out.println("Processing .class files");
-        //generateASTs(dotClass);
-//        while (!todo.isEmpty()) {
-//            generateRelations(true, false);
-//        }
-        for (Iterator i = dotClass.iterator(); i.hasNext(); ) {
-            Object o = i.next();
-            out.println("Starting file " + count++);
-            CompilationUnit cu = parseAST(o);
-            if (cu != null) generateRelations(cu, true, true);
+        if (false) {
+            out.println("Processing .class files");
+            for (Iterator i = dotClass.iterator(); i.hasNext(); ) {
+                Object o = i.next();
+                out.println("Starting file " + count++);
+                CompilationUnit cu = parseAST(o);
+                if (cu != null) generateRelations(cu, true, true);
+            }
         }
                
         if (filesParsed == 0) {
@@ -2512,50 +2603,11 @@ public class PAFromSource {
         out.println("Relations generated from " + filesParsed + " files.");
         
         out.println("Calling bddbddb...");
-        callBddBddb();
+        ExternalAppLauncher.callBddBddb(this);
     }
 
     
-    private void callBddBddb() {
-        String dumpPath = System.getProperty("pas.dumppath", "");
-        if (dumpPath.length() > 0) {
-            String sep = System.getProperty("file.separator", "/");
-            if (!dumpPath.endsWith(sep))
-                dumpPath += sep;
-        }
-        //File f = new File("c:\\runtime-workspace\\joeq_test\\");
-        String path = dumpPath + "pafly.datalog"; 
-        String bddbddb = dumpPath + "bddbddb.jar";
-        
-        String[] cmd = new String[] {"java", "-jar", bddbddb, path }; 
-
-        int r = -1;
-        try {
-            Process p = Runtime.getRuntime().exec(cmd);
-            StreamGobbler output = new StreamGobbler(p.getInputStream(), "bddbddb OUT");
-            StreamGobbler error = new StreamGobbler(p.getErrorStream(), "bddbddb ERR", System.err);
-
-            output.start();
-            error.start();
-            
-            r = p.waitFor(); 
-            
-            out.println("dumping callgraph...");
-            MultiMap mm = parseIETuples(dumpPath + "IE.rtuples");
-            
-            writeCallgraph(dumpPath + "callgraph", mm);
-            out.println("callgraph dumped.");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        if (r != 0) {
-            out.println("bddbddb failed: " + r);
-            return;
-        }
-    }
-    
-
-    private void writeCallgraph(String file, MultiMap mm) throws IOException {
+    public void writeCallgraph(String file, MultiMap mm) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
         
         for (Iterator it = classes.iterator(); it.hasNext(); ) {
@@ -2742,7 +2794,7 @@ public class PAFromSource {
     }
     
     
-    private MultiMap parseIETuples(String file) throws IOException {
+    public MultiMap parseIETuples(String file) throws IOException {
         BufferedReader in = new BufferedReader(new FileReader(file));
         MultiMap mm = new GenericMultiMap();
         String line;
@@ -2830,38 +2882,38 @@ public class PAFromSource {
         }
         System.out.println("Dumping to path "+dumpPath);
         
-        DataOutputStream dos = null;
+        BufferedWriter dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"bddinfo"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"bddinfo"));
             for (int i = 0; i < bdd.numberOfDomains(); ++i) {
                 BDDDomain d = bdd.getDomain(i);
                 if (d == V1 || d == V2)
-                    dos.writeBytes("V\n");
+                    dos.write("V\n");
                 else if (d == H1)// || d == H2)
-                    dos.writeBytes("H\n");
+                    dos.write("H\n");
                 else if (d == T1 || d == T2)
-                    dos.writeBytes("T\n");
+                    dos.write("T\n");
                 else if (d == F)
-                    dos.writeBytes("F\n");
+                    dos.write("F\n");
                 else if (d == I)
-                    dos.writeBytes("I\n");
+                    dos.write("I\n");
                 else if (d == Z)
-                    dos.writeBytes("Z\n");
+                    dos.write("Z\n");
                 else if (d == N)
-                    dos.writeBytes("N\n");
+                    dos.write("N\n");
                 else if (d == M || d == M2)
-                    dos.writeBytes("M\n");
+                    dos.write("M\n");
                 /*else if (Arrays.asList(V1c).contains(d)
                         || Arrays.asList(V2c).contains(d))
-                    dos.writeBytes("VC\n");
+                    dos.write("VC\n");
                 else if (Arrays.asList(H1c).contains(d)
                         || Arrays.asList(H2c).contains(d))
-                    dos.writeBytes("HC\n");
+                    dos.write("HC\n");
                 else if (DUMP_SSA) {
-                    dos.writeBytes(bddIRBuilder.getDomainName(d)+"\n");
+                    dos.write(bddIRBuilder.getDomainName(d)+"\n");
                 }*/
                 else
-                    dos.writeBytes(d.toString() + "\n");
+                    dos.write(d.toString() + "\n");
             }
         } finally {
             if (dos != null) dos.close();
@@ -2869,17 +2921,17 @@ public class PAFromSource {
         
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"fielddomains.pa"));
-            dos.writeBytes("V "+(1L<<V_BITS)+" var.map\n");
-            dos.writeBytes("H "+(1L<<H_BITS)+" heap.map\n");
-            dos.writeBytes("T "+(1L<<T_BITS)+" type.map\n");
-            dos.writeBytes("F "+(1L<<F_BITS)+" field.map\n");
-            dos.writeBytes("I "+(1L<<I_BITS)+" invoke.map\n");
-            dos.writeBytes("Z "+(1L<<Z_BITS)+"\n");
-            dos.writeBytes("N "+(1L<<N_BITS)+" name.map\n");
-            dos.writeBytes("M "+(1L<<M_BITS)+" method.map\n");
-            //dos.writeBytes("VC "+(1L<<VC_BITS)+"\n");
-            //dos.writeBytes("HC "+(1L<<HC_BITS)+"\n");
+            dos = new BufferedWriter(new FileWriter(dumpPath+"fielddomains.pa"));
+            dos.write("V "+(1L<<V_BITS)+" var.map\n");
+            dos.write("H "+(1L<<H_BITS)+" heap.map\n");
+            dos.write("T "+(1L<<T_BITS)+" type.map\n");
+            dos.write("F "+(1L<<F_BITS)+" field.map\n");
+            dos.write("I "+(1L<<I_BITS)+" invoke.map\n");
+            dos.write("Z "+(1L<<Z_BITS)+"\n");
+            dos.write("N "+(1L<<N_BITS)+" name.map\n");
+            dos.write("M "+(1L<<M_BITS)+" method.map\n");
+            //dos.write("VC "+(1L<<VC_BITS)+"\n");
+            //dos.write("HC "+(1L<<HC_BITS)+"\n");
             //if (bddIRBuilder != null) bddIRBuilder.dumpFieldDomains(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2940,7 +2992,7 @@ public class PAFromSource {
         */
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"var.map"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"var.map"));
             Vmap.dumpStrings(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2948,7 +3000,7 @@ public class PAFromSource {
         
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"heap.map"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"heap.map"));
             Hmap.dumpStrings(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2956,7 +3008,7 @@ public class PAFromSource {
         
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"type.map"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"type.map"));
             Tmap.dumpStrings(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2964,7 +3016,7 @@ public class PAFromSource {
         
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"field.map"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"field.map"));
             Fmap.dumpStrings(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2972,7 +3024,7 @@ public class PAFromSource {
         
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"invoke.map"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"invoke.map"));
             Imap.dumpStrings(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2980,7 +3032,7 @@ public class PAFromSource {
         
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"name.map"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"name.map"));
             Nmap.dumpStrings(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2988,7 +3040,7 @@ public class PAFromSource {
         
         dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(dumpPath+"method.map"));
+            dos = new BufferedWriter(new FileWriter(dumpPath+"method.map"));
             Mmap.dumpStrings(dos);
         } finally {
             if (dos != null) dos.close();
@@ -2997,20 +3049,35 @@ public class PAFromSource {
     }
     
     IndexedMap makeMap(String name, int bits) {
+        String dumpPath = System.getProperty("pas.dumppath", "");
+        if (dumpPath.length() > 0) {
+            File f = new File(dumpPath);
+            if (!f.exists()) f.mkdirs();
+            String sep = System.getProperty("file.separator", "/");
+            if (!dumpPath.endsWith(sep))
+                dumpPath += sep;
+        }
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new FileReader(dumpPath+name+".map"));
+            return NodeWrapperIndexMap.loadStringWrapperMap(name, in);
+        } catch (IOException x) {
+        }
         return new NodeWrapperIndexMap(name, 1 << bits);
     }
 
     private void initializeMaps() {
-        Vmap = makeMap("Vars", V_BITS);
+        Vmap = makeMap("var", V_BITS);
+        Imap = makeMap("invoke", I_BITS);
+        Hmap = makeMap("heap", H_BITS);
+        Fmap = makeMap("field", F_BITS);
+        Tmap = makeMap("type", T_BITS);
+        Nmap = makeMap("name", N_BITS);
+        Mmap = makeMap("method", M_BITS);
+        
         Vmap.get(StringWrapper.GLOBAL_THIS);
-        Imap = makeMap("Invokes", I_BITS);
-        Hmap = makeMap("Heaps", H_BITS);
         Hmap.get(StringWrapper.GLOBAL_THIS);
-        Fmap = makeMap("Fields", F_BITS);
-        Tmap = makeMap("Types", T_BITS);
         Tmap.get(StringWrapper.GLOBAL_THIS);
-        Nmap = makeMap("Names", N_BITS);
-        Mmap = makeMap("Methods", M_BITS);
         Mmap.get(StringWrapper.DUMMY_METHOD); 
     }
 
@@ -3137,18 +3204,21 @@ public class PAFromSource {
         ITypeBinding type = v.getType();
         if (type == null) {
             if (v instanceof StringWrapper) {
-                if (v == StringWrapper.GLOBAL_THIS) {
+                if (v.equals(StringWrapper.GLOBAL_THIS)) {
                     BDD bdd1 = V1.ithVar(V_i);
                     bdd1.andWith(T1.ithVar(0));
                     out.println("adding to vT: 0 / " + StringWrapper.GLOBAL_THIS);
                     if (TRACE_RELATIONS) out.println("Adding to vT: "+bdd1.toStringWithDomains());
                     vT.orWith(bdd1);
                 }
-                else if (v == StringWrapper.OUTER_THIS_FIELD) {
+                else if (v.equals(StringWrapper.OUTER_THIS_FIELD)) {
                     // vT added added when OUTER_THIS_FIELD is added to Vmap
                     return;
                 }
-                else throw new RuntimeException("ERROR: unhandled stringwrapper node in V: " + v);
+                else {
+                    // Maybe from Joeq, so we don't know about it.
+                    //throw new RuntimeException("ERROR: unhandled stringwrapper node in V: " + v);
+                }
             }
             else throw new RuntimeException("ERROR: gettype returned null");
         }
@@ -3166,8 +3236,11 @@ public class PAFromSource {
     
     void addToHT(int H_i, Wrapper h) {
         if (h.equals(StringWrapper.GLOBAL_THIS)) return;
+        if (h instanceof StringWrapper) {
+            // From Joeq.
+            return;
+        }
         if (h instanceof ThisWrapper || h instanceof MethodWrapper ||
-            h instanceof StringWrapper || 
             h instanceof TypeWrapper) {
             throw new RuntimeException("ERROR: this type of node shouldn't be in H");
         }
