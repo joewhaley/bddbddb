@@ -1093,6 +1093,26 @@ public abstract class Solver {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.TRACE = true;
                 r.TRACE_FULL = true;
+            } else if (option.equals("pre") || option.equals("post") || option.equals("{")) {
+                StringBuffer sb = new StringBuffer();
+                String s2 = nextToken(st);
+                int type = 2;
+                if (!option.equals("{")) {
+                    if (option.equals("pre")) type = 1;
+                    if (!s2.equals("{")) {
+                        outputError(lineNum, st.getPosition(), s, "Invalid number format for min_confidence \"" + option + "\"");
+                        throw new IllegalArgumentException();
+                    }
+                    s2 = nextToken(st);
+                }
+                while (!s2.equals("}")) {
+                    sb.append(' ');
+                    sb.append(s2);
+                    s2 = nextToken(st);
+                }
+                CodeFragment f = new CodeFragment(sb.toString());
+                if (type == 1) ir.preCode.add(f);
+                else ir.postCode.add(f);
             } else {
                 // todo: pri=#, maxiter=#
                 outputError(lineNum, st.getPosition(), s, "Unknown rule option \"" + option + "\"");
