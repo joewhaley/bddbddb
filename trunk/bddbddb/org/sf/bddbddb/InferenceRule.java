@@ -720,6 +720,16 @@ public abstract class InferenceRule implements IterationElement {
                 newAttributes.add(a2);
             }
             if (!renames.isEmpty()) {
+                if (cache_before_rename) {
+                    Relation new_r = solver.createRelation(newRelationValues[x]+"_r", newAttributes);
+                    new_r.initialize();
+                    Rename rename = new Rename(new_r, newRelationValues[x], renames);
+                    if (solver.TRACE)
+                        solver.out.println("Generated: "+rename);
+                    ir.add(rename);
+                    newRelationValues[x] = new_r;
+                }
+                // TODO: only rename whole relation if it is actually needed.
                 Relation new_r = solver.createRelation(r+"_r", newAttributes);
                 new_r.initialize();
                 Rename rename = new Rename(new_r, r, renames);
@@ -783,21 +793,22 @@ public abstract class InferenceRule implements IterationElement {
         for (x = 0; x < newRelationValues.length; ++x) {
             Relation result = newRelationValues[x];
             for (int y = 0; y < allRelationValues.length; ++y) {
-                if (x == y) continue;
-                Relation r = allRelationValues[y];
-                List newAttributes = new LinkedList(result.attributes);
-                newAttributes.removeAll(r.attributes);
-                newAttributes.addAll(r.attributes);
-                Relation new_r = solver.createRelation(result+"_j", newAttributes);
-                new_r.initialize();
-                Join join = new Join(new_r, r, result);
-                if (solver.TRACE)
-                    solver.out.println("Generated: "+join);
-                ir.add(join);
-                result = new_r;
+                if (x != y) {
+                    Relation r = allRelationValues[y];
+                    List newAttributes = new LinkedList(result.attributes);
+                    newAttributes.removeAll(r.attributes);
+                    newAttributes.addAll(r.attributes);
+                    Relation new_r = solver.createRelation(result+"_j", newAttributes);
+                    new_r.initialize();
+                    Join join = new Join(new_r, r, result);
+                    if (solver.TRACE)
+                        solver.out.println("Generated: "+join);
+                    ir.add(join);
+                    result = new_r;
+                }
             
                 if (!toProject[y].isEmpty()) {
-                    newAttributes = new LinkedList(result.attributes);
+                    List newAttributes = new LinkedList(result.attributes);
                     newAttributes.removeAll(toProject[y]);
                     Relation result2 = solver.createRelation(result+"_p2", newAttributes);
                     result2.initialize();
