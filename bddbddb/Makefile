@@ -4,15 +4,16 @@ JAR_NAME = bddbddb.jar
 
 ifeq (${OS},Windows_NT)
   CLASSPATH_SEP = \;
-  BUILD_CLASSPATH = ".;$(subst $(space),;,$(SUPPORT_LIBS);$(MODULES))"
+  BUILD_CLASSPATH = ".;$(subst $(space),;,$(SUPPORT_LIBS))"
   JDK_ROOT = $(firstword $(wildcard c:/j2sdk*))
 else
   CLASSPATH_SEP = :
-  BUILD_CLASSPATH = .:$(subst $(space),:,$(SUPPORT_LIBS):$(MODULES))
+  BUILD_CLASSPATH = .:$(subst $(space),:,$(SUPPORT_LIBS))
   JDK_ROOT = $(firstword $(wildcard /usr/java/j2sdk*))
 endif
 
 # The java tools:
+JAVA = $(JDK_ROOT)/bin/java
 JAVAC = $(JDK_ROOT)/bin/javac
 JAVADOC = $(JDK_ROOT)/bin/javadoc
 JAR = $(JDK_ROOT)/bin/jar
@@ -75,6 +76,16 @@ jar: $(JAR_NAME)
 
 $(JAR_NAME): class_list
 	$(JAR) cfm $(JAR_NAME) bddbddbManifest @.class_list
+
+
+### RULES TO RUN TEST CASES
+#
+DATALOG = ../bddbddb_examples/pa.datalog
+test:	$(JAR_NAME)
+	$(JAVA) -mx512m -cp $(BUILD_CLASSPATH) $(TESTOPT) org.sf.bddbddb.Solver $(DATALOG)
+
+interactive:	$(JAR_NAME)
+	$(JAVA) -mx512m -cp $(BUILD_CLASSPATH) $(TESTOPT) org.sf.bddbddb.Interactive $(DATALOG)
 
 
 ### MISC RULES
