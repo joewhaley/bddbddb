@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.0"?>
 <plugin
-   id="org.sf.bddbddb"
+   id="net.sf.bddbddb"
    name="bddbddb Eclipse Plug-in"
    version="1.0.0"
    provider-name=""
-   class="org.sf.bddbddb.eclipse.EclipsePlugin">
+   class="net.sf.bddbddb.eclipse.EclipsePlugin">
 
    <runtime>
       <library name="bddbddb_eclipse.jar">
@@ -34,7 +34,7 @@
       <actionSet
             label="bddbddb Action Set"
             visible="true"
-            id="org.sf.bddbddb.eclipse.actionSet">
+            id="net.sf.bddbddb.eclipse.actionSet">
          <menu
                label="&amp;bddbddb"
                id="bddbddbMenu">
@@ -45,13 +45,13 @@
                label="&amp;Transform source"
                icon="icons/4.GIF"
                tooltip="Transforms the source code after analysis"
-               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               class="net.sf.bddbddb.eclipse.actions.GenerifyAction"
                menubarPath="bddbddbMenu/bddbddbGroup"
                id="Transform"/>
             <action
                toolbarPath="bddbddbGroup"
                label="&amp;Generate relations"
-               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               class="net.sf.bddbddb.eclipse.actions.GenerifyAction"
                tooltip="Generate relations from input program"
                icon="icons/3.GIF"
                menubarPath="bddbddbMenu/bddbddbGroup"
@@ -61,7 +61,7 @@
                label="&amp;Parse files"
                icon="icons/2.GIF"
                tooltip="Parse the selected files (does not overwrite already parsed files)"
-               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               class="net.sf.bddbddb.eclipse.actions.GenerifyAction"
                menubarPath="bddbddbMenu/bddbddbGroup"
                id="Parse"/>
             <action
@@ -69,7 +69,7 @@
                label="&amp;Load class libraries"
                icon="icons/1.GIF"
                tooltip="Call joeq to generate BDDs of class files (can only be done once)"
-               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               class="net.sf.bddbddb.eclipse.actions.GenerifyAction"
                menubarPath="bddbddbMenu/bddbddbGroup"
                id="LoadClasses"/>               
             <action
@@ -77,7 +77,7 @@
                label="&amp;Reset"
                icon="icons/0.GIF"
                tooltip="Reset everything"
-               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               class="net.sf.bddbddb.eclipse.actions.GenerifyAction"
                menubarPath="bddbddbMenu/bddbddbGroup"
                id="Reset"/>
       </actionSet>
