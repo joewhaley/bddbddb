@@ -1292,7 +1292,7 @@ public abstract class Solver {
                     if (at.attributeDomain.map != null &&
                         a[k] >= 0 && a[k] < at.attributeDomain.map.size()) {
                         out.print('(');
-                        out.print(k);
+                        out.print(a[k]);
                         out.print(')');
                     }
                 }
