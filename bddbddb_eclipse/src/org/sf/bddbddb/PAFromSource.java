@@ -43,7 +43,7 @@ public class PAFromSource {
     IndexMap Hmap;
     IndexMap Fmap;
     IndexMap Tmap;
-    //IndexMap Nmap;
+    IndexMap Nmap;
     IndexMap Mmap;
     //PathNumbering vCnumbering; // for context-sensitive
     //PathNumbering hCnumbering; // for context-sensitive
@@ -53,7 +53,7 @@ public class PAFromSource {
     static int bddcache = Integer.parseInt(System.getProperty("bddcache", "10000"));
     static BDDFactory bdd = BDDFactory.init(bddnodes, bddcache);
     
-    static BDDDomain V1, V2, I, H1, Z, F, T1, T2, M; // H2, N, M2
+    static BDDDomain V1, V2, I, H1, Z, F, T1, T2, M, N; // H2, M2
     //BDDDomain V1c[], V2c[], H1c[], H2c[];
     
     static int V_BITS=18, I_BITS=16, H_BITS=15, Z_BITS=5, F_BITS=13, T_BITS=12, N_BITS=13, M_BITS=14;
@@ -390,7 +390,7 @@ public class PAFromSource {
     
     //static int nextID = 0;
     
-    private class ASTNodeWrapper {
+    class ASTNodeWrapper {
         private ASTNode n; // null for global this or implicit this
         
         ASTNodeWrapper(ASTNode obj) {
@@ -498,7 +498,7 @@ public class PAFromSource {
     }
     
     
-    private class ThisWrapper extends ASTNodeWrapper {
+    class ThisWrapper extends ASTNodeWrapper {
         IBinding method;
         
         ThisWrapper(Name m, ThisExpression n) {
@@ -533,7 +533,7 @@ public class PAFromSource {
     }
     
     // note unlike other wrappers, this one uses qualified name, not binding key
-    private class TypeWrapper extends ASTNodeWrapper {
+    class TypeWrapper extends ASTNodeWrapper {
         ITypeBinding type; // might need to switch to Type in JLS3
         TypeWrapper(ITypeBinding bind) {
             super(null);
@@ -559,7 +559,7 @@ public class PAFromSource {
         }
     }
     
-    private class MethodWrapper extends ASTNodeWrapper {
+    class MethodWrapper extends ASTNodeWrapper {
         IMethodBinding method; 
         MethodWrapper(IMethodBinding bind) {
             super(null);
@@ -588,7 +588,7 @@ public class PAFromSource {
     }
     
     
-    private class StringWrapper extends ASTNodeWrapper {
+    class StringWrapper extends ASTNodeWrapper {
         String name;
         StringWrapper(String s) {
             super(null);
@@ -634,7 +634,7 @@ public class PAFromSource {
     /**
      * @author jimz
      */
-    private class PAASTVisitor extends ASTVisitor {
+    class PAASTVisitor extends ASTVisitor {
         // TODO handle super.this
         // and handle <clinit>
         
