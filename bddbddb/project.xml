@@ -92,6 +92,9 @@
     <connection>
       scm:cvs:pserver:anonymous@cvs.sourceforge.net:/cvsroot/bddbddb:bddbddb
     </connection>
+    <developerConnection>
+      scm:cvs:ext:joewhaley@cvs.sourceforge.net:/cvsroot/bddbddb:bddbddb
+    </developerConnection>
     <url>
       http://cvs.sourceforge.net/viewcvs.py/bddbddb/
     </url>
