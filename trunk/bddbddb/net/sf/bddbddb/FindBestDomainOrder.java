@@ -1853,7 +1853,7 @@ public double constFoldCV( Instances data, String cClassName){
          aScore = aClass == NO_CLASS ? NO_CLASS_SCORE : aBucketMeans[(int) aClass];
          dScore = dClass == NO_CLASS ? NO_CLASS_SCORE : dBucketMeans[(int) dClass];
          // Combine the scores in some fashion.
-         double score = PROBABILITY ? RMS(vClassProb, .5, aClassProb, .5, dClassProb, .5) 
+         double score = PROBABILITY ? RMS(vClassProb, .5, aClassProb, .5, dClassProb, 1) 
                                     : vScore + aScore + dScore;
          //combine probabilities somehow
          double prob = probCount == 0 ? 0 : (vClassProb + aClassProb + dClassProb) / probCount;
