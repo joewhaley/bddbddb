@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -25,6 +26,7 @@ import jwutil.collections.MultiMap;
 import jwutil.math.CombinationGenerator;
 import jwutil.math.Distributions;
 import jwutil.util.Assert;
+import net.sf.bddbddb.dataflow.PartialOrder.InterleavedConstraint;
 import net.sf.bddbddb.order.OrderConstraint.AfterConstraint;
 import net.sf.bddbddb.order.OrderConstraint.BeforeConstraint;
 import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;
@@ -52,6 +54,11 @@ public class OrderConstraintSet {
         return new OrderConstraintSet(this);
     }
     
+    private OrderConstraintSet(LinkedHashSet set, MultiMap objToConstraints){
+        this.set = set;
+        this.objToConstraints = objToConstraints;
+    }
+    
     public OrderConstraintSet(OrderConstraintSet that) {
         set = new LinkedHashSet(that.set);
         objToConstraints = new GenericMultiMap();
@@ -61,27 +68,50 @@ public class OrderConstraintSet {
             objToConstraints.add(c.b, c);
         }
     }
+    public OrderConstraintSet translate(Map translationMap){
+        OrderConstraintSet newOcs = new OrderConstraintSet();
+        for(Iterator it = set.iterator(); it.hasNext(); ){
+            OrderConstraint oc = (OrderConstraint) it.next();
+            Object newA = translationMap.get(oc.a);
+            Object newB = translationMap.get(oc.b);
+            if(newA == null || newB == null) continue; /* skip or assert */
+            OrderConstraint newOc = OrderConstraint.makeConstraint(oc.getType(), newA, newB);
+            newOcs.constrain(newOc);            
+        }
+        return newOcs;
+    }
     
+    public int size(){ return set.size(); }
+    public boolean constrain(OrderConstraintSet ocs, Collection invalidConstraints){
+        return constrain(ocs.set, invalidConstraints);
+        
+    }
     public boolean constrain(Order c, Collection /*OrderConstraint*/ invalidConstraints) {
         return constrain(c.getConstraints(), invalidConstraints);
     }
     
     public boolean constrain(Collection c, Collection /*OrderConstraint*/ invalidConstraints) {
+        boolean worked = true;
         for (Iterator i = c.iterator(); i.hasNext(); ) {
             OrderConstraint oc = (OrderConstraint) i.next();
-            if (!constrain(oc)){
-                invalidConstraints.add(oc);
+            if(!constrain(oc)){
+                worked = false;
+                if(invalidConstraints != null) invalidConstraints.add(oc);
             }
         }
-        return invalidConstraints.size() == 0;
+        return worked;
     }
     
     public boolean constrain(OrderConstraint c) {
         if (set.contains(c)) return true;
         if (set.contains(c.getOpposite1())) return false;
         if (set.contains(c.getOpposite2())) return false;
-        if (c instanceof InterleaveConstraint) addInterleaveConstraint((InterleaveConstraint) c);
-        else {
+        if (c instanceof InterleaveConstraint){
+         /*   if(c.getFirst().equals(c.getSecond()))
+                Assert._assert(false);
+           */
+            addInterleaveConstraint((InterleaveConstraint) c);
+        }else {
             if (c.a.equals(c.b)) return false;
             addPrecedenceConstraint(c);
         }

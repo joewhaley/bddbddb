@@ -43,9 +43,10 @@ public abstract class WekaInterface {
         }
     }
     
+    public static int INTERLEAVE = 1;
     public static int getType(OrderConstraint oc) {
         if (oc instanceof BeforeConstraint) return 0;
-        else if (oc instanceof InterleaveConstraint) return 1;
+        else if (oc instanceof InterleaveConstraint) return INTERLEAVE;
         else if (oc instanceof AfterConstraint) return 2;
         else return -1;
     }
@@ -84,7 +85,6 @@ public abstract class WekaInterface {
     
     public static void addAllPairs(FastVector v, Collection c) {
         Collection pairs = new HashSet();
-        System.out.println("Collection for pairs: " + c);
         for (Iterator i = c.iterator(); i.hasNext(); ) {
             Object a = i.next();
             Iterator j = c.iterator();
@@ -98,14 +98,12 @@ public abstract class WekaInterface {
                 pairs.add(pair);
             }
         }
-        System.out.println("apairs: " + pairs);
    //     System.out.println(new HashSet(c) + " Size: " + v.size());
         
     }
     
     public static Collection /*UnorderedPair*/ generateAllPairs(Collection c){
         Collection pairs = new HashSet();
-        System.out.println("Collection for pairs: " + c);
         for (Iterator i = c.iterator(); i.hasNext(); ) {
             Object a = i.next();
             Iterator j = c.iterator();
@@ -116,7 +114,6 @@ public abstract class WekaInterface {
                 pairs.add(pair);
             }
         }
-        System.out.println("gpairs: " + pairs);
         return pairs;
     }
 
@@ -263,9 +260,16 @@ public abstract class WekaInterface {
             for (Iterator i = o.getConstraints().iterator(); i.hasNext(); ) {
                 OrderConstraint oc = (OrderConstraint) i.next();
                 // TODO: use a map from Pair to int instead of building String and doing linear search.
+            
                 String cName = oc.getFirst()+","+oc.getSecond();
                 OrderAttribute oa = (OrderAttribute) dataSet.attribute(cName);
                 if (oa != null) {
+                    
+                    if(oc.getFirst().equals(oc.getSecond()) && d[oa.index()] == INTERLEAVE) 
+                        continue;
+                    /* TODO should only one type of constraint for
+                     * when first == second and they are not interleaved
+                     */  
                     d[oa.index()] = getType(oc);
                 } else {
                     

@@ -526,6 +526,12 @@ public class BDDSolver extends Solver {
      * @see net.sf.bddbddb.Solver#reportStats()
      */
     public void reportStats() {
+        boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
+        boolean print_best_order = !System.getProperty("printbestorder", "no").equals("no");
+        if(find_best_order || print_best_order){
+            fbo.printBestBDDOrders();
+            return;
+        }
         int final_node_size = bdd.getNodeNum();
         int final_table_size = bdd.getNodeTableSize();
         System.out.println("MAX_NODES=" + final_table_size);

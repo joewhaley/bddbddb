@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.io.Writer;
 import net.sf.bddbddb.FindBestDomainOrder.ConstraintInfoCollection;
 import net.sf.bddbddb.order.OrderConstraint;
-import net.sf.bddbddb.order.TrialCollection;
+import net.sf.bddbddb.order.EpisodeCollection;
 
 import org.jdom.Document;
 import org.jdom.Element;
@@ -60,7 +60,7 @@ public class XMLFactory {
             }
             o = results;
         } else if (name.equals("trialCollection")) {
-            TrialCollection tc = TrialCollection.fromXMLElement(e, solver);
+            EpisodeCollection tc = EpisodeCollection.fromXMLElement(e, solver);
             o = tc;
         } else if (name.equals("findBestOrder")) {
             ConstraintInfoCollection c = null;

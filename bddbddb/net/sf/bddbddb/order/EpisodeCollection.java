@@ -11,6 +11,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import net.sf.bddbddb.BDDInferenceRule;
@@ -27,7 +29,7 @@ import org.jdom.Element;
  * @author John Whaley
  * @version $Id$
  */
-public class TrialCollection {
+public class EpisodeCollection {
     /**
      * Name of the test.
      */
@@ -41,11 +43,14 @@ public class TrialCollection {
     public static String RULE_CONST = "rule";
     public static String SPACER = "_";
     public static String UPDATE_CONST = "update";
+    public static String OP_CONST = "op";
     /**
      * Map from orders to their trial information.
      */
     public Map/*<Order,TrialInfo>*/ trials;
 
+    List episodes;
+    
     /**
      * Best trial so far.
      */
@@ -61,18 +66,25 @@ public class TrialCollection {
      * 
      * @param n  test name
      */
-    public TrialCollection(BDDInferenceRule rule, long ts) {
-        name = RULE_CONST + rule.id + SPACER + UPDATE_CONST + rule.updateCount;     
+    public EpisodeCollection(BDDInferenceRule rule, int opNum, long ts) {
+        name = RULE_CONST + rule.id + SPACER + UPDATE_CONST + rule.updateCount + SPACER + OP_CONST + opNum;     
         timeStamp = ts;
         trials = new LinkedHashMap();
         sorted = null;
+        episodes = new LinkedList();
     }
 
-    TrialCollection(String n, long ts){
+    EpisodeCollection(String n, long ts){
         name = n;     
         timeStamp = ts;
         trials = new LinkedHashMap();
         sorted = null;
+        episodes = new LinkedList();
+    }
+    
+    /* TODO stamp episodes instead of the collection */
+    public void setTimeStamp(long stamp){
+        timeStamp = stamp;
     }
     /**
      * Add the information about a trial to this collection.
@@ -96,8 +108,13 @@ public class TrialCollection {
      * @param cost  cost of operation
      */
     public void addTrial(Order o, TrialPrediction p, long cost) {
-        addTrial(new TrialInfo(o, p, cost, this));
+        Episode ep = getCurrEpisode();
+        if(ep == null) ep = startNewEpisode();
+        
+        addTrial(new TrialInfo(o, p, cost, ep));
     }
+    
+    
 
     /**
      * Returns true if this collection contains a trial with the given order,
@@ -210,7 +227,7 @@ public class TrialCollection {
     /**
      * @return the number of trials in this collection
      */
-    public int size() {
+    public int getNumTrials() {
         return trials.size();
     }
 
@@ -222,26 +239,28 @@ public class TrialCollection {
     }
 
     /**
-     * Returns this TrialCollection as an XML element.
+     * Returns this EpisodeCollection as an XML element.
      * 
      * @return XML element
      */
     public Element toXMLElement() {
-        Element dis = new Element("trialCollection");
+        Element dis = new Element("episodeCollection");
         dis.setAttribute("name", name);
         dis.setAttribute("timeStamp", Long.toString(timeStamp));
-        for (Iterator i = trials.values().iterator(); i.hasNext();) {
-            TrialInfo info = (TrialInfo) i.next();
-            dis.addContent(info.toXMLElement());
+        for(Iterator it = episodes.iterator(); it.hasNext(); ){
+            Episode ep = (Episode) it.next();
+            dis.addContent(ep.toXMLElement());
         }
+     
         return dis;
     }
 
     static InferenceRule parseRule(Solver solver, String s) {
-        int spacerIndex = s.indexOf(SPACER);
+        int updateIndex = s.indexOf(UPDATE_CONST);
+        
         int ruleNum = -1;
-        if(spacerIndex > -1)
-            ruleNum = Integer.parseInt(s.substring(RULE_CONST.length(),spacerIndex));
+        if(updateIndex > -1)
+            ruleNum = Integer.parseInt(s.substring(RULE_CONST.length(),updateIndex - 1));
         else
             ruleNum = Integer.parseInt(s.substring(RULE_CONST.length()));
         
@@ -250,11 +269,21 @@ public class TrialCollection {
     }
     
     static int parseUpdateCount(String s){
-       int spacerIndex = s.indexOf(SPACER);
-       if(spacerIndex > -1)
-           return Integer.parseInt(s.substring(spacerIndex + 1 + UPDATE_CONST.length()));
+       int updateIndex = s.indexOf(UPDATE_CONST);
+       int opIndex = s.indexOf(OP_CONST);
+       if(opIndex > -1){
+           return Integer.parseInt(s.substring(updateIndex + UPDATE_CONST.length(), opIndex - 1));
+       }else if(updateIndex > -1){
+           return Integer.parseInt(s.substring(updateIndex + UPDATE_CONST.length()));
+       }
+        return -1;
+    }
     
-        return spacerIndex;
+    static int parseOpNumber(String s){
+        int opIndex = s.indexOf(OP_CONST);
+        if(opIndex > -1)
+            return Integer.parseInt(s.substring(opIndex + OP_CONST.length()));
+        return -1;
     }
 
     public InferenceRule getRule(Solver solver) {
@@ -263,7 +292,9 @@ public class TrialCollection {
     
     public int getUpdateCount(){ return parseUpdateCount(name); }
 
-    public static TrialCollection fromXMLElement(Element e, Solver solver) {
+    public int getOpNumber(){ return parseOpNumber(name); }
+    
+    public static EpisodeCollection fromXMLElement(Element e, Solver solver) {
         String name = e.getAttributeValue("name");
         InferenceRule rule = parseRule(solver, name);
         Map nameToVar = rule.getVarNameMap();
@@ -273,15 +304,78 @@ public class TrialCollection {
         } catch (NumberFormatException _) {
             timeStamp = 0L;
         }
-        TrialCollection tc = new TrialCollection(name, timeStamp);
-        for (Iterator i = e.getContent().iterator(); i.hasNext();) {
-            Object e2 = i.next();
-            if (e2 instanceof Element) {
-                TrialInfo ti = TrialInfo.fromXMLElement((Element) e2, nameToVar, tc);
-                tc.addTrial(ti);
+       
+        EpisodeCollection tc = new EpisodeCollection(name, timeStamp);
+        /* backwards compatible: try to parse out trial info's and if it fails
+         * parse episodes instead.
+         */
+        try{
+            Episode ep = tc.startNewEpisode();;
+            for (Iterator i = e.getContent().iterator(); i.hasNext();) {
+                Object e2 = i.next();
+                if (e2 instanceof Element) {
+                    TrialInfo ti = TrialInfo.fromXMLElement((Element) e2, nameToVar, ep);
+                    ep.addTrial(ti);
+                }
+            }
+        }catch(IllegalArgumentException ex){
+            tc.episodes.clear();
+            for(Iterator it = e.getContent().iterator(); it.hasNext(); ){
+                Object elem2 = it.next();
+                if(elem2 instanceof Element)
+                    episodeFromXMLElement((Element) elem2,nameToVar, tc);
             }
         }
+      
         return tc;
     }
+    public Collection getOrders(){ return trials.keySet(); }
+    public Episode startNewEpisode(){
+        Episode ep = new Episode();
+        episodes.add(ep);
+        return ep;
+    }
+    /* will throw an expection if no episodes have been started */
+    public Episode getCurrEpisode(){
+        if(episodes.size() == 0) return null;
+        return (Episode) episodes.get(episodes.size() - 1);
+    }
+    /* has side effects on trialcollection */
+    public static Episode episodeFromXMLElement(Element elem1, Map nameToVar, EpisodeCollection tc){
+        Episode ep = tc.startNewEpisode();
+        for (Iterator i = elem1.getContent().iterator(); i.hasNext();) {
+            Object elem2 = i.next();
+            if (elem2 instanceof Element) {
+                TrialInfo ti = TrialInfo.fromXMLElement((Element) elem2, nameToVar, ep);
+                ep.addTrial(ti);
+            }
+        }
+        return ep;
+    }
     
+
+    
+    public class Episode{
+      Map trials;
+      TrialInfo best;
+      public Episode(){
+          trials = new LinkedHashMap();
+      }
+      public void addTrial(TrialInfo ti){
+          trials.put(ti.order, ti);
+          if (best == null || best.cost > ti.cost) {
+              best = ti;
+          }
+          EpisodeCollection.this.addTrial(ti);
+      }
+      public Element toXMLElement(){
+          Element e = new Element("episode");
+          for (Iterator i = trials.values().iterator(); i.hasNext();) {
+              TrialInfo info = (TrialInfo) i.next();
+              e.addContent(info.toXMLElement());
+          }
+          return e;
+      }
+      public EpisodeCollection getEpisodeCollection(){ return EpisodeCollection.this; }
+    }    
 }
