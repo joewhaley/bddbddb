@@ -63,7 +63,7 @@ public abstract class Solver {
     
     /** Base directory where to load/save files. */
     String basedir = System.getProperty("basedir");
-    String includedirs = System.getProperty("includedirs",basedir);
+    String includedirs = System.getProperty("includedirs");
     /** List of paths to search when loading files. */
     List/*<String>*/ includePaths;
     /** Map between id numbers and relations. */
@@ -266,6 +266,7 @@ public abstract class Solver {
         if (basedir.length() > 0 && !basedir.endsWith(sep) && !basedir.endsWith("/")) {
             basedir += sep;
         }
+        if (includedirs == null) includedirs = basedir;
     }
     
     /**
