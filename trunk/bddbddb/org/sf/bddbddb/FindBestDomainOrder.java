@@ -8,14 +8,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.io.PrintStream;
+import java.text.NumberFormat;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.EntryValueComparator;
 import org.sf.bddbddb.util.Pair;
@@ -29,7 +30,7 @@ import org.sf.bddbddb.util.PermutationGenerator;
  */
 public class FindBestDomainOrder {
     
-    public static boolean TRACE = true;
+    public static int TRACE = 1;
     public static PrintStream out = System.out;
     
     Map/*<InferenceRule,OrderingInfo>*/ orderInfo_rules;
@@ -46,20 +47,20 @@ public class FindBestDomainOrder {
         orderInfo_relations = new HashMap();
     }
     
-    public OrderingInfo getOrderInfo(InferenceRule r) {
-        OrderingInfo o = (OrderingInfo) orderInfo_rules.get(r);
+    public OrderInfoCollection getOrderInfo(InferenceRule r) {
+        OrderInfoCollection o = (OrderInfoCollection) orderInfo_rules.get(r);
         if (o == null) {
-            if (TRACE) out.println("Initializing new ordering info for "+r);
-            orderInfo_rules.put(r, o = new OrderingInfo("rule"+r.id));
+            if (TRACE > 0) out.println("Initializing new ordering info for "+r);
+            orderInfo_rules.put(r, o = new OrderInfoCollection("rule"+r.id));
         }
         return o;
     }
     
-    public OrderingInfo getOrderInfo(Relation r) {
-        OrderingInfo o = (OrderingInfo) orderInfo_relations.get(r);
+    public OrderInfoCollection getOrderInfo(Relation r) {
+        OrderInfoCollection o = (OrderInfoCollection) orderInfo_relations.get(r);
         if (o == null) {
-            if (TRACE) out.println("Initializing new ordering info for "+r);
-            orderInfo_relations.put(r, o = new OrderingInfo(r.name));
+            if (TRACE > 0) out.println("Initializing new ordering info for "+r);
+            orderInfo_relations.put(r, o = new OrderInfoCollection(r.name));
         }
         return o;
     }
@@ -238,7 +239,7 @@ public class FindBestDomainOrder {
      * @author jwhaley
      * @version $Id$
      */
-    public static class Order implements List {
+    public static class Order implements List, Comparable {
         List list;
         
         public Order(Order o) {
@@ -247,6 +248,36 @@ public class FindBestDomainOrder {
         
         public Order(List l) {
             this.list = l;
+        }
+        
+        /**
+         * Given a collection of orders, find its similarities and the
+         * number of occurrences of each similarity.
+         * 
+         * @param c  collection of orders
+         * @return  map from order similarities to frequencies
+         */
+        static Map/*<Order,Integer>*/ calcSimilarities(Collection c) {
+            Map m = new HashMap();
+            if (TRACE > 1) out.println("Calculating similarities in the collection: "+c);
+            for (Iterator i = c.iterator(); i.hasNext(); ) {
+                Order a = (Order) i.next();
+                Iterator j = c.iterator();
+                while (j.hasNext() && j.next() != a) ;
+                while (j.hasNext()) {
+                    Order b = (Order) j.next();
+                    Collection/*<Order>*/ sim = a.findSimilarities(b);
+                    // todo: expand sim to also include implied suborders.
+                    for (Iterator k = sim.iterator(); k.hasNext(); ) {
+                        Order s = (Order) k.next();
+                        Integer count = (Integer) m.get(s);
+                        int newCount = (count==null) ? 1 : count.intValue()+1;
+                        m.put(s, new Integer(newCount));
+                    }
+                }
+            }
+            if (TRACE > 1) out.println("Similarities: "+m);
+            return m;
         }
         
         public Collection getFlattened() {
@@ -462,7 +493,7 @@ public class FindBestDomainOrder {
             double total = nPred * PRECEDENCE_WEIGHT + nInter * INTERLEAVE_WEIGHT;
             double unsimilar = nPred2 * PRECEDENCE_WEIGHT + nInter2 * INTERLEAVE_WEIGHT;
             double sim = (total - unsimilar) / total;
-            if (TRACE) out.println("Similarity ("+this+" and "+that+") = "+sim);
+            if (TRACE > 4) out.println("Similarity ("+this+" and "+that+") = "+format(sim));
             return sim;
         }
         
@@ -482,6 +513,13 @@ public class FindBestDomainOrder {
                 }
             }
             return total;
+        }
+        
+        public int compareTo(Object arg0) {
+            return compareTo((Order) arg0);
+        }
+        public int compareTo(Order that) {
+            return this.toString().compareTo(that.toString());
         }
         
         public boolean equals(Order that) {
@@ -569,7 +607,29 @@ public class FindBestDomainOrder {
         }
     }
     
-    public static class OrderInfo {
+    static NumberFormat nf;
+    public static String format(double d) {
+        if (nf == null) {
+            nf = NumberFormat.getPercentInstance();
+            nf.setMaximumFractionDigits(2);
+        }
+        return nf.format(d);
+    }
+    
+    /**
+     * Calculated information about an order.  This consists of a score
+     * and a confidence.
+     * 
+     * @author John Whaley
+     * @version $Id$
+     */
+    public static class OrderInfo implements Comparable {
+        
+        /**
+         * The order this information is about.
+         */
+        Order order;
+        
         /**
          * A measure of how good this order is.  Ranges from 0.0 to 1.0.
          * 0.0 is the worst possible, and 1.0 is the best.
@@ -580,6 +640,239 @@ public class FindBestDomainOrder {
          * A measure of the confidence of this score.  Higher is better.
          */
         double confidence;
+        
+        /**
+         * Construct a new OrderInfo.
+         * 
+         * @param o  order
+         * @param s  score
+         * @param c  confidence
+         */
+        public OrderInfo(Order o, double s, double c) {
+            this.order = o;
+            this.score = s;
+            this.confidence = c;
+        }
+        
+        public OrderInfo(OrderInfo that) {
+            this.order = that.order;
+            this.score = that.score;
+            this.confidence = that.confidence;
+        }
+        
+        /**
+         * Update the score and confidence to take into account another order info.
+         * Assumes that the two are referring to the same order.
+         * 
+         * @param that  order to incorporate
+         */
+        public void update(OrderInfo that) {
+            update(that.order, that.score, that.confidence);
+        }
+        public void update(Order that_order, double that_score, double that_confidence) {
+            if (this.confidence + that_confidence < 0.0001) return;
+            double newScore = (this.score * this.confidence + that_score * that_confidence) /
+                              (this.confidence + that_confidence);
+            // todo: this confidence calculation seems bogus.
+            double diff = (this.score - newScore);
+            double diffSquared = diff * diff;
+            double newConfidence = (this.confidence + that_confidence) / (diffSquared + 1.);
+            if (TRACE > 4) out.println("Updating info: "+this+" * score "+format(that_score)+" confidence "+format(that_confidence)+
+                                       " -> score "+format(newScore)+" confidence "+format(newConfidence));
+            this.score = newScore;
+            this.confidence = newConfidence;
+        }
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
+        public String toString() {
+            return order+": score "+format(score)+" confidence "+format(confidence);
+        }
+
+        /* (non-Javadoc)
+         * @see java.lang.Comparable#compareTo(java.lang.Object)
+         */
+        public int compareTo(Object arg0) {
+            return compareTo((OrderInfo) arg0);
+        }
+        public int compareTo(OrderInfo that) {
+            int result = (int) Math.signum(this.score - that.score);
+            if (result == 0) {
+                result = (int) Math.signum(this.confidence - that.confidence);
+                if (result == 0) {
+                    result = this.order.compareTo(that.order);
+                }
+            }
+            return result;
+        }
+    }
+    
+    /**
+     * Information about a particular trial.
+     * 
+     * @author John Whaley
+     * @version $Id$
+     */
+    public static class TrialInfo implements Comparable {
+        /**
+         * Order tried.
+         */
+        Order order;
+        /**
+         * Cost of this trial.
+         */
+        long cost;
+        
+        /**
+         * Construct a new TrialInfo.
+         * 
+         * @param o  order
+         * @param c  cost
+         */
+        public TrialInfo(Order o, long c) {
+            this.order = o;
+            this.cost = c;
+        }
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
+        public String toString() {
+            return order+": cost "+cost;
+        }
+
+        /* (non-Javadoc)
+         * @see java.lang.Comparable#compareTo(java.lang.Object)
+         */
+        public int compareTo(Object arg0) {
+            return compareTo((TrialInfo) arg0);
+        }
+        public int compareTo(TrialInfo that) {
+            int result = Long.signum(this.cost - that.cost);
+            if (result == 0) {
+                result = this.order.compareTo(that.order);
+            }
+            return result;
+        }
+    }
+    
+    /**
+     * A collection of trials on the same test.  (The same BDD operation.)
+     * 
+     * @author John Whaley
+     * @version $Id$
+     */
+    public static class TrialCollection {
+        String name;
+        Map/*<Order,TrialInfo>*/ trials;
+        transient TrialInfo[] sorted;
+        
+        public TrialCollection(String n) {
+            name = n;
+            trials = new LinkedHashMap();
+            sorted = null;
+        }
+        
+        public void addTrial(TrialInfo i) {
+            if (TRACE > 1) out.println(this+": Adding trial "+i);
+            trials.put(i.order, i);
+            sorted = null;
+        }
+        public void addTrial(Order o, long cost) {
+            addTrial(new TrialInfo(o, cost));
+        }
+        
+        public boolean contains(Order o) {
+            return trials.containsKey(o);
+        }
+        
+        public OrderInfo predict(Order o) {
+            OrderInfo result = (OrderInfo) trials.get(o);
+            if (result != null) return result;
+            if (TRACE > 2) out.println(this+": Predicting "+o);
+            result = new OrderInfo(o, 0.5, 0.);
+            if (size() >= 2) {
+                TrialInfo[] sorted = getSorted();
+                long min = sorted[0].cost;
+                long max = sorted[sorted.length-1].cost;
+                double range = (double)max - (double)min;
+                for (int i = 0; i < sorted.length; ++i) {
+                    if (TRACE > 3) out.println(this+": comparing to "+sorted[i]);
+                    double score = (range < 0.0001) ? 0.5 : ((double)(max - sorted[i].cost) / range);
+                    double sim = o.similarity(sorted[i].order);
+                    result.update(o, score, (range < 0.0001) ? 0. : sim);
+                }
+            }
+            if (TRACE > 2) out.println(this+": final prediction = "+result);
+            return result;
+        }
+        
+        public double getStdDev() {
+            return Math.sqrt(getVariance());
+        }
+        
+        public double getVariance() {
+            double sum = 0.;
+            double sumOfSquares = 0.;
+            int n = 0;
+            for (Iterator i = trials.values().iterator(); i.hasNext(); ++n) {
+                TrialInfo t = (TrialInfo) i.next();
+                double c = (double) t.cost;
+                sum += c;
+                sumOfSquares += c * c;
+            }
+            // variance = (n*sum(X^2) - (sum(X)^2))/n^2
+            double variance = (sumOfSquares * n - sum * sum) / (n * n);
+            return variance;
+        }
+        
+        public TrialInfo getMinimum() {
+            TrialInfo best = null;
+            for (Iterator i = trials.values().iterator(); i.hasNext(); ) {
+                TrialInfo t = (TrialInfo) i.next();
+                if (best == null || t.cost < best.cost)
+                    best = t;
+            }
+            return best;
+        }
+        
+        public TrialInfo getMaximum() {
+            TrialInfo best = null;
+            for (Iterator i = trials.values().iterator(); i.hasNext(); ) {
+                TrialInfo t = (TrialInfo) i.next();
+                if (best == null || t.cost > best.cost)
+                    best = t;
+            }
+            return best;
+        }
+        
+        public long getAverage() {
+            long total = 0;
+            int count = 0;
+            for (Iterator i = trials.values().iterator(); i.hasNext(); ++count) {
+                TrialInfo t = (TrialInfo) i.next();
+                total += t.cost;
+            }
+            if (count == 0) return 0L;
+            else return total / count;
+        }
+        
+        public TrialInfo[] getSorted() {
+            if (sorted == null) {
+                sorted = (TrialInfo[]) trials.values().toArray(new TrialInfo[trials.size()]);
+                Arrays.sort(sorted);
+            }
+            return sorted;
+        }
+        
+        public int size() {
+            return trials.size();
+        }
+        
+        public String toString() {
+            return name+"@"+Integer.toHexString(this.hashCode());
+        }
     }
     
     /**
@@ -589,109 +882,128 @@ public class FindBestDomainOrder {
      * @author jwhaley
      * @version $Id$
      */
-    public static class OrderingInfo {
+    public static class OrderInfoCollection {
+        
         String name;
+        Map/*<Order,OrderInfo>*/ infos;
+        transient OrderInfo[] sorted;
         
-        Collection/*<Order>*/ knownGood;
-        Collection/*<Order>*/ knownBad;
-        Collection/*<Order>*/ goodOrderCharacteristics;
-        Collection/*<Order>*/ badOrderCharacteristics;
-        
-        Collection/*<OrderingInfoUpdater>*/ children;
-        
-        OrderingInfo(String s) {
+        OrderInfoCollection(String s) {
             name = s;
-            knownGood = new LinkedList();
-            knownBad = new LinkedList();
-            goodOrderCharacteristics = new LinkedList();
-            badOrderCharacteristics = new LinkedList();
-            children = new LinkedList();
+            infos = new LinkedHashMap();
+            sorted = null;
         }
         
-        OrderingInfo(OrderingInfo that) {
+        OrderInfoCollection(OrderInfoCollection that) {
             this.name = that.name;
-            this.knownGood = new LinkedList(that.knownGood);
-            this.knownBad = new LinkedList(that.knownBad);
-            this.goodOrderCharacteristics = new LinkedList(that.goodOrderCharacteristics);
-            this.badOrderCharacteristics = new LinkedList(that.badOrderCharacteristics);
-            this.children = new LinkedList();
+            this.infos = new LinkedHashMap(that.infos);
+            this.sorted = null;
         }
         
-        public UpdatableOrderingInfo createUpdatable() {
-            UpdatableOrderingInfo i = new UpdatableOrderingInfo(this);
+        public void incorporateInfoCollection(OrderInfoCollection that, double confidence) {
+            incorporateInfoCollection(that, IdentityTranslator.INSTANCE, confidence);
+        }
+        public void incorporateInfoCollection(OrderInfoCollection that, OrderTranslator t, double confidence) {
+            if (TRACE > 0) out.println(this+": incorporating info collection "+that+" with confidence "+format(confidence));
+            for (Iterator i = that.infos.values().iterator(); i.hasNext(); ) {
+                OrderInfo info = (OrderInfo) i.next();
+                Order o = t.translate(info.order);
+                double s = info.score;
+                double c = info.confidence * confidence;
+                incorporateInfo(o, s, c);
+            }
+        }
+        
+        public void incorporateTrials(TrialCollection c, double confidence) {
+            incorporateTrials(c, IdentityTranslator.INSTANCE, confidence);
+        }
+        public void incorporateTrials(TrialCollection c, OrderTranslator t, double confidence) {
+            if (c.size() > 0) {
+                if (TRACE > 0) out.println(this+": incorporating trials "+c+" with confidence "+format(confidence));
+                TrialInfo[] ti = c.getSorted();
+                long min = ti[0].cost;
+                long max = ti[ti.length-1].cost;
+                double range = (double)max - (double)min;
+                for (int i = 0; i < ti.length; ++i) {
+                    Order o = t.translate(ti[i].order);
+                    double score = (range < 0.0001) ? 0.5 : ((double)(max - ti[i].cost) / range);
+                    double myConf = (range < 0.0001) ? 0. : confidence;
+                    if (ti[i].cost >= UpdatableOrderInfoCollection.MAX_COST) myConf *= HIGH_CONFIDENCE;
+                    incorporateInfo(o, score, myConf);
+                }
+            }
+        }
+        
+        public void incorporateInfo(Order o, double s, double c) {
+            OrderInfo info = (OrderInfo) infos.get(o);
+            if (info == null) {
+                infos.put(o, info = new OrderInfo(o, s, c));
+                if (TRACE > 1) out.println(this+": incorporating new info "+info);
+            } else {
+                if (TRACE > 1) out.println(this+": updating info "+info+" with score="+format(s)+" confidence="+format(c));
+                info.update(o, s, c);
+            }
+            sorted = null;
+        }
+        public void incorporateInfo(OrderInfo i) {
+            OrderInfo info = (OrderInfo) infos.get(i.order);
+            if (info == null) {
+                infos.put(i.order, info = i);
+                if (TRACE > 1) out.println(this+": incorporating new info "+info);
+            } else {
+                if (TRACE > 1) out.println(this+": updating info "+info+" with score="+format(i.score)+" confidence="+format(i.confidence));
+                info.update(i);
+            }
+            sorted = null;
+        }
+        
+        public OrderInfo getTotalOrderInfo(Order o) {
+            return (OrderInfo) infos.get(o);
+        }
+        
+        public OrderInfo getPartialOrderInfo(Order p) {
+            OrderInfo result = null;
+            for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
+                OrderInfo info = (OrderInfo) i.next();
+                if (p.similarity(info.order) >= 1.) {
+                    if (result == null) result = new OrderInfo(info);
+                    else result.update(info);
+                }
+            }
+            return result;
+        }
+        
+        
+        public UpdatableOrderInfoCollection createUpdatable() {
+            UpdatableOrderInfoCollection i = new UpdatableOrderInfoCollection(this);
             return i;
         }
         
-        public void incorporate(OrderingInfo info) {
-            incorporate(info, IdentityTranslator.INSTANCE);
-        }
-        public void incorporate(OrderingInfo info, OrderTranslator t) {
-            this.calculateCharacteristics();
-            info.calculateCharacteristics();
-            for (Iterator i = info.goodOrderCharacteristics.iterator(); i.hasNext(); ) {
-                Order c = (Order) i.next();
-                if (TRACE) out.println(this+": incorporating good order "+c+" from "+info);
-                c = t.translate(c);
-                if (TRACE) out.println(this+": order translates into "+c);
-                if (badOrderCharacteristics.contains(c)) {
-                    System.out.println("Conflict warning! "+c+" considered both bad and good");
-                    badOrderCharacteristics.remove(c);
-                } else {
-                    goodOrderCharacteristics.add(c);
-                }
-            }
-            for (Iterator i = info.badOrderCharacteristics.iterator(); i.hasNext(); ) {
-                Order c = (Order) i.next();
-                if (TRACE) out.println(this+": incorporating bad order "+c+" from "+info);
-                c = t.translate(c);
-                if (TRACE) out.println(this+": order translates into "+c);
-                if (goodOrderCharacteristics.contains(c)) {
-                    System.out.println("Conflict warning! "+c+" considered both good and bad");
-                    goodOrderCharacteristics.remove(c);
-                } else {
-                    badOrderCharacteristics.add(c);
-                }
-            }
-        }
+        static double HIGH_CONFIDENCE = 10000.;
         
         public void registerAsGood(Order o) {
-            if (TRACE) out.println(this+": Registering as a known good order: "+o);
-            knownGood.add(o);
+            if (TRACE > 0) out.println(this+": Registering as a known good order: "+o);
+            infos.put(o, new OrderInfo(o, 1., HIGH_CONFIDENCE));
+            sorted = null;
         }
         
         public void registerAsBad(Order o) {
-            if (TRACE) out.println(this+": Registering as a known bad order: "+o);
-            knownBad.add(o);
+            if (TRACE > 0) out.println(this+": Registering as a known bad order: "+o);
+            infos.put(o, new OrderInfo(o, 0., HIGH_CONFIDENCE));
+            sorted = null;
         }
         
-        /**
-         * Given a collection of orders, find its similarities and the
-         * number of occurrences of each similarity.
-         * 
-         * @param c  collection of orders
-         * @return  map from order similarities to frequencies
-         */
-        static Map/*<Order,Integer>*/ calcSimilarities(Collection c) {
-            Map m = new HashMap();
-            if (TRACE) out.println("Calculating similarities in the collection: "+c);
-            for (Iterator i = c.iterator(); i.hasNext(); ) {
-                Order a = (Order) i.next();
-                Iterator j = c.iterator();
-                while (j.hasNext() && j.next() != a) ;
-                while (j.hasNext()) {
-                    Order b = (Order) j.next();
-                    Collection/*<Order>*/ sim = a.findSimilarities(b);
-                    // todo: expand sim to also include implied suborders.
-                    for (Iterator k = sim.iterator(); k.hasNext(); ) {
-                        Order s = (Order) k.next();
-                        Integer count = (Integer) m.get(s);
-                        int newCount = (count==null) ? 1 : count.intValue()+1;
-                        m.put(s, new Integer(newCount));
-                    }
+        public int numberOfGoodOrders(List/*<Variable>*/ variables) {
+            OrderIterator i = generateAllOrders(variables);
+            int count = 0;
+            while (i.hasNext()) {
+                Order o = i.nextOrder();
+                OrderInfo score = orderGoodness(o);
+                if (score.score > 0.05) {
+                    ++count;
                 }
             }
-            if (TRACE) out.println("Similarities: "+m);
-            return m;
+            return count;
         }
         
         /**
@@ -701,25 +1013,20 @@ public class FindBestDomainOrder {
          * @return  an order that seems good, or null if there aren't any.
          */
         public Order gimmeAGoodOrder(List/*<Variable>*/ variables) {
-            // Find an order that has some of the good order characteristics
-            // without any of the bad ones.
             OrderIterator i = generateAllOrders(variables);
-            Order bestOrder = null; double bestScore = -1.;
+            Order bestOrder = null; double bestScore = 0.05;
             while (i.hasNext()) {
                 Order o = i.nextOrder();
-                double score = orderGoodness(o);
-                if (TRACE) out.println(this+": order "+o+" score "+score);
-                if (score > bestScore) {
-                    bestScore = score;
+                OrderInfo score = orderGoodness(o);
+                if (TRACE > 1) out.println(this+": "+score);
+                if (score.score > bestScore) {
+                    bestScore = score.score;
                     bestOrder = o;
                 }
             }
-            if (TRACE) out.println(this+": best order "+bestOrder+" score "+bestScore);
+            if (TRACE > 0) out.println(this+": best order "+bestOrder+" score "+format(bestScore));
             return bestOrder;
         }
-        
-        public static double BAD_FACTOR = -5.;
-        public static double GOOD_FACTOR = 1.;
         
         /**
          * Return a measure of the probable "goodness" of the given order.
@@ -728,28 +1035,121 @@ public class FindBestDomainOrder {
          * @param o  order
          * @return  probable goodness
          */
-        public double orderGoodness(Order o) {
-            if (TRACE) out.println(this+": Calculating goodness of "+o+" with good="+goodOrderCharacteristics+" bad="+badOrderCharacteristics);
+        public OrderInfo orderGoodness(Order o) {
+            OrderInfo result = (OrderInfo) infos.get(o);
+            if (result != null) return result;
+
+            if (TRACE > 2) out.print(this+": Calculating goodness of "+o);
             double score = 0.;
-            double min = 0., max = 0.;
-            for (Iterator i = goodOrderCharacteristics.iterator(); i.hasNext(); ) {
-                Order goodOrder = (Order) i.next();
-                double howSimilar = o.similarity(goodOrder);
-                score += howSimilar * GOOD_FACTOR;
-                max += GOOD_FACTOR;
+            double max = 0.;
+            for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
+                OrderInfo info = (OrderInfo) i.next();
+                // todo:
+                //   similarity calculation doesn't take into account how important
+                //   each constraint is.
+                double howSimilar = o.similarity(info.order);
+                double howConfident = howSimilar * info.confidence;
+                score += info.score * howConfident;
+                max += howConfident;
             }
-            for (Iterator i = badOrderCharacteristics.iterator(); i.hasNext(); ) {
-                Order badOrder = (Order) i.next();
-                double howSimilar = o.similarity(badOrder);
-                score += howSimilar * BAD_FACTOR;
-                min += BAD_FACTOR;
+            double resultScore = (max < 0.0001) ? 0.5 : (score / max); 
+            
+            // todo: this confidence calculation seems bogus.
+            // todo: could also make this more efficient.
+            double resultConfidence = 0.;
+            for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
+                OrderInfo info = (OrderInfo) i.next();
+                double howSimilar = o.similarity(info.order);
+                double howConfident = howSimilar * info.confidence;
+                double diff = (info.score - resultScore);
+                double diffSquared = diff * diff;
+                resultConfidence = (resultConfidence + howConfident) / (diffSquared + 1.);
             }
-            double result = (max == min) ? 0. : ((score - min) / (max - min)); 
-            if (TRACE) out.println(this+": similarity="+result);
+            
+            result = new OrderInfo(o, resultScore, resultConfidence);
+            if (TRACE > 2) out.println(" = score "+format(resultScore)+" confidence "+format(resultConfidence));
             return result;
         }
         
+        OrderInfo[] getSorted() {
+            if (sorted == null) {
+                sorted = (OrderInfo[]) infos.values().toArray(new OrderInfo[infos.size()]);
+                Arrays.sort(sorted);
+            }
+            return sorted;
+        }
+        
+        Collection/*<OrderInfo>*/ goodCharacteristics;
+        Collection/*<OrderInfo>*/ badCharacteristics;
+        
         void calculateCharacteristics() {
+            if (infos.isEmpty()) return;
+            if (TRACE > 0) out.println(this+": updating characteristics...");
+            
+            // Choose cutoff for "good" and "bad".
+            OrderInfo[] si = getSorted();
+            double lowScore = si[0].score;
+            double highScore = si[si.length-1].score;
+            if (lowScore > 0.5) {
+                if (TRACE > 0) out.println(this+": low score is too good: "+format(lowScore));
+                return;
+            }
+            if (highScore < 0.5) {
+                if (TRACE > 0) out.println(this+": high score is too bad: "+format(highScore));
+                return;
+            }
+            double diff = highScore - lowScore; 
+            if (diff < 0.1) {
+                if (TRACE > 0) out.println(this+": not enough differentiation: "+format(diff));
+                return;
+            }
+            double lowCutoff, highCutoff;
+            lowCutoff = lowScore + diff * 0.3;
+            highCutoff = highScore - diff * 0.3;
+            Collection good = new LinkedList();
+            Collection bad = new LinkedList();
+            for (int i = 0; si[i].score < lowCutoff; ++i) {
+                bad.add(si[i].order);
+            }
+            for (int i = si.length-1; si[i].score > highCutoff; --i) {
+                good.add(si[i].order);
+            }
+            
+            // Find outstanding characteristics of the "good" and "bad" sets.
+            Map/*<Order,Integer>*/ goodSim = Order.calcSimilarities(good);
+            Map/*<Order,Integer>*/ badSim = Order.calcSimilarities(bad);
+            
+            Map.Entry[] sortedGoodSim = (Map.Entry[]) goodSim.entrySet().toArray(new Map.Entry[goodSim.size()]);
+            Arrays.sort(sortedGoodSim, EntryValueComparator.INSTANCE);
+            if (TRACE > 0) out.println(this+": similarities of good set: "+Arrays.toString(sortedGoodSim));
+            if (TRACE > 0) out.println(this+": similarities of bad set: "+badSim);
+            
+            goodCharacteristics.clear();
+            badCharacteristics.clear();
+            // Calculate the dominant (important) characteristics in each of the sets.
+            // For now, use the median to differentiate between important/unimportant.
+            // In the future, we may want to use a better metric.
+            int goodMedianIndex = (sortedGoodSim.length) / 2;
+            for (int i = sortedGoodSim.length-1; i >= goodMedianIndex; --i) {
+                Order o = (Order) sortedGoodSim[i].getKey();
+                Integer howGood = (Integer) sortedGoodSim[i].getValue();
+                Integer howBad = (Integer) badSim.get(o);
+                if (howBad == null || howGood.intValue() > howBad.intValue()) {
+                    if (TRACE > 0) out.println("Good: "+sortedGoodSim[i]);
+                    goodCharacteristics.add(sortedGoodSim[i].getKey());
+                    badSim.remove(o);
+                }
+            }
+            
+            Map.Entry[] sortedBadSim = (Map.Entry[]) badSim.entrySet().toArray(new Map.Entry[badSim.size()]);
+            Arrays.sort(sortedBadSim, EntryValueComparator.INSTANCE);
+            
+            int badMedianIndex = (sortedBadSim.length) / 2;
+            for (int i = sortedBadSim.length-1; i >= badMedianIndex; --i) {
+                if (TRACE > 0) out.println("Bad: "+sortedBadSim[i]+" score: "+sortedBadSim[i].getValue());
+                badCharacteristics.add(sortedBadSim[i].getKey());
+            }
+            if (TRACE > 0) out.println(this+": finished update.");
         }
         
         public String toString() {
@@ -765,49 +1165,43 @@ public class FindBestDomainOrder {
      * @author jwhaley
      * @version $Id$
      */
-    public static class UpdatableOrderingInfo extends OrderingInfo {
+    public static class UpdatableOrderInfoCollection extends OrderInfoCollection {
         
-        Collection/*<OrderingInfo>*/ parents;
-        Map/*<Order,Long>*/ rawData;
-        boolean needsUpdate;
+        TrialCollection trials;
         
         static long MIN_COST = 0L;
-        static long MAX_COST = 100000000L;
+        static long MAX_COST = 10000000L;
         
-        UpdatableOrderingInfo(String s) {
+        UpdatableOrderInfoCollection(String s) {
             super(s);
-            parents = new LinkedList();
-            rawData = new HashMap();
-            needsUpdate = false;
+            trials = new TrialCollection(s);
         }
         
-        UpdatableOrderingInfo(OrderingInfo that) {
+        UpdatableOrderInfoCollection(OrderInfoCollection that) {
             super(that);
-            parents = new LinkedList();
-            rawData = new HashMap();
-            needsUpdate = false;
+            trials = new TrialCollection(that.name);
         }
         
-        public void registerNewRawData(Order o, long cost) {
+        public void registerNewTrial(Order o, long cost) {
             if (cost >= MAX_COST) {
                 registerAsBad(o);
                 return;
             }
-            if (TRACE) out.println(this+": registering new raw data "+o+" score "+cost);
-            rawData.put(o, new Long(cost));
-            needsUpdate = true;
+            if (TRACE > 0) out.println(this+": registering new raw data "+o+" score "+cost);
+            TrialInfo i = new TrialInfo(o, cost);
+            trials.addTrial(i);
         }
         
         public void registerAsGood(Order o) {
             super.registerAsGood(o);
-            rawData.put(o, new Long(MIN_COST));
-            needsUpdate = true;
+            TrialInfo i = new TrialInfo(o, MIN_COST);
+            trials.addTrial(i);
         }
         
         public void registerAsBad(Order o) {
             super.registerAsBad(o);
-            rawData.put(o, new Long(MAX_COST));
-            needsUpdate = true;
+            TrialInfo i = new TrialInfo(o, MAX_COST);
+            trials.addTrial(i);
         }
         
         /**
@@ -817,107 +1211,33 @@ public class FindBestDomainOrder {
          * @return  an order that seems good, or null if there aren't any.
          */
         public Order tryNewGoodOrder(List/*<Variables>*/ variables) {
-            calculateCharacteristics();
+            //calculateCharacteristics();
             // Find an order that has some of the good order characteristics
             // without any of the bad ones.
-            if (TRACE) out.println(this+": generating all orders for "+variables);
+            if (TRACE > 0) out.println(this+": generating new orders for "+variables);
             OrderIterator i = generateAllOrders(variables);
-            Order bestOrder = null; double bestScore = -1.;
+            Order bestOrder = null; double bestScore = 0.05;
             while (i.hasNext()) {
                 Order o = i.nextOrder();
-                if (rawData.containsKey(o)) continue;
-                double score = orderGoodness(o);
-                if (TRACE) out.println(this+": order "+o+" score "+score);
-                if (score > bestScore) {
-                    bestScore = score;
+                if (trials.contains(o)) continue;
+                OrderInfo score = orderGoodness(o);
+                if (TRACE > 2) out.println(this+": "+score);
+                if (score.score > bestScore) {
+                    bestScore = score.score;
                     bestOrder = o;
                 }
             }
-            if (TRACE) out.println(this+": best order "+bestOrder+" score "+bestScore);
+            if (TRACE > 0) out.println(this+": best untried order "+bestOrder+" score "+format(bestScore));
             return bestOrder;
         }
         
-        void calculateCharacteristics() {
-            if (!needsUpdate) return;
-            
-            if (TRACE) out.println(this+": updating characteristics...");
-            
-            // Sort raw data by cost.
-            Map.Entry[] sorted = (Map.Entry[]) rawData.entrySet().toArray(new Map.Entry[rawData.size()]);
-            Arrays.sort(sorted, EntryValueComparator.INSTANCE);
-            
-            if (TRACE) out.println(this+": sorted raw data: "+Arrays.toString(sorted));
-            
-            // Separate raw data into "good" and "bad".
-            // For now, use the median to differentiate between good/bad.
-            // In the future, we may want to use a better metric.
-            int medianIndex = (sorted.length + knownGood.size() + knownBad.size()) / 2;
-            medianIndex -= knownGood.size();
-            Collection good = new HashSet(knownGood);
-            Collection bad = new HashSet(knownBad);
-            for (int i = 0; i < sorted.length; ++i) {
-                Object o = sorted[i].getKey();
-                if (i < medianIndex) {
-                    if (TRACE) out.println("Order good: "+sorted[i]+" score: "+sorted[i].getValue());
-                    good.add(o);
-                } else {
-                    if (TRACE) out.println("Order bad: "+sorted[i]+" score: "+sorted[i].getValue());
-                    bad.add(o);
-                }
-            }
-            
-            // Find outstanding characteristics of the "good" and "bad" sets.
-            Map/*<Order,Integer>*/ goodSim = calcSimilarities(good);
-            Map/*<Order,Integer>*/ badSim = calcSimilarities(bad);
-            
-            Map.Entry[] sortedGoodSim = (Map.Entry[]) goodSim.entrySet().toArray(new Map.Entry[goodSim.size()]);
-            Arrays.sort(sortedGoodSim, EntryValueComparator.INSTANCE);
-            if (TRACE) out.println(this+": similarities of good set: "+Arrays.toString(sortedGoodSim));
-            if (TRACE) out.println(this+": similarities of bad set: "+badSim);
-            
-            goodOrderCharacteristics.clear();
-            badOrderCharacteristics.clear();
-            // Calculate the dominant (important) characteristics in each of the sets.
-            // For now, use the median to differentiate between important/unimportant.
-            // In the future, we may want to use a better metric.
-            int goodMedianIndex = (sortedGoodSim.length) / 2;
-            for (int i = sortedGoodSim.length-1; i >= goodMedianIndex; --i) {
-                Order o = (Order) sortedGoodSim[i].getKey();
-                Integer howGood = (Integer) sortedGoodSim[i].getValue();
-                Integer howBad = (Integer) badSim.get(o);
-                if (howBad == null || howGood.intValue() > howBad.intValue()) {
-                    if (TRACE) out.println("Good: "+sortedGoodSim[i]);
-                    goodOrderCharacteristics.add(sortedGoodSim[i].getKey());
-                    badSim.remove(o);
-                }
-            }
-            
-            Map.Entry[] sortedBadSim = (Map.Entry[]) badSim.entrySet().toArray(new Map.Entry[badSim.size()]);
-            Arrays.sort(sortedBadSim, EntryValueComparator.INSTANCE);
-            
-            int badMedianIndex = (sortedBadSim.length) / 2;
-            for (int i = sortedBadSim.length-1; i >= badMedianIndex; --i) {
-                if (TRACE) out.println("Bad: "+sortedBadSim[i]+" score: "+sortedBadSim[i].getValue());
-                badOrderCharacteristics.add(sortedBadSim[i].getKey());
-            }
-            if (TRACE) out.println(this+": finished update.");
-            needsUpdate = false;
-        }
-        
-        public double orderGoodness(Order o) {
-            if (false) {
-                double sum = 0., total = 0.;
-                for (Iterator i = rawData.entrySet().iterator(); i.hasNext(); ) {
-                    Map.Entry e = (Map.Entry) i.next();
-                    Order o2 = (Order) e.getKey();
-                    double cost = ((Long) e.getValue()).doubleValue();
-                    double howSimilar = o.similarity(o2);
-                    sum += cost * howSimilar;
-                    total += cost;
-                }
-            }
-            double good = super.orderGoodness(o);
-            return good;
+        public OrderInfo orderGoodness(Order o) {
+            OrderInfo result = super.orderGoodness(o);
+            OrderInfo predicted = trials.predict(o);
+            if (TRACE > 2) out.print(this+": "+result+", trial score "+format(predicted.score)+" conf "+format(predicted.confidence));
+            result.update(predicted);
+            if (TRACE > 2) out.println(", total score "+format(result.score)+" conf "+format(result.confidence));
+            return result;
         }
         
     }

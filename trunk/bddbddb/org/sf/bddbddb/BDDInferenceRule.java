@@ -906,11 +906,17 @@ public class BDDInferenceRule extends InferenceRule {
         Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
         List allVars = new LinkedList(allVarSet);
         FindBestDomainOrder fbdo = FindBestDomainOrder.INSTANCE;
-        FindBestDomainOrder.OrderingInfo info = fbdo.getOrderInfo(this);
-        FindBestDomainOrder.UpdatableOrderingInfo info2 = info.createUpdatable();
-        int count = 6;
+        FindBestDomainOrder.OrderInfoCollection info = fbdo.getOrderInfo(this);
+        if (info.numberOfGoodOrders(allVars) <= 1) {
+            System.out.println("No more exploration necessary.");
+            return;
+        }
+        FindBestDomainOrder.UpdatableOrderInfoCollection info2 = info.createUpdatable();
+        int count = 8;
+        long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
             FindBestDomainOrder.Order o = info2.tryNewGoodOrder(allVars);
+            if (o == null) break;
             StringBuffer varOrder = new StringBuffer();
             for (Iterator i = o.iterator(); i.hasNext(); ) {
                 Object p = i.next();
@@ -942,12 +948,17 @@ public class BDDInferenceRule extends InferenceRule {
             }
             String vOrder = varOrder.toString();
             System.out.println("Trying order "+vOrder);
-            vOrder = solver.fixVarOrder(vOrder);
+            vOrder = solver.fixVarOrder(vOrder, false);
             System.out.println("Complete order "+vOrder);
             long time = fbo.tryOrder(true, vOrder);
-            info2.registerNewRawData(o, time);
+            bestTime = Math.min(time, bestTime);
+            info2.registerNewTrial(o, time);
         }
-        info.incorporate(info2);
+        // todo: this should be the relative weight of this rule.
+        // this metric (weight = number of seconds) is pretty lame.
+        double confidence = (double) bestTime / 1000;
+        
+        info.incorporateTrials(info2.trials, confidence);
         fbo.cleanup();
     }
     
