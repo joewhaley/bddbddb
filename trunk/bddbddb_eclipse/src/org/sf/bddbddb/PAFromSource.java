@@ -406,16 +406,21 @@ public class PAFromSource {
                 else if (n.getNodeType() == ASTNode.SUPER_FIELD_ACCESS) {
                     n = ((SuperFieldAccess)n).getName();
                 }
-                
+                else if (n.getNodeType() == ASTNode.QUALIFIED_NAME) {
+                    n = ((QualifiedName)n).getName();
+                }
             }
         }
         
         public ASTNode getNode() { return n; } 
         
         public String toString() {
-            if (n == null) return "NODE type: " + "global this";
-            return "NODE type: " + n.getNodeType() + /* ", id: " + id 
-                        + ", scope: " + scope + */", " + n.toString();
+            String s;
+            if (n.getNodeType() == ASTNode.SIMPLE_NAME) {
+                s = ((SimpleName)n).getFullyQualifiedName();
+            }
+            else s = n.toString();
+            return "NODE: " + n.getNodeType() + ", " + s;
         }
         public boolean equals(Object o) {
             if (o instanceof ASTNodeWrapper) {
@@ -430,19 +435,19 @@ public class PAFromSource {
                 if (m.getNodeType() != n.getNodeType()) return false;
                 
                 switch (m.getNodeType()) {
-                    case ASTNode.PARENTHESIZED_EXPRESSION:
-                        Expression e = ((ParenthesizedExpression) m).getExpression();
-                        return equals(new ASTNodeWrapper(e));
-                    case ASTNode.SIMPLE_NAME:
-                    case ASTNode.QUALIFIED_NAME:
-                        String nName = ((Name) n).resolveBinding().getKey();
-                        String mName = ((Name) m).resolveBinding().getKey();
-                        return nName.equals(mName);
+                    case ASTNode.SUPER_METHOD_INVOCATION:
+                    case ASTNode.METHOD_INVOCATION:
+                    case ASTNode.CONDITIONAL_EXPRESSION:                    
+                    case ASTNode.CAST_EXPRESSION:
                     case ASTNode.CLASS_INSTANCE_CREATION:
                     case ASTNode.ARRAY_CREATION: 
                         System.out.println("NODE equals: " 
                                 + m.toString() +" != "+ n.toString());
                         return false; // since m != n
+                    case ASTNode.SIMPLE_NAME:
+                        String nName = ((Name) n).resolveBinding().getKey();
+                        String mName = ((Name) m).resolveBinding().getKey();
+                        return nName.equals(mName);
                     case ASTNode.STRING_LITERAL:
                         if (UNIFY_STRING_CONSTS) {
                             String mVal = ((StringLiteral)m).getLiteralValue();
@@ -454,28 +459,24 @@ public class PAFromSource {
                         if (((InfixExpression) m).resolveTypeBinding().isPrimitive()) {
                             out.println("ERROR: primitive type infix expr");
                         }
-                        return false; // treated as new stmt 
-                    case ASTNode.SUPER_METHOD_INVOCATION:
-                    case ASTNode.METHOD_INVOCATION:
-                        return false; // invocation sites are diff if m != n
-                    case ASTNode.CONDITIONAL_EXPRESSION:                      
-                        return false; // since m != n
-                    case ASTNode.CAST_EXPRESSION:
-                        return false; // since m != n
+                        return false; // treated as new stmt
                     case ASTNode.ASSIGNMENT:
                         if (((Assignment) m).getOperator() != Assignment.Operator.PLUS_ASSIGN
                             || ((Assignment) m).resolveTypeBinding().isPrimitive()) {
                             out.println("ERROR: primitive type assignment or wrong operator");
                         }
                         return false;
+                    case ASTNode.PARENTHESIZED_EXPRESSION:
+                        out.println("ERROR: parens in astnodewrapper");
+                        return false;
                     case ASTNode.THIS_EXPRESSION:
                         out.println("ERROR: this method shouldn't be called");
                         return false;
                     case ASTNode.SUPER_FIELD_ACCESS:  
                     case ASTNode.FIELD_ACCESS:
+                    case ASTNode.QUALIFIED_NAME:
                         System.out.println("ERROR: this node shouldn't be here");
                         return false;
-                    // TODO not complete, other types to be handled
                     default:
                         System.out.println("Unhandled equals case: " + m);
                 }                
@@ -493,12 +494,7 @@ public class PAFromSource {
     
     class ThisWrapper extends ASTNodeWrapper {
         IMethodBinding method;
-        
-        ThisWrapper(Name m, ThisExpression n) {
-            super(n);
-            method = (IMethodBinding)m.resolveBinding();
-        }
-        
+                
         ThisWrapper(IMethodBinding binding, ThisExpression n) {
             super(n);
             method = binding;
@@ -790,31 +786,9 @@ public class PAFromSource {
             
             switch (left.getNodeType()) {
                 case ASTNode.ARRAY_ACCESS:
-                    ArrayAccess aa = (ArrayAccess)left;
-                    switch (right.getNodeType()) {
-                        case ASTNode.CLASS_INSTANCE_CREATION:
-                        case ASTNode.ARRAY_CREATION:
-                        case ASTNode.STRING_LITERAL:
-                        case ASTNode.INFIX_EXPRESSION:
-                        case ASTNode.SIMPLE_NAME:
-                        case ASTNode.QUALIFIED_NAME:   
-                        case ASTNode.SUPER_FIELD_ACCESS:                       
-                        case ASTNode.FIELD_ACCESS:
-                        case ASTNode.CONDITIONAL_EXPRESSION:          
-                        case ASTNode.METHOD_INVOCATION:
-                        case ASTNode.SUPER_METHOD_INVOCATION: 
-                        case ASTNode.CAST_EXPRESSION:
-                        case ASTNode.ARRAY_ACCESS:
-                            addToS(new ASTNodeWrapper(aa.getArray()), 
-                                ARRAY_FIELD, new ASTNodeWrapper(right));
-                            return;
-                        case ASTNode.THIS_EXPRESSION:
-                            addToS(new ASTNodeWrapper(aa.getArray()), 
-                                ARRAY_FIELD, (ThisExpression)right);
-                            return;
-                        default:
-                            // e.g. nullexpr, do nothing
-                    }    
+                    Expression arr  = ((ArrayAccess)left).getArray();
+                    arr.accept(this);
+                    storeToQualifiedField(arr, ARRAY_FIELD, right);
                     return;
                 case ASTNode.SUPER_FIELD_ACCESS:
                     // TODO store to super
@@ -846,135 +820,42 @@ public class PAFromSource {
                     }
                     return;
                 case ASTNode.QUALIFIED_NAME:
-                    if (isStatic(((QualifiedName)left).getName())) {
-                        switch (right.getNodeType()) {
-                            case ASTNode.CLASS_INSTANCE_CREATION:
-                            case ASTNode.ARRAY_CREATION:
-                            case ASTNode.STRING_LITERAL:
-                            case ASTNode.INFIX_EXPRESSION:
-                            case ASTNode.SIMPLE_NAME:
-                            case ASTNode.QUALIFIED_NAME:   
-                            case ASTNode.SUPER_FIELD_ACCESS:                       
-                            case ASTNode.FIELD_ACCESS:
-                            case ASTNode.CONDITIONAL_EXPRESSION:          
-                            case ASTNode.METHOD_INVOCATION:
-                            case ASTNode.SUPER_METHOD_INVOCATION: 
-                            case ASTNode.CAST_EXPRESSION:
-                            case ASTNode.ARRAY_ACCESS:
-                                addToS(GLOBAL_THIS, 
-                                    new ASTNodeWrapper(left), 
-                                    new ASTNodeWrapper(right));  
-                                return;
-                            case ASTNode.THIS_EXPRESSION:
-                                addToS(GLOBAL_THIS, 
-                                    new ASTNodeWrapper(left), 
-                                    (ThisExpression)right);
-                                return;
-                            default:
-                                // e.g. nullexpr, do nothing
-                        }    
+                    QualifiedName qa = (QualifiedName)left;
+                    left = qa.getQualifier();
+                    left.accept(this);
+                    if (isStatic(qa.getName())) {
+                        storeToStaticField(qa, right);
                     }
-                    else {
-                        out.println("ERROR: qualified name to be handled" + left);
+                    else { // treat as field access
+                        storeToQualifiedField(left, qa, right);
                     }
                     return;
-                    
                 case ASTNode.FIELD_ACCESS:
                     FieldAccess fa = (FieldAccess)left;
                     left = fa.getExpression();
                     left.accept(this); // to handle x.y.z = stuff;
-                    // could be this
-                    if (getThis(left) == null) {
-                        ASTNodeWrapper n = isStatic(fa.getName())
-                            ? GLOBAL_THIS : new ASTNodeWrapper(left);
-                        // store
-                        switch (right.getNodeType()) {
-                            case ASTNode.CLASS_INSTANCE_CREATION:
-                            case ASTNode.ARRAY_CREATION:
-                            case ASTNode.STRING_LITERAL:
-                            case ASTNode.INFIX_EXPRESSION:
-                            case ASTNode.SIMPLE_NAME:
-                            case ASTNode.QUALIFIED_NAME:   
-                            case ASTNode.SUPER_FIELD_ACCESS:                       
-                            case ASTNode.FIELD_ACCESS:
-                            case ASTNode.CONDITIONAL_EXPRESSION:          
-                            case ASTNode.METHOD_INVOCATION:
-                            case ASTNode.SUPER_METHOD_INVOCATION: 
-                            case ASTNode.CAST_EXPRESSION:
-                            case ASTNode.ARRAY_ACCESS:
-                                addToS(n, new ASTNodeWrapper(fa.getName()), 
-                                    new ASTNodeWrapper(right));
-                                return;
-                            case ASTNode.THIS_EXPRESSION:
-                                addToS(n, new ASTNodeWrapper(fa.getName()), 
-                                    (ThisExpression)right);
-                                return;
-                            default:
-                                // e.g. nullexpr, do nothing
-                        }    
-                        return;
+                    if (isStatic(fa.getName())) {
+                        storeToStaticField(fa, right);
                     }
-                    // else, left = this 
-                    // drop down since it's ok if left this node is not stored
-                    left = fa.getName();
-                    
+                    else {
+                        ThisExpression t = getThis(left);
+                        if (t == null) { // store
+                            storeToQualifiedField(left, fa, right);
+                        }
+                        else { // left = this 
+                            storeToThisField(t, fa, right);
+                        }
+                    }
+                    return;
                 case ASTNode.SIMPLE_NAME:
                     // out.println(left + " = " + right + " field? " + isField((Name)left));
                     if (isField((Name)left)) { // implicit this?
                         // store                        
                         if (isStatic((Name)left)) {
-                            switch (right.getNodeType()) {
-                                case ASTNode.CLASS_INSTANCE_CREATION:
-                                case ASTNode.ARRAY_CREATION:
-                                case ASTNode.STRING_LITERAL:
-                                case ASTNode.INFIX_EXPRESSION:
-                                case ASTNode.SIMPLE_NAME:
-                                case ASTNode.QUALIFIED_NAME:   
-                                case ASTNode.SUPER_FIELD_ACCESS:                       
-                                case ASTNode.FIELD_ACCESS:
-                                case ASTNode.CONDITIONAL_EXPRESSION:          
-                                case ASTNode.METHOD_INVOCATION:
-                                case ASTNode.SUPER_METHOD_INVOCATION: 
-                                case ASTNode.CAST_EXPRESSION:
-                                case ASTNode.ARRAY_ACCESS:
-                                    addToS(GLOBAL_THIS, 
-                                        new ASTNodeWrapper(left), 
-                                        new ASTNodeWrapper(right));  
-                                    return;
-                                case ASTNode.THIS_EXPRESSION:
-                                    addToS(GLOBAL_THIS, 
-                                        new ASTNodeWrapper(left), 
-                                        (ThisExpression)right);
-                                    return;
-                                default:
-                                    // e.g. nullexpr, do nothing
-                            } 
+                            storeToStaticField(left, right);
                         }
                         else {
-                            switch (right.getNodeType()) {
-                                case ASTNode.CLASS_INSTANCE_CREATION:
-                                case ASTNode.ARRAY_CREATION:
-                                case ASTNode.STRING_LITERAL:
-                                case ASTNode.INFIX_EXPRESSION:
-                                case ASTNode.SIMPLE_NAME:
-                                case ASTNode.QUALIFIED_NAME:   
-                                case ASTNode.SUPER_FIELD_ACCESS:                       
-                                case ASTNode.FIELD_ACCESS:
-                                case ASTNode.CONDITIONAL_EXPRESSION:          
-                                case ASTNode.METHOD_INVOCATION:
-                                case ASTNode.SUPER_METHOD_INVOCATION: 
-                                case ASTNode.CAST_EXPRESSION:
-                                case ASTNode.ARRAY_ACCESS:
-                                    addToS((ThisExpression)null, left, 
-                                        new ASTNodeWrapper(right));  
-                                    return;
-                                case ASTNode.THIS_EXPRESSION:
-                                    addToS((ThisExpression)null, left, 
-                                        (ThisExpression)right);
-                                    return;
-                                default:
-                                    // e.g. nullexpr, do nothing
-                            }
+                            storeToThisField(null, left, right);
                         }
                         return;
                     }
@@ -1005,6 +886,94 @@ public class PAFromSource {
             }
         }
          
+        private void storeToThisField(ThisExpression t, 
+            Expression field, Expression rhs) {
+            switch (rhs.getNodeType()) {
+                case ASTNode.CLASS_INSTANCE_CREATION:
+                case ASTNode.ARRAY_CREATION:
+                case ASTNode.STRING_LITERAL:
+                case ASTNode.INFIX_EXPRESSION:
+                case ASTNode.SIMPLE_NAME:
+                case ASTNode.QUALIFIED_NAME:   
+                case ASTNode.SUPER_FIELD_ACCESS:                       
+                case ASTNode.FIELD_ACCESS:
+                case ASTNode.CONDITIONAL_EXPRESSION:          
+                case ASTNode.METHOD_INVOCATION:
+                case ASTNode.SUPER_METHOD_INVOCATION: 
+                case ASTNode.CAST_EXPRESSION:
+                case ASTNode.ARRAY_ACCESS:
+                    addToS(t, field, 
+                        new ASTNodeWrapper(rhs));  
+                    return;
+                case ASTNode.THIS_EXPRESSION:
+                    addToS(t, field, 
+                        (ThisExpression)rhs);
+                    return;
+                default:
+                    // e.g. nullexpr, do nothing
+            }
+        }
+
+        private void storeToQualifiedField(Expression qualifier, 
+            Expression field, Expression rhs) {
+            storeToQualifiedField(qualifier, new ASTNodeWrapper(field), rhs);
+        }
+        
+        private void storeToQualifiedField(Expression qualifier, 
+            ASTNodeWrapper field, Expression rhs) {
+            switch (rhs.getNodeType()) {
+                case ASTNode.CLASS_INSTANCE_CREATION:
+                case ASTNode.ARRAY_CREATION:
+                case ASTNode.STRING_LITERAL:
+                case ASTNode.INFIX_EXPRESSION:
+                case ASTNode.SIMPLE_NAME:
+                case ASTNode.QUALIFIED_NAME:   
+                case ASTNode.SUPER_FIELD_ACCESS:                       
+                case ASTNode.FIELD_ACCESS:
+                case ASTNode.CONDITIONAL_EXPRESSION:          
+                case ASTNode.METHOD_INVOCATION:
+                case ASTNode.SUPER_METHOD_INVOCATION: 
+                case ASTNode.CAST_EXPRESSION:
+                case ASTNode.ARRAY_ACCESS:
+                    addToS(new ASTNodeWrapper(qualifier), field, 
+                        new ASTNodeWrapper(rhs));  
+                    return;
+                case ASTNode.THIS_EXPRESSION:
+                    addToS(new ASTNodeWrapper(qualifier), 
+                         field, (ThisExpression)rhs);
+                    return;
+                default:
+                    // e.g. nullexpr, do nothing
+            }
+        }
+
+        private void storeToStaticField(Expression field, Expression rhs) {
+            switch (rhs.getNodeType()) {
+                case ASTNode.CLASS_INSTANCE_CREATION:
+                case ASTNode.ARRAY_CREATION:
+                case ASTNode.STRING_LITERAL:
+                case ASTNode.INFIX_EXPRESSION:
+                case ASTNode.SIMPLE_NAME:
+                case ASTNode.QUALIFIED_NAME:   
+                case ASTNode.SUPER_FIELD_ACCESS:                       
+                case ASTNode.FIELD_ACCESS:
+                case ASTNode.CONDITIONAL_EXPRESSION:          
+                case ASTNode.METHOD_INVOCATION:
+                case ASTNode.SUPER_METHOD_INVOCATION: 
+                case ASTNode.CAST_EXPRESSION:
+                case ASTNode.ARRAY_ACCESS:
+                    addToS(GLOBAL_THIS, 
+                        new ASTNodeWrapper(field), new ASTNodeWrapper(rhs));  
+                    return;
+                case ASTNode.THIS_EXPRESSION:
+                    addToS(GLOBAL_THIS, 
+                        new ASTNodeWrapper(field), (ThisExpression)rhs);
+                    return;
+                default:
+                    // e.g. nullexpr, do nothing
+            }    
+        }
+
         // formal, vT
         public boolean visit(MethodDeclaration arg0) { 
             int modifiers = arg0.getModifiers();
@@ -1067,14 +1036,21 @@ public class PAFromSource {
         }
 
         public boolean visit(QualifiedName arg0) {
-            if (arg0.resolveBinding().getKind() == IBinding.VARIABLE) {
-                if (!arg0.resolveTypeBinding().isPrimitive()) {
-                    if (isStatic(arg0)) {
-                        // load, treat as static field access
-                        addToL(GLOBAL_THIS, arg0.getName(), arg0);
+            arg0.getQualifier().accept(this);
+            if (arg0.resolveBinding().getKind() == IBinding.VARIABLE 
+                && !arg0.resolveTypeBinding().isPrimitive()) {
+                if (isStatic(arg0)) {
+                    // load, treat as static field access
+                    addToL(GLOBAL_THIS, arg0, arg0);
+                }
+                else { // treat as field
+                    ThisExpression t = getThis(arg0.getQualifier());
+                    if (t != null) {
+                        addToL(t, arg0, new ASTNodeWrapper(arg0));
                     }
                     else {
-                        System.out.println("unhandled qualified name");
+                        addToL(new ASTNodeWrapper(arg0.getQualifier()), 
+                            arg0, arg0);
                     }
                 }
             }
@@ -1082,12 +1058,14 @@ public class PAFromSource {
         }
         
         public boolean visit(ArrayAccess arg0) {
+            return true;
+        }
+        public void endVisit(ArrayAccess arg0) {
             if (!arg0.resolveTypeBinding().isPrimitive()) {
                 // load
                 addToL(new ASTNodeWrapper(arg0.getArray()), 
                         ARRAY_FIELD, new ASTNodeWrapper(arg0));
             }
-            return true;
         }
         
         // aT
@@ -1369,7 +1347,8 @@ public class PAFromSource {
             Iterator it = args.iterator();
             for (int i = 1; it.hasNext(); i++) {
                 Expression arg = (Expression)it.next();
-                if (arg.resolveTypeBinding().isPrimitive()) continue;
+                ITypeBinding argBinding = arg.resolveTypeBinding();
+                if (argBinding.isPrimitive() || argBinding.isNullType()) continue;
                 addToActual(I_bdd, i, new ASTNodeWrapper(arg));
             }
             
@@ -1942,13 +1921,14 @@ public class PAFromSource {
     }
     
     void addToVP(ASTNodeWrapper v, ASTNodeWrapper h) {
-        int V_i = getFromVmap(v);
+        int i = Vmap.get(v);
+        int V_i = i;
         int H_i = Hmap.get(h);
         addToHT(H_i, h);
         BDD V_bdd = V1.ithVar(V_i);
         BDD bdd1 = H1.ithVar(H_i);
         bdd1.andWith(V_bdd); // .id()?
-        out.println("adding to vP " + v + " / " + h); 
+        //out.println("adding to vP " + v + " / " + h); 
         if (TRACE_RELATIONS) out.println("Adding to vP: "+bdd1.toStringWithDomains());
         vP.orWith(bdd1);
     }
@@ -2024,8 +2004,8 @@ public class PAFromSource {
     }
     
     void addToA(ASTNodeWrapper v1, ASTNodeWrapper v2) {       
-        int V1_i = getFromVmap(v1);
-        int V2_i = getFromVmap(v2);  
+        int V1_i = Vmap.get(v1);
+        int V2_i = Vmap.get(v2);  
         BDD V_bdd = V1.ithVar(V1_i);        
         BDD bdd1 = V2.ithVar(V2_i);
         bdd1.andWith(V_bdd);// .id()?
@@ -2036,7 +2016,7 @@ public class PAFromSource {
     
     void addToFormal(BDD M_bdd, int z, ASTNodeWrapper v) {
         BDD bdd1 = Z.ithVar(z);
-        int V_i = getFromVmap(v);
+        int V_i = Vmap.get(v);
         bdd1.andWith(V1.ithVar(V_i));
         bdd1.andWith(M_bdd.id());
         if (TRACE_RELATIONS) out.println("Adding to formal: "+bdd1.toStringWithDomains());
@@ -2046,7 +2026,7 @@ public class PAFromSource {
     
     void addToActual(BDD I_bdd, int z, ASTNodeWrapper v) {
         BDD bdd1 = Z.ithVar(z);
-        int V_i = getFromVmap(v);
+        int V_i = Vmap.get(v);
         bdd1.andWith(V2.ithVar(V_i));
         bdd1.andWith(I_bdd.id());
         if (TRACE_RELATIONS) out.println("Adding to actual: "+bdd1.toStringWithDomains());
@@ -2055,14 +2035,15 @@ public class PAFromSource {
 
     
     void addToS(ASTNodeWrapper v1, ASTNodeWrapper f, ASTNodeWrapper v2) {
-        int V1_i = getFromVmap(v1);
-        int F_i = Fmap.get(f);
+        int V1_i = Vmap.get(v1);
+        int V2_i = Vmap.get(v2);
         BDD V_bdd = V1.ithVar(V1_i);
-        BDD F_bdd = F.ithVar(F_i);
-        int V2_i = getFromVmap(v2);
         BDD bdd1 = V2.ithVar(V2_i);
+        int F_i = Fmap.get(f);
+        BDD F_bdd = F.ithVar(F_i);
         bdd1.andWith(F_bdd);
         bdd1.andWith(V_bdd);
+        out.println("adding to S: " + v1 + " / " + f + " / "+ v2);
         if (TRACE_RELATIONS) out.println("Adding to S: "+bdd1.toStringWithDomains());
         S.orWith(bdd1);
     }
@@ -2126,14 +2107,15 @@ public class PAFromSource {
     }
     
     void addToL(ASTNodeWrapper v1, ASTNodeWrapper f, ASTNodeWrapper v2) {
-        int V1_i = getFromVmap(v1);
-        int F_i = Fmap.get(f);
-        int V2_i = getFromVmap(v2);
+        int V1_i = Vmap.get(v1);
+        int V2_i = Vmap.get(v2);
         BDD V_bdd = V1.ithVar(V1_i);
-        BDD F_bdd = F.ithVar(F_i);
         BDD bdd1 = V2.ithVar(V2_i);
+        int F_i = Fmap.get(f);
+        BDD F_bdd = F.ithVar(F_i);
         bdd1.andWith(F_bdd);
         bdd1.andWith(V_bdd);
+        out.println("adding to L: " + v1 + " / " + f + " / "+ v2);
         if (TRACE_RELATIONS) out.println("Adding to L: "+bdd1.toStringWithDomains());
         L.orWith(bdd1);
     }
@@ -2160,8 +2142,7 @@ public class PAFromSource {
             }
         }
         else {// method decl
-            addToL(new ThisWrapper((MethodDeclaration)n, v1),
-                fw, v2);
+            addToL(new ThisWrapper((MethodDeclaration)n, v1), fw, v2);
         }
     }
     
@@ -2288,7 +2269,7 @@ public class PAFromSource {
     }
 
     private void addToMret(MethodDeclaration m, ASTNodeWrapper v) {
-        int V_i = getFromVmap(v);
+        int V_i = Vmap.get(v);
         int M_i = Mmap.get(new MethodWrapper(m));
         BDD M_bdd = M.ithVar(M_i);
         BDD bdd1 = V2.ithVar(V_i);
@@ -2299,18 +2280,13 @@ public class PAFromSource {
     }
     
     private void addToMthr(MethodDeclaration m, ASTNodeWrapper v) {
-        int V_i = getFromVmap(v);
+        int V_i = Vmap.get(v);
         int M_i = Mmap.get(new MethodWrapper(m));
         BDD M_bdd = M.ithVar(M_i);
         BDD bdd1 = V2.ithVar(V_i);
         bdd1.andWith(M_bdd);
         if (TRACE_RELATIONS) out.println("Adding to Mthr: "+bdd1.toStringWithDomains());
         Mthr.orWith(bdd1);        
-    }
-    
-    private int getFromVmap(ASTNodeWrapper v) {
-        int i = Vmap.get(v);
-        return i;
     }
     
     private void addArrayToAT(ITypeBinding array) {
@@ -2400,7 +2376,7 @@ public class PAFromSource {
     }
 
     void addToIret(BDD I_bdd, ASTNodeWrapper v) {
-        int V_i = getFromVmap(v);
+        int V_i = Vmap.get(v);
         BDD bdd1 = V1.ithVar(V_i);
         bdd1.andWith(I_bdd.id());
         if (TRACE_RELATIONS) out.println("Adding to Iret: "+bdd1.toStringWithDomains());
@@ -2409,7 +2385,7 @@ public class PAFromSource {
     
     
     void addToIthr(BDD I_bdd, ASTNodeWrapper v) {
-        int V_i = getFromVmap(v);
+        int V_i = Vmap.get(v);
         BDD bdd1 = V1.ithVar(V_i);
         bdd1.andWith(I_bdd.id());
         if (TRACE_RELATIONS) out.println("Adding to Ithr: "+bdd1.toStringWithDomains());
