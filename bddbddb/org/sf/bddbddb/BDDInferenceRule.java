@@ -79,6 +79,8 @@ public class BDDInferenceRule extends InferenceRule {
      */
     boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
 
+    long FBO_CUTOFF = Long.parseLong(System.getProperty("fbocutoff", "100"));
+    
     /**
      * Construct a new BDDInferenceRule.
      * Only to be called internally.
@@ -352,15 +354,17 @@ public class BDDInferenceRule extends InferenceRule {
             BDD canNowQuantify = canQuantifyAfter[j];
             if (TRACE) solver.out.print(" x " + rt.relation);
             BDD b = relationValues[j];
-            if (find_best_order && !result.isOne()) {
-                findBestDomainOrder(solver.bdd, result, b, canNowQuantify, variableSet[j], rt.variables);
-            }
             if (!canNowQuantify.isOne()) {
                 if (TRACE) {
                     solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
-                    ttime = System.currentTimeMillis();
                 }
+                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
                 BDD topBdd = result.relprod(b, canNowQuantify);
+                if (find_best_order && !result.isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                    findBestDomainOrder(solver.bdd, result, b, canNowQuantify,
+                        (RuleTerm) top.get(j-1), rt,
+                        variableSet[j], rt.variables);
+                }
                 b.free();
                 if (TRACE) {
                     solver.out.print("=" + topBdd.nodeCount() + ")");
@@ -371,9 +375,19 @@ public class BDDInferenceRule extends InferenceRule {
             } else {
                 if (TRACE) {
                     solver.out.print(" (and " + b.nodeCount());
-                    ttime = System.currentTimeMillis();
                 }
-                result.andWith(b);
+                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                if (find_best_order && !result.isOne()) {
+                    BDD res = result.and(b);
+                    if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                        findBestDomainOrder(solver.bdd, result, b, canNowQuantify,
+                            (RuleTerm) top.get(j-1), rt,
+                            variableSet[j], rt.variables);
+                    }
+                    result.free(); result = res;
+                } else {
+                    result.andWith(b);
+                }
                 if (TRACE) {
                     solver.out.print("=" + result.nodeCount() + ")");
                     solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
@@ -630,18 +644,20 @@ public class BDDInferenceRule extends InferenceRule {
                     b = newRelationValues[i];
                     if (TRACE) solver.out.print("'");
                 }
-                if (find_best_order && !results[i].isOne()) {
-                    findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify, variableSet[j], rt.variables);
-                }
                 if (!canNowQuantify.isOne()) {
                     if (TRACE) {
                         solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
-                        ttime = System.currentTimeMillis();
                     }
+                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
                     BDD topBdd = results[i].relprod(b, canNowQuantify);
                     if (TRACE) {
                         solver.out.print("=" + topBdd.nodeCount() + ")");
                         solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    }
+                    if (find_best_order && !results[i].isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                        findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify,
+                            (RuleTerm) top.get(j-1), rt,
+                            variableSet[j], rt.variables);
                     }
                     b.free();
                     results[i].free();
@@ -649,9 +665,19 @@ public class BDDInferenceRule extends InferenceRule {
                 } else {
                     if (TRACE) {
                         solver.out.print(" (and " + b.nodeCount());
-                        ttime = System.currentTimeMillis();
                     }
-                    results[i].andWith(b);
+                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                    if (find_best_order && !results[i].isOne()) {
+                        BDD res = results[i].and(b);
+                        if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                            findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify,
+                                (RuleTerm) top.get(j-1), rt,
+                                variableSet[j], rt.variables);
+                        }
+                        results[i].free(); results[i] = res;
+                    } else {
+                        results[i].andWith(b);
+                    }
                     if (TRACE) {
                         solver.out.print("=" + results[i].nodeCount() + ")");
                         solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
@@ -880,10 +906,12 @@ public class BDDInferenceRule extends InferenceRule {
      * @param b1   first input to relprod
      * @param b2   second input to relprod
      * @param b3   third input to relprod
+     * @param r1   first rule term
+     * @param r2   second rule term
      * @param vars1  variables of b1
      * @param vars2  variables of b2
      */
-    void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, Collection vars1, Collection vars2) {
+    void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, RuleTerm r1, RuleTerm r2, Collection vars1, Collection vars2) {
         Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
         Object[] a = allVarSet.toArray();
         // Sort the variables by domain so that we will first try orders that are close
@@ -906,6 +934,16 @@ public class BDDInferenceRule extends InferenceRule {
             return;
         }
         FindBestDomainOrder.UpdatableOrderInfoCollection info2 = ruleinfo.createUpdatable();
+        
+        // Incorporate relation ordering info into our decisions.
+        // Relation ordering info is not nearly as accurate, so use a low confidence level.
+        FindBestDomainOrder.OrderTranslator t1 = new FindBestDomainOrder.MapBasedTranslator(r1, false);
+        FindBestDomainOrder.OrderInfoCollection r1info = fbdo.getOrderInfo(r1.relation);
+        FindBestDomainOrder.OrderTranslator t2 = new FindBestDomainOrder.MapBasedTranslator(r2, false);
+        FindBestDomainOrder.OrderInfoCollection r2info = fbdo.getOrderInfo(r2.relation);
+        info2.incorporateInfoCollection(r1info, t1, 0.01);
+        info2.incorporateInfoCollection(r2info, t2, 0.01);
+        
         int count = 8;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
@@ -948,12 +986,17 @@ public class BDDInferenceRule extends InferenceRule {
             bestTime = Math.min(time, bestTime);
             info2.registerNewTrial(o, time);
         }
+        fbo.cleanup();
+        
         // todo: this should be the relative weight of this rule.
         // this metric (weight = number of seconds) is pretty lame.
         double confidence = (double) bestTime / 1000;
-        
         ruleinfo.incorporateTrials(info2.trials, confidence);
-        fbo.cleanup();
+        // Also incorporate into relation info.
+        FindBestDomainOrder.OrderTranslator u1 = new FindBestDomainOrder.MapBasedTranslator(r1, true);
+        FindBestDomainOrder.OrderTranslator u2 = new FindBestDomainOrder.MapBasedTranslator(r2, true);
+        r1info.incorporateTrials(info2.trials, u1, confidence);
+        r2info.incorporateTrials(info2.trials, u2, confidence);
     }
     
 }
