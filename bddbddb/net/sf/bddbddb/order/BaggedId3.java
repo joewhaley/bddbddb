@@ -22,7 +22,7 @@ import weka.core.Utils;
  * TODO To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Style - Code Templates
  */
-public class BaggedId3 extends Classifier {
+public class BaggedId3 extends ClassProbabilityEstimator {
 
     public final static int NUM_TREES = 10;
     MyId3 [] trees;
@@ -65,6 +65,17 @@ public class BaggedId3 extends Classifier {
         return Utils.maxIndex(votes); //simple majority
     }
 
+    public double classProbability(Instance instance, double targetClass){
+        Assert._assert(targetClass >= 0);
+        Assert._assert(targetClass < numClasses);
+            try {
+                return distributionForInstance(instance)[(int) targetClass];
+            } catch (NoSupportForMissingValuesException e) {
+                e.printStackTrace();
+            }
+            
+            return Double.NaN;
+    }
     public double[] distributionForInstance(Instance instance) throws NoSupportForMissingValuesException{
         double sum = 0;
         double [] distribution = new double[numClasses];
@@ -82,6 +93,6 @@ public class BaggedId3 extends Classifier {
         return distribution;
     }
     
-    public Instances getOriginalData(){ return origData; }
+    public Instances getData(){ return origData; }
      
 }

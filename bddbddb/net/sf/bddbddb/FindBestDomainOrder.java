@@ -13,6 +13,7 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,14 +26,17 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.math.Distributions;
 import jwutil.util.Assert;
 import net.sf.bddbddb.order.AttribToDomainMap;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
+import net.sf.bddbddb.order.ClassProbabilityEstimator;
 import net.sf.bddbddb.order.FilterTranslator;
 import net.sf.bddbddb.order.MyId3;
 import net.sf.bddbddb.order.Order;
@@ -1255,6 +1259,10 @@ public class FindBestDomainOrder {
         public boolean isMaxTime() {
             return ti.cost >= BDDInferenceRule.LONG_TIME;
         }
+        
+        public static TrialInstance cloneInstance(TrialInstance instance){
+            return new TrialInstance(instance.weight(), instance.toDoubleArray(), instance.getOrder(), instance.getTrialInfo());
+        }
 
     }
 
@@ -1377,6 +1385,7 @@ public class FindBestDomainOrder {
                 return null;
             }
         }
+       
 
         static void setIndex(weka.core.Attribute a, int i) {
             try {
@@ -1388,7 +1397,17 @@ public class FindBestDomainOrder {
                 Assert.UNREACHABLE("weka sucks: " + x);
             }
         }
-
+        public TrialInstances infoClone(){
+            return new TrialInstances(this.m_RelationName, this.m_Attributes, this.numInstances());
+        }
+        
+        public Instances resample(Random random) {
+            TrialInstances newData = infoClone();
+            while (newData.numInstances() < numInstances()) {
+              newData.add(instance(random.nextInt(numInstances())));
+            }
+            return newData;
+          }
     }
 
     static weka.core.Attribute makeBucketAttribute(int numClusters) {
@@ -1411,6 +1430,8 @@ public class FindBestDomainOrder {
             TrialInstance tinst = TrialInstance.construct(ti, o, score, data);
             if (tinst != null) data.add(tinst);
         }
+        
+      
     }
 
     TrialInstances buildVarInstances(InferenceRule ir, List allVars) {
@@ -1595,18 +1616,22 @@ public class FindBestDomainOrder {
         return average / numFolds;
     }
 
-    public void binarize(double classValue, Instances data) {
+    public TrialInstances binarize(double classValue, TrialInstances data) {
+        TrialInstances newInstances = data.infoClone();
         for (Enumeration e = data.enumerateInstances(); e.hasMoreElements();) {
-            Instance instance = (Instance) e.nextElement();
+            TrialInstance instance = (TrialInstance) e.nextElement();
+            TrialInstance newInstance = TrialInstance.cloneInstance(instance);
             if (instance.classValue() <= classValue) {
-                instance.setClassValue(0);
+                newInstance.setClassValue(0);
             } else {
-                instance.setClassValue(1);
+                newInstance.setClassValue(1);
             }
         }
+        newInstances.setClassIndex(data.classIndex());
         weka.core.Attribute newAttr = makeBucketAttribute(2);
-        TrialInstances.setIndex(newAttr, data.classIndex());
-        data.setClass(newAttr);
+        TrialInstances.setIndex(newAttr, newInstances.classIndex());
+        newInstances.setClass(newAttr);
+        return newInstances;
     }
 
     public double RMS(double vProb, double vCent, double aProb, double aCent, double dProb, double dCent) {
@@ -1618,17 +1643,12 @@ public class FindBestDomainOrder {
     }
 
     public static boolean DISCRETIZE1 = true;
-
     public static boolean DISCRETIZE2 = true;
-
     public static boolean DISCRETIZE3 = true;
-
     public static String CLASSIFIER1 = "net.sf.bddbddb.order.MyId3";
-
     public static String CLASSIFIER2 = "net.sf.bddbddb.order.MyId3";
-
     public static String CLASSIFIER3 = "net.sf.bddbddb.order.MyId3";
-
+    public static String CPE = "net.sf.bddbddb.order.BaggedId3";
     public void neverTryAgain(InferenceRule ir, Order o) {
           if (false) {
             if (TRACE > 2) out.println("For rule"+ir.id+", never trying order "+o+" again.");
@@ -1659,7 +1679,7 @@ public class FindBestDomainOrder {
         if (DISCRETIZE1) vDis = vData.discretize();
         if (DISCRETIZE2) aDis = aData.discretize();
         if (DISCRETIZE3) dDis = dData.threshold(DOMAIN_THRESHOLD);
-
+        
         if (PROBABILITY) {
             binarize(0, vData);
             binarize(0, aData);
@@ -1915,13 +1935,6 @@ public class FindBestDomainOrder {
         if (DISCRETIZE1) vDis = vData.discretize();
         if (DISCRETIZE2) aDis = aData.discretize();
         if (DISCRETIZE3) dDis = dData.threshold(DOMAIN_THRESHOLD);
-
-        // Binarize the data for use in probability distribution.
-        if (PROBABILITY) {
-            binarize(0, vData);
-            binarize(0, aData);
-            binarize(0, dData);
-        }
         
         // Calculate the accuracy of each classifier using cv folds.
         long vCTime = System.currentTimeMillis();
@@ -2138,9 +2151,112 @@ public class FindBestDomainOrder {
             }
             end *= 2;
         }
+}
 
+    public static boolean LV = false;
+    public Collection selectOrder(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData){
+        
+        return LV ? localVariance(orders, vData, aData, dData) :
+            uncertaintySample(orders, vData,aData, dData);
+        
+    }
+     public Collection uncertaintySample(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData){
+        ClassProbabilityEstimator vCPE = null, aCPE  = null, dCPE = null;
+  
+        Order best = null;
+        double bestScore =Double.POSITIVE_INFINITY;
+        for(Iterator it = orders.iterator(); it.hasNext(); ){
+            Order order = (Order) it.next();
+            OrderInstance vInstance = TrialInstance.construct(order, vData);
+            OrderInstance aInstance = TrialInstance.construct(order,aData);
+            OrderInstance dInstance = TrialInstance.construct(order,dData);
+            
+            double score = RMS(vCPE.classProbability(vInstance, 0), .5, aCPE.classProbability(aInstance,0), .5, dCPE.classProbability(dInstance,0), 1);
+            if(score < bestScore && !LV){
+               bestScore = score;
+               best = order;
+           }    
+        }  
+        Collection ordersToTry = new LinkedList();
+        ordersToTry.add(best);
+        return ordersToTry;
+    }
+    
+    public static int SAMPLE_SIZE = 1;
+    public static int NUM_LM_ESTIMATORS = 10;
+    public static Random random = new Random(System.currentTimeMillis());
+    public Collection localVariance(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData){
+        ClassProbabilityEstimator [] vEstimators = new ClassProbabilityEstimator[NUM_LM_ESTIMATORS];
+        ClassProbabilityEstimator [] aEstimators = new ClassProbabilityEstimator[NUM_LM_ESTIMATORS];
+        ClassProbabilityEstimator [] dEstimators = new ClassProbabilityEstimator[NUM_LM_ESTIMATORS];
+        
+        for(int i = 0; i < NUM_LM_ESTIMATORS; ++i){
+            TrialInstances vBootData = (TrialInstances) vData.resample(random);
+            TrialInstances aBootData = (TrialInstances) aData.resample(random);
+            TrialInstances dBootData = (TrialInstances) aData.resample(random);
+            vEstimators[i] = (ClassProbabilityEstimator) buildClassifier(CPE, binarize(0, vBootData));
+            aEstimators[i] = (ClassProbabilityEstimator) buildClassifier(CPE, binarize(0, aBootData));
+            dEstimators[i] = (ClassProbabilityEstimator) buildClassifier(CPE, binarize(0, dBootData));
         }
+        
+        double [] distribution = new double[orders.size()];
+        Order[] orderArr = new Order[orders.size()];
 
+        double normalFact = 0;
+        double [][] estimates = new double[NUM_LM_ESTIMATORS + 1][];
+        for(int i = 0; i < NUM_LM_ESTIMATORS; ++i)
+            estimates[i] = new double[3];
+        
+        int i = 0;
+        for(Iterator it = orders.iterator(); it.hasNext(); ++i){
+            Order next = (Order) it.next();
+            //a little skecthy, since this is different data but it should work
+            OrderInstance vInstance = TrialInstance.construct(next, vData);
+            OrderInstance aInstance = TrialInstance.construct(next,aData);
+            OrderInstance dInstance = TrialInstance.construct(next,dData);
+            orderArr[i] = next;
+            estimates[NUM_LM_ESTIMATORS][0] = 0;
+            estimates[NUM_LM_ESTIMATORS][1] = 0;
+            estimates[NUM_LM_ESTIMATORS][2] = 0;
+            for(int j = 0; j < NUM_LM_ESTIMATORS; ++j){
+               estimates[j][0] = vEstimators[j].classProbability(vInstance,0);
+               estimates[j][1] = aEstimators[j].classProbability(aInstance,0);
+               estimates[j][2] = dEstimators[j].classProbability(dInstance,0);
+               estimates[NUM_LM_ESTIMATORS][0] += estimates[j][0];
+               estimates[NUM_LM_ESTIMATORS][1] += estimates[j][1];
+               estimates[NUM_LM_ESTIMATORS][2] += estimates[j][2];                            
+            }
+            estimates[NUM_LM_ESTIMATORS][0] /= NUM_LM_ESTIMATORS;
+            estimates[NUM_LM_ESTIMATORS][1] /= NUM_LM_ESTIMATORS;
+            estimates[NUM_LM_ESTIMATORS][2] /= NUM_LM_ESTIMATORS;
+            
+            for(int j = 0; j < NUM_LM_ESTIMATORS; ++j){
+                double vDiff = estimates[j][0] - estimates[NUM_LM_ESTIMATORS][0];
+                double aDiff = estimates[j][1] - estimates[NUM_LM_ESTIMATORS][1];
+                double dDiff = estimates[j][2] - estimates[NUM_LM_ESTIMATORS][2];
+                distribution[i] += (vDiff * vDiff) + (aDiff * aDiff) + (dDiff * dDiff);
+            }
+            normalFact += distribution[i];
+        }
+        final int poolSize = 1000;
+        int [] sample = new int[poolSize];
+        int insertIndex = 0;
+         for(i = 0; i < distribution.length; ++i){
+            long num = Math.round(distribution[i] / normalFact * poolSize);
+            for(int j = 0; j < num; ++j){
+                sample[insertIndex] = i;
+                ++insertIndex;
+            }
+        }
+        
+        Collection ordersToTry = new LinkedList();
+        for(i = 0; i < SAMPLE_SIZE; ++i){
+            int choice = random.nextInt(poolSize);
+            ordersToTry.add(orderArr[choice]);
+        }
+        return ordersToTry;
+    }
+  
     static TrialGuess genGuess(OrderConstraintSet ocs, List allVars, double bestScore, double bestProb,
         double vClass, double aClass, double dClass,
         Discretization vDis, Discretization aDis, Discretization dDis,

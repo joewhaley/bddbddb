@@ -69,7 +69,7 @@ public class LearnedOrder {
     int id;
     RoundedOrderGenerator gen;
     boolean isTrained;
-    static boolean TRACE = true;
+    static boolean TRACE = false;
     static Random randomNumGen;
     long DELAY = 0;
     
@@ -112,7 +112,7 @@ public class LearnedOrder {
         domainSet.addAll(domains);
         classifier = new OrderClassifier(rule,domainSet, MAX_WAIT_TIME);
         
-        System.out.println("rule string: " + rule.toString());
+        //System.out.println("rule string: " + rule.toString());
         
         loadRuleIDs();
         if(ruleIDs.contains(rule.toString())){
