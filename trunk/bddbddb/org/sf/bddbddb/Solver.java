@@ -276,7 +276,11 @@ public abstract class Solver {
                         // field domain
                         FieldDomain fd = parseFieldDomain(lineNum, s);
                         if (TRACE) out.println("Parsed field domain "+fd+" size "+fd.size);
-                        nameToFieldDomain.put(fd.name, fd);
+                        if (nameToFieldDomain.containsKey(fd.name)) {
+                            System.err.println("Error, field domain "+fd.name+" redefined on line "+in.getLineNumber()+", ignoring.");
+                        } else {
+                            nameToFieldDomain.put(fd.name, fd);
+                        }
                         continue;
                     }
                 }
@@ -292,7 +296,13 @@ public abstract class Solver {
                 // relation
                 Relation r = parseRelation(lineNum, s);
                 if (TRACE) out.println("Parsed relation "+r);
-                nameToRelation.put(r.name, r);
+                if (nameToRelation.containsKey(r.name)) {
+                    System.err.println("Error, relation "+r.name+" redefined on line "+in.getLineNumber()+", ignoring.");
+                    // Remove relation from lists.
+                    deleteRelation(r);
+                } else {
+                    nameToRelation.put(r.name, r);
+                }
                 continue;
             }
         }
@@ -508,6 +518,16 @@ public abstract class Solver {
             }
         }
         return r;
+    }
+    
+    void deleteRelation(Relation r) {
+        relationsToDump.remove(r);
+        relationsToDumpNegated.remove(r);
+        relationsToDumpTuples.remove(r);
+        relationsToDumpNegatedTuples.remove(r);
+        relationsToLoad.remove(r);
+        relationsToLoadTuples.remove(r);
+        relationsToPrintSize.remove(r);
     }
     
     InferenceRule parseRule(int lineNum, String s) {
