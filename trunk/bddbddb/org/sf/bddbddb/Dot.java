@@ -1,4 +1,4 @@
-//Attribute.java, created May 10, 2004 by cunkel
+//Dot.java, created May 10, 2004 by cunkel
 //Copyright (C) 2004 cunkel
 //Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
