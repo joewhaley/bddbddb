@@ -219,8 +219,13 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
      */
     public void saveDomainAssignment(DataOutput out) throws IOException {
         super.saveDomainAssignment(out);
-        for (Iterator it = constraintMap.entrySet().iterator(); it.hasNext();) {
-            Map.Entry e = (Map.Entry) it.next();
+        for (Iterator it = beforeConstraints.iterator(); it.hasNext();) {
+            Pair c = (Pair) it.next();
+            out.writeBytes(c.left+" < "+c.right+"\n");
+        }
+        for (Iterator it = ileavedConstraints.iterator(); it.hasNext();) {
+            Pair c = (Pair) it.next();
+            out.writeBytes(c.left+" ~ "+c.right+"\n");
         }
     }
 }
