@@ -739,19 +739,35 @@ public class FindBestDomainOrder {
         vData = vDataGroup.getTrialInstances();
         aData = aDataGroup.getTrialInstances();
         dData = dDataGroup.getTrialInstances();
-        vData = dataRepository.buildVarInstances(ir, allVars);
-        aData = dataRepository.buildAttribInstances(ir, allVars);
-        dData = dataRepository.buildDomainInstances(ir, allVars);
-
+        System.out.print("vTest...");
+        TrialInstances vTest = dataRepository.buildVarInstances(ir, allVars);
+        System.out.println("done");
+        Assert._assert(vData.numInstances() == vTest.numInstances(),"vGot " + vData.numInstances() + " Wanted: " + vTest.numInstances());
+        System.out.println("atest...");
+        TrialInstances aTest = dataRepository.buildAttribInstances(ir, allVars);
+        System.out.println("done");
+        Assert._assert(aData.numInstances() == aTest.numInstances(), "aGot: " + aData.numInstances() + " Wanted: " + aTest.numInstances());
+        System.out.print("dtest...");
+        TrialInstances dTest =dataRepository.buildDomainInstances(ir, allVars);
+        System.out.println("done");
+        Assert._assert(dData.numInstances() == dTest.numInstances(), "dGot: " + dData.numInstances() + " Wanted: " + dTest.numInstances());
+        /*
+        System.out.println(aData);
+        System.out.println(vData);
+        System.out.println(dData);
+        */
         // Readjust the weights using an exponential decay factor.
         adjustWeights(vData, aData, dData);
         Discretization vDis = null, aDis = null, dDis = null;
 
        // Discretize the experimental data.  null if there is no data.
-        if (DISCRETIZE1) vDis = vData.discretize(.5);
+ /*       if (DISCRETIZE1) vDis = vData.discretize(.5);
         if (DISCRETIZE2) aDis = aData.discretize(.25);
         if (DISCRETIZE3) dDis = dData.threshold(DOMAIN_THRESHOLD);
-        
+ */
+        vDis = vDataGroup.discretize(.5);
+        aDis = aDataGroup.discretize(.25);
+        dDis = dDataGroup.threshold(DOMAIN_THRESHOLD);
         // Calculate the accuracy of each classifier using cv folds.
         long vCTime = System.currentTimeMillis();
         double vConstCV = -1;//constFoldCV(vData, CLASSIFIER1);
@@ -796,15 +812,21 @@ public class FindBestDomainOrder {
 
         }
 
-        // Build the classifiers.
         Classifier vClassifier = null, aClassifier = null, dClassifier = null;
+        // Build the classifiers.
+   /*    
         if (vData.numInstances() > 0)
             vClassifier = WekaInterface.buildClassifier(CLASSIFIER1, vData);
         if (aData.numInstances() > 0)
             aClassifier = WekaInterface.buildClassifier(CLASSIFIER2, aData);
         if (dData.numInstances() > 0)
             dClassifier = WekaInterface.buildClassifier(CLASSIFIER3, dData);
-
+ */
+        vClassifier = vDataGroup.classify();
+        aClassifier = aDataGroup.classify();
+        dClassifier = dDataGroup.classify();
+       
+        
         if (DUMP_CLASSIFIER_INFO) {
             String baseName = solver.getBaseName()+"_rule"+ir.id;
             if (vClassifier != null)

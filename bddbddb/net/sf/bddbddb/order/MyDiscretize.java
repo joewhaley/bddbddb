@@ -6,6 +6,7 @@ package net.sf.bddbddb.order;
 import java.util.Enumeration;
 import java.util.Vector;
 
+import jwutil.util.Assert;
 import weka.core.Instances;
 import weka.core.Option;
 import weka.core.Utils;
@@ -64,6 +65,7 @@ public class MyDiscretize extends Discretize {
    *
    * @param index the attribute index
    */
+ 
   protected void findNumBins(int index) {
 
     Instances toFilter = getInputFormat();
@@ -76,8 +78,9 @@ public class MyDiscretize extends Discretize {
     }
 
     m_NumBins = (int)(Math.pow(numOfInstances, power));
-
+    System.out.println("Actual num instances: " + numOfInstances);
     if (m_NumBins > 0) {
+        
       calculateCutPointsByEqualFrequencyBinning(index);
     }
   }
@@ -266,7 +269,6 @@ public class MyDiscretize extends Discretize {
    * @param numBins the number of bins
    */
   public void setBins(int numBins) {
-
   }
 
   /**

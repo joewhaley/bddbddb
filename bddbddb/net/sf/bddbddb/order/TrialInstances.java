@@ -68,7 +68,6 @@ public class TrialInstances extends Instances {
 
     public Discretization discretize(double power) {
         int numBins = (int) Math.pow(numInstances(), power);
-       System.out.println("Num bins: " + numBins);
         return discretize(new MyDiscretize(power), numBins, this.classIndex());
     }
 
@@ -76,25 +75,34 @@ public class TrialInstances extends Instances {
         if (numInstances() <= 1) return null;
         try {
             int classIndex = this.classIndex();
+            Assert._assert(classIndex >= 0);
             setClassIndex(-1); // clear class instance for discretization.
             d.setAttributeIndices(Integer.toString(index+1)); // RANGE IS 1-BASED!!!
             d.setInputFormat(this); // NOTE: this must be LAST because it calls setUpper
             Instances newInstances;
             newInstances = Filter.useFilter(this, d);
-            if (d.getFindNumBins()) numBins = d.getBins();
+            
+            if (d.getFindNumBins()) 
+                numBins = d.getBins();
+            
             TrialInstances[] buckets = new TrialInstances[numBins];
-
+            System.out.println("Num trials: " + numInstances() + " Num bins: " + numBins);
+            //System.out.println("me: " + this);
             FastVector origAttributes = (FastVector) this.m_Attributes.copy(); //shared across all buckets
+        
             for (int i = 0; i < numBins; ++i) {
                 buckets[i] = new TrialInstances(this.m_RelationName + "_bucket_" + i, origAttributes, this.numInstances() / numBins);
                 buckets[i].setClassIndex(classIndex);
             }
             double[] result = d.getCutPoints(index);
+           
             weka.core.Attribute a = WekaInterface.makeBucketAttribute(numBins);
             m_Attributes.setElementAt(a, index);
             setIndex(a, index);
             Enumeration e = newInstances.enumerateInstances();
             Enumeration f = m_Instances.elements();
+           
+           // System.out.println("New Instances: " + newInstances);
             while (e.hasMoreElements()) {
                 Instance new_i = (Instance) e.nextElement();
                 TrialInstance old_i = (TrialInstance) f.nextElement();
@@ -105,11 +113,13 @@ public class TrialInstances extends Instances {
                 buckets[(int) val].add(new TrialInstance(old_i.weight(), old_i_copy, old_i.getOrder(), old_i.getTrialInfo()));
                 old_i.setValue(index, val);
             }
-            setClassIndex(classIndex); // reset class index.
             Assert._assert(!f.hasMoreElements());
+            setClassIndex(classIndex); // reset class index.
             return new Discretization(result, buckets);
         } catch (Exception x) {
+            System.out.flush();
             x.printStackTrace();
+            System.exit(-1);
             return null;
         }
     }
@@ -126,7 +136,7 @@ public class TrialInstances extends Instances {
         }
     }
     public TrialInstances infoClone(){
-        return new TrialInstances(this.m_RelationName, this.m_Attributes, this.numInstances());
+        return new TrialInstances(this.m_RelationName, (FastVector) this.m_Attributes.copy(), this.numInstances());
     }
     
     public Instances resample(Random random) {
@@ -137,4 +147,18 @@ public class TrialInstances extends Instances {
         newData.setClassIndex(classIndex());
         return newData;
       }
+    
+    /* Deep copy attributes and instances */
+    public TrialInstances copy(){
+        TrialInstances newInstances = infoClone();
+        for (Enumeration e = enumerateInstances(); e.hasMoreElements();) {
+            TrialInstance instance = (TrialInstance) e.nextElement();
+            TrialInstance newInstance = TrialInstance.cloneInstance(instance);
+            newInstance.setDataset(newInstances);
+            newInstances.add(newInstance);
+        }
+        newInstances.setClassIndex(this.classIndex());
+        return newInstances;
+    }
+    
 }

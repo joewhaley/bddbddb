@@ -83,22 +83,29 @@ public abstract class WekaInterface {
     }
     
     public static void addAllPairs(FastVector v, Collection c) {
+        Collection pairs = new HashSet();
+        System.out.println("Collection for pairs: " + c);
         for (Iterator i = c.iterator(); i.hasNext(); ) {
             Object a = i.next();
             Iterator j = c.iterator();
             while (j.hasNext() && j.next() != a) ;
             while (j.hasNext()) {
                 Object b = j.next();
+                UnorderedPair pair = new UnorderedPair(a,b);
+                if(pairs.contains(pair)) continue;
                 OrderAttribute oa = makeOrderAttribute(a, b);
                 v.addElement(oa);
+                pairs.add(pair);
             }
         }
+        System.out.println("apairs: " + pairs);
    //     System.out.println(new HashSet(c) + " Size: " + v.size());
         
     }
     
     public static Collection /*UnorderedPair*/ generateAllPairs(Collection c){
-        Collection pairs = new LinkedList();
+        Collection pairs = new HashSet();
+        System.out.println("Collection for pairs: " + c);
         for (Iterator i = c.iterator(); i.hasNext(); ) {
             Object a = i.next();
             Iterator j = c.iterator();
@@ -109,6 +116,7 @@ public abstract class WekaInterface {
                 pairs.add(pair);
             }
         }
+        System.out.println("gpairs: " + pairs);
         return pairs;
     }
 
