@@ -6,9 +6,11 @@ import java.util.Iterator;
 import java.util.Set;
 import java.io.IOException;
 import org.eclipse.core.internal.resources.File;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -133,6 +135,7 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
             sb.append(i.next());
             sb.append(pathsep);
         }
+        System.out.println("apppath="+sb.toString());
         System.setProperty("pas.apppath", sb.toString());
     }
     
@@ -165,17 +168,26 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
                     else if (o instanceof IClassFile) {
                         libs.add(o);
                         IClassFile cf = (IClassFile)o;
-                        appPaths.add(cf.getParent().getPath().makeAbsolute().toOSString());
+                        appPaths.add(cf.getParent().getResource().getLocation().makeAbsolute().toOSString());
                     }
                     else if (o instanceof IJavaProject){
                         IPackageFragment[] pf = ((IJavaProject) o).getPackageFragments();
                         for (int j = 0; j < pf.length; j++) {
-                            appPaths.add(pf[j].getParent().getPath().makeAbsolute().toOSString());
+                            //System.out.println(q);
+                            IPath p = pf[j].getParent().getResource().getLocation().makeAbsolute();
+                            appPaths.add(p.toOSString());
                             addPackageFragment(new HashSet(), libs, pf[j]);
                         }
                     }
                     else if (o instanceof IPackageFragment) {
-                        appPaths.add(o.getParent().getPath().makeAbsolute().toOSString());
+                        //IClasspathEntry[] cp = o.getJavaProject().getPath().app
+                        //for (int j = 0; j < cp.length; j++) {
+                        //  System.out.println(cp[j].getPath().makeAbsolute());  
+                        //}
+                        //System.out.println(q);
+                        IResource r = o.getParent().getResource();
+                        IPath p = (r == null) ? o.getParent().getPath() : r.getLocation();
+                        appPaths.add(p.makeAbsolute().toOSString());
                         addPackageFragment(new HashSet(), libs, (IPackageFragment)o);
                     }
                     else {

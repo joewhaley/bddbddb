@@ -133,6 +133,7 @@ public class PAFromSource {
     IndexedMap Tmap;
     IndexedMap Nmap;
     IndexedMap Mmap;
+    IndexedMap TVmap;
     //PathNumbering vCnumbering; // for context-sensitive
     //PathNumbering hCnumbering; // for context-sensitive
     //PathNumbering oCnumbering; // for object-sensitive
@@ -166,10 +167,10 @@ public class PAFromSource {
     static int bddcache = Integer.parseInt(System.getProperty("bddcache", "10000"));
     static BDDFactory bdd = BDDFactory.init(bddnodes, bddcache);
     
-    static BDDDomain V1 = null, V2, I, H1, H2, Z, F, T1, T2, M, N, M2; 
+    static BDDDomain V1 = null, V2, I, H1, H2, Z, F, T1, T2, M, N, M2, TV; 
     //BDDDomain V1c[], V2c[], H1c[], H2c[];
     
-    static int V_BITS=19, I_BITS=19, H_BITS=16, Z_BITS=6, F_BITS=14, T_BITS=13, N_BITS=14, M_BITS=15;
+    static int V_BITS=19, I_BITS=19, H_BITS=16, Z_BITS=6, F_BITS=14, T_BITS=13, N_BITS=14, M_BITS=15, TV_BITS = 19;
     //static int V_BITS=18, I_BITS=16, H_BITS=15, Z_BITS=5, F_BITS=13, T_BITS=12, N_BITS=13, M_BITS=14;
     //int VC_BITS=0, HC_BITS=0;
     //int MAX_VC_BITS = Integer.parseInt(System.getProperty("pas.maxvc", "61"));
@@ -203,6 +204,11 @@ public class PAFromSource {
 
     //BDD hP;     // H1xFxH2, heap points-to              (+context)
     BDD IE;     // IxM, invocation edges                (no context)
+    BDD location2typevar;
+    BDD param2typevar;
+    BDD field2typevar;
+    BDD ret2typevar;
+    BDD concreteTypes;
     //BDD IEcs;   // V2cxIxV1cxM, context-sensitive invocation edges
     //BDD vPfilter; // V1xH1, type filter                 (no context)
     //BDD hPfilter; // H1xFxH2, type filter               (no context)
@@ -221,7 +227,7 @@ public class PAFromSource {
     //BDD V1cdomain, V2cdomain, H1cdomain, H2cdomain;
 
     static int bddminfree = Integer.parseInt(System.getProperty("bddminfree", "20"));
-    static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1";//System.getProperty("bddordering");
+    static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1_TV";//System.getProperty("bddordering"); // TODO add TV
     //int MAX_PARAMS = Integer.parseInt(System.getProperty("pas.maxparams", "4"));
     static boolean reverseLocal = System.getProperty("bddreverse", "true").equals("true"); 
     
@@ -277,6 +283,7 @@ public class PAFromSource {
         N = makeDomain("N", N_BITS);
         M = makeDomain("M", M_BITS);
         M2 = makeDomain("M2", M_BITS);
+        TV = makeDomain("TV", TV_BITS);
 
         V1set = V1.set();
 
@@ -360,6 +367,12 @@ public class PAFromSource {
         IE = initBDD("IE0");
         visited = initBDD("visited");
         cha = initBDD("cha");
+        
+        location2typevar = initBDD("location2typevar");
+        param2typevar = initBDD("param2typevar");
+        field2typevar = initBDD("field2typevar");
+        ret2typevar = initBDD("ret2typevar");
+        concreteTypes = initBDD("concreteTypes");
     }
    
 
@@ -610,7 +623,7 @@ public class PAFromSource {
                     left = qa.getQualifier();
                     left.accept(this);
                     if (isStatic(qa.getName())) {
-                        storeToStaticField(qa, right);
+                        storeToStaticField(qa.getName(), right);
                     }
                     else { // treat as field access
                         storeToQualifiedField(left, qa.getName(), right);
@@ -620,7 +633,7 @@ public class PAFromSource {
                     FieldAccess fa = (FieldAccess)left;
                     left = fa.getExpression();
                     left.accept(this); // to handle x.y.z = stuff;
-                    Name name = fa.getName();
+                    SimpleName name = fa.getName();
                     if (isStatic(name)) {
                         storeToStaticField(name, right);
                     }
@@ -639,15 +652,16 @@ public class PAFromSource {
                     if (isField((Name)left)) { // implicit this?
                         // store                        
                         if (isStatic((Name)left)) {
-                            storeToStaticField(left, right);
+                            storeToStaticField((SimpleName)left, right);
                         }
                         else {
-                            storeToThisField(null, left, right);
+                            storeToThisField(null, (SimpleName)left, right);
                         }
                         return;
                     }
                     // else: not field, drop down to standard assignment case 
                 default: // used for standard assign, cast, conditional exprs
+
                     switch (right.getNodeType()) {
                         case ASTNode.CLASS_INSTANCE_CREATION:
                         case ASTNode.ARRAY_CREATION:
@@ -674,7 +688,8 @@ public class PAFromSource {
         }
          
         private void storeToThisField(ThisExpression t, 
-            Expression field, Expression rhs) {
+            SimpleName field, Expression rhs) {
+
             switch (rhs.getNodeType()) {
                 case ASTNode.CLASS_INSTANCE_CREATION:
                 case ASTNode.ARRAY_CREATION:
@@ -700,12 +715,13 @@ public class PAFromSource {
         }
 
         private void storeToQualifiedField(Expression qualifier, 
-            Expression field, Expression rhs) {
-            storeToQualifiedField(qualifier, new ASTNodeWrapper(field), rhs);
+            SimpleName field, Expression rhs) {
+            storeToQualifiedField(qualifier, new FieldWrapper(field), rhs);
         }
         
         private void storeToQualifiedField(Expression qualifier, 
             Wrapper field, Expression rhs) {
+
             switch (rhs.getNodeType()) {
                 case ASTNode.CLASS_INSTANCE_CREATION:
                 case ASTNode.ARRAY_CREATION:
@@ -736,7 +752,7 @@ public class PAFromSource {
         }
 
        
-        private void storeToStaticField(Expression field, Expression rhs) {
+        private void storeToStaticField(SimpleName field, Expression rhs) {
             switch (rhs.getNodeType()) {
                 case ASTNode.CLASS_INSTANCE_CREATION:
                 case ASTNode.ARRAY_CREATION:
@@ -752,14 +768,14 @@ public class PAFromSource {
                 case ASTNode.CAST_EXPRESSION:
                 case ASTNode.ARRAY_ACCESS:
                     if (useMrelations) {
-                        addToMS(StringWrapper.GLOBAL_THIS, new ASTNodeWrapper(field), rhs);
+                        addToMS(StringWrapper.GLOBAL_THIS, new FieldWrapper(field), rhs);
                     }
                     else addToS(StringWrapper.GLOBAL_THIS, 
-                        new ASTNodeWrapper(field), new ASTNodeWrapper(rhs));  
+                        new FieldWrapper(field), new ASTNodeWrapper(rhs));  
                     return;
                 case ASTNode.THIS_EXPRESSION:
                     addToS(StringWrapper.GLOBAL_THIS, 
-                        new ASTNodeWrapper(field), (ThisExpression)rhs);
+                        new FieldWrapper(field), (ThisExpression)rhs);
                     return;
                 default:
                     // e.g. nullexpr, do nothing
@@ -833,11 +849,11 @@ public class PAFromSource {
             expr.accept(this);
             if (!arg0.resolveTypeBinding().isPrimitive()) {
                 // load
-                Name f = arg0.getName();  
+                SimpleName f = arg0.getName();  
                 if (isStatic(f)) {
                     if (useMrelations) {
                         addToML(StringWrapper.GLOBAL_THIS, 
-                            new ASTNodeWrapper(f), arg0);
+                            new FieldWrapper(f), arg0);
                     }
                     else addToL(StringWrapper.GLOBAL_THIS, f, arg0);
                 }
@@ -859,13 +875,15 @@ public class PAFromSource {
         }
         
         public boolean visit(SimpleName arg0) {
+
             //out.println("SIMPLENAME: " + arg0);
             if (arg0.resolveBinding().getKind() == IBinding.VARIABLE) {
                 if (!arg0.resolveTypeBinding().isPrimitive()) {
                     if (isField(arg0)) { // load, implicit this
+ 
                         if (isStatic(arg0)) {
                             if (useMrelations) {
-                                addToML(StringWrapper.GLOBAL_THIS, new ASTNodeWrapper(arg0), 
+                                addToML(StringWrapper.GLOBAL_THIS, new FieldWrapper(arg0), 
                                     arg0);
                             }
                             else addToL(StringWrapper.GLOBAL_THIS, arg0, arg0);
@@ -887,7 +905,7 @@ public class PAFromSource {
                     // load, treat as static field access
                     if (useMrelations) {
                         addToML(StringWrapper.GLOBAL_THIS, 
-                            new ASTNodeWrapper(arg0.getName()), arg0);
+                            new FieldWrapper(arg0.getName()), arg0);
                     }
                     else addToL(StringWrapper.GLOBAL_THIS, arg0.getName(), arg0);
                 }
@@ -914,6 +932,7 @@ public class PAFromSource {
             return true;
         }
         public void endVisit(ArrayAccess arg0) {
+   
             if (!arg0.resolveTypeBinding().isPrimitive()) {
                 // load
                 if (useMrelations) {
@@ -1347,7 +1366,7 @@ public class PAFromSource {
                 Wrapper methodName) {
             int I_i = Imap.get(invocation);
             boolean nat = isNative(invocationBinding);
-            out.println("adding invocation #"+ I_i + " : "+ invocation);
+            //out.println("adding invocation #"+ I_i + " : "+ invocation);
             BDD I_bdd = I.ithVar(I_i);
             if (invocation instanceof ASTNodeWrapper) {
                 ASTNode inv = ((ASTNodeWrapper)invocation).getNode();
@@ -1377,11 +1396,12 @@ public class PAFromSource {
                     }
                 }
             }
-            
+
             // actual
             for (Iterator i = thisParams.iterator(); i.hasNext(); ) {
                 addToActual(I_bdd, 0, (Wrapper)i.next());
-            }
+            }   
+
             Iterator it = args.iterator();
             for (int i = 1; it.hasNext(); i++) {
                 Expression arg = (Expression)it.next();
@@ -1409,7 +1429,7 @@ public class PAFromSource {
                 }
                 
             }
-                   
+            
             // mI
             for (Iterator i = enclosingMethods.iterator(); i.hasNext(); ) {
                 addToMI((Wrapper)i.next(), I_bdd, methodName);
@@ -1442,18 +1462,19 @@ public class PAFromSource {
                         break;
                     }   
                 }
-
-                StringWrapper runInv = 
-                    new StringWrapper("DummyRun()Invocation derived from " 
-                        + I_i + " : "+ invocation);
-
-                for (Iterator j = thisParams.iterator(); j.hasNext(); ) {     
-                    addToActual(runInv, 0, (Wrapper)j.next());
-                }
-                
-                for (Iterator j = enclosingMethods.iterator(); j.hasNext(); ) {
-                    addToMI((Wrapper)j.next(), 
-                        runInv, new MethodWrapper(run));
+                if (run != null) {
+                    StringWrapper runInv = 
+                        new StringWrapper("DummyRun()Invocation derived from " 
+                            + I_i + " : "+ invocation);
+    
+                    for (Iterator j = thisParams.iterator(); j.hasNext(); ) {     
+                        addToActual(runInv, 0, (Wrapper)j.next());
+                    }
+                    
+                    for (Iterator j = enclosingMethods.iterator(); j.hasNext(); ) {
+                        addToMI((Wrapper)j.next(), 
+                            runInv, new MethodWrapper(run));
+                    }
                 }
             }
             
@@ -1473,8 +1494,7 @@ public class PAFromSource {
         
 
         public boolean visit(SuperFieldAccess arg0) {
-            // TODO Auto-generated method stub
-            // load
+            // TODO Auto-generated method stub            // load
             System.err.println("ERROR: super field access unhandled");
             return false;// do not go into simplename
         }
@@ -1717,7 +1737,7 @@ public class PAFromSource {
             BDD V_bdd = V1.ithVar(V1_i);        
             BDD bdd1 = V2.ithVar(V2_i);
             bdd1.andWith(V_bdd);// .id()?
-            out.println("adding to A " + v1 + " / " + v2); 
+            //out.println("adding to A " + v1 + " / " + v2); 
             if (TRACE_RELATIONS) out.println("Adding to A: "+bdd1.toStringWithDomains());
             A.orWith(bdd1);
         }
@@ -1770,6 +1790,20 @@ public class PAFromSource {
         }
 
 
+        void addToS(Wrapper v1, Wrapper f, Wrapper v2) {
+            int V1_i = Vmap.get(v1);
+            int V2_i = Vmap.get(v2);
+            BDD V_bdd = V1.ithVar(V1_i);
+            BDD bdd1 = V2.ithVar(V2_i);
+            int F_i = Fmap.get(f);
+            BDD F_bdd = F.ithVar(F_i);
+            bdd1.andWith(F_bdd);
+            bdd1.andWith(V_bdd);
+            out.println("adding to S: " + v1 + " / " + f + " / "+ v2);
+            if (TRACE_RELATIONS) out.println("Adding to S: "+bdd1.toStringWithDomains());
+            S.orWith(bdd1);
+        }
+        
         
         void addToMS(Wrapper q, Wrapper f, Expression r) {
             ASTNode decl = findDeclaringParent(); 
@@ -1809,23 +1843,7 @@ public class PAFromSource {
             }
         }
         
-        void addToS(Wrapper v1, Wrapper f, Wrapper v2) {
-            int V1_i = Vmap.get(v1);
-            int V2_i = Vmap.get(v2);
-            BDD V_bdd = V1.ithVar(V1_i);
-            BDD bdd1 = V2.ithVar(V2_i);
-            int F_i = Fmap.get(f);
-            BDD F_bdd = F.ithVar(F_i);
-            bdd1.andWith(F_bdd);
-            bdd1.andWith(V_bdd);
-            out.println("adding to S: " + v1 + " / " + f + " / "+ v2);
-            if (TRACE_RELATIONS) out.println("Adding to S: "+bdd1.toStringWithDomains());
-            S.orWith(bdd1);
-        }
-        
-        
-        
-        void addToS(ThisExpression e, ASTNode f, ASTNodeWrapper v2) {
+        void addToS(ThisExpression e, SimpleName f, ASTNodeWrapper v2) {
             ASTNode n = findDeclaringParent();
             if (n.getNodeType() == ASTNode.TYPE_DECLARATION ||
                 n.getNodeType() == ASTNode.ANONYMOUS_CLASS_DECLARATION) {
@@ -1842,10 +1860,10 @@ public class PAFromSource {
                         if (useMrelations) {
                             addToMS(new MethodWrapper(methods[i]), 
                                 new ThisWrapper(methods[i], e), 
-                                new ASTNodeWrapper(f), v2);
+                                new FieldWrapper(f), v2);
                         }
                         else addToS(new ThisWrapper(methods[i], e), 
-                            new ASTNodeWrapper(f), v2);
+                            new FieldWrapper(f), v2);
                     }
                 }
             }
@@ -1853,10 +1871,10 @@ public class PAFromSource {
                 if (useMrelations) {
                     addToMS(new MethodWrapper((MethodDeclaration)n), 
                         new ThisWrapper((MethodDeclaration)n, e), 
-                        new ASTNodeWrapper(f), v2);
+                        new FieldWrapper(f), v2);
                 }
                 else addToS(new ThisWrapper((MethodDeclaration)n, e), 
-                    new ASTNodeWrapper(f), v2);
+                    new FieldWrapper(f), v2);
             }
         }
         
@@ -1892,7 +1910,7 @@ public class PAFromSource {
             }
         }
         
-        void addToS(ThisExpression e, ASTNode f, ThisExpression e2) {
+        void addToS(ThisExpression e, SimpleName f, ThisExpression e2) {
             ASTNode n = findDeclaringParent();
             if (n.getNodeType() == ASTNode.TYPE_DECLARATION ||
                 n.getNodeType() == ASTNode.ANONYMOUS_CLASS_DECLARATION) {        
@@ -1909,12 +1927,12 @@ public class PAFromSource {
                         if (useMrelations) {
                             addToMS(new MethodWrapper(methods[i]), 
                                 new ThisWrapper(methods[i], e), 
-                                new ASTNodeWrapper(f), 
+                                new FieldWrapper(f), 
                                 new ThisWrapper(methods[i], e2));
                         
                         }
                         else addToS(new ThisWrapper(methods[i], e), 
-                            new ASTNodeWrapper(f), 
+                            new FieldWrapper(f), 
                             new ThisWrapper(methods[i], e2));
                     }
                 }
@@ -1923,10 +1941,10 @@ public class PAFromSource {
                 MethodDeclaration decl = (MethodDeclaration)n;
                 if (useMrelations) {
                     addToMS(new MethodWrapper(decl), new ThisWrapper(decl, e), 
-                        new ASTNodeWrapper(f), 
+                        new FieldWrapper(f), 
                         new ThisWrapper(decl, e2));  
                 }
-                else addToS(new ThisWrapper(decl, e), new ASTNodeWrapper(f), 
+                else addToS(new ThisWrapper(decl, e), new FieldWrapper(f), 
                         new ThisWrapper(decl, e2));  
             }
         }
@@ -1947,6 +1965,7 @@ public class PAFromSource {
             
         void addToML(Wrapper m, Wrapper v1, 
             Wrapper f, ASTNodeWrapper v2) {
+
             int M_i = Mmap.get(m);
             BDD M_bdd = M.ithVar(M_i);
             int V1_i = Vmap.get(v1);
@@ -2001,18 +2020,14 @@ public class PAFromSource {
             }
         }
         
-        void addToL(Wrapper v1, ASTNode f, ASTNode v2) {
-            if (f == v2) {
-                ASTNodeWrapper n = new ASTNodeWrapper(f);
-                addToL(v1, n, n);
-            }
-            else addToL(v1, new ASTNodeWrapper(f), new ASTNodeWrapper(v2));        
+        void addToL(Wrapper v1, SimpleName f, ASTNode v2) {
+            addToL(v1, new FieldWrapper(f), new ASTNodeWrapper(v2));        
         }
             
-        void addToL(ThisExpression v1, ASTNode f, ASTNodeWrapper v2) {
+        void addToL(ThisExpression v1, SimpleName f, ASTNodeWrapper v2) {
             ASTNode n = findDeclaringParent();
-            ASTNodeWrapper fw = (v2.getNode() == f) ? v2 : new ASTNodeWrapper(f);
-            
+            FieldWrapper fw = new FieldWrapper(f);
+
             if (n.getNodeType() == ASTNode.TYPE_DECLARATION ||
                 n.getNodeType() == ASTNode.ANONYMOUS_CLASS_DECLARATION) {
                 ITypeBinding p;
@@ -2034,11 +2049,13 @@ public class PAFromSource {
                 }
             }
             else {// method decl
+   
                 if (useMrelations) {
                     addToML(new MethodWrapper((MethodDeclaration)n), 
                         new ThisWrapper((MethodDeclaration)n, v1), fw, v2);
                 }
                 else addToL(new ThisWrapper((MethodDeclaration)n, v1), fw, v2);
+  
             }
         }
         
@@ -2123,7 +2140,7 @@ public class PAFromSource {
             BDD M_bdd = M.ithVar(M_i);
             BDD bdd1 = V2.ithVar(V_i);
             bdd1.andWith(M_bdd);
-            out.println("Adding to Mret: "+ new MethodWrapper(m) + " / " + v);
+            //out.println("Adding to Mret: "+ new MethodWrapper(m) + " / " + v);
             if (TRACE_RELATIONS) out.println("Adding to Mret: "+bdd1.toStringWithDomains());
             Mret.orWith(bdd1);
             
@@ -2239,7 +2256,7 @@ public class PAFromSource {
         
     }
     
-    private boolean isField(Name n) {
+    public static boolean isField(Name n) {
         IBinding bind = n.resolveBinding();
         if (bind.getKind() == IBinding.VARIABLE) {
             return ((IVariableBinding)bind).isField();
@@ -2413,7 +2430,7 @@ public class PAFromSource {
 
     private void generateTypeRelations() {
         // vT, aT
-        out.println("adding to vT, aT ...");
+        out.println("adding to vT, aT, location2typevar ...");
         Iterator it = Vmap.iterator();
         for (int i = 0; it.hasNext(); i++) {
             Wrapper v =(Wrapper)it.next();
@@ -2421,6 +2438,7 @@ public class PAFromSource {
             // otherwise do i=Vmap.get(v) first
             addToVT(i, v); 
             addToAT(v);
+            // TODO
         }
         
         // hT;
@@ -2432,6 +2450,16 @@ public class PAFromSource {
         }
 
         // TODO transitive closure on aT
+        
+        out.println("adding to concreteTypes ...");
+        // iterate though T
+        out.println("adding to ret2typevar ...");
+        // iterate through M, skip void
+        out.println("adding to field2typevar ...");
+        // iterate through F
+        out.println("adding to param2typevar ...");
+        // iterate thru formal
+        
     }
     
     public void loadClasses(Set libs) {
@@ -2818,6 +2846,8 @@ public class PAFromSource {
                     dos.write("N\n");
                 else if (d == M || d == M2)
                     dos.write("M\n");
+                else if (d == TV)
+                    dos.write("TV\n");
                 /*else if (Arrays.asList(V1c).contains(d)
                         || Arrays.asList(V2c).contains(d))
                     dos.write("VC\n");
@@ -2845,6 +2875,7 @@ public class PAFromSource {
             dos.write("Z "+(1L<<Z_BITS)+"\n");
             dos.write("N "+(1L<<N_BITS)+" name.map\n");
             dos.write("M "+(1L<<M_BITS)+" method.map\n");
+            dos.write("TV "+(1L<<TV_BITS)+" typevar.map\n");
             //dos.write("VC "+(1L<<VC_BITS)+"\n");
             //dos.write("HC "+(1L<<HC_BITS)+"\n");
             //if (bddIRBuilder != null) bddIRBuilder.dumpFieldDomains(dos);
@@ -2893,7 +2924,12 @@ public class PAFromSource {
         bdd.save(dumpPath+"mS.bdd", mS);
         bdd.save(dumpPath+"mL.bdd", mL);
         bdd.save(dumpPath+"mvP.bdd", mvP);
-        
+        bdd.save(dumpPath+"location2typevar.bdd", location2typevar);
+        bdd.save(dumpPath+"param2typevar.bdd", param2typevar);
+        bdd.save(dumpPath+"field2typevar.bdd", field2typevar);        
+        bdd.save(dumpPath+"ret2typevar.bdd", ret2typevar);  
+        bdd.save(dumpPath+"concreteTypes.bdd", concreteTypes);  
+                
         //bdd.save(dumpPath+"sync.bdd", sync);
         /*if (threadRuns != null)
             bdd.save(dumpPath+"threadRuns.bdd", threadRuns);
@@ -2960,7 +2996,14 @@ public class PAFromSource {
         } finally {
             if (dos != null) dos.close();
         }
-
+        
+        dos = null;
+        try {
+            dos = new BufferedWriter(new FileWriter(dumpPath+"typevar.map"));
+            TVmap.dumpStrings(dos);
+        } finally {
+            if (dos != null) dos.close();
+        }
     }
     
     private IndexedMap makeMap(String name, int bits) {
@@ -2977,6 +3020,7 @@ public class PAFromSource {
     }
 
     private void initializeMaps() {
+        out.println("loadpath " + loadPath);
         Vmap = makeMap("var", V_BITS);
         Imap = makeMap("invoke", I_BITS);
         Hmap = makeMap("heap", H_BITS);
@@ -2984,7 +3028,7 @@ public class PAFromSource {
         Tmap = makeMap("type", T_BITS);
         Nmap = makeMap("name", N_BITS);
         Mmap = makeMap("method", M_BITS);
-        out.println("loadpath " + loadPath);
+        TVmap = makeMap("typevar", TV_BITS);
         
         Vmap.get(StringWrapper.GLOBAL_THIS);
         Hmap.get(StringWrapper.GLOBAL_THIS);
@@ -3432,6 +3476,9 @@ public class PAFromSource {
                 }
                 else if (line.equals("M")) {
                     M_BITS = bits;
+                }
+                else if (line.equals("TV")) {
+                    TV_BITS = bits;
                 }
             }
         } catch (IOException e1) {

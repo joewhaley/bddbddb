@@ -6,6 +6,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 /*
  * Created on Jul 23, 2004
@@ -36,18 +37,21 @@ public class ASTNodeWrapper implements Wrapper {
         if (n == null) return "NODE: null";
         
         String s;
-        if (n.getNodeType() == ASTNode.SIMPLE_NAME) {
+        if (n.getNodeType() == ASTNode.SIMPLE_NAME 
+            && !PAFromSource.isField((SimpleName)n)) {
             s = ((Name)n).resolveBinding().getKey();
             return s;
         }
         else s = n.toString();
-        return "NODE: " + n.getNodeType() + ", " + s;
+        return "NODE: " + n.getNodeType() + ", " + s +
+            " @ " + n.getLocationInParent();
     }
     public boolean equals(Object o) {
         if (o instanceof ExceptionWrapper) return false;
         if (o instanceof StringWrapper) {
             switch (n.getNodeType()) {
                 case ASTNode.SIMPLE_NAME:
+                    if (PAFromSource.isField((SimpleName)n)) return false;
                     String nName = ((Name) n).resolveBinding().getKey();
                     return nName.equals(((StringWrapper)o).getString());
                 default:
@@ -77,6 +81,8 @@ public class ASTNodeWrapper implements Wrapper {
                 case ASTNode.QUALIFIED_NAME:
                     return false; // might change in future
                 case ASTNode.SIMPLE_NAME:
+                    if (PAFromSource.isField((SimpleName)n) ||
+                        PAFromSource.isField((SimpleName)m)) return false;
                     String nName = ((Name) n).resolveBinding().getKey();
                     String mName = ((Name) m).resolveBinding().getKey();
                     return nName.equals(mName);
@@ -117,7 +123,10 @@ public class ASTNodeWrapper implements Wrapper {
         
         switch (n.getNodeType()) {
             case ASTNode.SIMPLE_NAME:
-                return ((Name)n).resolveBinding().getKey().hashCode();
+                if (!PAFromSource.isField((SimpleName)n)) {
+                    return ((Name)n).resolveBinding().getKey().hashCode();
+                }
+                break;
             case ASTNode.STRING_LITERAL:
                 return ((StringLiteral)n).getLiteralValue().hashCode();
               
