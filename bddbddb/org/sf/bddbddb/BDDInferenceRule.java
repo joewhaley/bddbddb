@@ -588,21 +588,25 @@ public class BDDInferenceRule extends InferenceRule {
             }
             Assert._assert(!newRelationValues[i].isZero());
             RuleTerm rt_new = (RuleTerm) top.get(i);
-            for (int j = 0; j < i; ++j) {
-                RuleTerm rt2 = (RuleTerm) top.get(j);
-                if (rt2.relation == rt_new.relation) {
-                    boolean skippable = true;
-                    for (Iterator k = new AppendIterator(rt2.variables.iterator(), rt_new.variables.iterator()); k.hasNext(); ) {
-                        Variable var = (Variable) k.next();
-                        if (var instanceof Constant || !necessaryVariables.contains(var)) {
-                            skippable = false;
-                            break;
+            if (false) {
+                // If we have done A' * A already, skip this A * A'.
+                //// BUG!!  We can't skip this one even if the same relation has appeared before!
+                for (int j = 0; j < i; ++j) {
+                    RuleTerm rt2 = (RuleTerm) top.get(j);
+                    if (rt2.relation == rt_new.relation) {
+                        boolean skippable = true;
+                        for (Iterator k = new AppendIterator(rt2.variables.iterator(), rt_new.variables.iterator()); k.hasNext(); ) {
+                            Variable var = (Variable) k.next();
+                            if (var instanceof Constant || !necessaryVariables.contains(var)) {
+                                skippable = false;
+                                break;
+                            }
                         }
-                    }
-                    if (skippable) {
-                        if (TRACE) solver.out.println("Already did "+(RuleTerm)top.get(i)+", skipping.");
-                        newRelationValues[i].free();
-                        continue outer;
+                        if (skippable) {
+                            if (TRACE) solver.out.println("Already did "+(RuleTerm)top.get(i)+", skipping.");
+                            newRelationValues[i].free();
+                            continue outer;
+                        }
                     }
                 }
             }
