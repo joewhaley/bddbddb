@@ -47,6 +47,14 @@ public class Interactive {
             dis.readDatalogProgram(in);
             in.close();
         }
+        if (true) {
+            dis.relationsToDump.clear();
+            dis.relationsToDumpTuples.clear();
+            dis.relationsToDumpNegated.clear();
+            dis.relationsToDumpNegatedTuples.clear();
+            dis.relationsToPrintSize.clear();
+            dis.relationsToPrintTuples.clear();
+        }
         a.interactive();
     }
     
