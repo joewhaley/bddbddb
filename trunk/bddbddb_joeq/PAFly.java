@@ -306,6 +306,8 @@ public class PAFly {
         int F_i = Fmap.get(""+f);
         for (Iterator k = c.iterator(); k.hasNext(); ) {
             Node node2 = (Node) k.next();
+            if (FILTER_NULL && isNullConstant(node2))
+                continue;
             int V2_i = Vmap.get(node2.toString());
             if (TRACE_RELATIONS) out.println("Adding to L: "+V_i+","+F_i+","+V2_i);
             L.add(V_i, F_i, V2_i);
@@ -618,6 +620,8 @@ public class PAFly {
         
         for (Iterator i = ms.getSyncedVars().iterator(); i.hasNext(); ) {
             Node node = (Node) i.next();
+            if (FILTER_NULL && isNullConstant(node))
+                continue;
             if (TRACE) out.println("Sync on: "+node);
             //addToSync(node);
         }
@@ -712,7 +716,7 @@ public class PAFly {
                 // statically-bound, single target call
                 addSingleTargetCall(thisptr, mc, I_i, target);
                 addToMI(M_i, I_i, null);
-            } else {                
+            } else {
                 // virtual call
                 addToMI(M_i, I_i, target);
             }
@@ -754,6 +758,8 @@ public class PAFly {
         for (Iterator i = ms.getCastMap().entrySet().iterator(); i.hasNext(); ) {
             Map.Entry e = (Map.Entry)i.next();
             Node from = (Node)((Pair)e.getKey()).left;
+            if (FILTER_NULL && isNullConstant(from))
+                continue;
             CheckCastNode to = (CheckCastNode)e.getValue();
             int V_i = Vmap.get(to.toString());
             addToA(V_i, Vmap.get(from.toString()));
