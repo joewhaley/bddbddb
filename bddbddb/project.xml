@@ -267,9 +267,6 @@
       maven-jdepend-plugin
     </report>
     <report>
-      maven-dashboard-plugin
-    </report>
-    <report>
       maven-javadoc-plugin
     </report>
     <report>
