@@ -36,6 +36,7 @@ public class BDDRelation extends Relation {
         this.solver = solver;
     }
     
+    // Called before variable order is set.
     public void initialize() {
         this.relation = solver.bdd.zero();
         this.domains = new LinkedList();
@@ -92,6 +93,10 @@ public class BDDRelation extends Relation {
             domains.add(d);
             domainSet.andWith(d.set());
         }
+    }
+    
+    // Called after variable order is set.
+    public void initialize2() {
         boolean is_equiv = solver.equivalenceRelations.values().contains(this);
         boolean is_nequiv = solver.notequivalenceRelations.values().contains(this);
         if (is_equiv || is_nequiv) {
