@@ -50,7 +50,7 @@ public class OrderConstraintSet {
     }
     
     public OrderConstraintSet(OrderConstraintSet that) {
-        set = new LinkedHashSet(set);
+        set = new LinkedHashSet(that.set);
         objToConstraints = new GenericMultiMap();
         for (Iterator i = set.iterator(); i.hasNext(); ) {
             OrderConstraint c = (OrderConstraint) i.next();
@@ -287,6 +287,10 @@ public class OrderConstraintSet {
             earliest.add(c);
         }
         return earliest;
+    }
+    
+    public List generateAllOrders(Collection vars) {
+        return generateAllOrders(vars, null);
     }
     
     public List generateAllOrders(Collection vars, Set skip) {
