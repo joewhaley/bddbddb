@@ -37,6 +37,8 @@ public abstract class Solver {
     boolean TRACE_FULL = System.getProperty("fulltracesolve") != null;
     PrintStream out = System.out;
     
+    String basedir = System.getProperty("basedir");
+    
     abstract InferenceRule createInferenceRule(List/*<RuleTerm>*/ top, RuleTerm bottom);
     abstract Relation createEquivalenceRelation(FieldDomain fd);
     abstract Relation createNotEquivalenceRelation(FieldDomain fd);
@@ -45,7 +47,7 @@ public abstract class Solver {
                                      List/*<FieldDomain>*/ fieldDomains,
                                      List/*<String>*/ fieldOptions);
     NumberingRule createNumberingRule(InferenceRule ir) {
-        return new NumberingRule(ir);
+        return new NumberingRule(this, ir);
     }
     
     Solver() {
@@ -125,6 +127,24 @@ public abstract class Solver {
         
         Solver dis;
         dis = (Solver) Class.forName(solverName).newInstance();
+        
+        String sep = System.getProperty("file.separator");
+        if (dis.basedir == null) {
+            int i = inputFilename.lastIndexOf(sep);
+            if (i >= 0) {
+                dis.basedir = inputFilename.substring(0, i+1);
+            } else {
+                i = inputFilename.lastIndexOf("/");
+                if (!sep.equals("/") && i >= 0) {
+                    dis.basedir = inputFilename.substring(0, i+1);
+                } else {
+                    dis.basedir = "";
+                }
+            }
+        }
+        if (dis.basedir.length() > 0 && !dis.basedir.endsWith(sep) && !dis.basedir.endsWith("/")) {
+            dis.basedir += sep;
+        }
         
         if (dis.NOISY) dis.out.println("Opening Datalog program \""+inputFilename+"\"");
         MyReader in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
@@ -327,7 +347,7 @@ public abstract class Solver {
                 }
                 fileName = fileName.substring(1, fileName.length()-1);
             }
-            in.registerReader(new LineNumberReader(new FileReader(fileName)));
+            in.registerReader(new LineNumberReader(new FileReader(basedir+fileName)));
         } else if (s.startsWith(".split_all_rules")) {
             boolean b = true;
             int index = ".split_all_rules".length()+1;
@@ -394,12 +414,24 @@ public abstract class Solver {
             if (s.length() > index)
                 dotSpec = s.substring(index).trim();
             Dot dot = new Dot();
-            LineNumberReader lnr = new LineNumberReader(new FileReader(dotSpec));
+            LineNumberReader lnr = new LineNumberReader(new FileReader(basedir+dotSpec));
             if (TRACE) out.println("Parsing dot "+dotSpec);
             dot.parseInput(this, lnr);
             if (TRACE) out.println("Done parsing dot "+dotSpec);            
             lnr.close();
             dotGraphsToDump.add(dot);
+        } else if (s.startsWith(".basedir")) {
+            int index = ".basedir".length()+1;
+            String dirName = s.substring(index).trim();
+            if (dirName.startsWith("\"") && dirName.endsWith("\"")) {
+                dirName = dirName.substring(1, dirName.length()-1);
+            }
+            basedir += dirName;
+            String sep = System.getProperty("file.separator");
+            if (!basedir.endsWith(sep) && !basedir.endsWith("/")) {
+                basedir += sep;
+            }
+            if (TRACE) out.println("Base directory is now \""+basedir+"\"");
         } else {
             outputError(lineNum, 0, s, "Unknown directive \""+s+"\"");
             throw new IllegalArgumentException();
@@ -422,7 +454,7 @@ public abstract class Solver {
             String mapName = nextToken(st);
             DataInputStream dis = null;
             try {
-                dis = new DataInputStream(new FileInputStream(mapName));
+                dis = new DataInputStream(new FileInputStream(basedir+mapName));
                 fd.loadMap(dis);
             } finally {
                 if (dis != null) dis.close();

@@ -1,4 +1,6 @@
 
+.basedir "pa.joeq"
+
 ### Domains
 
 .include "fielddomains.pa"

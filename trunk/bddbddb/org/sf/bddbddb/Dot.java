@@ -67,7 +67,7 @@ public class Dot {
         
         DataOutputStream dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(outputFileName));
+            dos = new DataOutputStream(new FileOutputStream(solver.basedir+outputFileName));
             
             dos.writeBytes("digraph {\n");
             dos.writeBytes("  size=\"7.5,10\";\n");

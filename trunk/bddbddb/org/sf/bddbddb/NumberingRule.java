@@ -29,15 +29,17 @@ public class NumberingRule extends InferenceRule {
     boolean TRACE = false;
     PrintStream out = System.out;
     
+    Solver solver;
     RelationGraph rg;
     PathNumbering pn;
     long totalTime;
     
     static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph", "no").equals("no");
     
-    NumberingRule(InferenceRule ir) {
+    NumberingRule(Solver s, InferenceRule ir) {
         super(ir.top, ir.bottom);
         Assert._assert(ir.top.size() > 1);
+        this.solver = s;
     }
     
     void initialize() {
@@ -134,7 +136,7 @@ public class NumberingRule extends InferenceRule {
         if (DUMP_DOTGRAPH) {
             DataOutputStream dos = null;
             try {
-                dos = new DataOutputStream(new FileOutputStream(bottom.relation.name+".dot"));
+                dos = new DataOutputStream(new FileOutputStream(solver.basedir+bottom.relation.name+".dot"));
                 pn.dotGraph(dos, rg.getRoots(), rg.getNavigator());
             } catch (IOException x) {
                 System.err.println("Error while dumping dot graph.");
