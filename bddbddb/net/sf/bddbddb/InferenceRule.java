@@ -629,6 +629,7 @@ public abstract class InferenceRule implements IterationElement {
     Relation generate1(List ir, RuleTerm rt) {
         Relation top_r = rt.relation;
         Collection varsToProject = new LinkedList(rt.variables);
+        
         varsToProject.removeAll(necessaryVariables);
         if (!varsToProject.isEmpty()) {
             if (solver.TRACE) solver.out.println("Projecting away variables: " + varsToProject);

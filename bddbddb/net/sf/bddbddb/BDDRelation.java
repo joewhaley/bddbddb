@@ -867,10 +867,11 @@ public class BDDRelation extends Relation {
             relation.free();
             relation = null;
         }
+        /*
         if (domainSet != null) {
             domainSet.free();
             domainSet = null;
-        }
+        }*/
     }
 
     /**
