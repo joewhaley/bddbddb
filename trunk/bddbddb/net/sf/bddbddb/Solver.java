@@ -394,7 +394,7 @@ public abstract class Solver {
         solve();
         long solveTime = System.currentTimeMillis() - startTime;
         out.println("done. (" + solveTime + " ms)");
-      
+        
         finish();
         if (REPORT_STATS) {
             System.out.println("SOLVE_TIME=" + solveTime);
