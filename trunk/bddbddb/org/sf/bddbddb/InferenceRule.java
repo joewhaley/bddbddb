@@ -803,7 +803,9 @@ public abstract class InferenceRule implements IterationElement {
                 if (v instanceof Constant) {
                     Attribute a = bottom.relation.getAttribute(j);
                     long value = ((Constant) v).getValue();
-                    Relation result2 = result.copy();
+                    List a2 = new LinkedList(result.attributes);
+                    a2.add(a);
+                    Relation result2 = solver.createRelation(result.name+"_jc", a2);
                     result2.initialize();
                     JoinConstant jc = new JoinConstant(result2, result, a, value);
                     if (solver.TRACE) solver.out.println("Generated: " + jc);
