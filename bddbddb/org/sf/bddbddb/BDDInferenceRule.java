@@ -3,6 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -13,7 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.io.IOException;
+
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
@@ -73,14 +74,19 @@ public class BDDInferenceRule extends InferenceRule {
      * Total time (in ms) spent updating this rule.
      */
     long totalTime;
+    int longestIteration = 0;
+    long longestTime = 0;
+
     
     /**
      * Whether we should attempt to find the best order for this rule.
      */
     boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
-
+  
     long FBO_CUTOFF = Long.parseLong(System.getProperty("fbocutoff", "100"));
-    
+    boolean learn_best_order = !System.getProperty("learnbestorder", "no").equals("no");  
+    LearnedOrder learnedOrder;
+     
     /**
      * Construct a new BDDInferenceRule.
      * Only to be called internally.
@@ -93,6 +99,7 @@ public class BDDInferenceRule extends InferenceRule {
         super(solver, top, bottom);
         this.solver = solver;
         updateCount = 0;
+        learnedOrder = new LearnedOrder(this);
         //initialize();
     }
 
@@ -106,6 +113,7 @@ public class BDDInferenceRule extends InferenceRule {
         if (r instanceof BDDInferenceRule) {
             BDDInferenceRule that = (BDDInferenceRule) r;
             this.find_best_order = that.find_best_order;
+            this.learn_best_order = that.learn_best_order;
         }
     }
 
@@ -194,6 +202,7 @@ public class BDDInferenceRule extends InferenceRule {
             variableSet[i] = currentVariableSet;
             currentVariableSet = new LinkedList(currentVariableSet);
         }
+        learnedOrder.initialize();
         isInitialized = true;
     }
 
@@ -348,62 +357,19 @@ public class BDDInferenceRule extends InferenceRule {
             }
             if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
         }
-        BDD result = solver.bdd.one();
-        for (int j = 0; j < relationValues.length; ++j) {
-            RuleTerm rt = (RuleTerm) top.get(j);
-            BDD canNowQuantify = canQuantifyAfter[j];
-            if (TRACE) solver.out.print(" x " + rt.relation);
-            BDD b = relationValues[j];
-            if (!canNowQuantify.isOne()) {
-                if (TRACE) {
-                    solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
-                }
-                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                BDD topBdd = result.relprod(b, canNowQuantify);
-                if (find_best_order && !result.isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                    findBestDomainOrder(solver.bdd, result, b, canNowQuantify,
-                        (RuleTerm) top.get(j-1), rt,
-                        variableSet[j], rt.variables);
-                }
-                b.free();
-                if (TRACE) {
-                    solver.out.print("=" + topBdd.nodeCount() + ")");
-                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                }
-                result.free();
-                result = topBdd;
-            } else {
-                if (TRACE) {
-                    solver.out.print(" (and " + b.nodeCount());
-                }
-                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                if (find_best_order && !result.isOne()) {
-                    BDD res = result.and(b);
-                    if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                        findBestDomainOrder(solver.bdd, result, b, canNowQuantify,
-                            (RuleTerm) top.get(j-1), rt,
-                            variableSet[j], rt.variables);
-                    }
-                    result.free(); result = res;
-                } else {
-                    result.andWith(b);
-                }
-                if (TRACE) {
-                    solver.out.print("=" + result.nodeCount() + ")");
-                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                }
-            }
-            if (result.isZero()) {
-                if (TRACE) solver.out.println(" Became empty, stopping.");
-                for (++j; j < relationValues.length; ++j) {
-                    relationValues[j].free();
-                }
-                if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
-                if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
-                return false;
-            }
-        }
-        if (TRACE_FULL) solver.out.println(" = " + result.toStringWithDomains());
+           
+       BDD result = evalRelations(solver.bdd,relationValues,canQuantifyAfter,time);
+       long thisTime = System.currentTimeMillis() - time;
+       if(thisTime > longestTime){
+           longestTime = thisTime;
+           longestIteration = updateCount;
+           Assert._assert(oldRelationValues != null && canQuantifyAfter != null, Boolean.toString(incrementalize));
+           learnedOrder.saveBddsToLoad(oldRelationValues, canQuantifyAfter);
+           
+       }
+       if(result == null) return false;
+       if (TRACE_FULL) solver.out.println(" = " + result.toStringWithDomains());
+
         else if (TRACE) solver.out.println(" = " + result.nodeCount());
         if (bottomRename != null) {
             if (TRACE) {
@@ -452,6 +418,67 @@ public class BDDInferenceRule extends InferenceRule {
         return changed;
     }
 
+    public BDD evalRelations(BDDFactory bdd, BDD[] relationValues, BDD[] canQuantifyAfter, long time){
+        
+        long ttime = 0;
+        BDD result = bdd.one();
+        for (int j = 0; j < relationValues.length; ++j) {
+            RuleTerm rt = (RuleTerm) top.get(j);
+            BDD canNowQuantify = canQuantifyAfter[j];
+            if (TRACE) solver.out.print(" x " + rt.relation);
+            BDD b = relationValues[j];
+            if (!canNowQuantify.isOne()) {
+                if (TRACE) {
+                    solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
+                }
+                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                BDD topBdd = result.relprod(b, canNowQuantify);
+                if (find_best_order && !result.isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                    findBestDomainOrder(solver.bdd, result, b, canNowQuantify,
+                            (RuleTerm) top.get(j-1), rt,
+                            variableSet[j], rt.variables);
+                }
+                b.free();
+                if (TRACE) {
+                    solver.out.print("=" + topBdd.nodeCount() + ")");
+                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                }
+                result.free();
+                result = topBdd;
+            } else {
+                if (TRACE) {
+                    solver.out.print(" (and " + b.nodeCount());
+                }
+                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                if (find_best_order && !result.isOne()) {
+                    BDD res = result.and(b);
+                    if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                        findBestDomainOrder(solver.bdd, result, b, canNowQuantify,
+                                (RuleTerm) top.get(j-1), rt,
+                                variableSet[j], rt.variables);
+                    }
+                    result.free(); result = res;
+                } else {
+                    result.andWith(b);
+                }
+                if (TRACE) {
+                    solver.out.print("=" + result.nodeCount() + ")");
+                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                }
+            }
+            if (result.isZero()) {
+                if (TRACE) solver.out.println(" Became empty, stopping.");
+                for (++j; j < relationValues.length; ++j) {
+                    relationValues[j].free();
+                }
+                if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
+                if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
+                return null;
+            }
+        }
+        return result;
+    }
+    
     /**
      * Incremental version of update().
      * 
@@ -600,98 +627,27 @@ public class BDDInferenceRule extends InferenceRule {
             }
         }
         BDDRelation r = (BDDRelation) bottom.relation;
-        if (TRACE_FULL) solver.out.println("Current value of relation " + bottom + ": " + r.relation.toStringWithDomains());
-        BDD[] results = new BDD[newRelationValues.length];
-        outer : for (int i = 0; i < newRelationValues.length; ++i) {
-            if (newRelationValues[i] == null) {
-                if (TRACE) solver.out.println("Nothing new for " + (RuleTerm) top.get(i) + ", skipping.");
-                continue;
-            }
-            Assert._assert(!newRelationValues[i].isZero());
-            RuleTerm rt_new = (RuleTerm) top.get(i);
-            if (false) {
-                // If we have done A' * A already, skip this A * A'.
-                //// BUG!! We can't skip this one even if the same relation has
-                // appeared before!
-                for (int j = 0; j < i; ++j) {
-                    RuleTerm rt2 = (RuleTerm) top.get(j);
-                    if (rt2.relation == rt_new.relation) {
-                        boolean skippable = true;
-                        for (Iterator k = new AppendIterator(rt2.variables.iterator(), rt_new.variables.iterator()); k.hasNext();) {
-                            Variable var = (Variable) k.next();
-                            if (var instanceof Constant || !necessaryVariables.contains(var)) {
-                                skippable = false;
-                                break;
-                            }
-                        }
-                        if (skippable) {
-                            if (TRACE) solver.out.println("Already did " + (RuleTerm) top.get(i) + ", skipping.");
-                            newRelationValues[i].free();
-                            continue outer;
-                        }
-                    }
-                }
-            }
-            results[i] = solver.bdd.one();
-            for (int j = 0; j < rallRelationValues.length; ++j) {
-                RuleTerm rt = (RuleTerm) top.get(j);
-                BDD canNowQuantify = canQuantifyAfter[j];
-                if (TRACE) solver.out.print(" x " + rt.relation);
-                BDD b;
-                if (i != j) {
-                    b = rallRelationValues[j].id();
-                } else {
-                    b = newRelationValues[i];
-                    if (TRACE) solver.out.print("'");
-                }
-                if (!canNowQuantify.isOne()) {
-                    if (TRACE) {
-                        solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
-                    }
-                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                    BDD topBdd = results[i].relprod(b, canNowQuantify);
-                    if (TRACE) {
-                        solver.out.print("=" + topBdd.nodeCount() + ")");
-                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    }
-                    if (find_best_order && !results[i].isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                        findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify,
-                            (RuleTerm) top.get(j-1), rt,
-                            variableSet[j], rt.variables);
-                    }
-                    b.free();
-                    results[i].free();
-                    results[i] = topBdd;
-                } else {
-                    if (TRACE) {
-                        solver.out.print(" (and " + b.nodeCount());
-                    }
-                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                    if (find_best_order && !results[i].isOne()) {
-                        BDD res = results[i].and(b);
-                        if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                            findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify,
-                                (RuleTerm) top.get(j-1), rt,
-                                variableSet[j], rt.variables);
-                        }
-                        results[i].free(); results[i] = res;
-                    } else {
-                        results[i].andWith(b);
-                    }
-                    if (TRACE) {
-                        solver.out.print("=" + results[i].nodeCount() + ")");
-                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    }
-                }
-                if (results[i].isZero()) {
-                    if (TRACE) solver.out.println(" Became empty, skipping.");
-                    if (j < i) newRelationValues[i].free();
-                    continue outer;
-                }
-            }
-            if (TRACE_FULL) solver.out.println(" = " + results[i].toStringWithDomains());
-            else if (TRACE) solver.out.println(" = " + results[i].nodeCount());
-        }
+        if (TRACE_FULL) solver.out.println("Current value of relation " + bottom + ": " + r.relation.toStringWithDomains());  
+        BDD[] newRelationValuesCopy = new BDD[newRelationValues.length];
+        if(learn_best_order)
+            for(int i = 0; i < newRelationValues.length; ++i)
+                newRelationValuesCopy[i] = (newRelationValues[i] != null) ? newRelationValues[i].id() : null;
+        
+        BDD[] results = evalRelationsIncremental(solver.bdd, newRelationValues,rallRelationValues,canQuantifyAfter);
+        long thisTime = System.currentTimeMillis() - time;
+        if(learn_best_order)
+            if(thisTime > longestTime){
+                longestTime = thisTime;
+                longestIteration = updateCount;
+                Assert._assert(oldRelationValues != null && rallRelationValues != null && canQuantifyAfter != null, Boolean.toString(incrementalize));
+           
+                learnedOrder.saveBddsToLoad(newRelationValuesCopy, rallRelationValues, canQuantifyAfter);
+          
+            }else
+                for(int i = 0; i < newRelationValuesCopy.length; ++i)
+                    if(newRelationValuesCopy[i] != null)
+                        newRelationValuesCopy[i].free();
+        
         if (cache_before_rename) {
             for (int i = 0; i < rallRelationValues.length; ++i) {
                 rallRelationValues[i].free();
@@ -699,7 +655,7 @@ public class BDDInferenceRule extends InferenceRule {
         }
         if (TRACE) solver.out.print("Result: ");
         BDD result = solver.bdd.zero();
-        for (int i = 0; i < results.length; ++i) {
+               for (int i = 0; i < results.length; ++i) {
             if (results[i] != null) {
                 if (TRACE) {
                     ttime = System.currentTimeMillis();
@@ -760,6 +716,101 @@ public class BDDInferenceRule extends InferenceRule {
         return changed;
     }
 
+    public BDD[] evalRelationsIncremental(BDDFactory bdd, BDD[] newRelationValues, BDD[] rallRelationValues, BDD[] canQuantifyAfter){
+        long ttime = 0;
+        BDD[] results = new BDD[newRelationValues.length];
+        outer : for (int i = 0; i < newRelationValues.length; ++i) {
+            if (newRelationValues[i] == null) {
+                if (TRACE) solver.out.println("Nothing new for " + (RuleTerm) top.get(i) + ", skipping.");
+                continue;
+            }
+            Assert._assert(!newRelationValues[i].isZero());
+            RuleTerm rt_new = (RuleTerm) top.get(i);
+            if (false) {
+                // If we have done A' * A already, skip this A * A'.
+                //// BUG!! We can't skip this one even if the same relation has
+                // appeared before!
+                for (int j = 0; j < i; ++j) {
+                    RuleTerm rt2 = (RuleTerm) top.get(j);
+                    if (rt2.relation == rt_new.relation) {
+                        boolean skippable = true;
+                        for (Iterator k = new AppendIterator(rt2.variables.iterator(), rt_new.variables.iterator()); k.hasNext();) {
+                            Variable var = (Variable) k.next();
+                            if (var instanceof Constant || !necessaryVariables.contains(var)) {
+                                skippable = false;
+                                break;
+                            }
+                        }
+                        if (skippable) {
+                            if (TRACE) solver.out.println("Already did " + (RuleTerm) top.get(i) + ", skipping.");
+                            newRelationValues[i].free();
+                            continue outer;
+                        }
+                    }
+                }
+            }
+            results[i] = bdd.one();
+            for (int j = 0; j < rallRelationValues.length; ++j) {
+                RuleTerm rt = (RuleTerm) top.get(j);
+                BDD canNowQuantify = canQuantifyAfter[j];
+                if (TRACE) solver.out.print(" x " + rt.relation);
+                BDD b;
+                if (i != j) {
+                    b = rallRelationValues[j].id();
+                } else {
+                    b = newRelationValues[i];
+                    if (TRACE) solver.out.print("'");
+                }
+                if (!canNowQuantify.isOne()) {
+                    if (TRACE) {
+                        solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
+                    }
+                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                    BDD topBdd = results[i].relprod(b, canNowQuantify);
+                    if (TRACE) {
+                        solver.out.print("=" + topBdd.nodeCount() + ")");
+                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    }
+                    if (find_best_order && !results[i].isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                        findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify,
+                            (RuleTerm) top.get(j-1), rt,
+                            variableSet[j], rt.variables);
+                    }
+                    b.free();
+                    results[i].free();
+                    results[i] = topBdd;
+                } else {
+                    if (TRACE) {
+                        solver.out.print(" (and " + b.nodeCount());
+                    }
+                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                    if (find_best_order && !results[i].isOne()) {
+                        BDD res = results[i].and(b);
+                        if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                            findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify,
+                                (RuleTerm) top.get(j-1), rt,
+                                variableSet[j], rt.variables);
+                        }
+                        results[i].free(); results[i] = res;
+                    } else {
+                        results[i].andWith(b);
+                    }
+                    if (TRACE) {
+                        solver.out.print("=" + results[i].nodeCount() + ")");
+                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    }
+                }
+                if (results[i].isZero()) {
+                    if (TRACE) solver.out.println(" Became empty, skipping.");
+                    if (j < i) newRelationValues[i].free();
+                    continue outer;
+                }
+            }
+            if (TRACE_FULL) solver.out.println(" = " + results[i].toStringWithDomains());
+            else if (TRACE) solver.out.println(" = " + results[i].nodeCount()); 
+        }
+        return results;
+    }
     /*
      * (non-Javadoc)
      * 
@@ -769,6 +820,7 @@ public class BDDInferenceRule extends InferenceRule {
         solver.out.println("Rule " + this);
         solver.out.println("   Updates: " + updateCount);
         solver.out.println("   Time: " + totalTime + " ms");
+        solver.out.println("   Longest Iteration: " + longestIteration + " (" + longestTime + " ms)");
     }
 
     /**
@@ -790,6 +842,15 @@ public class BDDInferenceRule extends InferenceRule {
         return sb.toString();
     }
 
+
+
+    public void learn(){
+        learnedOrder.learn();
+    }
+
+    public LearnedOrder getLearnedOrder(){ 
+        return learnedOrder;
+    }
     /*
      * (non-Javadoc)
      * 
