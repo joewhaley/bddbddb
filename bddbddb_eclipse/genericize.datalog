@@ -102,6 +102,8 @@ override(super,sub) :- cha(t1,n,super), cha(t2,n,sub), aT(t1,t2).
 #    To encode equality between types x and y, include both
 #    (x,y) and (y,x) in the subType relation.
 subType (superT:TV0, subT:TV1) output outputtuples
+subTypeClosed (superT:TV0, subT:TV1) outputtuples
+filteredSubType (superT:TV0, subT:TV1) output outputtuples
 
 # Type variables that correspond to multiple types.
 multiType (typevar:TV0) outputtuples
@@ -109,18 +111,35 @@ multiType (typevar:TV0) outputtuples
 # Type variables that correspond to a single type.
 singleType (typevar:TV0) outputtuples
 
+# these 3 are used by the plugin to make the transformation easier
 paramMultiType(param:V0) outputtuples
 fieldMultiType(field:F0) outputtuples
 retMultiType(method:M0) outputtuples
 
 paramMultiType(v) :- multiType(t), param2typevar(m, z, t), formal(m, z, v).
-fieldMultiType(f) :- multiType(t), field2typevar(f, tv0).
+fieldMultiType(f) :- multiType(t), field2typevar(f, t).
 retMultiType(m) :- multiType(t), ret2typevar(m, t).
+
+# multitypes that are going to be declared as type variables in the source are 
+# contained in this relation.
+# TODO: will have to expand this relation to include local variables in the future
+declaredTV(typevar:TV0)
+
+declaredTV(t) :- multiType(t), param2typevar(m, z, t).
+declaredTV(a) :- multiType(a), field2typevar(f, a).
+declaredTV(a) :- multiType(a), ret2typevar(m, a).
 
 ### Rules for adding subtype constraints.
 
-# Transitive closure.
-subType(a,c) :- subType(a,b), subType(b,c).
+# (partial) Transitive closure on subType. if 'a extends b' and 'b extends c', 
+# don't declare a as 'a extends b & c'. so when we do the closure, we 
+# skip the link between a and c if b is a declared TV.
+# (the distinction between subTypeClosed and subType might not be necessary.)
+subTypeClosed(a,c) :- subTypeClosed(a,b), subTypeClosed(b,c), !declaredTV(b).
+subTypeClosed(a,b) :- subType(a,b).
+
+# in source code: 'b extends a', so a must be a declared TV
+filteredSubType(a,b) :- subTypeClosed(a,b), declaredTV(a).
 
 # Parameters of overridden methods are contravariant.
 subType(t2,t1) :- override(m1,m2), param2typevar(m1,z,t1), param2typevar(m2,z,t2).
@@ -169,6 +188,22 @@ concreteTypes2(t1,t) :- subType(t1,t2), concreteTypes2(t2,t).
 multiType(t) :- concreteTypes2(t,ta), concreteTypes2(t,tb), ta != tb.
 
 singleType(t) :- !multiType(t), concreteTypes2(t,_).
+
+# used for refining class creation sites
+fieldTypes(h:H0, f:F0, t:T0) output outputtuples
+argTypes(h:H0, v2:V1, t:T0) output outputtuples
+retTypes(h:H0, m:M0, t:T0) output outputtuples
+
+# heap object h may be invoked at i
+heapInvokes(h:H0, i:I0)
+heapInvokes(h, i) :- vP(v, h), actual(i, 0, v).
+
+fieldTypes(h, f, t) :- hP(h, f, h2), hT(h2, t), fieldMultiType(f).
+argTypes(h, v, t) :- heapInvokes(h, i), IE(i, m), vP(v3, h2), hT(h2, t), \
+                        formal(m, z, v), actual(i, z, v3), paramMultiType(v).
+retTypes(h, m, t) :- heapInvokes(h, i), vP(v3, h2), hT(h2, t), \
+                        IE(i, m), Iret(i, v3), retMultiType(m).
+
 
 #######
 # Stuff about generics
