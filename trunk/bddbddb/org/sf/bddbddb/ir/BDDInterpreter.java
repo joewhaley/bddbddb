@@ -26,6 +26,7 @@ import org.sf.bddbddb.ir.highlevel.Union;
 import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
+import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
@@ -44,6 +45,7 @@ public class BDDInterpreter implements Interpreter {
 
     BDDFactory factory;
     String varorder;
+    boolean needsDomainMatch;
 
     /**
      * @param factory
@@ -51,9 +53,11 @@ public class BDDInterpreter implements Interpreter {
     public BDDInterpreter(BDDSolver solver, BDDFactory factory) {
         this.factory = factory;
         this.varorder = solver.VARORDER;
+        this.needsDomainMatch = true;
     }
 
     protected BDD makeDomainsMatch(BDD b, BDDRelation r1, BDDRelation r2) {
+        if (!needsDomainMatch) return b;
         boolean any = false;
         BDDPairing pair = factory.makePair();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
@@ -379,6 +383,20 @@ public class BDDInterpreter implements Interpreter {
      * @see org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor#visit(org.sf.bddbddb.ir.dynamic.If)
      */
     public Object visit(If op) {
+        return null;
+    }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Replace)
+     */
+    public Object visit(Replace op) {
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
+        BDDRelation r1 = (BDDRelation) op.getSrc();
+        if (TRACE) System.out.println("   Replace " + r1);
+        BDDPairing pair = op.getPairing(factory);
+        BDD r = r1.getBDD().replace(pair);
+        r0.setBDD(r);
+        if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
         return null;
     }
 }

@@ -3,9 +3,13 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
+import java.util.Iterator;
 import java.util.List;
+import org.sf.bddbddb.Attribute;
+import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationElement;
 import org.sf.bddbddb.Relation;
+import org.sf.javabdd.BDDDomain;
 
 /**
  * Operation
@@ -71,4 +75,16 @@ public abstract class Operation implements IterationElement {
      * @return
      */
     public abstract String getExpressionString();
+    
+    public static String getRenames(BDDRelation r1, BDDRelation r2) {
+        StringBuffer sb = new StringBuffer();
+        for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
+            Attribute a = (Attribute) i.next();
+            BDDDomain d1 = r1.getBDDDomain(a);
+            BDDDomain d2 = r2.getBDDDomain(a);
+            if (d2 == null || d1 == d2) continue;
+            sb.append(","+d1+"->"+d2);
+        }
+        return sb.toString();
+    }
 }

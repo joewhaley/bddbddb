@@ -24,10 +24,8 @@ import org.sf.javabdd.BDDFactory.BDDOp;
 public class ApplyEx extends LowLevelOperation {
 
     BDDRelation r0, r1, r2;
-
     BDDOp op;
-
-    List/* <Attribute> */attributes;
+    List/*<Attribute>*/ attributes;
 
     /**
      * @param r0
