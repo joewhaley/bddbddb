@@ -6,7 +6,6 @@ package org.sf.bddbddb.dataflow;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.IR;
@@ -22,19 +21,19 @@ import org.sf.bddbddb.util.BitString.BitStringIterator;
  */
 public class DefUse extends OperationProblem {
 
+    boolean TRACE = false;
+    
     // Global information.
     BitString[] defs; /* <Relation,Operation> */
-
     BitString[] uses; /* <Relation,Operation> */
-
     Operation[] opMap;
-
     IR ir;
 
     public DefUse(IR ir) {
         this.ir = ir;
         int numRelations = ir.getNumberOfRelations();
         int numOperations = Operation.getNumberOfOperations();
+        if (TRACE) System.out.println(numRelations+" relations, "+numOperations+" operations");
         this.defs = new BitString[numRelations];
         for (int i = 0; i < defs.length; ++i) {
             defs[i] = new BitString(numOperations);
@@ -50,12 +49,14 @@ public class DefUse extends OperationProblem {
     void initialize(IterationList block) {
         for (Iterator i = block.iterator(); i.hasNext();) {
             Object o = i.next();
-            if (o instanceof IterationList) initialize((IterationList) block);
-            else {
+            if (o instanceof IterationList) {
+                initialize((IterationList) o);
+            } else {
                 Operation op = (Operation) o;
                 opMap[op.id] = op;
                 Relation def = op.getRelationDest();
-                defs[def.id].set(op.id);
+                if (def != null)
+                    defs[def.id].set(op.id);
                 Collection use = op.getSrcs();
                 for (Iterator j = use.iterator(); j.hasNext();) {
                     Relation r = (Relation) j.next();
@@ -76,7 +77,10 @@ public class DefUse extends OperationProblem {
     public class OperationSet extends AbstractSet {
 
         BitString s;
-
+        
+        /**
+         * @param s
+         */
         public OperationSet(BitString s) {
             this.s = s;
         }
@@ -117,7 +121,10 @@ public class DefUse extends OperationProblem {
     public class OperationIterator implements Iterator {
 
         BitStringIterator i;
-
+        
+        /**
+         * @param s
+         */
         public OperationIterator(BitString s) {
             i = s.iterator();
         }
@@ -153,123 +160,95 @@ public class DefUse extends OperationProblem {
     }
 
     public class DefUseFact extends UnionBitVectorFact implements OperationFact {
-
-        IterationList location;
-
-        DefUseFact(int setSize) {
+        
+        Operation op;
+        
+        /**
+         * @param setSize
+         */
+        public DefUseFact(int setSize) {
             super(setSize);
         }
-
-        DefUseFact(BitString s) {
+        
+        /**
+         * @param s
+         */
+        public DefUseFact(BitString s) {
             super(s);
         }
-
-        public Fact join(Fact that) {
-            return new DefUseFact(((UnionBitVectorFact) super.join(that)).fact);
+        
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.dataflow.UnionBitVectorFact#create(org.sf.bddbddb.util.BitString)
+         */
+        public UnionBitVectorFact create(BitString s) {
+            return new DefUseFact(s);
         }
-
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
         public String toString() {
-            Integer one = new Integer(1);
             StringBuffer sb = new StringBuffer();
-            for (int i = 0; i < fact.size(); i++) {
-                if (fact.get(i)) {
-                    sb.append(ir.getRelation(i));
-                    sb.append(" ");
-                }
+            for (BitStringIterator i = fact.iterator(); i.hasNext(); ) {
+                sb.append(opMap[i.nextIndex()]);
+                sb.append(" ");
             }
             return sb.toString();
         }
 
-        public OperationSet getDefs(Relation r) {
-            return new OperationSet(fact);
+        /**
+         * @param r
+         * @return
+         */
+        public OperationSet getReachingDefs(Relation r) {
+            BitString bs = (BitString) fact.clone();
+            bs.and(defs[r.id]);
+            return new OperationSet(bs);
+        }
+        
+        /**
+         * @param rs
+         * @return
+         */
+        public OperationSet getReachingDefs(Collection rs) {
+            BitString bs = new BitString(fact.size());
+            for (Iterator i = rs.iterator(); i.hasNext(); ) {
+                Relation r = (Relation) i.next();
+                bs.or(defs[r.id]);
+            }
+            bs.and(fact);
+            return new OperationSet(bs);
+        }
+
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.dataflow.OperationProblem.OperationFact#getOperation()
+         */
+        public Operation getOperation() {
+            return op;
+        }
+        
+        public void setLocation(IterationList list) {
+        }
+        
+        public Fact copy(IterationList list) {
+            return create(fact);
         }
     }
-
-    public boolean direction() {
-        return true;
-    }
-
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.dataflow.Problem#direction()
+     */
+    public boolean direction() { return true; }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.dataflow.Problem#getTransferFunction(org.sf.bddbddb.ir.Operation)
+     */
     public TransferFunction getTransferFunction(Operation op) {
         return new DefUseTransferFunction(op);
     }
-
-    public class DefUseFacts extends OperationFacts {
-        public OperationFacts create() {
-            return new DefUseFacts();
-        }
-
-        public Fact copy(IterationList loc) {
-            DefUseFacts that = new DefUseFacts();
-            that.operationFacts.putAll(this.operationFacts);
-            that.location = loc;
-            return that;
-        }
-
-        public Fact join(Fact fact) {
-            DefUseFacts that = (DefUseFacts) fact;
-            DefUseFacts result = (DefUseFacts) create();
-            result.operationFacts.putAll(this.operationFacts);
-            for (Iterator i = that.operationFacts.entrySet().iterator(); i
-                .hasNext();) {
-                Map.Entry e = (Map.Entry) i.next();
-                Operation o = (Operation) e.getKey();
-                OperationFact f = (OperationFact) e.getValue();
-                OperationFact old = (OperationFact) result.operationFacts.put(
-                    o, f);
-                if (old != null) {
-                    f = (OperationFact) f.join(old);
-                    result.operationFacts.put(o, f);
-                }
-            }
-            DefUseFact thisLastFact = (DefUseFact) getLastFact();
-            DefUseFact thatLastFact = (DefUseFact) that.getLastFact();
-            if (thisLastFact != null) {
-                DefUseFact resultLastFact = (DefUseFact) thisLastFact
-                    .join(thatLastFact);
-                // resultLastFact.fact.or(thisLastFact.fact);
-                //resultLastFact.fact.or(thatLastFact.fact);
-
-                result.setLastFact(resultLastFact);
-            }
-            result.location = location;
-            return result;
-        }
-
-        public String toString() {
-            StringBuffer sb = new StringBuffer();
-            for (Iterator it = operationFacts.entrySet().iterator(); it
-                .hasNext();) {
-                Map.Entry e = (Map.Entry) it.next();
-                Object key = e.getKey();
-                Object value = e.getValue();
-                sb.append(key + ": " + value);
-                sb.append('\n');
-            }
-            return sb.toString();
-        }
-
-        public boolean equals(Object o) {
-            OperationFacts that = (OperationFacts) o;
-            if (this.operationFacts == that.operationFacts) return true;
-            if (operationFacts.size() != that.operationFacts.size()) {
-                return false;
-            }
-            Iterator i = operationFacts.entrySet().iterator();
-            while (i.hasNext()) {
-                Map.Entry e = (Map.Entry) i.next();
-                Object key = e.getKey();
-                Object value = e.getValue();
-                Object value2 = that.operationFacts.get(key);
-                if (!value.equals(value2)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
-    public class DefUseTransferFunction extends TransferFunction {
-
+    
+    public class DefUseTransferFunction extends OperationTransferFunction {
+        
         Operation op;
 
         DefUseTransferFunction(Operation op) {
@@ -277,22 +256,18 @@ public class DefUse extends OperationProblem {
         }
 
         public Fact apply(Fact f) {
-            DefUseFacts currentFacts;
-            DefUseFact lastFact, currFact;
-            currentFacts = (DefUseFacts) f;
-            lastFact = (DefUseFact) currentFacts.getLastFact();
-            currFact = (DefUseFact) currentFacts.getFact(op);
-            DefUseFact newFact = new DefUseFact(ir.getNumberOfRelations());
-            if (lastFact != null) newFact.fact.copyBits(lastFact.fact);
+            //super.apply(f);
+            DefUseFact oldFact = (DefUseFact) f;
+            BitString bs = (BitString) oldFact.fact.clone();
             //kill
             Relation r = op.getRelationDest();
-            if (r != null) newFact.fact.minus(defs[r.id]);
+            if (r != null) bs.minus(defs[r.id]);
             //gen
-            newFact.fact.set(op.id);
-            currentFacts.operationFacts.put(op, newFact);
-            //currentFacts.setLastOp(op);
-            currentFacts.setLastFact(newFact);
-            return currentFacts;
+            bs.set(op.id);
+            DefUseFact newFact = (DefUseFact) oldFact.create(bs);
+            newFact.op = op;
+            setFact(op, newFact);
+            return newFact;
         }
 
     }
@@ -303,6 +278,6 @@ public class DefUse extends OperationProblem {
      * @see org.sf.bddbddb.dataflow.Problem#getBoundary()
      */
     public Fact getBoundary() {
-        return new DefUseFacts();
+        return new DefUseFact(Operation.getNumberOfOperations());
     }
 }

@@ -7,6 +7,7 @@
 package org.sf.bddbddb.dataflow;
 
 import org.sf.bddbddb.util.BitString;
+import org.sf.bddbddb.util.BitString.BitStringIterator;
 
 /**
  * @author Collective
@@ -30,5 +31,9 @@ public abstract class BitVectorFact implements Problem.Fact {
             return this.fact.equals(((BitVectorFact) o).fact);
         }
         return false;
+    }
+    
+    public String toString() {
+        return fact.toString();
     }
 }

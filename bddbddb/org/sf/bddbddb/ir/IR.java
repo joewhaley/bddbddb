@@ -20,7 +20,6 @@ import org.sf.bddbddb.dataflow.Problem;
 import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
 import org.sf.bddbddb.dataflow.DefUse.DefUseFact;
-import org.sf.bddbddb.dataflow.DefUse.DefUseFacts;
 import org.sf.bddbddb.dataflow.Liveness.LivenessFact;
 import org.sf.bddbddb.ir.highlevel.BooleanOperation;
 import org.sf.bddbddb.ir.highlevel.Free;
@@ -46,7 +45,7 @@ public class IR {
     boolean CONSTANTPROP = ALL_OPTS || !System.getProperty("constantprop", "no").equals("no");
     boolean DEFUSE = ALL_OPTS || !System.getProperty("defuse", "no").equals("no");
 
-    boolean TRACE;
+    boolean TRACE = false;
 
     public static IR create(Stratify s) {
         return create(s.solver, s.firstSCCs, s.innerSCCs);
@@ -60,8 +59,7 @@ public class IR {
         if (!solver.getRelationsToLoad().isEmpty()) {
             Assert._assert(!list.isLoop());
             IterationList loadList = new IterationList(false);
-            for (Iterator j = solver.getRelationsToLoad().iterator(); j
-                .hasNext();) {
+            for (Iterator j = solver.getRelationsToLoad().iterator(); j.hasNext();) {
                 Relation r = (Relation) j.next();
                 loadList.addElement(new Load(r));
             }
@@ -120,9 +118,10 @@ public class IR {
                 if (TRACE) System.out.println("Next: " + o);
                 if (o instanceof Operation) {
                     Operation op = (Operation) o;
-                    DefUseFacts f = (DefUseFacts) di.getFact();
+                    DefUseFact f = (DefUseFact) di.getFact();
                     if (op.getRelationDest() != null) {
                         Collection uses = problem.getUses(op.getRelationDest());
+                        if (TRACE) System.out.println("Uses: " + uses);
                         if (uses.size() == 0) {
                             if (TRACE) System.out.println("Removing: " + op);
                             di.remove();
@@ -131,26 +130,29 @@ public class IR {
                     }
                     if (op instanceof Project) {
                         Project p = (Project) op;
-                        DefUseFact duf = (DefUseFact) f.getFact(p);
                         Relation src = p.getSrc();
-                        Set defs = duf.getDefs(src);
+                        Set defs = f.getReachingDefs(src);
+                        if (TRACE) System.out.println("Defs: " + defs);
                         if (defs.size() == 1) {
                             Operation op2 = (Operation) defs.iterator().next();
                             if (op2 instanceof BooleanOperation) {
                                 BooleanOperation boolop = (BooleanOperation) op2;
                                 // check if this specific def reaches any other uses.
                                 Set uses = problem.getUses(src);
+                                if (TRACE) System.out.println("Uses of "+src+": " + uses);
                                 for (Iterator i = uses.iterator(); i.hasNext(); ) {
                                     Operation other = (Operation) i.next();
                                     if (other == p) continue;
-                                    DefUseFact duf2 = (DefUseFact) f.getFact(other);
-                                    if (duf2.getDefs(src).contains(boolop)) {
+                                    DefUseFact duf2 = (DefUseFact) problem.getFact(other);
+                                    if (duf2.getReachingDefs(src).contains(boolop)) {
                                         continue outer;
                                     }
                                 }
                                 BDDOp bddop = boolop.getBDDOp();
                                 ApplyEx new_op = new ApplyEx((BDDRelation) p.getRelationDest(), (BDDRelation) boolop.getSrc1(), bddop, (BDDRelation) boolop.getSrc2());
+                                if (TRACE) System.out.println("Replacing " + op + " with " + new_op);
                                 di.set(new_op);
+                                if (TRACE) System.out.println("Marking "+boolop+" for deletion.");
                                 to_remove.add(boolop);
                             }
                         }
@@ -181,7 +183,8 @@ public class IR {
             if (TRACE) System.out.println("Next: " + o);
             if (o instanceof Operation) {
                 Operation op = (Operation) o;
-                LivenessFact fact = (LivenessFact) p.currentFacts.getFact(op);
+                LivenessFact fact = (LivenessFact) p.getFact(op);
+                if (TRACE) System.out.println("Live: " + fact);
                 for (Iterator it2 = srcs.iterator(); it2.hasNext();) {
                     Relation r = (Relation) it2.next();
                     if (!fact.isAlive(r)) {
