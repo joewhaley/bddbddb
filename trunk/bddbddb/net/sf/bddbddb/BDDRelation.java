@@ -791,7 +791,7 @@ public class BDDRelation extends Relation {
         final BDDDomain d = (BDDDomain) domains.get(k);
         BDD b = relation.id();
         b.restrictWith(d.ithVar(j));
-        boolean result = b.isZero();
+        boolean result = !b.isZero();
         b.free();
         return result;
     }
