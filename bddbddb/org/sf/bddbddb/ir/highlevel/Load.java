@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir.highlevel;
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 
 /**
  * Load
@@ -43,7 +44,7 @@ public class Load extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = load(\""+fileName+"\")";
+        return r0.toString() + " = load(\"" + fileName + "\")";
     }
 
     /*
@@ -52,7 +53,7 @@ public class Load extends HighLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
-        return "load(" + r0.toString() + ",\""+fileName+"\")";
+        return "load(" + r0.toString() + ",\"" + fileName + "\")";
     }
 
     /*
@@ -73,26 +74,35 @@ public class Load extends HighLevelOperation {
         return Collections.EMPTY_LIST;
     }
 
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+    public Operation copy() {
+        return new Load(r0, fileName, tuples);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
         this.r0 = r0;
     }
-    
+
     /**
      * @return
      */
     public String getFileName() {
         return fileName;
     }
-    
+
     /**
      * @return
      */

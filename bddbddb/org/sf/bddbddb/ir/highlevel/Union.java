@@ -4,6 +4,7 @@
 package org.sf.bddbddb.ir.highlevel;
 
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 import org.sf.javabdd.BDDFactory;
 import org.sf.javabdd.BDDFactory.BDDOp;
 
@@ -40,12 +41,17 @@ public class Union extends BooleanOperation {
     public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.highlevel.BooleanOperation#getBDDOp()
      */
     public BDDOp getBDDOp() {
         return BDDFactory.or;
     }
-    
+
+    public Operation copy() {
+        return new Union(r0, r1, r2);
+    }
 }

@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 
 /**
  * JoinConstant
@@ -16,9 +17,7 @@ import org.sf.bddbddb.Relation;
  */
 public class JoinConstant extends HighLevelOperation {
     Relation r0, r1;
-
     Attribute a;
-
     long value;
 
     /**
@@ -50,8 +49,7 @@ public class JoinConstant extends HighLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
-        return "restrict(" + r1.toString() + "," + a.toString() + "=" + value
-            + ")";
+        return "restrict(" + r1.toString() + "," + a.toString() + "=" + value + ")";
     }
 
     /*
@@ -101,15 +99,24 @@ public class JoinConstant extends HighLevelOperation {
     public Attribute getAttribute() {
         return a;
     }
-    
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+
+    public Operation copy() {
+        return new JoinConstant(r0, r1, a, value);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r1 == r_old) r1 = r_new;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {

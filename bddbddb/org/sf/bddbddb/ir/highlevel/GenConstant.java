@@ -18,9 +18,7 @@ import org.sf.bddbddb.ir.OperationVisitor;
  */
 public class GenConstant extends Operation {
     Relation r0;
-
     Attribute a;
-
     long value;
 
     /**
@@ -93,14 +91,23 @@ public class GenConstant extends Operation {
     public Attribute getAttribute() {
         return a;
     }
-    
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+
+    public Operation copy() {
+        return new GenConstant(r0, a, value);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
