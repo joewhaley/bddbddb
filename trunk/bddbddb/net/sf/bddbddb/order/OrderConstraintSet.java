@@ -197,17 +197,21 @@ public class OrderConstraintSet {
      * @return  collection of interleaved elements, including o
      */
     Collection getInterleaved(Object o) {
-        Collection result = new LinkedHashSet(); // LinkedList();
+        Collection result = new LinkedList();
+        Set visited = new HashSet();
         result.add(o);
+        visited.add(o);
         Collection c = objToConstraints.getValues(o);
         if (c != null) {
             for (Iterator i = c.iterator(); i.hasNext(); ) {
                 OrderConstraint oc = (OrderConstraint) i.next();
                 if (oc instanceof InterleaveConstraint) {
                     if (o.equals(oc.a)) {
-                        result.add(oc.b);
+                        if (visited.add(oc.b))
+                            result.add(oc.b);
                     } else {
-                        result.add(oc.a);
+                        if (visited.add(oc.a))
+                            result.add(oc.a);
                     }
                 }
             }

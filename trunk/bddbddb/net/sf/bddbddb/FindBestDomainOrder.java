@@ -1965,7 +1965,7 @@ public class FindBestDomainOrder {
                 }
             }
             if (end > vBuckets && end > aBuckets && end > dBuckets) {
-                if (TRACE > 1) out.println("Reached end, no possible guesses!");
+                if (TRACE > 1) out.println("Reached end, no more possible guesses!");
                 if (false) {
                     // TODO: we can do something better here!
                     OrderIterator i = new OrderIterator(allVars);
@@ -1979,6 +1979,7 @@ public class FindBestDomainOrder {
                             break outermost;
                         } else {
                             // Add this order to the collection.
+                            if (TRACE > 1) out.println("Adding to candidate set: "+o_v);
                             candidates.add(o_v);
                             if (candidates.size() >= CANDIDATE_SET_SIZE) break;
                         }
@@ -2028,6 +2029,7 @@ public class FindBestDomainOrder {
     public static boolean LV = false;
     public Collection selectOrder(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir) {
         
+        if (TRACE > 1) out.println("Selecting an order from a candidate set of "+orders.size()+" orders: "+orders);
         return LV ? localVariance(orders, vData, aData, dData, ir) :
             uncertaintySample(orders, vData,aData, dData, ir);
         
@@ -2162,8 +2164,12 @@ public class FindBestDomainOrder {
                 continue;
             }
             if (already == null || !already.contains(best)) {
-                if (out_t != null) out_t.println("Using order "+best);
+                if (out_t != null) out_t.println("Adding to candidate set: "+best);
                 result.add(best);
+                if (result.size() > CANDIDATE_SET_SIZE) {
+                    if (out_t != null) out_t.println("Candidate set full.");
+                    return;
+                }
             } else {
                 if (out_t != null) out_t.println("We have already tried order "+best);
             }
