@@ -23,7 +23,9 @@ public class BDDInterpreter extends Interpreter {
      */
     public BDDInterpreter(IR ir) {
         this.ir = ir;
-        opInterpreter = new BDDOperationInterpreter((BDDSolver) ir.solver, ((BDDSolver) ir.solver).getBDDFactory());
+        if (ir != null) {
+            opInterpreter = new BDDOperationInterpreter((BDDSolver) ir.solver, ((BDDSolver) ir.solver).getBDDFactory());
+        }
     }
 
     public void interpret() {

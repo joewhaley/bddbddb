@@ -181,7 +181,7 @@ public class IR {
         //printIR();
       
         while (true) {
-        boolean changed = false;
+            boolean changed = false;
             if (PRE) {
                 if (TRACE) System.out.print("Running Partial Redundancy...");
                 long time = System.currentTimeMillis();
@@ -209,10 +209,9 @@ public class IR {
                 if (TRACE && b) System.out.println("IR Changed after dead code elimination");
                 changed |= b;
             }
-           if (!changed) break;
-           // printIR();
-       }
-       
+            if (!changed) break;
+            // printIR();
+        }
         
         if (FREE_DEAD) {
             if (TRACE) System.out.print("Running Liveness Analysis...");

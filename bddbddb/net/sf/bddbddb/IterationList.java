@@ -101,15 +101,21 @@ public class IterationList implements IterationElement {
         elements = newElements;
         allNestedElems = null;
     }
-
+    
     public void addElement(IterationElement elem) {
         elements.add(elem);
+        allNestedElems = null;
     }
 
     public void addElement(int j, IterationElement elem) {
         elements.add(j, elem);
+        allNestedElems = null;
     }
 
+    public void removeElement(int i) {
+        elements.remove(i);
+    }
+    
     public void removeElement(IterationElement elem) {
         for (Iterator i = elements.iterator(); i.hasNext();) {
             Object o = i.next();
@@ -121,6 +127,7 @@ public class IterationList implements IterationElement {
                 ((IterationList) o).removeElement(elem);
             }
         }
+        allNestedElems = null;
     }
 
     public void removeElements(Collection elems) {
@@ -134,6 +141,7 @@ public class IterationList implements IterationElement {
                 ((IterationList) o).removeElements(elems);
             }
         }
+        allNestedElems = null;
     }
 
     public String toString() {
@@ -233,5 +241,37 @@ public class IterationList implements IterationElement {
 
     public boolean isEmpty() {
         return elements.size() == 0;
+    }
+    
+    public IterationElement[] getElements() {
+        return (IterationElement[]) elements.toArray(new IterationElement[elements.size()]);
+    }
+    
+    public IterationElement getElement(String s) {
+        for (Iterator i = elements.iterator(); i.hasNext(); ) {
+            IterationElement e2 = (IterationElement) i.next();
+            if (s.equals(e2.toString())) return e2;
+            if (e2 instanceof IterationList) {
+                IterationElement result = ((IterationList) e2).getElement(s);
+                if (result != null) return result;
+            }
+        }
+        return null;
+    }
+    
+    public IterationList getContainingList(IterationElement e) {
+        if (elements.contains(e)) return this;
+        for (Iterator i = elements.iterator(); i.hasNext(); ) {
+            IterationElement e2 = (IterationElement) i.next();
+            if (e2 instanceof IterationList) {
+                IterationList result = ((IterationList) e2).getContainingList(e);
+                if (result != null) return result;
+            }
+        }
+        return null;
+    }
+    
+    public int indexOf(IterationElement e) {
+        return elements.indexOf(e);
     }
 }
