@@ -15,7 +15,7 @@ import net.sf.bddbddb.FindBestDomainOrder.TrialCollection;
 import net.sf.bddbddb.order.InterleaveConstraint;
 import net.sf.bddbddb.order.NotInterleaveConstraint;
 import net.sf.bddbddb.order.OrderConstraint;
-import net.sf.bddbddb.order.PrecedenceConstraint;
+import net.sf.bddbddb.order.BeforeConstraint;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.output.Format;
@@ -49,7 +49,7 @@ public class XMLFactory {
         OrderConstraint oc1 = (OrderConstraint) fromXML(e1);
         OrderConstraint oc2 = (OrderConstraint) fromXML(e2);
         if (e.getName().equals("precedenceConstraint")) {
-            return new PrecedenceConstraint(oc1, oc2);
+            return new BeforeConstraint(oc1, oc2);
         } else if (e.getName().equals("interleaveConstraint")) {
             return new InterleaveConstraint(oc1, oc2);
         } else if (e.getName().equals("notInterleaveConstraint")) {
@@ -102,7 +102,7 @@ public class XMLFactory {
         } else if (name.equals("variable")) {
             o = Variable.fromXMLElement(e, this);
         } else if (name.equals("precedenceConstraint")) {
-            o = PrecedenceConstraint.fromXMLElement(e, this);
+            o = BeforeConstraint.fromXMLElement(e, this);
         } else if (name.equals("interleaveConstraint")) {
             o = InterleaveConstraint.fromXMLElement(e, this);
         } else if (name.equals("notInterleaveConstraint")) {
