@@ -68,11 +68,14 @@ public class BDDSolver extends Solver {
      * @see org.sf.bddbddb.Solver#initialize()
      */
     public void initialize() {
-        loadBDDDomainInfo();
+        if (!isInitialized)
+            loadBDDDomainInfo();
         super.initialize();
-        setVariableOrdering();
-        initialize2(); // Do some more initialization after variable ordering is
-        // set.
+        if (!isInitialized) {
+            setVariableOrdering();
+        }
+        initialize2(); // Do some more initialization after variable ordering is set.
+        isInitialized = true;
     }
 
     /**
@@ -214,6 +217,13 @@ public class BDDSolver extends Solver {
         calcOrderConstraints();
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#cleanup()
+     */
+    public void cleanup() {
+        bdd.done();
+    }
+    
     /**
      *  
      */
@@ -477,7 +487,6 @@ public class BDDSolver extends Solver {
      */
     void saveResults() throws IOException {
         super.saveResults();
-        bdd.done();
     }
 
     /**

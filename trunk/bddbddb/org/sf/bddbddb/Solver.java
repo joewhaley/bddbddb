@@ -3,9 +3,11 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -71,12 +73,16 @@ public abstract class Solver {
     /** List of inference rules. */
     List/*<InferenceRule>*/ rules;
     
+    /** Flag that is set on initialization. */
+    boolean isInitialized;
+    
     Collection/*<Relation>*/ relationsToLoad;
     Collection/*<Relation>*/ relationsToLoadTuples;
     Collection/*<Relation>*/ relationsToDump;
     Collection/*<Relation>*/ relationsToDumpNegated;
     Collection/*<Relation>*/ relationsToDumpTuples;
     Collection/*<Relation>*/ relationsToDumpNegatedTuples;
+    Collection/*<Relation>*/ relationsToPrintTuples;
     Collection/*<Relation>*/ relationsToPrintSize;
     Collection/*<Dot>*/ dotGraphsToDump;
 
@@ -145,6 +151,7 @@ public abstract class Solver {
         relationsToDumpNegated = new LinkedList();
         relationsToDumpTuples = new LinkedList();
         relationsToDumpNegatedTuples = new LinkedList();
+        relationsToPrintTuples = new LinkedList();
         relationsToPrintSize = new LinkedList();
         dotGraphsToDump = new LinkedList();
     }
@@ -166,6 +173,8 @@ public abstract class Solver {
     public abstract void solve();
 
     public abstract void finish();
+    
+    public abstract void cleanup();
 
     /**
      * Get the named domain.
@@ -215,6 +224,33 @@ public abstract class Solver {
         return basedir;
     }
     
+    void initializeBasedir(String inputFilename) {
+        String sep = System.getProperty("file.separator");
+        if (basedir == null) {
+            int i = inputFilename.lastIndexOf(sep);
+            if (i >= 0) {
+                basedir = inputFilename.substring(0, i + 1);
+            } else {
+                i = inputFilename.lastIndexOf("/");
+                if (!sep.equals("/") && i >= 0) {
+                    basedir = inputFilename.substring(0, i + 1);
+                } else {
+                    basedir = "";
+                }
+            }
+        }
+        if (basedir.length() > 0 && !basedir.endsWith(sep) && !basedir.endsWith("/")) {
+            basedir += sep;
+        }
+    }
+    
+    /**
+     * @param args
+     * @throws IOException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     * @throws ClassNotFoundException
+     */
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         String inputFilename = System.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
@@ -225,25 +261,9 @@ public abstract class Solver {
         String solverName = System.getProperty("solver", "org.sf.bddbddb.BDDSolver");
         Solver dis;
         dis = (Solver) Class.forName(solverName).newInstance();
-        String sep = System.getProperty("file.separator");
-        if (dis.basedir == null) {
-            int i = inputFilename.lastIndexOf(sep);
-            if (i >= 0) {
-                dis.basedir = inputFilename.substring(0, i + 1);
-            } else {
-                i = inputFilename.lastIndexOf("/");
-                if (!sep.equals("/") && i >= 0) {
-                    dis.basedir = inputFilename.substring(0, i + 1);
-                } else {
-                    dis.basedir = "";
-                }
-            }
-        }
-        if (dis.basedir.length() > 0 && !dis.basedir.endsWith(sep) && !dis.basedir.endsWith("/")) {
-            dis.basedir += sep;
-        }
         if (dis.NOISY) dis.out.println("Opening Datalog program \"" + inputFilename + "\"");
         MyReader in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
+        dis.initializeBasedir(inputFilename);
         dis.readDatalogProgram(in);
         if (dis.NOISY) dis.out.println(dis.nameToDomain.size() + " field domains.");
         if (dis.NOISY) dis.out.println(dis.nameToRelation.size() + " relations.");
@@ -276,6 +296,7 @@ public abstract class Solver {
         dis.saveResults();
         time = System.currentTimeMillis() - time;
         if (dis.NOISY) dis.out.println("done. (" + time + " ms)");
+        dis.cleanup();
     }
 
     public static void printUsage() {
@@ -385,51 +406,69 @@ public abstract class Solver {
         for (;;) {
             String s = readLine(in);
             if (s == null) break;
-            if (s.length() == 0) continue;
-            if (s.startsWith("#")) continue;
-            int lineNum = in.getLineNumber();
-            if (s.startsWith(".")) {
-                // directive
-                parseDirective(in, lineNum, s);
-                continue;
-            }
-            MyStringTokenizer st = new MyStringTokenizer(s);
+            parseDatalogLine(s, in);
+        }
+    }
+    
+    /**
+     * Parse a line from a Datalog program.
+     * 
+     * @param s
+     * @param in
+     * @return
+     * @throws IOException
+     */
+    boolean parseDatalogLine(String s, MyReader in) throws IOException {
+        if (s.length() == 0) return false;
+        if (s.startsWith("#")) return false;
+        int lineNum = in.getLineNumber();
+        if (s.startsWith(".")) {
+            // directive
+            parseDirective(in, lineNum, s);
+            return true;
+        }
+        MyStringTokenizer st = new MyStringTokenizer(s);
+        if (st.hasMoreTokens()) {
+            st.nextToken(); // name
             if (st.hasMoreTokens()) {
-                st.nextToken(); // name
-                if (st.hasMoreTokens()) {
-                    String num = st.nextToken();
-                    boolean isNumber;
-                    try {
-                        new BigInteger(num);
-                        isNumber = true;
-                    } catch (NumberFormatException x) {
-                        isNumber = false;
+                String num = st.nextToken();
+                boolean isNumber;
+                try {
+                    new BigInteger(num);
+                    isNumber = true;
+                } catch (NumberFormatException x) {
+                    isNumber = false;
+                }
+                if (isNumber) {
+                    // field domain
+                    Domain fd = parseDomain(lineNum, s);
+                    if (TRACE) out.println("Parsed field domain " + fd + " size " + fd.size);
+                    if (nameToDomain.containsKey(fd.name)) {
+                        System.err.println("Error, field domain " + fd.name + " redefined on line " + in.getLineNumber() + ", ignoring.");
+                    } else {
+                        nameToDomain.put(fd.name, fd);
                     }
-                    if (isNumber) {
-                        // field domain
-                        Domain fd = parseDomain(lineNum, s);
-                        if (TRACE) out.println("Parsed field domain " + fd + " size " + fd.size);
-                        if (nameToDomain.containsKey(fd.name)) {
-                            System.err.println("Error, field domain " + fd.name + " redefined on line " + in.getLineNumber() + ", ignoring.");
-                        } else {
-                            nameToDomain.put(fd.name, fd);
-                        }
-                        continue;
-                    }
+                    return false;
                 }
             }
-            if (s.indexOf(".") > 0) {
-                // rule
-                InferenceRule ir = parseRule(lineNum, s);
-                if (TRACE) out.println("Parsed rule " + ir);
-                rules.add(ir);
-                continue;
-            } else {
-                // relation
-                Relation r = parseRelation(lineNum, s);
-                if (TRACE && r != null) out.println("Parsed relation " + r);
-                continue;
-            }
+        }
+        if (s.indexOf(".") > 0) {
+            // rule
+            InferenceRule ir = parseRule(lineNum, s);
+            if (TRACE) out.println("Parsed rule " + ir);
+            rules.add(ir);
+            return true;
+        } else if (s.indexOf("?") > 0) {
+            // query
+            InferenceRule ir = parseQuery(lineNum, s);
+            if (TRACE) out.println("Parsed query " + ir);
+            rules.add(ir);
+            return true;
+        } else {
+            // relation
+            Relation r = parseRelation(lineNum, s);
+            if (TRACE && r != null) out.println("Parsed relation " + r);
+            return false;
         }
     }
 
@@ -494,6 +533,14 @@ public abstract class Solver {
                 b = !option.equals("false");
             }
             NOISY = b;
+        } else if (s.startsWith(".trace")) {
+            boolean b = true;
+            int index = ".trace".length() + 1;
+            if (s.length() > index) {
+                String option = s.substring(index).trim();
+                b = !option.equals("false");
+            }
+            TRACE = b;
         } else if (s.startsWith(".bddvarorder")) {
             if (System.getProperty("bddvarorder") == null) {
                 int index = ".bddvarorder".length() + 1;
@@ -681,6 +728,8 @@ public abstract class Solver {
                 relationsToLoad.add(r);
             } else if (option.equals("inputtuples")) {
                 relationsToLoadTuples.add(r);
+            } else if (option.equals("printtuples")) {
+                relationsToPrintTuples.add(r);
             } else if (option.equals("printsize")) {
                 relationsToPrintSize.add(r);
             } else if (constraintMatcher.matches()) {
@@ -741,6 +790,8 @@ public abstract class Solver {
         relationsToLoad.remove(r);
         relationsToLoadTuples.remove(r);
         relationsToPrintSize.remove(r);
+        relationsToPrintTuples.remove(r);
+        nameToRelation.remove(r.name);
     }
 
     /**
@@ -949,6 +1000,61 @@ public abstract class Solver {
     }
 
     /**
+     * Parse a query.
+     * 
+     * @param lineNum
+     * @param s
+     * @return
+     */
+    InferenceRule parseQuery(int lineNum, String s) {
+        MyStringTokenizer st = new MyStringTokenizer(s, " \t(,/).=!?", true);
+        Map/*<String,Variable>*/ nameToVar = new HashMap();
+        
+        if (s.indexOf(":-") > 0) {
+            // TODO.
+            return null;
+        }
+        List/*<RuleTerm>*/ terms = new LinkedList();
+        Map varMap = new LinkedHashMap();
+        for (;;) {
+            RuleTerm rt = parseRuleTerm(lineNum, s, nameToVar, st);
+            if (rt == null) break;
+            terms.add(rt);
+            for (Iterator i = rt.variables.iterator(); i.hasNext(); ) {
+                Variable v = (Variable) i.next();
+                if (v.name.equals("_")) continue;
+                String name;
+                if (v instanceof Constant) {
+                    name = rt.relation.getAttribute(rt.variables.indexOf(v)).attributeName;
+                } else {
+                    name = v.toString();
+                }
+                varMap.put(v, name);
+            }
+            String sep = nextToken(st);
+            if (sep.equals("?")) break;
+            if (!sep.equals(",")) {
+                outputError(lineNum, st.getPosition(), s, "Expected \",\", got \"" + sep + "\"");
+                throw new IllegalArgumentException();
+            }
+        }
+        List vars = new ArrayList(varMap.keySet());
+        List attributes = new ArrayList(vars.size());
+        for (Iterator i = varMap.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry e = (Map.Entry) i.next();
+            Variable v = (Variable) e.getKey();
+            String name = (String) e.getValue();
+            attributes.add(new Attribute(name, v.getDomain(), ""));
+        }
+        Relation r = createRelation("query@"+lineNum, attributes);
+        RuleTerm bottom = new RuleTerm(vars, r);
+        InferenceRule ir = createInferenceRule(terms, bottom);
+        ir = parseRuleOptions(lineNum, s, ir, st);
+        relationsToPrintTuples.add(r);
+        return ir;
+    }
+    
+    /**
      * Get the equivalence relation for the given domain.
      * 
      * @param fd
@@ -1033,6 +1139,29 @@ public abstract class Solver {
             DecimalFormat myFormatter = new DecimalFormat("0.");
             String output = myFormatter.format(size);
             out.println("SIZE OF " + r + ": " + output);
+        }
+        for (Iterator i = relationsToPrintTuples.iterator(); i.hasNext();) {
+            Relation r = (Relation) i.next();
+            out.println("Tuples in "+r+":");
+            final int MAX = 100;
+            int num = MAX;
+            TupleIterator j = r.iterator();
+            while (j.hasNext()) {
+                if (--num < 0) break;
+                long[] a = j.nextTuple();
+                out.print("\t(");
+                for (int k = 0; k < a.length; ++k) {
+                    if (k > 0) out.print(',');
+                    Attribute at = r.getAttribute(k);
+                    out.print(at);
+                    out.print('=');
+                    out.print(at.attributeDomain.toString((int) a[k]));
+                }
+                out.println(")");
+            }
+            if (j.hasNext()) {
+                out.println("\tand more ("+r.size()+" in total).");
+            }
         }
         for (Iterator i = relationsToDump.iterator(); i.hasNext();) {
             Relation r = (Relation) i.next();
