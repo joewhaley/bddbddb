@@ -3,20 +3,24 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.order;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
+import jwutil.math.CombinationGenerator;
 import jwutil.util.Assert;
 import net.sf.bddbddb.order.OrderConstraint.AfterConstraint;
 import net.sf.bddbddb.order.OrderConstraint.BeforeConstraint;
@@ -39,6 +43,20 @@ public class OrderConstraintSet {
     public OrderConstraintSet() {
         set = new LinkedHashSet();
         objToConstraints = new GenericMultiMap();
+    }
+    
+    public OrderConstraintSet copy() {
+        return new OrderConstraintSet(this);
+    }
+    
+    public OrderConstraintSet(OrderConstraintSet that) {
+        set = new LinkedHashSet(set);
+        objToConstraints = new GenericMultiMap();
+        for (Iterator i = set.iterator(); i.hasNext(); ) {
+            OrderConstraint c = (OrderConstraint) i.next();
+            objToConstraints.add(c.a, c);
+            objToConstraints.add(c.b, c);
+        }
     }
     
     public boolean constrain(OrderConstraint c) {
@@ -133,9 +151,15 @@ public class OrderConstraintSet {
         }
     }
     
+    /**
+     * Find the earliest element in the order.
+     */
     public Object findEarliest(Object o) {
         return findEarliest(o, null);
     }
+    /**
+     * Find the earliest element in the order, other than the orders in the skip set.
+     */
     public Object findEarliest(Object o, Set skip) {
         Collection c = objToConstraints.getValues(o);
         if (c != null) {
@@ -157,6 +181,12 @@ public class OrderConstraintSet {
         return o;
     }
     
+    /**
+     * Get the elements that must be interleaved with this element.
+     * 
+     * @param o  element
+     * @return  collection of interleaved elements, including o
+     */
     Collection getInterleaved(Object o) {
         Collection result = new LinkedList();
         result.add(o);
@@ -165,25 +195,133 @@ public class OrderConstraintSet {
             for (Iterator i = c.iterator(); i.hasNext(); ) {
                 OrderConstraint oc = (OrderConstraint) i.next();
                 if (oc instanceof InterleaveConstraint) {
-                    if (o.equals(oc.a)) result.add(oc.b);
-                    else result.add(oc.a);
+                    if (o.equals(oc.a)) {
+                        result.add(oc.b);
+                    } else {
+                        result.add(oc.a);
+                    }
                 }
             }
         }
         return result;
     }
     
+    public boolean hasPredecessor(Object o, Collection skip) {
+        Collection cons = objToConstraints.getValues(o);
+        for (Iterator i = cons.iterator(); i.hasNext(); ) {
+            OrderConstraint oc = (OrderConstraint) i.next();
+            if (oc instanceof BeforeConstraint) {
+                if (o.equals(oc.b) &&
+                    (skip == null || !skip.contains(oc.a))) {
+                    return true;
+                }
+            } else if (oc instanceof AfterConstraint) {
+                if (o.equals(oc.a) &&
+                    (skip == null || !skip.contains(oc.b))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    List combineAllWays(Collection vars, List earliest, Set skip) {
+        List result = new LinkedList();
+        if (earliest.size() == 0) {
+            result.add(Collections.EMPTY_LIST);
+            return result;
+        }
+        Iterator i = earliest.iterator();
+        while (i.hasNext()) {
+            // Choose c to be first.
+            Collection c = (Collection) i.next();
+            //Assert._assert(!skip.containsAny(c));
+            skip.addAll(c);
+            List newEarliest = findAllEarliest(vars, skip);
+            List r = combineAllWays(vars, newEarliest, skip);
+            skip.removeAll(c);
+            for (Iterator j = r.iterator(); j.hasNext(); ) {
+                List list = (List) j.next();
+                List list2 = new ArrayList(list);
+                list2.add(0, c);
+                result.add(list2);
+            }
+        }
+        int num = earliest.size();
+        for (int k = 2; k <= num; ++k) {
+            // Do all interleaves combining k elements.
+            Collection combo = new LinkedList();
+            CombinationGenerator cg = new CombinationGenerator(k, num);
+            while (cg.hasMore()) {
+                int[] p = cg.getNext();
+                for (int x = 0; x < p.length; ++x) {
+                    Collection c = (Collection) earliest.get(p[x]);
+                    combo.addAll(c);
+                }
+                //Assert._assert(!skip.containsAny(combo));
+                skip.addAll(combo);
+                List newEarliest = findAllEarliest(vars, skip);
+                List r = combineAllWays(vars, newEarliest, skip);
+                skip.removeAll(combo);
+                for (Iterator j = r.iterator(); j.hasNext(); ) {
+                    List list = (List) j.next();
+                    List list2 = new ArrayList(list);
+                    list2.add(0, combo);
+                    result.add(list2);
+                }
+            }
+        }
+        return result;
+    }
+    
+    List findAllEarliest(Collection vars, Collection skip) {
+        List earliest = new LinkedList();
+        Set mySkip = new HashSet();
+        if (skip != null) mySkip.addAll(skip);
+        for (Iterator i = vars.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (mySkip != null && mySkip.contains(o)) continue;
+            if (hasPredecessor(o, skip)) continue;
+            Collection c = getInterleaved(o);
+            mySkip.addAll(c);
+            earliest.add(c);
+        }
+        return earliest;
+    }
+    
+    public List generateAllOrders(Collection vars, Set skip) {
+        
+        // Find the set of earliest elements (no predecessors)
+        List earliest = findAllEarliest(vars, skip);
+        
+        if (skip == null) skip = new HashSet();
+        
+        // Combine those earliest elements in all possible ways.
+        List result = combineAllWays(vars, earliest, skip);
+        
+        // Convert Lists to Orders.
+        for (ListIterator i = result.listIterator(); i.hasNext(); ) {
+            List a = (List) i.next();
+            Order o = new Order(a);
+            i.set(o);
+        }
+        
+        return result;
+    }
+    
     public Order generateOrder(Collection vars) {
         Set done = new HashSet(vars.size());
         List result = new ArrayList(vars.size());
-        for (Iterator i = vars.iterator(); i.hasNext(); ) {
-            Object o = i.next();
-            if (done.contains(o)) continue;
-            o = findEarliest(o, done);
-            Collection c = getInterleaved(o);
-            if (c.size() == 1) result.add(c.iterator().next());
-            else result.add(c);
-            done.addAll(c);
+        while (done.size() < vars.size()) {
+            for (Iterator i = vars.iterator(); i.hasNext(); ) {
+                Object o = i.next();
+                if (done.contains(o)) continue;
+                o = findEarliest(o, done);
+                Collection c = getInterleaved(o);
+                if (c.size() == 1) result.add(c.iterator().next());
+                else result.add(c);
+                done.addAll(c);
+            }
         }
         Order o = new Order(result);
         return o;
@@ -227,6 +365,8 @@ public class OrderConstraintSet {
             e.printStackTrace();
         }
         Order o = dis.generateOrder(allStrings);
-        System.out.println("Final order is: "+o);
+        System.out.println("One final order is: "+o);
+        List allOrders = dis.generateAllOrders(allStrings, null);
+        System.out.println("All orders: "+allOrders);
     }
 }
