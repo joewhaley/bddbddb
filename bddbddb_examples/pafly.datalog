@@ -191,11 +191,19 @@ leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_toStrin
 lhs (v:V0)
 lhs(v) :- A(v,_).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb_append(m).
+lhs(v) :- actual(i2,0,v), IE(i2,m), sb_append(m).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb_toString(m).
 lhs(v) :- actual(i2,0,v), IE(i2,m), sb_init(m).
+
+lhs(v) :- Iret(i2,v), IE(i2,m), sb2_append(m).
+lhs(v) :- actual(i2,1,v), IE(i2,m), sb2_append(m).
+lhs(v) :- Iret(i2,v), IE(i2,m), sb2_toString(m).
 
 typeString (v:V0)
 typeString(v) :- vP(v,h), stringToType(h,_).
 
 deadEndForName (v:V0,i:I0) outputtuples
 deadEndForName(v,i) :- leadsToForName(v,i), !lhs(v), !typeString(v).
+
+castNewInstance (i:I0,t:T0) outputtuples
+castNewInstance(i,t1) :- newInstance(m), IE(i,m), Iret(i,v2), A(v1,v2), vT(v1,t1), vT(v2,t2), t1!=t2.
