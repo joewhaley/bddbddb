@@ -12,6 +12,16 @@ invokeReturn (invoke:I, dest:V) input
 newStatement (dest:V, type:TV) input
 castStatement (dest:V, type:TV, src:V) input
 
+# Points-to information
+pointsTo (context:C, var:V, object:H) input
+objectType (object:H, type:TV) input
+
+# Map between context and base object.
+context2baseobject (context:C, location:V, object:H) input
+
+# Class hierarchy information.
+override (supermethod:M, submethod:M) input
+
 # Map between code locations and type variables.
 location2typevar (location:V, typevar:TV) input
 
@@ -19,9 +29,6 @@ location2typevar (location:V, typevar:TV) input
 methodParameter (method:M, param:Z, type:TV) input
 field (field:F, type:TV) input
 returnValue (method:M, type:TV) input
-
-# Class hierarchy information.
-override (supermethod:M, submethod:M) input
 
 ### Computed relations
 
@@ -72,8 +79,8 @@ subType(t1,t2) :- newStatement(v1,t2), location2typevar(v1,t1).
 
 # Constraints from cast statements.
 ### TODO: assumes casts always succeed!
-#subType(t1,t2) :- castStatement(v1,t2,v3), location2typevar(v1,t1).
-subType(t1,t3) :- castStatement(v1,t2,v3), location2typevar(v1,t1), location2typevar(v3,t3).
+subType(t1,t2) :- castStatement(v1,t2,v3), location2typevar(v1,t1).
+#subType(t1,t3) :- castStatement(v1,t2,v3), location2typevar(v1,t1), location2typevar(v3,t3).
 
 # Constraints from constant statements.
 

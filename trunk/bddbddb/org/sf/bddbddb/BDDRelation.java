@@ -551,6 +551,13 @@ public class BDDRelation extends Relation {
         return (BDDDomain) domains.get(i);
     }
 
+    /**
+     * @return
+     */
+    public List getBDDDomains() {
+        return domains;
+    }
+    
     /*
      * (non-Javadoc)
      * 

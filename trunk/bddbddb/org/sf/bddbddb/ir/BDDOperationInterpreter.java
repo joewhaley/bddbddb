@@ -217,6 +217,8 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         Attribute a = op.getAttribute();
+        System.out.println(r0+": "+r0.getAttributes()+" "+r0.getBDDDomains());
+        System.out.println(r1+": "+r1.getAttributes()+" "+r1.getBDDDomains());
         long value = op.getValue();
         BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         if (TRACE) System.out.println("   " + r0 + " = And " + r1 + "," + r0.getBDDDomain(a) + ":" + value);
