@@ -460,8 +460,7 @@ public abstract class InferenceRule implements IterationElement {
             // constants.
             Relation r = generate1(ir, rt);
             // If we are incrementalizing, cache copies of the input relations.
-            // This happens after we have quantified away and restricted
-            // constants,
+            // This happens after we have quantified away and restricted constants,
             // but before we do renaming.
             if (incrementalize && cache_before_rename) {
                 if (oldRelationValues == null) oldRelationValues = new Relation[top.size()];
