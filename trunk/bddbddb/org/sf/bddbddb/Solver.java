@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
@@ -62,6 +63,7 @@ public abstract class Solver {
     
     /** Base directory where to load/save files. */
     String basedir = System.getProperty("basedir");
+    String includedirs = System.getProperty("includedirs",basedir);
     /** List of paths to search when loading files. */
     List/*<String>*/ includePaths;
     /** Map between id numbers and relations. */
@@ -587,7 +589,16 @@ public abstract class Solver {
                 }
                 fileName = fileName.substring(1, fileName.length() - 1);
             }
-            in.registerReader(new LineNumberReader(new FileReader(basedir + fileName)));
+            if (!fileName.startsWith("/")) {
+                String[] dirs = includedirs.split(System.getProperty("path.separator"));
+                for (int i=0; i<dirs.length; i++) {
+                    if ((new File(dirs[i],fileName)).exists()) {
+                        fileName = dirs[i]+System.getProperty("file.separator")+fileName;
+                        break;
+                    }
+                }
+            }
+            in.registerReader(new LineNumberReader(new FileReader(fileName)));
         } else if (s.startsWith(".split_all_rules")) {
             boolean b = true;
             int index = ".split_all_rules".length() + 1;
