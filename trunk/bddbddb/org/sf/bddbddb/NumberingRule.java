@@ -118,6 +118,7 @@ public class NumberingRule extends InferenceRule {
             Assert.UNREACHABLE("Can't put numbering in a cycle.");
             return false;
         }
+        if (solver.NOISY) solver.out.println("Applying numbering rule:\n   " + this);
         long time = System.currentTimeMillis();
         if (numberingType.equals("scc"))
             pn = new SCCPathNumbering();
@@ -126,6 +127,7 @@ public class NumberingRule extends InferenceRule {
         else
             Assert.UNREACHABLE("Unknown numbering type "+numberingType);
         BigInteger num = pn.countPaths(rg);
+        if (solver.NOISY) solver.out.println("Done counting paths ("+(System.currentTimeMillis()-time)+" ms)");
         Iterator i = bottom.variables.iterator();
         Variable v1, v2;
         v1 = (Variable) i.next();
