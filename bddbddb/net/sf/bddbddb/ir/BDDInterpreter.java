@@ -27,7 +27,6 @@ public class BDDInterpreter extends Interpreter {
             opInterpreter = new BDDOperationInterpreter((BDDSolver) ir.solver, ((BDDSolver) ir.solver).getBDDFactory());
         }
     }
-
     public void interpret() {
         if (ir.DOMAIN_ASSIGNMENT)
             ((BDDOperationInterpreter)opInterpreter).needsDomainMatch = false;

@@ -100,7 +100,7 @@ public class IR {
         }
         return new IR(solver, ifg);
     }
-
+    //public void optimize(){}
     public void optimize() {
         if (CONSTANTPROP) {
             System.out.print("Running ConstantProp...");
@@ -143,10 +143,11 @@ public class IR {
             doPeephole(graph.getIterationList());
             System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
+        //printIR();
         if (DOMAIN_ASSIGNMENT) {
             System.out.print("Running DomainAssignment...");
             long time = System.currentTimeMillis();
-            DataflowSolver solver = new DataflowSolver();
+           /* DataflowSolver solver = new DataflowSolver();
             PartialOrder p = new PartialOrder(this);
             solver.solve(p, graph.getIterationList());
             IndexMap relations =  this.solver.getRelations();
@@ -155,9 +156,9 @@ public class IR {
             for(Iterator it = relations.iterator(); it.hasNext(); ){
                 Relation r = (Relation) it.next();
                 constraintsMap[r.id] = r.getConstraints();
-            }
-            DomainAssignment ass = new PartialOrderDomainAssignment(this.solver, constraintsMap);
-            //DomainAssignment ass = new UFDomainAssignment(this.solver);
+            }*/
+            //DomainAssignment ass = new PartialOrderDomainAssignment(this.solver, constraintsMap);
+            DomainAssignment ass = new UFDomainAssignment(this.solver);
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
             ass.doAssignment();
@@ -181,8 +182,9 @@ public class IR {
         //printIR();
       
         while (true) {
+        
             boolean changed = false;
-            if (PRE) {
+            if (false && PRE) {
                 if (TRACE) System.out.print("Running Partial Redundancy...");
                 long time = System.currentTimeMillis();
                 IRPass pre = new PartialRedundancy(this);
