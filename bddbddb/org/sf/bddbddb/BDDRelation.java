@@ -3,18 +3,18 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
-
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
@@ -259,7 +259,7 @@ public class BDDRelation extends Relation {
     public void load() throws IOException {
         load(solver.basedir + name + ".bdd");
         if (solver.NOISY) solver.out.println("Loaded BDD from file: " + name + ".bdd " + relation.nodeCount() + " nodes, " + dsize() + " elements.");
-        if (solver.NOISY) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
+        if (solver.TRACE) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
     }
 
     /**
@@ -277,13 +277,14 @@ public class BDDRelation extends Relation {
             String s = in.readLine();
             if (s != null && s.startsWith("# ")) {
                 // Parse BDD information.
-                checkInfoLine(filename, s, true);
+                List fileDomains = checkInfoLine(filename, s, false, true);
                 in.mark(4096);
-                for (Iterator i = domains.iterator(); i.hasNext(); ) {
+                List fileDomainList = new ArrayList(fileDomains.size());
+                for (Iterator i = fileDomains.iterator(); i.hasNext(); ) {
                     BDDDomain d = (BDDDomain) i.next();
                     String s2 = in.readLine();
                     if (!s2.startsWith("# ")) {
-                        System.err.println("BDD file \""+filename+"\" is missing variable assignment line for "+d);
+                        System.err.println("BDD file \""+filename+"\" has no variable assignment line for "+d);
                         in.reset();
                         break;
                     }
@@ -292,31 +293,26 @@ public class BDDRelation extends Relation {
                         String msg = "BDD file \""+filename+"\" has an invalid BDD information line";
                         throw new IOException(msg);
                     }
-                    String dName = st.nextToken();
-                    if (!dName.equals(d.getName())) {
-                        String msg = "in file \""+filename+"\", domain "+dName+" does not match expected domain "+d;
-                        throw new IOException(msg);
-                    }
                     int[] vars = d.vars();
                     for (int j = 0; j < vars.length; ++j) {
                         if (!st.hasMoreTokens()) {
-                            String msg = "in file \""+filename+"\", not enough bits for domain "+dName;
+                            String msg = "in file \""+filename+"\", not enough bits for domain "+d;
                             throw new IOException(msg);
                         }
                         int k = Integer.parseInt(st.nextToken());
                         if (vars[j] != k) {
-                            String msg = "in file \""+filename+"\", bit "+j+" for domain "+dName+" ("+k+") does not match expected ("+vars[j]+")";
+                            String msg = "in file \""+filename+"\", bit "+j+" for domain "+d+" ("+k+") does not match expected ("+vars[j]+")";
                             throw new IOException(msg);
                         }
                     }
                     if (st.hasMoreTokens()) {
-                        String msg = "in file \""+filename+"\", too many bits for domain "+dName;
+                        String msg = "in file \""+filename+"\", too many bits for domain "+d;
                         throw new IOException(msg);
                     }
                 }
                 r2 = solver.bdd.load(in);
             } else {
-                System.err.println("BDD file \""+filename+"\" is missing header line.");
+                System.err.println("BDD file \""+filename+"\" has no header line.");
                 r2 = solver.bdd.load(filename);
             }
         } finally {
@@ -384,37 +380,55 @@ public class BDDRelation extends Relation {
      * 
      * @param filename  filename to use in error message
      * @param s  domain info line
+     * @param order  true if we want to check the order, false otherwise
      * @param ex  true if we want to throw an exception, false if we just want to print to stderr
      * @throws IOException
      */
-    void checkInfoLine(String filename, String s, boolean ex) throws IOException {
+    List checkInfoLine(String filename, String s, boolean order, boolean ex) throws IOException {
         StringTokenizer st = new StringTokenizer(s.substring(2));
+        List domainList = new ArrayList(domains.size());
         Iterator i = domains.iterator();
         while (st.hasMoreTokens()) {
             String msg = null;
-            String dname = st.nextToken(":");
+            String dname = st.nextToken(": ");
             int dbits = Integer.parseInt(st.nextToken());
-            BDDDomain d = (BDDDomain) i.next();
-            if (d.getName().equals(dname)) {
-                msg = "in file \""+filename+"\", domain "+dname+" does not match expected domain "+d;
-            } else if (d.varNum() != dbits) {
-                msg = "in file \""+filename+"\", number of bits for domain "+dname+" ("+dbits +") does not match expected ("+d.varNum()+")";
+            if (domainList.size() >= domains.size()) {
+                msg = "extra domain "+dname;
+            } else {
+                BDDDomain d = solver.getBDDDomain(dname);
+                if (d == null) {
+                    msg = "unknown domain "+dname;
+                } else if (order) {
+                    BDDDomain d2 = (BDDDomain) domains.get(domainList.size());
+                    if (d != d2) {
+                        msg = "domain "+dname+" does not match expected domain "+d2;
+                    }
+                } else if (!domains.contains(d)) {
+                    msg = "domain "+dname+" is not in domain set "+domains;
+                }
+                if (msg != null && d.varNum() != dbits) {
+                    msg = "number of bits for domain "+dname+" ("+dbits +") does not match expected ("+d.varNum()+")";
+                }
+                if (d != null) domainList.add(d);
             }
             if (msg != null) {
-                if (ex) throw new IOException(msg);
-                else System.err.println("WARNING: "+msg);
+                if (ex) throw new IOException("in file \""+filename+"\", "+msg);
+                else System.err.println("WARNING: in file \""+filename+"\", "+msg);
             }
         }
-        if (i.hasNext()) {
+        if (domainList.size() != domains.size()) {
+            Collection c = new ArrayList(domains);
+            c.removeAll(domainList);
             StringBuffer sb = new StringBuffer();
             sb.append("file \""+filename+"\" is missing domains:");
-            do {
-                sb.append(" "+i.next());
-            } while (i.hasNext());
+            for (Iterator j = c.iterator(); j.hasNext(); ) {
+                sb.append(" "+j.next());
+            }
             String msg = sb.toString();
             if (ex) throw new IOException(msg);
             else System.err.println("WARNING: "+msg); 
         }
+        return domainList;
     }
 
     /* (non-Javadoc)
@@ -431,7 +445,7 @@ public class BDDRelation extends Relation {
             if (!s.startsWith("# ")) {
                 System.err.println("Tuple file \""+filename+"\" is missing header line, using default.");
             } else {
-                checkInfoLine(filename, s, false);
+                checkInfoLine(filename, s, true, true);
             }
             for (;;) {
                 s = in.readLine();
