@@ -35,10 +35,14 @@ public class DeadCode implements IRPass {
      * @see org.sf.bddbddb.dataflow.IRPass#run()
      */
     public boolean run() {
+        System.out.print("Running DeadCode...");
+        long time = System.currentTimeMillis();
         IterationList list = ir.graph.getIterationList();
         DataflowSolver solver = new DataflowSolver();
         solver.solve(liveness, list);
-        return deadCodeElimination(list);
+        boolean result = deadCodeElimination(list);
+        System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
+        return result;
     }
 
     boolean deadCodeElimination(IterationList list) {
