@@ -1,4 +1,4 @@
-MODULES = .
+MODULES = org
 SUPPORT_LIBS = javabdd.jar
 JAR_NAME = bddbddb.jar
 
@@ -65,7 +65,7 @@ commit:
 
 ### RULES FOR BUILDING JAVADOC
 #
-javadoc:
+javadoc: $(ALLJAVA)
 	$(JAVADOC) -classpath $(BUILD_CLASSPATH) -breakiterator -d javadoc $(ALLPKGNAMES)
 
 
