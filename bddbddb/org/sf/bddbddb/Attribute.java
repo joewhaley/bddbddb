@@ -13,6 +13,7 @@ public class Attribute {
     String attributeName;
     Domain attributeDomain;
     String attributeOptions;
+    Relation relation;
 
     /**
      * @param name
@@ -41,19 +42,17 @@ public class Attribute {
         return attributeDomain;
     }
 
-    public boolean equals(Object o) {
-        if (o instanceof Attribute) {
-            Attribute that = (Attribute) o;
-            return attributeName.equals(that.attributeName) && attributeDomain.name.equals(that.attributeDomain.name)
-                && attributeOptions.equals(that.attributeOptions);
-        }
-        return false;
-    }
-
     /**
      * @return
      */
     public String getOptions() {
         return attributeOptions;
+    }
+    
+    /**
+     * @return
+     */
+    public Relation getRelation() {
+        return relation;
     }
 }

@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
 
@@ -18,13 +19,13 @@ import org.sf.bddbddb.ir.Operation;
  */
 public class Rename extends HighLevelOperation {
     Relation r0, r1;
-    Map/* <Pair,Attribute> */renames;
+    Map/*<Attribute,Attribute>*/ renames;
 
     /**
      * @param r0
      * @param r1
      */
-    public Rename(Relation r0, Relation r1, Map/* <Pair,Attribute> */renames) {
+    public Rename(Relation r0, Relation r1, Map/*<Attribute,Attribute>*/ renames) {
         super();
         this.r0 = r0;
         this.r1 = r1;
@@ -52,9 +53,15 @@ public class Rename extends HighLevelOperation {
         for (Iterator i = renames.entrySet().iterator(); i.hasNext();) {
             Map.Entry p = (Map.Entry) i.next();
             sb.append(',');
-            sb.append(p.getKey().toString());
+            Attribute a1 = (Attribute) p.getKey();
+            sb.append(a1.getRelation());
+            sb.append('.');
+            sb.append(a1.toString());
             sb.append("->");
-            sb.append(p.getValue().toString());
+            Attribute a2 = (Attribute) p.getValue();
+            sb.append(a2.getRelation());
+            sb.append('.');
+            sb.append(a2.toString());
         }
         sb.append(")");
         return sb.toString();

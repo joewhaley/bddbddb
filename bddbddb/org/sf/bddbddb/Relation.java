@@ -3,8 +3,10 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.Iterator;
 import java.util.List;
 import java.io.IOException;
+import org.sf.bddbddb.util.Assert;
 
 /**
  * Relation
@@ -14,7 +16,7 @@ import java.io.IOException;
  */
 public abstract class Relation {
     String name;
-    List/* <Attribute> */attributes;
+    List/*<Attribute>*/ attributes;
     Relation negated;
     public int id;
 
@@ -29,6 +31,10 @@ public abstract class Relation {
         this.name = name;
         this.attributes = attributes;
         this.id = solver.registerRelation(this);
+        for (Iterator i = attributes.iterator(); i.hasNext(); ) {
+            Attribute a = (Attribute) i.next();
+            if (a.relation == null) a.relation = this;
+        }
     }
 
     public abstract void initialize();

@@ -154,6 +154,7 @@ public class IterationList implements IterationElement {
     public boolean interpret(Interpreter interpret) {
         boolean everChanged = false;
         boolean change;
+        long elapsedTime = 0L, currentTime = System.currentTimeMillis();
         for (;;) {
             change = false;
             for (Iterator i = elements.iterator(); i.hasNext();) {
@@ -161,9 +162,11 @@ public class IterationList implements IterationElement {
                 if (TRACE) System.out.println(o);
                 if (o instanceof IterationList) {
                     IterationList list = (IterationList) o;
+                    elapsedTime += System.currentTimeMillis() - currentTime;
                     if (list.interpret(interpret)) {
                         change = true;
                     }
+                    currentTime = System.currentTimeMillis();
                 } else {
                     Operation op = (Operation) o;
                     BDDRelation dest = (BDDRelation) op.getRelationDest();
@@ -186,6 +189,8 @@ public class IterationList implements IterationElement {
             if (!isLoop()) break;
             getLoopEdge().interpret(interpret);
         }
+        elapsedTime += System.currentTimeMillis() - currentTime;
+        System.out.println(this+" time: "+elapsedTime);
         return everChanged;
     }
 
