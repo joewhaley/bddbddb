@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
+import jwutil.util.Assert;
 import net.sf.bddbddb.order.OrderConstraint.AfterConstraint;
 import net.sf.bddbddb.order.OrderConstraint.BeforeConstraint;
 import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;
@@ -44,7 +45,7 @@ public class OrderConstraintSet {
         if (set.contains(c)) return true;
         if (set.contains(c.getOpposite1())) return false;
         if (set.contains(c.getOpposite2())) return false;
-        if (c instanceof InterleaveConstraint) addInterleaveConstraint(c);
+        if (c instanceof InterleaveConstraint) addInterleaveConstraint((InterleaveConstraint) c);
         else addPrecedenceConstraint(c);
         return true;
     }
@@ -59,10 +60,10 @@ public class OrderConstraintSet {
     
     void addInterleaveConstraint(Object a, Object b) {
         if (a.equals(b)) return;
-        OrderConstraint o = OrderConstraint.makeInterleaveConstraint(a, b);
+        InterleaveConstraint o = (InterleaveConstraint) OrderConstraint.makeInterleaveConstraint(a, b);
         addInterleaveConstraint(o);
     }
-    void addInterleaveConstraint(OrderConstraint c) {
+    void addInterleaveConstraint(InterleaveConstraint c) {
         if (set.contains(c)) return;
         set.add(c);
         Collection c1 = objToConstraints.getValues(c.a);
@@ -73,6 +74,8 @@ public class OrderConstraintSet {
         addInterleaveConstraints(c.a, c.b, c2);
     }
     void addInterleaveConstraints(Object a, Object b, Collection ocs) {
+        // Make a backup to avoid ConcurrentModificationException
+        ocs = new ArrayList(ocs);
         for (Iterator i = ocs.iterator(); i.hasNext(); ) {
             OrderConstraint oc = (OrderConstraint) i.next();
             if (oc instanceof InterleaveConstraint) {
@@ -98,6 +101,7 @@ public class OrderConstraintSet {
         addPrecedenceConstraint(o);
     }
     void addPrecedenceConstraint(OrderConstraint c) {
+        Assert._assert(c instanceof BeforeConstraint || c instanceof AfterConstraint);
         if (set.contains(c)) return;
         set.add(c);
         Collection c1 = objToConstraints.getValues(c.a);
@@ -113,6 +117,8 @@ public class OrderConstraintSet {
         }
     }
     void addPrecedenceConstraints(Object a, Object b, Collection ocs) {
+        // Make a backup to avoid ConcurrentModificationException
+        ocs = new ArrayList(ocs);
         for (Iterator i = ocs.iterator(); i.hasNext(); ) {
             OrderConstraint oc = (OrderConstraint) i.next();
             Object c, d;

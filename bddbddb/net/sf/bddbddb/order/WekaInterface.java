@@ -55,16 +55,22 @@ public abstract class WekaInterface {
         
         private OrderAttribute(Object a, Object b) {
             super(a+","+b, my_nominal_values);
+            this.a = a;
+            this.b = b;
         }
         
-        public OrderConstraint getConstraint(weka.core.Instance i) {
-            int k = (int) i.value(this);
+        public OrderConstraint getConstraint(int k) {
             switch (k) {
                 case 0: return OrderConstraint.makePrecedenceConstraint(a, b);
                 case 1: return OrderConstraint.makeInterleaveConstraint(a, b);
                 case 2: return OrderConstraint.makePrecedenceConstraint(b, a);
                 default: return null;
             }
+        }
+        
+        public OrderConstraint getConstraint(weka.core.Instance i) {
+            int k = (int) i.value(this);
+            return getConstraint(k);
         }
 
     }

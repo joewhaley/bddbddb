@@ -73,6 +73,8 @@ public class BDDSolver extends Solver {
      */
     public String VARORDER = System.getProperty("bddvarorder", null);
 
+    public String TRIALFILE = System.getProperty("trialfile", null);
+    
     /**
      * Constructs a new BDD solver.  Also initializes the BDD library.
      */
@@ -100,7 +102,15 @@ public class BDDSolver extends Solver {
         initialize2(); // Do some more initialization after variable ordering is set.
         isInitialized = true;
         
-        fbo.loadTrials("trials.xml");
+        if (TRIALFILE == null && inputFilename != null) {
+            String sep = System.getProperty("file.separator");
+            int index1 = inputFilename.lastIndexOf(sep) + 1;
+            if (index1 == 0) index1 = inputFilename.lastIndexOf('/') + 1;
+            int index2 = inputFilename.lastIndexOf('.');
+            if (index1 < index2)
+                TRIALFILE = "trials_"+inputFilename.substring(index1, index2)+".xml";
+        }
+        if (TRIALFILE != null) fbo.loadTrials(TRIALFILE);
     }
 
     /**
