@@ -1066,9 +1066,11 @@ public abstract class Solver {
     InferenceRule parseRuleOptions(int lineNum, String s, InferenceRule ir, MyStringTokenizer st) {
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
-            if (option.equals("split") && !SPLIT_NO_RULES) {
-                if (TRACE) out.println("Splitting rule " + ir);
-                ir.split = true;
+            if (option.equals("split")) {
+                if (!SPLIT_NO_RULES) {
+                    if (TRACE) out.println("Splitting rule " + ir);
+                    ir.split = true;
+                }
             } else if (option.equals("number")) {
                 if (TRACE) out.println("Rule " + ir + " defines a numbering");
                 ir = createNumberingRule(ir);
