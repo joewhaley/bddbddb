@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,7 @@ import org.sf.javabdd.BDDDomain;
  */
 public class UFDomainAssignment extends DomainAssignment {
     UnionFind uf;
-    List neq_constraints;
+    LinkedHashSet neq_constraints;
     
     /**
      * @param s
@@ -38,7 +39,7 @@ public class UFDomainAssignment extends DomainAssignment {
     public UFDomainAssignment(Solver s) {
         super(s);
         uf = new UnionFind(16384);
-        neq_constraints = new LinkedList();
+        neq_constraints = new LinkedHashSet();
         this.initialize();
     }
 
@@ -159,15 +160,9 @@ public class UFDomainAssignment extends DomainAssignment {
                 Attribute a2 = (Attribute) k.next();
                 if (a1 == a2) continue;
                 if (a1.getDomain() != a2.getDomain()) continue;
-                Object rep1 = uf.find(a1);
-                Object rep2 = uf.find(a2);
-                Assert._assert(rep1 != rep2);
                 Pair p2 = new Pair(r, a2);
-                Pair p = new Pair(p1, p2);
-                if (neq_constraints.contains(p)) continue;
-                if (neq_constraints.contains(new Pair(p2, p1))) continue;
-                if (TRACE) System.out.println("New constraint: "+p);
-                neq_constraints.add(p);
+                boolean result = forceNotEqual(p1, p2);
+                Assert._assert(result);
             }
         }
     }
@@ -180,15 +175,28 @@ public class UFDomainAssignment extends DomainAssignment {
             if (TRACE) System.out.println("Cannot force, " + a1 + " = " + a2);
             return false;
         }
-        Pair p = new Pair(a1, a2);
-        if (neq_constraints.contains(p) || neq_constraints.contains(new Pair(a2, a1))) {
-            if (TRACE) System.out.println("Already " + a1 + " != " + a2);
-            return true;
+        LinkedList toAdd = new LinkedList();
+        for (Iterator i = neq_constraints.iterator(); i.hasNext(); ) {
+            Pair c = (Pair) i.next();
+            Object crep1 = uf.find(c.left);
+            Object crep2 = uf.find(c.right);
+            Assert._assert(crep1 != crep2);
+            if (crep1 != c.left || crep2 != c.right) {
+                i.remove();
+                c.left = crep1; c.right = crep2;
+                toAdd.add(c);
+            }
+            if (crep1 == rep1 && crep2 == rep2 ||
+                crep1 == rep2 && crep2 == rep1) {
+                if (TRACE) System.out.println("Already " + a1 + " != " + a2);
+                return true;
+            }
         }
-        neq_constraints.add(p);
+        neq_constraints.addAll(toAdd);
+        neq_constraints.add(new Pair(rep1, rep2));
         return true;
     }
-
+    
     boolean wouldBeLegal(Object a1, Object a2) {
         Object rep_1 = uf.find(a1);
         Object rep_2 = uf.find(a2);
