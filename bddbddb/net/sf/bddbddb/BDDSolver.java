@@ -66,7 +66,7 @@ public class BDDSolver extends Solver {
      * BDD minimum free parameter.  This tells the BDD library when to grow the
      * node table.  You can set this with "-Dbddminfree=xxx"
      */
-    double BDDMINFREE = Integer.parseInt(System.getProperty("bddminfree", ".20"));
+    double BDDMINFREE = Double.parseDouble(System.getProperty("bddminfree", ".20"));
     
     /**
      * BDD variable ordering.
@@ -79,9 +79,8 @@ public class BDDSolver extends Solver {
     public BDDSolver() {
         super();
         System.out.println("Initializing BDD library (" + BDDNODES + " nodes, cache size " + BDDCACHE + ", min free " + BDDMINFREE + "%)");
-        bdd = BDDFactory.init(BDDNODES, BDDCACHE);
+        bdd = BDDFactory.init(1000, BDDCACHE);
         fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
-        bdd.setMaxIncrease(BDDNODES / 2);
         bdd.setMinFreeNodes(BDDMINFREE);
         fbo = new FindBestDomainOrder(this);
     }
@@ -151,6 +150,8 @@ public class BDDSolver extends Solver {
             int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
             bdd.setVarOrder(varOrder);
             System.out.println("done.");
+            // Grow variable table after setting var order.
+            bdd.setNodeTableSize(BDDNODES);
         }
     }
 
