@@ -76,4 +76,10 @@ public abstract class Interpreter {
      * @return
      */
     public abstract Object perform(Invert op);
+    
+    /**
+     * @param op
+     * @return
+     */
+    public abstract Object perform(Copy op);
 }

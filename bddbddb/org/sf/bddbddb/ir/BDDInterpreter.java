@@ -220,4 +220,17 @@ public class BDDInterpreter extends Interpreter {
         return null;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Interpreter#perform(org.sf.bddbddb.ir.Copy)
+     */
+    public Object perform(Copy op) {
+        BDDRelation r0 = (BDDRelation) op.r0;
+        BDDRelation r1 = (BDDRelation) op.r1;
+        if (TRACE) System.out.println("   Id "+r1);
+        BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
+        r0.setBDD(r);
+        if (TRACE) System.out.println("   ---> Nodes: "+r.nodeCount());
+        return null;
+    }
+
 }
