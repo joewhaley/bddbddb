@@ -114,13 +114,13 @@ public class BDDRelation extends Relation {
     }
     
     public void load() throws IOException {
-        load(name+".bdd");
+        load(solver.basedir+name+".bdd");
         if (solver.NOISY) solver.out.println("Loaded BDD from file: "+name+".bdd "+relation.nodeCount()+" nodes, "+dsize()+" elements.");
         if (solver.NOISY) solver.out.println("Domains of loaded relation:"+activeDomains(relation));
     }
     
     public void loadTuples() throws IOException {
-        loadTuples(name+".tuples");
+        loadTuples(solver.basedir+name+".tuples");
         if (solver.NOISY) solver.out.println("Loaded tuples from file: "+name+".tuples");
         if (solver.NOISY) solver.out.println("Domains of loaded relation:"+activeDomains(relation));
     }
@@ -197,7 +197,7 @@ public class BDDRelation extends Relation {
     }
     
     public void save() throws IOException {
-        save(name+".rbdd");
+        save(solver.basedir+name+".rbdd");
     }
     
     public void save(String filename) throws IOException {
@@ -207,17 +207,17 @@ public class BDDRelation extends Relation {
 
     public void saveNegated() throws IOException {
         System.out.println("Relation "+this+": "+relation.not().nodeCount()+" nodes");
-        solver.bdd.save("not"+name+".rbdd", relation.not());
+        solver.bdd.save(solver.basedir+"not"+name+".rbdd", relation.not());
     }
     
     public void saveTuples() throws IOException {
         System.out.println("Relation "+this+": "+relation.nodeCount()+" nodes, "+dsize()+" elements");
-        saveTuples(name+".rtuples", relation);
+        saveTuples(solver.basedir+name+".rtuples", relation);
     }
     
     public void saveNegatedTuples() throws IOException {
         System.out.println("Relation "+this+": "+relation.nodeCount()+" nodes");
-        saveTuples("not"+name+".rtuples", relation.not());
+        saveTuples(solver.basedir+"not"+name+".rtuples", relation.not());
     }
     
     public void saveTuples(String fileName, BDD relation) throws IOException {
