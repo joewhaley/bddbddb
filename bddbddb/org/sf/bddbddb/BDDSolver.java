@@ -139,10 +139,6 @@ public class BDDSolver extends Solver {
             BDDRelation r = (BDDRelation) i.next();
             r.initialize2();
         }
-        for (Iterator i = getComparisonRelations().iterator(); i.hasNext();) {
-            BDDRelation r = (BDDRelation) i.next();
-            r.initialize2();
-        }
     }
 
     /**
@@ -405,53 +401,54 @@ public class BDDSolver extends Solver {
         return name + '#' + relations.size();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#createEquivalenceRelation(org.sf.bddbddb.Domain)
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#createEquivalenceRelation(org.sf.bddbddb.Domain, org.sf.bddbddb.Domain)
      */
-    Relation createEquivalenceRelation(Domain fd) {
-        String name = fd + "_eq";
-        Attribute a1 = new Attribute(fd + "1", fd, "");
-        Attribute a2 = new Attribute(fd + "2", fd, "");
+    Relation createEquivalenceRelation(Domain fd1, Domain fd2) {
+        String name = fd1 + "_eq_" + fd2;
+        Attribute a1 = new Attribute(fd1 + "_1", fd1, "");
+        Attribute a2 = new Attribute(fd2 + "_2", fd2, "");
         BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        r.special_type = BDDRelation.EQ;
         return r;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#createNotEquivalenceRelation(org.sf.bddbddb.Domain)
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#createLessThanRelation(org.sf.bddbddb.Domain, org.sf.bddbddb.Domain)
      */
-    Relation createNotEquivalenceRelation(Domain fd) {
-        String name = fd + "_neq";
-        Attribute a1 = new Attribute(fd + "1", fd, "");
-        Attribute a2 = new Attribute(fd + "2", fd, "");
+    Relation createLessThanRelation(Domain fd1, Domain fd2) {
+        String name = fd1 + "_lt_" + fd2;
+        Attribute a1 = new Attribute(fd1 + "_1", fd1, "");
+        Attribute a2 = new Attribute(fd2 + "_2", fd2, "");
         BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        r.special_type = BDDRelation.LT;
+        return r;
+    }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#createGreaterThanRelation(org.sf.bddbddb.Domain, org.sf.bddbddb.Domain)
+     */
+    Relation createGreaterThanRelation(Domain fd1, Domain fd2) {
+        String name = fd1 + "_gt_" + fd2;
+        Attribute a1 = new Attribute(fd1 + "_1", fd1, "");
+        Attribute a2 = new Attribute(fd2 + "_2", fd2, "");
+        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        r.special_type = BDDRelation.GT;
         return r;
     }
     
     /* (non-Javadoc)
-     * @see org.sf.bddbddb.Solver#createLessThanRelation(org.sf.bddbddb.Domain)
+     * @see org.sf.bddbddb.Solver#createMapRelation(org.sf.bddbddb.Domain, org.sf.bddbddb.Domain)
      */
-    Relation createLessThanRelation(Domain fd) {
-        String name = fd + "_lt";
-        Attribute a1 = new Attribute(fd + "1", fd, "");
-        Attribute a2 = new Attribute(fd + "2", fd, "");
+    Relation createMapRelation(Domain fd1, Domain fd2) {
+        String name = "map_" + fd1 + "_" + fd2;
+        Attribute a1 = new Attribute(fd1.name, fd1, "");
+        Attribute a2 = new Attribute(fd2.name, fd2, "");
         BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        r.special_type = BDDRelation.MAP;
         return r;
     }
-
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.Solver#createGreaterThanRelation(org.sf.bddbddb.Domain)
-     */
-    Relation createGreaterThanRelation(Domain fd) {
-        String name = fd + "_gt";
-        Attribute a1 = new Attribute(fd + "1", fd, "");
-        Attribute a2 = new Attribute(fd + "2", fd, "");
-        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
-        return r;
-    }
+    
     /*
      * (non-Javadoc)
      * 

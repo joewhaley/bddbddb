@@ -6,7 +6,6 @@ package org.sf.bddbddb;
 import java.io.BufferedReader;
 import java.io.IOException;
 import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.IndexedMap;
 
 /**
  * A Domain represents a domain in bddbddb.
@@ -30,7 +29,7 @@ public class Domain {
     /**
      * Optional map from element numbers to string representations.
      */
-    protected IndexedMap map;
+    protected IndexMap map;
 
     /**
      * Construct a new domain.
