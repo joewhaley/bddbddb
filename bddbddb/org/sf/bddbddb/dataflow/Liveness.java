@@ -14,10 +14,15 @@ import org.sf.bddbddb.util.BitString;
  */
 public class Liveness extends OperationProblem {
     public IR ir;
+
     public LivenessFacts currentFacts;
+
     IterationList currentLocation;
+
     Operation lastOp;
+
     int numRelations;
+
     boolean TRACE = false;
 
     public Liveness(IR ir) {
@@ -32,6 +37,7 @@ public class Liveness extends OperationProblem {
     public Fact getBoundary() {
         return new LivenessFacts();
     }
+
     public class LivenessFacts extends OperationFacts {
         public OperationFacts create() {
             return new LivenessFacts();
@@ -64,9 +70,12 @@ public class Liveness extends OperationProblem {
             LivenessFact thisLastFact = (LivenessFact) getLastFact();
             LivenessFact thatLastFact = (LivenessFact) that.getLastFact();
             if (thisLastFact != null) {
-                LivenessFact resultLastFact = new LivenessFact(numRelations);
-                resultLastFact.fact.or(thisLastFact.fact);
-                resultLastFact.fact.or(thatLastFact.fact);
+                LivenessFact resultLastFact = (LivenessFact) thisLastFact
+                    .join(thatLastFact);
+                ;
+                // resultLastFact.fact.or(thisLastFact.fact);
+                //resultLastFact.fact.or(thatLastFact.fact);
+
                 result.setLastOp(that.lastOp);
                 result.setLastFact(resultLastFact);
             }
@@ -109,9 +118,9 @@ public class Liveness extends OperationProblem {
             return true;
         }
     }
-    public class LivenessFact extends UnionBitVectorFact
-        implements
-            OperationFact {
+
+    public class LivenessFact extends UnionBitVectorFact implements
+        OperationFact {
         public LivenessFact(BitString fact) {
             super(fact);
         }
@@ -145,9 +154,12 @@ public class Liveness extends OperationProblem {
     public TransferFunction getTransferFunction(Operation op) {
         return new LivenessTF(op);
     }
+
     public class LivenessTF extends TransferFunction {
         Operation op;
+
         LivenessFact lastFact;
+
         LivenessFact currFact;
 
         public LivenessTF(Operation op) {
@@ -161,7 +173,7 @@ public class Liveness extends OperationProblem {
             LivenessFact newFact = new LivenessFact(numRelations);
             if (lastFact != null) newFact.fact.copyBits(lastFact.fact);
             //kill
-            Relation r = op.getDest();
+            Relation r = op.getRelationDest();
             if (r != null) newFact.fact.clear(r.id);
             //gen
             List srcs = op.getSrcs();

@@ -11,6 +11,7 @@ import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.dataflow.Problem.Fact;
 import org.sf.bddbddb.dataflow.Problem.TransferFunction;
 import org.sf.bddbddb.ir.Operation;
+import org.sf.bddbddb.ir.dynamic.If;
 import org.sf.bddbddb.util.Assert;
 
 /**
@@ -21,6 +22,7 @@ import org.sf.bddbddb.util.Assert;
  */
 public class DataflowSolver {
     boolean TRACE = false;
+
     /** Matches blocks to their dataflow information. */
     Map/* <IterationList,Fact> */blockToFact;
 
@@ -41,11 +43,16 @@ public class DataflowSolver {
     public DataflowIterator getIterator(Problem p, IterationList g) {
         return new DataflowIterator(p, g);
     }
+
     public class DataflowIterator implements ListIterator {
         Problem p;
+
         Fact fact;
+
         IterationList block;
+
         ListIterator ops;
+
         DataflowIterator nested;
 
         public DataflowIterator(Problem p, IterationList block) {
@@ -157,13 +164,33 @@ public class DataflowSolver {
             for (Iterator i = p.direction() ? g.iterator() : g
                 .reverseIterator(); i.hasNext();) {
                 Object o = i.next();
-                if (o instanceof IterationList) {
-                    IterationList list = (IterationList) o;
+                if (o instanceof IterationList || o instanceof If) {
+                    IterationList list = null;
+                    Fact preIfFact = null;
+                    if (o instanceof If) {
+                        if (p.direction()) {
+                            TransferFunction tf = p
+                                .getTransferFunction((Operation) o);
+                            currentFact = tf.apply(currentFact);
+                        }
+                        preIfFact = currentFact.copy(g);
+                        list = ((If) o).getBlock();
+                    } else {
+                        list = (IterationList) o;
+                    }
                     if (TRACE) System.out.println("Entering " + list);
                     currentFact.setLocation(list);
                     currentFact = solve(currentFact, p, list);
                     currentFact.setLocation(g);
                     if (TRACE) System.out.println("Leaving " + list);
+                    if (o instanceof If) {
+                        currentFact = preIfFact.join(currentFact);
+                        if (!p.direction()) {
+                            TransferFunction tf = p
+                                .getTransferFunction((Operation) o);
+                            currentFact = tf.apply(currentFact);
+                        }
+                    }
                 } else {
                     Operation op = (Operation) o;
                     if (TRACE) System.out.println("   Operation: " + op);

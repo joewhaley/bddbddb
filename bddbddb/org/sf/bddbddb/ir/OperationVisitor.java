@@ -3,6 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
+import org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor;
 import org.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor;
 import org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor;
 
@@ -12,6 +13,7 @@ import org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor;
  * @author John Whaley
  * @version $Id$
  */
-public interface OperationVisitor extends HighLevelOperationVisitor, LowLevelOperationVisitor {
-    
+public interface OperationVisitor extends HighLevelOperationVisitor,
+    LowLevelOperationVisitor, DynamicOperationVisitor {
+
 }
