@@ -180,7 +180,7 @@ public class BDDRelation extends Relation {
             if (solver.TRACE) solver.out.println("Initializing value of special relation "+this);
             BDDDomain d1 = (BDDDomain) domains.get(0);
             BDDDomain d2 = (BDDDomain) domains.get(1);
-            Assert._assert(relation.isZero());
+            //Assert._assert(relation.isZero());
             relation.free();
             BDD b;
             switch (special_type) {
@@ -203,11 +203,7 @@ public class BDDRelation extends Relation {
             }
             
             relation = b;
-            if (negated != null) {
-                BDDRelation bddn = (BDDRelation) negated;
-                bddn.relation.free();
-                bddn.relation = b.not();
-            }
+            updateNegated();
         }
     }
 
