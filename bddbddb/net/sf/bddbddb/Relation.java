@@ -164,7 +164,7 @@ public abstract class Relation {
     /**
      * Return an iterator over the tuples of this relation.
      * 
-     * @return iterator of long[]
+     * @return iterator of BigInteger[]
      */
     public abstract TupleIterator iterator();
 
@@ -174,7 +174,7 @@ public abstract class Relation {
      * 
      * @param k
      *            zero-based field number
-     * @return iterator of long[]
+     * @return iterator of BigInteger[]
      */
     public abstract TupleIterator iterator(int k);
 
