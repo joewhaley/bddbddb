@@ -609,6 +609,7 @@ public class BDDInferenceRule extends InferenceRule {
         if (bottomRename != null) {
             if (solver.TRACE) {
                 solver.out.print("Result domains: "+domainsOf(result)+" -> ");
+                ttime = System.currentTimeMillis();
             }
             result.replaceWith(bottomRename);
             if (solver.TRACE) {
