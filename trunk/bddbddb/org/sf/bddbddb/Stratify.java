@@ -80,6 +80,13 @@ public class Stratify {
         for (Iterator i = necessary.iterator(); i.hasNext(); ) {
             Object o = i.next();
             if (o instanceof Relation) allRelations.add(o);
+            else if (o instanceof InferenceRule) {
+                InferenceRule ir = (InferenceRule) o;
+                if (ir.top.isEmpty()) {
+                    allRelations.add(ir);
+                    inputs.add(ir);
+                }
+            }
         }
         
         InferenceRule.DependenceNavigator depNav_orig = new InferenceRule.DependenceNavigator(depNav);
@@ -99,6 +106,19 @@ public class Stratify {
             // We can't use the SCCs in stratumSccs because they have links to later strata.
             SCComponent first = breakIntoSCCs(stratumNodes, depNav2);
             firstSCCs.add(first);
+            
+            if (i == 1) {
+                // We have computed all rules with no rhs, so remove them from "inputs".
+                for (Iterator j = inputs.iterator(); j.hasNext(); ) {
+                    Object o = j.next();
+                    if (o instanceof InferenceRule) {
+                        InferenceRule ir = (InferenceRule) o;
+                        if (ir.top.isEmpty()) {
+                            j.remove();
+                        }
+                    }
+                }
+            }
             
             // Any relations that have been totally computed are inputs to the
             // next stratum.
@@ -170,8 +190,11 @@ public class Stratify {
         Set stratum = new HashSet();
         for (Iterator i = sccs.iterator(); i.hasNext(); ) {
             SCComponent o = (SCComponent) i.next();
+            if (TRACE_FULL) out.println("Checking if "+o+" is an input.");
             for (Iterator j = inputs.iterator(); j.hasNext(); ) {
-                if (o.contains(j.next())) {
+                Object o2 = j.next();
+                if (o.contains(o2)) {
+                    if (TRACE_FULL) out.println("SCC contains input "+o2+", adding SCC to stratum.");
                     w.add(o);
                     stratum.add(o);
                     break;
@@ -361,16 +384,19 @@ public class Stratify {
     
     public void solve() {
         
+        Iterator i;
         Set inputs = new HashSet();
         inputs.addAll(solver.relationsToLoad);
         inputs.addAll(solver.relationsToLoadTuples);
         inputs.addAll(solver.equivalenceRelations.values());
         inputs.addAll(solver.notequivalenceRelations.values());
-        Iterator i = solver.rules.iterator();
-        while (i.hasNext()) {
-            InferenceRule ir = (InferenceRule) i.next();
-            if (ir.top.isEmpty()) {
-                inputs.add(ir.bottom.relation);
+        if (false) {
+            i = solver.rules.iterator();
+            while (i.hasNext()) {
+                InferenceRule ir = (InferenceRule) i.next();
+                if (ir.top.isEmpty()) {
+                    inputs.add(ir.bottom.relation);
+                }
             }
         }
         
