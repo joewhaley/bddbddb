@@ -94,6 +94,8 @@ returnNewObject(i) :- IE(i,m), getConstructor(m). modifies mapIH
 hT(h,t) :- IE(i,m), getConstructor(m), Iret(i,v), mapIH(i,h), vT(v,t).
 returnNewObject(i) :- IE(i,m), getConstructors(m). modifies mapIH
 hT(h,t) :- IE(i,m), getConstructors(m), Iret(i,v), mapIH(i,h), vT(v,t).
+returnNewObject(i) :- IE(i,m), getField(m). modifies mapIH
+hT(h,t) :- IE(i,m), getField(m), Iret(i,v), mapIH(i,h), vT(v,t).
 returnNewObject(i) :- IE(i,m), newInstance(m). modifies mapIH
 
 classObjectType (heap:H0, type:T0) outputtuples
@@ -121,10 +123,10 @@ hP(h,f,h2) :- constructorObjectType(h,_), f = "null", h = h2.
 fieldObject (h:H0, f:F0) outputtuples
 
 fieldObject(h,f) :- getField(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToField(hc,f).
-S(v1,f,v2) :- IE(i,"java.lang.reflect.Field.put (Ljava/lang/Object;Ljava/lang/Object;)V"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
+S(v1,f,v2) :- IE(i,"java.lang.reflect.Field.set (Ljava/lang/Object;Ljava/lang/Object;)V"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
               actual(i,1,v1), actual(i,2,v2).
 L(v1,f,v2) :- IE(i,"java.lang.reflect.Field.get (Ljava/lang/Object;)Ljava/lang/Object;"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
-              actual(i,1,v1), actual(i,2,v2).
+              actual(i,1,v1), Iret(i,v2).
 
 leadsToForName (v:V0,i:I0) output
 leadsToForName(v,i) :- IE(i,m), forName(m), actual(i,1,v).
