@@ -13,17 +13,19 @@ import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.Stratify;
 import org.sf.bddbddb.dataflow.ConstantProp;
+import org.sf.bddbddb.dataflow.CopyProp;
 import org.sf.bddbddb.dataflow.DataflowSolver;
+import org.sf.bddbddb.dataflow.DeadCode;
 import org.sf.bddbddb.dataflow.DefUse;
+import org.sf.bddbddb.dataflow.IRPass;
 import org.sf.bddbddb.dataflow.Liveness;
+import org.sf.bddbddb.dataflow.PartialRedundancy;
 import org.sf.bddbddb.dataflow.Problem;
 import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
 import org.sf.bddbddb.dataflow.DefUse.DefUseFact;
-import org.sf.bddbddb.dataflow.Liveness.LivenessFact;
 import org.sf.bddbddb.ir.highlevel.BooleanOperation;
 import org.sf.bddbddb.ir.highlevel.Copy;
-import org.sf.bddbddb.ir.highlevel.Free;
 import org.sf.bddbddb.ir.highlevel.Load;
 import org.sf.bddbddb.ir.highlevel.Project;
 import org.sf.bddbddb.ir.highlevel.Rename;
@@ -37,17 +39,17 @@ import org.sf.javabdd.BDDFactory.BDDOp;
  * @author Collective
  */
 public class IR {
-
     public Solver solver;
-
     public IterationFlowGraph graph;
-
     boolean ALL_OPTS = !System.getProperty("allopts", "no").equals("no");
     boolean FREE_DEAD = ALL_OPTS || !System.getProperty("freedead", "no").equals("no");
     boolean CONSTANTPROP = ALL_OPTS || !System.getProperty("constantprop", "no").equals("no");
     boolean DEFUSE = ALL_OPTS || !System.getProperty("defuse", "no").equals("no");
-    boolean DOMAIN_ASSIGNMENT = ALL_OPTS || !System.getProperty("domainassign", "no").equals("no");
-
+    boolean PRE = ALL_OPTS || !System.getProperty("pre", "no").equals("no");
+    boolean COPYPROP = ALL_OPTS || !System.getProperty("copyprop", "no").equals("no");
+    boolean DEAD_CODE = ALL_OPTS || !System.getProperty("deadcode", "no").equals("no");
+    boolean DOMAIN_ASSIGNMENT = ALL_OPTS && !System.getProperty("domainassign", "no").equals("no")
+        || !System.getProperty("domainassign", "no").equals("no");
     boolean TRACE = false;
 
     public static IR create(Stratify s) {
@@ -55,8 +57,7 @@ public class IR {
     }
 
     public static IR create(Solver solver, List firstSCCs, MultiMap innerSCCs) {
-        IterationFlowGraph ifg = new IterationFlowGraph(solver.getRules(),
-            firstSCCs, innerSCCs);
+        IterationFlowGraph ifg = new IterationFlowGraph(solver.getRules(), firstSCCs, innerSCCs);
         IterationList list = ifg.expand();
         // Add load operations.
         if (!solver.getRelationsToLoad().isEmpty()) {
@@ -64,7 +65,7 @@ public class IR {
             IterationList loadList = new IterationList(false);
             for (Iterator j = solver.getRelationsToLoad().iterator(); j.hasNext();) {
                 Relation r = (Relation) j.next();
-                loadList.addElement(new Load(r, solver.basedir+r+".bdd", false));
+                loadList.addElement(new Load(r, solver.basedir + r + ".bdd", false));
             }
             list.addElement(0, loadList);
         }
@@ -72,10 +73,9 @@ public class IR {
         if (!solver.getRelationsToSave().isEmpty()) {
             Assert._assert(!list.isLoop());
             IterationList saveList = new IterationList(false);
-            for (Iterator j = solver.getRelationsToSave().iterator(); j
-                .hasNext();) {
+            for (Iterator j = solver.getRelationsToSave().iterator(); j.hasNext();) {
                 Relation r = (Relation) j.next();
-                saveList.addElement(new Save(r, solver.basedir+r+".bdd", false));
+                saveList.addElement(new Save(r, solver.basedir + r + ".bdd", false));
             }
             list.addElement(saveList);
         }
@@ -97,8 +97,7 @@ public class IR {
                     ConstantPropFacts f = (ConstantPropFacts) di.getFact();
                     Operation op2 = ((ConstantProp) problem).simplify(op, f);
                     if (op != op2) {
-                        if (TRACE) System.out.println("Replacing " + op
-                            + " with " + op2);
+                        if (TRACE) System.out.println("Replacing " + op + " with " + op2);
                         di.set(op2);
                     }
                 } else {
@@ -107,19 +106,38 @@ public class IR {
                 }
             }
         }
-
-        if (DEFUSE) {
-            while (doDefUse()) ;
+        while (true) {
+            if (TRACE) System.out.println("optimization pass:");
+            boolean changed = false;
+            if (PRE) {
+                IRPass pre = new PartialRedundancy(this);
+                boolean b = pre.run();
+                if (TRACE && b) System.out.println("IR changed after partial redundancy");
+                changed |= b;
+            }
+            if (COPYPROP) {
+                IRPass copy = new CopyProp(this);
+                boolean b = copy.run();
+                if (TRACE && b) System.out.println("IR changed after copy propagation");
+                changed |= b;
+            }
+            if (DEAD_CODE) {
+                IRPass deadCode = new DeadCode(this);
+                boolean b = deadCode.run();
+                if (TRACE && b) System.out.println("IR Changed after dead code elimination");
+                changed |= b;
+            }
+            if (DEFUSE) {
+                boolean b = doDefUse();
+                if (TRACE && b) System.out.println("IR Changed after Defuse");
+                changed |= b;
+            }
+            if (!changed) break;
         }
         doPeephole(graph.getIterationList());
         if (FREE_DEAD) {
-            DataflowSolver df_solver = new DataflowSolver();
-            Liveness problem = new Liveness(this);
-            IterationList list = graph.getIterationList();
-            df_solver.solve(problem, list);
-            DataflowIterator di = df_solver.getIterator(problem, list);
-            List srcs = new LinkedList();
-            doLiveness(list, srcs, problem);
+            IRPass liveness = new Liveness(this);
+            liveness.run();
         }
         if (DOMAIN_ASSIGNMENT) {
             DomainAssignment ass = new UFDomainAssignment(solver);
@@ -131,7 +149,7 @@ public class IR {
     }
 
     void cleanUpAfterAssignment(IterationList list) {
-        for (ListIterator i = list.iterator(); i.hasNext(); ) {
+        for (ListIterator i = list.iterator(); i.hasNext();) {
             Object o = i.next();
             if (o instanceof Rename) {
                 i.remove();
@@ -145,20 +163,19 @@ public class IR {
             }
         }
     }
-    
+
     void doPeephole(IterationList list) {
-        for (ListIterator i = list.iterator(); i.hasNext(); ) {
+        for (ListIterator i = list.iterator(); i.hasNext();) {
             Object o = i.next();
             if (o instanceof Copy) {
                 Copy op = (Copy) o;
-                if (op.getRelationDest() == op.getSrc())
-                    i.remove();
+                if (op.getRelationDest() == op.getSrc()) i.remove();
             } else if (o instanceof IterationList) {
                 doPeephole((IterationList) o);
             }
         }
     }
-    
+
     boolean doDefUse() {
         boolean change = false;
         DataflowSolver df_solver = new DataflowSolver();
@@ -167,8 +184,7 @@ public class IR {
         df_solver.solve(problem, list);
         DataflowIterator di = df_solver.getIterator(problem, list);
         List to_remove = new LinkedList();
-    outer:
-        while (di.hasNext()) {
+        outer : while (di.hasNext()) {
             Object o = di.next();
             if (TRACE) System.out.println("Next: " + o);
             if (o instanceof Operation) {
@@ -193,10 +209,11 @@ public class IR {
                         Operation op2 = (Operation) defs.iterator().next();
                         if (op2 instanceof BooleanOperation) {
                             BooleanOperation boolop = (BooleanOperation) op2;
-                            // check if this specific def reaches any other uses.
+                            // check if this specific def reaches any other
+                            // uses.
                             Set uses = problem.getUses(src);
-                            if (TRACE) System.out.println("Uses of "+src+": " + uses);
-                            for (Iterator i = uses.iterator(); i.hasNext(); ) {
+                            if (TRACE) System.out.println("Uses of " + src + ": " + uses);
+                            for (Iterator i = uses.iterator(); i.hasNext();) {
                                 Operation other = (Operation) i.next();
                                 if (other == p) continue;
                                 DefUseFact duf2 = (DefUseFact) problem.getFact(other);
@@ -205,10 +222,11 @@ public class IR {
                                 }
                             }
                             BDDOp bddop = boolop.getBDDOp();
-                            ApplyEx new_op = new ApplyEx((BDDRelation) p.getRelationDest(), (BDDRelation) boolop.getSrc1(), bddop, (BDDRelation) boolop.getSrc2());
+                            ApplyEx new_op = new ApplyEx((BDDRelation) p.getRelationDest(), (BDDRelation) boolop.getSrc1(), bddop,
+                                (BDDRelation) boolop.getSrc2());
                             if (TRACE) System.out.println("Replacing " + op + " with " + new_op);
                             di.set(new_op);
-                            if (TRACE) System.out.println("Marking "+boolop+" for deletion.");
+                            if (TRACE) System.out.println("Marking " + boolop + " for deletion.");
                             to_remove.add(boolop);
                         }
                     }
@@ -224,36 +242,8 @@ public class IR {
         }
         return change;
     }
-    
-    void doLiveness(IterationList list, List srcs, Liveness p) {
-        ListIterator it = list.iterator();
-        while (it.hasNext()) {
-            Object o = it.next();
-            if (TRACE) System.out.println("Next: " + o);
-            if (o instanceof Operation) {
-                Operation op = (Operation) o;
-                LivenessFact fact = (LivenessFact) p.getFact(op);
-                if (TRACE) System.out.println("Live: " + fact);
-                for (Iterator it2 = srcs.iterator(); it2.hasNext();) {
-                    Relation r = (Relation) it2.next();
-                    if (!fact.isAlive(r)) {
-                        Free free = new Free(r);
-                        if (TRACE) System.out.println("Adding a free for " + r);
-                        it.previous();
-                        it.add(free);
-                        it.next();
-                    }
-                }
-                srcs = op.getSrcs();
-            } else {
-                IterationList b = (IterationList) o;
-                doLiveness(b, srcs, p);
-            }
-        }
-    }
 
     public void interpret() {
-        //printIR();
         BDDInterpreter interpret = (BDDInterpreter) solver.getInterpreter();
         if (DOMAIN_ASSIGNMENT) interpret.needsDomainMatch = false;
         IterationList list = graph.getIterationList();
@@ -295,17 +285,17 @@ public class IR {
             }
         }
     }
+
     public String getRenames(Operation op) {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         if (r0 == null) return "";
         List srcs = op.getSrcs();
         StringBuffer sb = new StringBuffer();
-        for (Iterator i = srcs.iterator(); i.hasNext(); ) {
+        for (Iterator i = srcs.iterator(); i.hasNext();) {
             BDDRelation r2 = (BDDRelation) i.next();
             sb.append(Operation.getRenames(r2, r0));
         }
         if (sb.length() == 0) return "";
         return sb.substring(1);
     }
-    
 }

@@ -7,6 +7,5 @@ import org.sf.bddbddb.ir.lowlevel.LowLevelInterpreter;
 /**
  * @author Collective
  */
-public interface Interpreter extends OperationVisitor, HighLevelInterpreter,
-    LowLevelInterpreter, DynamicInterpreter {
+public interface Interpreter extends OperationVisitor, HighLevelInterpreter, LowLevelInterpreter, DynamicInterpreter {
 }
