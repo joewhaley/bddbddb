@@ -335,7 +335,7 @@ public class Interactive {
             }
             if (solver.NOISY) solver.out.println("Stratifying: ");
             long time = System.currentTimeMillis();
-            solver.stratify();
+            solver.stratify(false);
             time = System.currentTimeMillis() - time;
             if (solver.NOISY) solver.out.println("done. (" + time + " ms)");
             if (solver.NOISY) solver.out.println("Solving: ");

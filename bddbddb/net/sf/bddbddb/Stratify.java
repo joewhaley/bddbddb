@@ -33,6 +33,7 @@ import jwutil.util.Assert;
  */
 public class Stratify {
     boolean USE_NESTED_SCCS = true;
+    boolean NOISY;
     boolean TRACE;
     boolean TRACE_FULL = System.getProperty("tracestratify") != null;
     PrintStream out;
@@ -65,7 +66,7 @@ public class Stratify {
         Set unnecessary = new HashSet(solver.nameToRelation.values());
         unnecessary.addAll(solver.rules);
         unnecessary.removeAll(necessary);
-        if (!unnecessary.isEmpty()) {
+        if (NOISY && !unnecessary.isEmpty()) {
             System.out.println("Note: the following rules/relations are unused:");
             for (Iterator i = unnecessary.iterator(); i.hasNext();) {
                 System.out.println("    " + i.next());
