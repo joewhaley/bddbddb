@@ -6,6 +6,7 @@ package net.sf.bddbddb.order;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,12 +16,14 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
 
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.math.CombinationGenerator;
+import jwutil.math.Distributions;
 import jwutil.util.Assert;
 import net.sf.bddbddb.order.OrderConstraint.AfterConstraint;
 import net.sf.bddbddb.order.OrderConstraint.BeforeConstraint;
@@ -194,7 +197,7 @@ public class OrderConstraintSet {
      * @return  collection of interleaved elements, including o
      */
     Collection getInterleaved(Object o) {
-        Collection result = new LinkedList();
+        Collection result = new LinkedList(); // LinkedHashSet()
         result.add(o);
         Collection c = objToConstraints.getValues(o);
         if (c != null) {
@@ -231,6 +234,44 @@ public class OrderConstraintSet {
         return false;
     }
     
+    BigInteger countAllWays(Collection vars, List earliest, Set skip) {
+        BigInteger result = BigInteger.ZERO;
+        if (earliest.size() == 0) {
+            return BigInteger.ONE;
+        }
+        Iterator i = earliest.iterator();
+        while (i.hasNext()) {
+            // Choose c to be first.
+            Collection c = (Collection) i.next();
+            //Assert._assert(!skip.containsAny(c));
+            skip.addAll(c);
+            List newEarliest = findAllEarliest(vars, skip);
+            BigInteger r = countAllWays(vars, newEarliest, skip);
+            skip.removeAll(c);
+            result = result.add(r);
+        }
+        int num = earliest.size();
+        for (int k = 2; k <= num; ++k) {
+            // Do all interleaves combining k elements.
+            CombinationGenerator cg = new CombinationGenerator(num, k);
+            while (cg.hasMore()) {
+                int[] p = cg.getNext();
+                Collection combo = new LinkedList();
+                for (int x = 0; x < p.length; ++x) {
+                    Collection c = (Collection) earliest.get(p[x]);
+                    combo.addAll(c);
+                }
+                //Assert._assert(!skip.containsAny(combo));
+                skip.addAll(combo);
+                List newEarliest = findAllEarliest(vars, skip);
+                BigInteger r = countAllWays(vars, newEarliest, skip);
+                skip.removeAll(combo);
+                result = result.add(r);
+            }
+        }
+        return result;
+    }
+    
     List combineAllWays(Collection vars, List earliest, Set skip) {
         List result = new LinkedList();
         if (earliest.size() == 0) {
@@ -244,21 +285,24 @@ public class OrderConstraintSet {
             //Assert._assert(!skip.containsAny(c));
             skip.addAll(c);
             List newEarliest = findAllEarliest(vars, skip);
+            //System.out.println(" > combineAllWays("+newEarliest+", "+skip+")");
             List r = combineAllWays(vars, newEarliest, skip);
+            //System.out.println(" < combineAllWays("+newEarliest+", "+skip+") = "+r);
             skip.removeAll(c);
             for (Iterator j = r.iterator(); j.hasNext(); ) {
                 List list = (List) j.next();
                 List list2 = new ArrayList(list);
                 list2.add(0, c);
+                //System.out.println("    Adding "+list2+" to result");
                 result.add(list2);
             }
         }
         int num = earliest.size();
         for (int k = 2; k <= num; ++k) {
             // Do all interleaves combining k elements.
-            Collection combo = new LinkedList();
             CombinationGenerator cg = new CombinationGenerator(num, k);
             while (cg.hasMore()) {
+                Collection combo = new LinkedList();
                 int[] p = cg.getNext();
                 for (int x = 0; x < p.length; ++x) {
                     Collection c = (Collection) earliest.get(p[x]);
@@ -267,12 +311,15 @@ public class OrderConstraintSet {
                 //Assert._assert(!skip.containsAny(combo));
                 skip.addAll(combo);
                 List newEarliest = findAllEarliest(vars, skip);
+                //System.out.println("  > combineAllWays("+newEarliest+", "+skip+")");
                 List r = combineAllWays(vars, newEarliest, skip);
+                //System.out.println("  < combineAllWays("+newEarliest+", "+skip+") = "+r);
                 skip.removeAll(combo);
                 for (Iterator j = r.iterator(); j.hasNext(); ) {
                     List list = (List) j.next();
                     List list2 = new ArrayList(list);
                     list2.add(0, combo);
+                    //System.out.println("     Adding "+list2+" to result");
                     result.add(list2);
                 }
             }
@@ -293,6 +340,30 @@ public class OrderConstraintSet {
             earliest.add(c);
         }
         return earliest;
+    }
+    
+    public int approxNumOrders(int n) {
+        if (n == 0) return 0;
+        BigInteger result = Distributions.recurrenceA000670(n);
+        int nc = set.size();
+        int maxc = n * (n+1) / 2;
+        BigInteger result2 = result.subtract(result.subtract(BigInteger.ONE).multiply(BigInteger.valueOf(n)).divide(BigInteger.valueOf(maxc)));
+        BigInteger max = BigInteger.valueOf(Integer.MAX_VALUE);
+        if (result2.compareTo(max) > 0)
+            return Integer.MAX_VALUE;
+        else
+            return result2.intValue();
+    }
+    
+    public BigInteger countAllOrders(Collection vars) {
+        return countAllOrders(vars, null);
+    }
+    
+    public BigInteger countAllOrders(Collection vars, Set skip) {
+        List earliest = findAllEarliest(vars, skip);
+        if (skip == null) skip = new HashSet();
+        BigInteger result = countAllWays(vars, earliest, skip);
+        return result;
     }
     
     public List generateAllOrders(Collection vars) {
@@ -327,19 +398,38 @@ public class OrderConstraintSet {
         return result;
     }
     
-    public Order generateOrder(Collection vars) {
+    static Random random = new Random();
+    public Order generateRandomOrder(Collection vars) {
         Set done = new HashSet(vars.size());
+        ArrayList input = new ArrayList(vars);
         List result = new ArrayList(vars.size());
-        while (done.size() < vars.size()) {
-            for (Iterator i = vars.iterator(); i.hasNext(); ) {
-                Object o = i.next();
-                if (done.contains(o)) continue;
-                o = findEarliest(o, done);
-                Collection c = getInterleaved(o);
+        while (!input.isEmpty()) {
+            int r = random.nextInt(input.size());
+            Object o = input.get(r);
+            o = findEarliest(o, done);
+            Collection c = getInterleaved(o);
+            boolean interleave = false;
+            if (!result.isEmpty()) {
+                Object prev = result.get(result.size()-1);
+                if (prev instanceof Collection) prev = ((Collection) prev).iterator().next();
+                if (!set.contains(OrderConstraint.makePrecedenceConstraint(prev, o))) {
+                    // It is possible to interleave with previous.
+                    interleave = random.nextBoolean();
+                }
+            }
+            if (interleave) {
+                Object prev = result.get(result.size()-1);
+                if (prev instanceof Collection) ((Collection) prev).addAll(c);
+                else {
+                    c.add(prev);
+                    result.set(result.size()-1, c);
+                }
+            } else {
                 if (c.size() == 1) result.add(c.iterator().next());
                 else result.add(c);
-                done.addAll(c);
             }
+            done.addAll(c);
+            input.removeAll(c);
         }
         Order o = new Order(result);
         return o;
@@ -359,8 +449,13 @@ public class OrderConstraintSet {
                 String s = in.readLine();
                 if (s == null) break;
                 if (s.equals("done")) break;
+                if (s.length() == 0) continue;
                 StringTokenizer st = new StringTokenizer(s, "<>~", true);
                 String a = st.nextToken();
+                if (!st.hasMoreTokens()) {
+                    allStrings.add(a);
+                    continue;
+                }
                 String op = st.nextToken();
                 String b = st.nextToken();
                 OrderConstraint c;
@@ -382,9 +477,13 @@ public class OrderConstraintSet {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        Order o = dis.generateOrder(allStrings);
-        System.out.println("One final order is: "+o);
-        List allOrders = dis.generateAllOrders(allStrings, null);
-        System.out.println("All orders: "+allOrders);
+        for (int i = 0; i < 10; ++i) {
+            Order o = dis.generateRandomOrder(allStrings);
+            System.out.println("One random order is: "+o);
+        }
+        BigInteger c = dis.countAllOrders(allStrings);
+        System.out.println("Total number of orders: "+c);
+        List allOrders = dis.generateAllOrders(allStrings);
+        System.out.println("All orders ("+allOrders.size()+"): "+allOrders);
     }
 }

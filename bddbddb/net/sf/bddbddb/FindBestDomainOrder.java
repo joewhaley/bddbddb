@@ -801,7 +801,7 @@ public class FindBestDomainOrder {
             dis.setAttribute("attr" + PREDICTION_VAR1, Double.toString(pred.getAttrLowerBound()));
             dis.setAttribute("attr" + PREDICTION_VAR2, Double.toString(pred.getAttrUpperBound()));
             dis.setAttribute("dom" + PREDICTION_VAR1, Double.toString(pred.getDomLowerBound()));
-            dis.setAttribute("domDev" + PREDICTION_VAR2, Double.toString(pred.getDomUpperBound()));
+            dis.setAttribute("dom" + PREDICTION_VAR2, Double.toString(pred.getDomUpperBound()));
             return dis;
         }
 
@@ -2416,7 +2416,7 @@ public class FindBestDomainOrder {
                 double[] c = (double[]) ii.next();
                 OrderConstraintSet ocs = new OrderConstraintSet();
                 for (int iii = 0; iii < c.length; ++iii) {
-                        if (Double.isNaN(c[iii])) continue;
+                    if (Double.isNaN(c[iii])) continue;
                     int k = (int) c[iii];
                     OrderAttribute oa = (OrderAttribute) inst.attribute(iii);
                     out.println(oa);
@@ -2428,7 +2428,7 @@ public class FindBestDomainOrder {
                         continue outer;
                     }
                 }
-                Order o = ocs.generateOrder(allVars);
+                Order o = ocs.generateRandomOrder(allVars);
                 out.println("Good order: " + o);
             }
         }

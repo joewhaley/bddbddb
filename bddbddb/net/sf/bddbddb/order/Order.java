@@ -49,6 +49,12 @@ public class Order implements List, Comparable {
      * @param l  list
      */
     public Order(List l) {
+        for (Iterator i = l.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (o instanceof List) {
+                Collections.sort((List) o, OrderConstraint.elementComparator);
+            }
+        }
         this.list = l;
         this.constraints = null;
     }
@@ -319,7 +325,23 @@ public class Order implements List, Comparable {
     }
     
     public boolean equals(Order that) {
-        return list.equals(that.list);
+        //return list.equals(that.list);
+        if (this.list.size() != that.list.size()) return false;
+        Iterator i = this.list.iterator();
+        Iterator j = that.list.iterator();
+        while (i.hasNext()) {
+            Object a = i.next();
+            Object b = j.next();
+            if (a instanceof Collection) {
+                if (b instanceof Collection) {
+                    Collection ac = (Collection) a;
+                    Collection bc = (Collection) b;
+                    if (!ac.containsAll(bc)) return false;
+                    if (!bc.containsAll(ac)) return false;
+                } else return false;
+            } else if (!a.equals(b)) return false;
+        }
+        return true;
     }
     /* (non-Javadoc)
      * @see java.lang.Object#equals(java.lang.Object)
@@ -556,7 +578,9 @@ public class Order implements List, Comparable {
             if (obj == null) {
                 throw new IllegalArgumentException("Unknown \""+tok+"\" in order \""+s+"\"");
             }
-            if (inner != null) inner.add(obj);
+            if (inner != null) {
+                if (!inner.contains(obj)) inner.add(obj);
+            }
             else o.add(obj);
         }
         return new Order(o);
