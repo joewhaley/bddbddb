@@ -16,9 +16,7 @@ import java.util.Set;
 import java.io.IOException;
 import jwutil.collections.AppendIterator;
 import jwutil.util.Assert;
-import net.sf.bddbddb.order.MapBasedTranslator;
 import net.sf.bddbddb.order.Order;
-import net.sf.bddbddb.order.OrderTranslator;
 import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
@@ -1006,6 +1004,8 @@ public class BDDInferenceRule extends InferenceRule {
         
     }
     
+    public static final long LONG_TIME = 10000000;
+    
     /**
      * Run the find best domain order on the given inputs.
      * 
@@ -1029,7 +1029,7 @@ public class BDDInferenceRule extends InferenceRule {
         
         FindBestDomainOrder fbdo = solver.fbo;
         VarToAttribTranslator t = new VarToAttribTranslator(this);
-        if (fbdo.numberOfGoodOrders(allVars, t) <= 1) {
+        if (!fbdo.hasOrdersToTry(allVars, t)) {
             return;
         }
         System.out.println("Finding best order for "+vars1+","+vars2);
@@ -1048,13 +1048,15 @@ public class BDDInferenceRule extends InferenceRule {
         int count = 8;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
-            Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
+            //Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
+            Order o = fbdo.tryNewGoodOrder2(tc, allVars, this);
             if (o == null) break;
             String vOrder = o.toVarOrderString(variableToBDDDomain);
             System.out.println("Trying order "+vOrder);
             vOrder = solver.fixVarOrder(vOrder, false);
             System.out.println("Complete order "+vOrder);
             time = fbo.tryOrder(true, vOrder);
+            time = Math.min(time, LONG_TIME);
             bestTime = Math.min(time, bestTime);
             tc.addTrial(o, time);
         }
