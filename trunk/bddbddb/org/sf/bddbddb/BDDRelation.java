@@ -471,5 +471,14 @@ public class BDDRelation extends Relation {
     public BDDDomain getBDDDomain(int i) {
         return (BDDDomain) domains.get(i);
     }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Relation#copy()
+     */
+    public Relation copy() {
+        List a = new LinkedList(attributes);
+        BDDRelation that = new BDDRelation(solver, name+'\'', a);
+        return that;
+    }
     
 }

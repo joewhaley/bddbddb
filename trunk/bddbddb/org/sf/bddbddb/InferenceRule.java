@@ -12,6 +12,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.sf.bddbddb.ir.GenConstant;
+import org.sf.bddbddb.ir.Join;
+import org.sf.bddbddb.ir.JoinConstant;
+import org.sf.bddbddb.ir.Project;
+import org.sf.bddbddb.ir.Rename;
+import org.sf.bddbddb.ir.Union;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.LinearMap;
@@ -28,8 +34,8 @@ public abstract class InferenceRule {
     
     List/*<RuleTerm>*/ top;
     RuleTerm bottom;
-    Set necessaryVariables;
-    Set unnecessaryVariables;
+    Set/*<Variable>*/ necessaryVariables;
+    Set/*<Variable>*/ unnecessaryVariables;
     boolean split;
     
     /**
@@ -42,10 +48,18 @@ public abstract class InferenceRule {
         this.bottom = bottom;
     }
     
+    /**
+     * 
+     */
     void initialize() {
         calculateNecessaryVariables();
     }
     
+    /**
+     * @param s
+     * @param terms
+     * @return
+     */
     static Set calculateNecessaryVariables(Collection s, List terms) {
         Set necessaryVariables = new HashSet();
         Set unnecessaryVariables = new HashSet(s);
@@ -65,6 +79,9 @@ public abstract class InferenceRule {
         return necessaryVariables;
     }
     
+    /**
+     * @return
+     */
     Set calculateNecessaryVariables() {
         necessaryVariables = new HashSet();
         unnecessaryVariables = new HashSet();
@@ -95,13 +112,26 @@ public abstract class InferenceRule {
         return necessaryVariables;
     }
     
+    /**
+     * @return
+     */
     public abstract boolean update();
     
+    /**
+     * 
+     */
     public abstract void reportStats();
     
+    /**
+     * 
+     */
     public void free() {
     }
     
+    /**
+     * @param rules
+     * @return
+     */
     public static MultiMap getRelationToUsingRule(Collection rules) {
         MultiMap mm = new GenericMultiMap();
         for (Iterator i = rules.iterator(); i.hasNext(); ) {
@@ -117,6 +147,10 @@ public abstract class InferenceRule {
         return mm;
     }
     
+    /**
+     * @param rules
+     * @return
+     */
     public static MultiMap getRelationToDefiningRule(Collection rules) {
         MultiMap mm = new GenericMultiMap();
         for (Iterator i = rules.iterator(); i.hasNext(); ) {
@@ -129,6 +163,11 @@ public abstract class InferenceRule {
         return mm;
     }
     
+    /**
+     * @param myIndex
+     * @param s
+     * @return
+     */
     public Collection/*<InferenceRule>*/ split(int myIndex, Solver s) {
         List newRules = new LinkedList();
         int count = 0;
@@ -229,6 +268,10 @@ public abstract class InferenceRule {
         return newRules;
     }
     
+    /**
+     * @param mm
+     * @param c
+     */
     static void retainAll(MultiMap mm, Collection c) {
         for (Iterator i = mm.keySet().iterator(); i.hasNext(); ) {
             Object o = i.next();
@@ -247,6 +290,10 @@ public abstract class InferenceRule {
         }
     }
     
+    /**
+     * @param mm
+     * @param c
+     */
     static void removeAll(MultiMap mm, Collection c) {
         for (Iterator i = mm.keySet().iterator(); i.hasNext(); ) {
             Object o = i.next();
@@ -265,7 +312,11 @@ public abstract class InferenceRule {
         }
     }
     
+    /**
+     * @param r
+     */
     public void copyOptions(InferenceRule r) {
+        // No options to copy.
     }
     
     public static class DependenceNavigator implements Navigator {
@@ -354,6 +405,161 @@ public abstract class InferenceRule {
         
     }
     
+    Relation generate1(Solver solver, List ir, RuleTerm rt) {
+        Relation top_r = rt.relation;
+        Collection varsToProject = new LinkedList(rt.variables);
+        varsToProject.removeAll(necessaryVariables);
+        if (!varsToProject.isEmpty()) {
+            List newAttributes = new LinkedList();
+            for (int j = 0; j < rt.numberOfVariables(); ++j) {
+                Variable v = rt.getVariable(j);
+                if (!varsToProject.contains(v)) {
+                    newAttributes.add(top_r.getAttribute(j));
+                } else if (v instanceof Constant) {
+                    Relation new_r = top_r.copy();
+                    Attribute a = top_r.getAttribute(j);
+                    long value = ((Constant) v).value;
+                    JoinConstant jc = new JoinConstant(new_r, top_r, a, value);
+                    ir.add(jc);
+                    top_r = new_r;
+                }
+            }
+            Relation new_r = solver.createRelation(top_r+"_p", newAttributes);
+            Project p = new Project(new_r, top_r);
+            ir.add(p);
+            top_r = new_r;
+        }
+        return top_r;
+    }
+    
+    public List generateIR(Solver solver) {
+        List ir = new LinkedList();
+        Relation result = null;
+        Map varToAttrib = new HashMap();
+        for (Iterator i = top.iterator(); i.hasNext(); ) {
+            RuleTerm rt = (RuleTerm) i.next();
+
+            // Step 1: Project away unnecessary variables and restrict constants.
+            Relation r = generate1(solver, ir, rt);
+            
+            // Calculate renames.
+            boolean anyRenames = false;
+            List newAttributes = new LinkedList();
+            for (int j = 0; j < rt.numberOfVariables(); ++j) {
+                Variable v = rt.getVariable(j);
+                if (unnecessaryVariables.contains(v)) continue;
+                Attribute a = rt.relation.getAttribute(j);
+                Attribute a2 = (Attribute) varToAttrib.put(v, a);
+                if (a2 != null && a2 != a) {
+                    anyRenames = true;
+                    newAttributes.add(a2);
+                } else {
+                    newAttributes.add(a);
+                }
+            }
+            if (anyRenames) {
+                Relation new_r = solver.createRelation(r+"_r", newAttributes);
+                Rename rename = new Rename(new_r, r);
+                ir.add(rename);
+                r = new_r;
+            }
+            
+            if (result != null) {
+                // Do a "join".
+                newAttributes = new LinkedList(result.attributes);
+                newAttributes.removeAll(r.attributes);
+                newAttributes.addAll(r.attributes);
+                Relation new_r = solver.createRelation(r+"_j", newAttributes);
+                Join join = new Join(new_r, r, result);
+                ir.add(join);
+                result = new_r;
+            } else {
+                result = r;
+            }
+            
+            // Project away unnecessary attributes.
+            boolean anyProjects = false;
+            newAttributes = new LinkedList();
+        outer:
+            for (int k = 0; k < rt.numberOfVariables(); ++k) {
+                Variable v = rt.getVariable(k);
+                if (unnecessaryVariables.contains(v)) continue;
+                Attribute a = (Attribute) varToAttrib.get(v);
+                Assert._assert(a != null);
+                Assert._assert(result.attributes.contains(a));
+                if (bottom.variables.contains(v)) {
+                    newAttributes.add(a);
+                    continue;
+                }
+                Iterator j = top.iterator();
+                while (j.next() != rt) ;
+                while (j.hasNext()) {
+                    RuleTerm rt2 = (RuleTerm) j.next();
+                    if (rt2.variables.contains(v)) {
+                        newAttributes.add(a);
+                        continue outer;
+                    }
+                }
+                anyProjects = true;
+            }
+            if (anyProjects) {
+                Relation result2 = solver.createRelation(result+"_p2", newAttributes);
+                Project p = new Project(result2, result);
+                ir.add(p);
+                result = result2;
+            }
+        }
+        // Rename result to match head relation.
+        boolean anyRenames = false;
+        List newAttributes = new LinkedList();
+        for (int j = 0; j < bottom.numberOfVariables(); ++j) {
+            Variable v = bottom.getVariable(j);
+            if (unnecessaryVariables.contains(v)) continue;
+            Attribute a = bottom.relation.getAttribute(j);
+            Attribute a2 = (Attribute) varToAttrib.get(v);
+            Assert._assert(a2 != null);
+            if (a2 != a) {
+                anyRenames = true;
+            }
+            newAttributes.add(a2);
+        }
+        if (anyRenames) {
+            Relation result2 = solver.createRelation(result+"_r", newAttributes);
+            Rename rename = new Rename(result2, result);
+            ir.add(rename);
+            result = result2;
+        }
+        // Restrict constants.
+        for (int j = 0; j < bottom.numberOfVariables(); ++j) {
+            Variable v = bottom.getVariable(j);
+            if (v instanceof Constant) {
+                Attribute a = bottom.relation.getAttribute(j);
+                long value = ((Constant) v).getValue();
+                if (result == null) {
+                    // Empty right-hand-side.
+                    result = bottom.relation.copy();
+                    GenConstant c = new GenConstant(result, a, value);
+                    ir.add(c);
+                } else {
+                    Relation result2 = result.copy();
+                    JoinConstant jc = new JoinConstant(result2, result, a, value);
+                    ir.add(jc);
+                    result = result2;
+                }
+            }
+        }
+        if (result != null) {
+            // Finally, union in the result.
+            Union u = new Union(bottom.relation, bottom.relation, result);
+            ir.add(u);
+        }
+        
+        return ir;
+    }
+    
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append(bottom);

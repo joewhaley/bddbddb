@@ -38,6 +38,7 @@ public abstract class Relation {
     public abstract void saveNegated() throws IOException;
     public abstract void saveTuples() throws IOException;
     public abstract void saveNegatedTuples() throws IOException;
+    public abstract Relation copy();
     
     /**
      * @return number of tuples in relation

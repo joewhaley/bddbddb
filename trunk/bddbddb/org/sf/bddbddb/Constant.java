@@ -21,4 +21,10 @@ public class Constant extends Variable {
         this.value = value;
     }
 
+    /**
+     * @return
+     */
+    public long getValue() {
+        return value;
+    }
 }
