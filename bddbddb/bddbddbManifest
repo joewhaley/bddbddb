@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Main-Class: org.sf.bddbddb.Solver
+Class-Path: javabdd.jar
