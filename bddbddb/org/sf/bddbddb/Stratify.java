@@ -375,6 +375,7 @@ public class Stratify {
         outputs.addAll(solver.relationsToDumpNegated);
         outputs.addAll(solver.relationsToDumpNegatedTuples);
         outputs.addAll(solver.relationsToPrintSize);
+        outputs.addAll(solver.relationsToPrintTuples);
         i = solver.dotGraphsToDump.iterator();
         while (i.hasNext()) {
             outputs.addAll(((Dot) i.next()).getUsedRelations());

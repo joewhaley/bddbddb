@@ -23,6 +23,7 @@ public abstract class Relation {
     Relation negated;
     public final int id;
     Constraints constraints;
+    boolean isInitialized;
 
     /**
      * Create a new Relation.

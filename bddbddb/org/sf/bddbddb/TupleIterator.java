@@ -21,4 +21,7 @@ public abstract class TupleIterator implements Iterator {
     public void remove() {
         throw new UnsupportedOperationException();
     }
+    
+    //public abstract long count();
+    
 }

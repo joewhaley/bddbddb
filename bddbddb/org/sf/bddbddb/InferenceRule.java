@@ -50,6 +50,7 @@ public abstract class InferenceRule implements IterationElement {
     boolean TRACE, TRACE_FULL;
     boolean incrementalize = !System.getProperty("incremental", "yes").equals("no");
     boolean cache_before_rename = true;
+    boolean isInitialized;
 
     /**
      * @param top
@@ -68,7 +69,9 @@ public abstract class InferenceRule implements IterationElement {
      *  
      */
     void initialize() {
+        if (isInitialized) return;
         calculateNecessaryVariables();
+        isInitialized = true;
     }
 
     /**

@@ -50,6 +50,7 @@ public class BDDRelation extends Relation {
      */
     // Called before variable order is set.
     public void initialize() {
+        if (isInitialized) return;
         if (negated != null && name.startsWith("!")) {
             if (solver.TRACE) solver.out.println("Skipping initialization of negated BDDRelation " + name);
             if (solver.TRACE) solver.out.println(" because normal " + negated.name + " is/will be initialized.");
@@ -116,7 +117,9 @@ public class BDDRelation extends Relation {
             bddn.relation = solver.bdd.one();
             bddn.domains = this.domains;
             bddn.domainSet = this.domainSet;
+            bddn.isInitialized = true;
         }
+        isInitialized = true;
     }
 
     public BDD calculateDomainSet() {

@@ -73,6 +73,7 @@ public class BDDInferenceRule extends InferenceRule {
      * @see org.sf.bddbddb.InferenceRule#initialize()
      */
     void initialize() {
+        if (isInitialized) return;
         super.initialize();
         if (TRACE) solver.out.println("Initializing BDDInferenceRule " + this);
         updateCount = 0;
@@ -143,6 +144,7 @@ public class BDDInferenceRule extends InferenceRule {
                 canQuantifyAfter[i].andWith(d2.set());
             }
         }
+        isInitialized = true;
     }
 
     /**
