@@ -219,7 +219,7 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
                     visited.add(rep);
                     if (trace) System.out.println("root: " + rep);
                     Collection ileaved = ileavedDomains.getValues(rep);
-                    if (ileaved != null & ileaved.size() != 0) {
+                    if (ileaved != null && ileaved.size() != 0) {
                         
                         if (trace) System.out.println("interleaved");
                         Iterator jt = ileaved.iterator();
