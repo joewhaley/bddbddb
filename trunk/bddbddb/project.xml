@@ -193,7 +193,6 @@
       <groupId>jdom</groupId>
       <artifactId>jdom</artifactId>
       <version>1.0</version>
-      <jar>${basedir}/jdom.jar</jar>
       <url>http://www.jdom.org/</url>
     </dependency>
     <dependency>
