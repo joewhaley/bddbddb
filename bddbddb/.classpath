@@ -2,10 +2,10 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry excluding="target/**" kind="src" path=""/>
-	<classpathentry kind="src" path="/JavaBDD"/>
-	<classpathentry exported="true" sourcepath="/JavaBDD" kind="lib" path="javabdd.jar"/>
 	<classpathentry sourcepath="weka-src.jar" kind="lib" path="weka.jar"/>
-	<classpathentry exported="true" sourcepath="/jwutil/main/src/java" kind="lib" path="jwutil-1.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="jdom.jar"/>
+	<classpathentry kind="lib" path="jdom.jar"/>
+	<classpathentry kind="src" path="/jwutil"/>
+	<classpathentry kind="src" path="/JavaBDD"/>
+	<classpathentry kind="src" path="/joeq_core"/>
 	<classpathentry kind="output" path=""/>
 </classpath>

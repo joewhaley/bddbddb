@@ -3,14 +3,18 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.ir;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.io.IOException;
+
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.BDDSolver;
+import net.sf.bddbddb.Domain;
 import net.sf.bddbddb.ir.dynamic.If;
 import net.sf.bddbddb.ir.dynamic.Nop;
 import net.sf.bddbddb.ir.highlevel.Copy;
@@ -61,12 +65,12 @@ public class BDDOperationInterpreter implements OperationInterpreter {
 
     protected BDD makeDomainsMatch(BDD b, BDDRelation r1, BDDRelation r2) {
         if (CHECK) {
-            
             r1.verify();
             r2.verify();
         }
         if (!needsDomainMatch) return b;
         boolean any = false;
+        if (TRACE) System.out.println("R1: " + r1 + " R2: " + r2);
         BDDPairing pair = factory.makePair();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
@@ -75,7 +79,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
             if (d2 == null || d1 == d2) continue;
             any = true;
             pair.set(d1, d2);
-            if (TRACE) System.out.println("   Renaming " + d1 + " to " + d2);
+            if (TRACE) System.out.println("   " + a + " Renaming " + d1 + " to " + d2);
             if (CHECK && varorder != null) {
                 int index1 = varorder.indexOf(d1.toString());
                 int index2 = varorder.indexOf(d2.toString());
@@ -88,7 +92,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
                     if (index1 < index2) bad = (index3 >= index1 && index3 <= index2);
                     else bad = (index3 >= index2 && index3 <= index1);
                     if (bad) {
-                        System.out.println("Expensive rename! " + r1 + "->" + r2 + ": " + d1 + " to " + d2 + " across " + d3);
+                        if (TRACE) System.out.println("Expensive rename! " + r1 + "->" + r2 + ": " + d1 + " to " + d2 + " across " + d3);
                     }
                 }
             }
@@ -102,6 +106,96 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         return b;
     }
 
+    BDDDomain getUnusedDomain(Domain d, Collection dontuse) {
+        for (Iterator i = solver.getBDDDomains(d).iterator(); i.hasNext(); ) {
+            BDDDomain dd = (BDDDomain) i.next();
+            if (!dontuse.contains(dd)) return dd;
+        }
+        BDDDomain dd = solver.allocateBDDDomain(d);
+        return dd;
+    }
+    
+    BDD getProjectSet(Map m, BDDRelation r1, BDDRelation r2, BDDRelation r3) {
+        BDD b = factory.one();
+        for (Iterator i = r2.getAttributes().iterator(); i.hasNext();) {
+            Attribute a = (Attribute) i.next();
+            if (r1.getAttributes().contains(a)) continue;
+            BDDDomain d = (m != null)?(BDDDomain)m.get(a):r2.getBDDDomain(a);
+            b.andWith(d.set());
+        }
+        for (Iterator i = r3.getAttributes().iterator(); i.hasNext();) {
+            Attribute a = (Attribute) i.next();
+            if (r1.getAttributes().contains(a)) continue;
+            BDDDomain d = (m != null)?(BDDDomain)m.get(a):r3.getBDDDomain(a);
+            b.andWith(d.set());
+        }
+        return b;
+    }
+    
+    protected BDD makeDomainsMatch(BDD b2, BDD b3, BDDRelation r1, BDDRelation r2, BDDRelation r3) {
+        if (CHECK) {
+            r1.verify();
+            r2.verify();
+            r3.verify();
+        }
+        if (!needsDomainMatch) {
+            return getProjectSet(null, r1, r2, r3);
+        }
+        boolean any2 = false, any3 = false;
+        if (TRACE) System.out.println("R1: " + r1 + " R2: " + r2 + " R3: " + r3);
+        BDDPairing pair2 = factory.makePair();
+        BDDPairing pair3 = factory.makePair();
+        Map renameMap = new HashMap();
+        for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
+            Attribute a = (Attribute) i.next();
+            BDDDomain d1 = r1.getBDDDomain(a);
+            renameMap.put(a, d1);
+        }
+        for (Iterator i = r2.getAttributes().iterator(); i.hasNext();) {
+            Attribute a = (Attribute) i.next();
+            BDDDomain d2 = r2.getBDDDomain(a);
+            BDDDomain d1 = (BDDDomain) renameMap.get(a);
+            if (d1 == null) {
+                if (!renameMap.values().contains(d2)) d1 = d2;
+                else d1 = getUnusedDomain(a.getDomain(), renameMap.values());
+                renameMap.put(a, d1);
+            }
+            if (d1 != d2) {
+                pair2.set(d2, d1);
+                any2 = true;
+                if (TRACE) System.out.println("   "+r2+": " + a + " Renaming " + d2 + " to " + d1);
+            }
+        }
+        for (Iterator i = r3.getAttributes().iterator(); i.hasNext();) {
+            Attribute a = (Attribute) i.next();
+            BDDDomain d3 = r3.getBDDDomain(a);
+            BDDDomain d1 = (BDDDomain) renameMap.get(a);
+            if (d1 == null) {
+                if (!renameMap.values().contains(d3)) d1 = d3;
+                else d1 = getUnusedDomain(a.getDomain(), renameMap.values());
+                renameMap.put(a, d1);
+            }
+            if (d1 != d3) {
+                pair3.set(d3, d1);
+                any3 = true;
+                if (TRACE) System.out.println("   "+r3+": " + a + " Renaming " + d3 + " to " + d1);
+            }
+        }
+        if (any2) {
+            if (TRACE) System.out.println("      Rename to make " + r2 + " match " + r1);
+            b2.replaceWith(pair2);
+            if (TRACE) System.out.println("      Domains of result: " + BDDRelation.activeDomains(b2));
+        }
+        if (any3) {
+            if (TRACE) System.out.println("      Rename to make " + r3 + " match " + r1);
+            b3.replaceWith(pair3);
+            if (TRACE) System.out.println("      Domains of result: " + BDDRelation.activeDomains(b3));
+        }
+        pair2.reset();
+        pair3.reset();
+        return getProjectSet(renameMap, r1, r2, r3);
+    }
+    
     /*
      * (non-Javadoc)
      * 
@@ -153,6 +247,9 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     public Object visit(Rename op) {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
+        if (CHECK) {
+            r1.verify();
+        }
         Map renames = op.getRenameMap();
         boolean any = false;
         BDDPairing pair = factory.makePair();
@@ -176,6 +273,9 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         pair.reset();
         r0.setBDD(b);
         if (TRACE) System.out.println("   ---> Nodes: " + b.nodeCount() + " Domains: " + BDDRelation.activeDomains(b));
+        if (CHECK) {
+            r0.verify();
+        }
         return null;
     }
 
@@ -375,9 +475,13 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDDRelation r1 = (BDDRelation) op.getSrc1();
         BDDRelation r2 = (BDDRelation) op.getSrc2();
         BDDOp bddop = op.getOp();
-        BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
-        BDD b2 = makeDomainsMatch(r2.getBDD().id(), r2, r0);
-        BDD b3 = op.getProjectSet();
+        //System.out.println("Dest: " + r0 + " attrs: " + r0.getAttributes() + " domains: " + r0.getBDDDomains());
+        //System.out.println("Src1: " + r1 + " attrs: " + r1.getAttributes() + " domains: " + r1.getBDDDomains());
+        //System.out.println("Src2: " + r2 + " attrs: " + r2.getAttributes() + " domains: " + r2.getBDDDomains());
+     
+        BDD b1 = r1.getBDD().id();
+        BDD b2 = r2.getBDD().id();
+        BDD b3 = makeDomainsMatch(b1, b2, r0, r1, r2);
         if (TRACE) System.out.println("   " + op.toString());
         BDD b = b1.applyEx(b2, bddop, b3);
         b1.free();
@@ -385,6 +489,9 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         b3.free();
         r0.setBDD(b);
         if (TRACE) System.out.println("   ---> Nodes: " + b.nodeCount() + " Domains: " + BDDRelation.activeDomains(b));
+        if (CHECK) {
+            r0.verify();
+        }
         return null;
     }
 
