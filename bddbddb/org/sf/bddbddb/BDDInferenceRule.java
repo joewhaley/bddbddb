@@ -63,6 +63,11 @@ public class BDDInferenceRule extends InferenceRule {
     BDD[] canQuantifyAfter;
     
     /**
+     * Collection of variables that are still active after each step.
+     */
+    Collection[] variableSet;
+    
+    /**
      * Number of times update() has been called on this rule.
      */
     int updateCount;
@@ -167,10 +172,15 @@ public class BDDInferenceRule extends InferenceRule {
         if (canQuantifyAfter == null) {
             canQuantifyAfter = new BDD[top.size()];
         }
+        if (variableSet == null) {
+            variableSet = new Collection[top.size()];
+        }
+        Collection currentVariableSet = new LinkedList();
         for (int i = 0; i < top.size(); ++i) {
             RuleTerm rt = (RuleTerm) top.get(i);
             if (canQuantifyAfter[i] != null) canQuantifyAfter[i].free();
             canQuantifyAfter[i] = solver.bdd.one();
+            currentVariableSet.addAll(rt.variables);
             outer : for (Iterator k = rt.variables.iterator(); k.hasNext();) {
                 Variable v = (Variable) k.next();
                 if (bottom.variables.contains(v)) continue;
@@ -178,9 +188,12 @@ public class BDDInferenceRule extends InferenceRule {
                     RuleTerm rt2 = (RuleTerm) top.get(j);
                     if (rt2.variables.contains(v)) continue outer;
                 }
+                currentVariableSet.remove(v);
                 BDDDomain d2 = (BDDDomain) variableToBDDDomain.get(v);
                 canQuantifyAfter[i].andWith(d2.set());
             }
+            variableSet[i] = currentVariableSet;
+            currentVariableSet = new LinkedList(currentVariableSet);
         }
         isInitialized = true;
     }
@@ -343,8 +356,7 @@ public class BDDInferenceRule extends InferenceRule {
             if (TRACE) solver.out.print(" x " + rt.relation);
             BDD b = relationValues[j];
             if (find_best_order && !result.isOne()) {
-                String varOrder = solver.VARORDER;
-                findBestDomainOrder(solver.bdd, null, varOrder, result, b, canNowQuantify);
+                findBestDomainOrder(solver.bdd, result, b, canNowQuantify, variableSet[j], rt.variables);
             }
             if (!canNowQuantify.isOne()) {
                 if (TRACE) {
@@ -881,15 +893,9 @@ public class BDDInferenceRule extends InferenceRule {
         }
     }
     
-    /**
-     * @param bdd
-     * @param domains
-     * @param origVarOrder
-     * @param b1
-     * @param b2
-     * @param b3
-     * @return
-     */
+    void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, Collection vars1, Collection vars2) {
+        
+    }
     String findBestDomainOrder(BDDFactory bdd, List domains, String origVarOrder, BDD b1, BDD b2, BDD b3) {
         if (domains == null) {
             List domainSet1 = new LinkedList();
