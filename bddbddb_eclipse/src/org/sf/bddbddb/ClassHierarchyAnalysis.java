@@ -18,11 +18,11 @@ import org.sf.javabdd.BDDDomain;
  * @version $Id$
  */
 public class ClassHierarchyAnalysis {
-    
     PAFromSource pa;
     ITypeBinding OBJECT;
     
     ClassHierarchyAnalysis(PAFromSource pa) {
+        this.cha = pa.cha;
         this.pa = pa;
         this.Tmap = pa.Tmap;
         this.Nmap = pa.Nmap;
@@ -30,7 +30,6 @@ public class ClassHierarchyAnalysis {
         this.T = PAFromSource.T2;
         this.N = PAFromSource.N;
         this.M = PAFromSource.M;
-        this.cha = PAFromSource.bdd.zero();
         OBJECT = pa.OBJECT.getType();
     }
     
@@ -53,7 +52,7 @@ public class ClassHierarchyAnalysis {
         cha.orWith(b);
     }
     
-    BDD calculateCHA() {
+    void calculateCHA() {
         for (Iterator i = Nmap.iterator(); i.hasNext(); ) {
             Object o = i.next();
             if (!(o instanceof MethodWrapper)) {
@@ -63,24 +62,25 @@ public class ClassHierarchyAnalysis {
             IMethodBinding name = mw.getBinding();
             calculateCHA(name);
         }
-        return cha;
     }
     
     void calculateCHA(IMethodBinding name) {
+        IMethodBinding objTarget = calculateVirtualTarget(OBJECT, name);
+        
         for (Iterator i = Tmap.iterator(); i.hasNext(); ) {
             Object o = i.next();
             ITypeBinding type;
             if (o instanceof TypeWrapper) {
                 TypeWrapper tw = (TypeWrapper) o;
                 type = tw.getType();
+                IMethodBinding target = calculateVirtualTarget(type, name);
+                if (target != null) {
+                    addToCHA((Wrapper)o, name, target);
+                }
             } else {
-                if (StringWrapper.GLOBAL_THIS.equals(o)) continue;
-                type = OBJECT;
-            }
-            //System.out.println(type.getBinaryName());
-            IMethodBinding target = calculateVirtualTarget(type, name);
-            if (target != null) {
-                addToCHA((Wrapper)o, name, target);
+                if (objTarget == null || 
+                    !((StringWrapper)o).getString().endsWith("[]")) continue;
+                addToCHA((Wrapper)o, name, objTarget);             
             }
         }
     }
