@@ -1007,7 +1007,7 @@ public class BDDInferenceRule extends InferenceRule {
     }
     
     public static final long LONG_TIME = 10000000;
-    public static int FBO_TRIALS = Integer.parseInt(System.getProperty("fbotrials", "8"));
+    public static int MAX_FBO_TRIALS = Integer.parseInt(System.getProperty("fbotrials", "50"));
     
     /**
      * Run the find best domain order on the given inputs.
@@ -1031,8 +1031,8 @@ public class BDDInferenceRule extends InferenceRule {
         List allVars = Arrays.asList(a);
         
         FindBestDomainOrder fbdo = solver.fbo;
-        VarToAttribTranslator t = new VarToAttribTranslator(this);
-        if (!fbdo.hasOrdersToTry(allVars, t)) {
+        if (!fbdo.hasOrdersToTry(allVars, this)) {
+            System.out.println("No more orders to try, skipping find best order for "+vars1+","+vars2);
             return;
         }
         System.out.println("Finding best order for "+vars1+","+vars2);
@@ -1048,7 +1048,7 @@ public class BDDInferenceRule extends InferenceRule {
         }
         System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
         
-        int count = FBO_TRIALS;
+        int count = MAX_FBO_TRIALS;
         boolean first = true;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {

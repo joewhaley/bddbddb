@@ -8,7 +8,9 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import jwutil.util.Assert;
+import net.sf.bddbddb.FindBestDomainOrder;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.trees.Id3;
@@ -52,7 +54,7 @@ public class MyId3 extends Classifier {
     
     public List getAttribCombos(int nAttribs, double cv) {
         if (m_Attribute == null) {
-            if (m_ClassValue == cv) {
+            if (FindBestDomainOrder.compare(m_ClassValue, cv) == 0) {
                 List result = new LinkedList();
                 double[] i = new double[nAttribs];
                 Arrays.fill(i, Double.NaN);

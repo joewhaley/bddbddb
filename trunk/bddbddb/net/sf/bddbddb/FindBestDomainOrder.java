@@ -1194,13 +1194,11 @@ public class FindBestDomainOrder {
     }
 
     /**
-     * @param allVars
-     * @param t
-     * @return  boolean
      */
-    public boolean hasOrdersToTry(List allVars, OrderTranslator t) {
+    public boolean hasOrdersToTry(List allVars, InferenceRule ir) {
         // TODO: improve this code.
-        return true;
+        TrialGuess g = this.tryNewGoodOrder(null, allVars, ir, false);
+        return g != null;
     }
 
     public static class TrialInstance extends OrderInstance implements Comparable {
@@ -1655,7 +1653,7 @@ public class FindBestDomainOrder {
     public static String CPE = "net.sf.bddbddb.order.BaggedId3";
     
     public void neverTryAgain(InferenceRule ir, Order o) {
-          if (false) {
+          if (true) {
             if (TRACE > 2) out.println("For rule"+ir.id+", never trying order "+o+" again.");
             neverAgain.add(ir, o);
         }
@@ -1889,7 +1887,7 @@ public class FindBestDomainOrder {
             int start = addNullValues ? -1 : 0; 
             for (int vi = start; vi < numV; ++vi) {
                 for (int ai = start; ai < numA; ++ai) {
-                    for (int di = start; di < numD; ++di) {
+                    for (int di = 0; di < numD; ++di) { // don't do nulls for domain classifier.
                         double vScore, aScore, dScore;
                         double nullScore = 1;
                         if (vi == -1) vScore = nullScore;
@@ -1961,6 +1959,7 @@ public class FindBestDomainOrder {
                     } else {
                         // Add these orders to the collection.
                         genOrders(ocs, allVars, tc == null ? null : tc.trials.keySet(), never, candidates);
+                        if (candidates.size() >= CANDIDATE_SET_SIZE) break outermost;
                     }
                 }
             }
@@ -1981,7 +1980,7 @@ public class FindBestDomainOrder {
                             // Add this order to the collection.
                             if (TRACE > 1) out.println("Adding to candidate set: "+o_v);
                             candidates.add(o_v);
-                            if (candidates.size() >= CANDIDATE_SET_SIZE) break;
+                            if (candidates.size() >= CANDIDATE_SET_SIZE) break outermost;
                         }
                     }
                 }
@@ -1994,8 +1993,13 @@ public class FindBestDomainOrder {
             if (TRACE > 1) out.println("Cutoff is now "+end);
         }
         
+        boolean force = (tc != null && tc.size() < 2) ||
+            vData.numInstances() < INITIAL_SET ||
+            aData.numInstances() < INITIAL_SET ||
+            dData.numInstances() < INITIAL_SET;
+        
         if (!returnBest)
-            sel = selectOrder(candidates, vData, aData, dData, ir);
+            sel = selectOrder(candidates, vData, aData, dData, ir, force);
         if (sel == null || sel.isEmpty()) return null;
         Order o_v = (Order) sel.iterator().next();
         try {
@@ -2024,15 +2028,16 @@ public class FindBestDomainOrder {
         }
     }
 
-    public static int CANDIDATE_SET_SIZE = 100;
+    public static int CANDIDATE_SET_SIZE = 500;
     
     public static boolean LV = false;
-    public Collection selectOrder(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir) {
+    public Collection selectOrder(Collection orders,
+            TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir, boolean force) {
         
         if (TRACE > 1) out.println("Selecting an order from a candidate set of "+orders.size()+" orders.");
         if (TRACE > 2) out.println("Orders: "+orders);
         return LV ? localVariance(orders, vData, aData, dData, ir) :
-            uncertaintySample(orders, vData,aData, dData, ir);
+            uncertaintySample(orders, vData,aData, dData, ir, force);
         
     }
     
@@ -2040,7 +2045,8 @@ public class FindBestDomainOrder {
     public static boolean WEIGHT_UNCERTAINTY_SAMPLE = false;
     public static double VCENT = .5, ACENT = .5, DCENT = 1;
     public static double MAX_SCORE = 1 / Math.sqrt(2); //for these centers
-     public Collection uncertaintySample(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir) {
+     public Collection uncertaintySample(Collection orders,
+             TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir, boolean force) {
         ClassProbabilityEstimator vCPE = null, aCPE  = null, dCPE = null;
         vCPE = (ClassProbabilityEstimator) buildClassifier(CPE, binarize(0, vData));
         aCPE = (ClassProbabilityEstimator) buildClassifier(CPE, binarize(0, aData));
@@ -2064,22 +2070,23 @@ public class FindBestDomainOrder {
             Order o_d = a2d.translate(o_a);
             OrderInstance dInstance = TrialInstance.construct(o_d, dData);
             
-            double vScore = vCPE != null ? vCPE.classProbability(vInstance, 0) : .5;
-            double aScore = aCPE != null ? aCPE.classProbability(aInstance, 0) : .5;
-            double dScore = dCPE != null ? dCPE.classProbability(dInstance, 0) : 1;
+            double vScore = vCPE != null ? vCPE.classProbability(vInstance, 0) : VCENT;
+            double aScore = aCPE != null ? aCPE.classProbability(aInstance, 0) : ACENT;
+            double dScore = dCPE != null ? dCPE.classProbability(dInstance, 0) : DCENT;
             
             double score = RMS(vScore, VCENT, aScore, ACENT, dScore, DCENT);
             distribution[i] = MAX_SCORE - score;
             normalFact += MAX_SCORE - score;
             
             if (score < bestScore) {
-               bestScore = score;
-               best = o_v;
-           }
+                if (TRACE > 1) out.println("Uncertain order "+o_v+" score: "+format(score)+" (v="+format(vScore)+",a="+format(aScore)+",d="+format(dScore)+")");
+                bestScore = score;
+                best = o_v;
+            }
         }
         Collection ordersToTry = new LinkedList();
-        if (bestScore < UNCERTAINTY_THRESHOLD){
-            if(WEIGHT_UNCERTAINTY_SAMPLE){
+        if (force || bestScore < UNCERTAINTY_THRESHOLD) {
+            if (WEIGHT_UNCERTAINTY_SAMPLE) {
                 return sample(orderArr, distribution, normalFact);
             }
             ordersToTry.add(best);
@@ -2087,7 +2094,7 @@ public class FindBestDomainOrder {
         return ordersToTry;
     }
 
-    
+     public static int INITIAL_SET = 10;
 
     public static int NUM_LV_ESTIMATORS = 10;
     public static Random random = new Random(System.currentTimeMillis());
@@ -2185,13 +2192,15 @@ public class FindBestDomainOrder {
     static void genOrders(OrderConstraintSet ocs, List allVars, Collection already, Collection never, Collection result) {
         if (out_t != null) out_t.println("Generating orders for "+allVars);
         List orders;
-        if (ocs.approxNumOrders(allVars.size()) > CANDIDATE_SET_SIZE*5) {
-            if (out_t != null) out_t.println("Too many possible orders!  Using random sampling.");
+        int nOrders = ocs.approxNumOrders(allVars.size());
+        if (nOrders > CANDIDATE_SET_SIZE*20) {
+            if (out_t != null) out_t.println("Too many possible orders ("+nOrders+")!  Using random sampling.");
             orders = new LinkedList();
             for (int i = 0; i < CANDIDATE_SET_SIZE; ++i) {
                 orders.add(ocs.generateRandomOrder(allVars));
             }
         } else {
+            if (out_t != null) out_t.println("Estimated "+nOrders+" orders.");
             orders = ocs.generateAllOrders(allVars);
         }
         for (Iterator m = orders.iterator(); m.hasNext(); ) {
@@ -2240,9 +2249,12 @@ public class FindBestDomainOrder {
         Discretization vDis, Discretization aDis, Discretization dDis,
         TrialCollection tc, Collection never) {
         if (out_t != null) out_t.println("Generating orders for "+allVars);
-        List orders = ocs.generateAllOrders(allVars);
-        for (Iterator m = orders.iterator(); m.hasNext(); ) {
-            Order best = (Order) m.next();
+        // Choose a random one first.
+        Order best = ocs.generateRandomOrder(allVars);
+        Iterator m = Collections.singleton(best).iterator();
+        boolean exhaustive = true;
+        while (m.hasNext()) {
+            best = (Order) m.next();
             if (never.contains(best)) {
                 if (out_t != null) out_t.println("Skipped order "+best+" because it has blown up before.");
                 continue;
@@ -2252,6 +2264,11 @@ public class FindBestDomainOrder {
                 return genGuess(best, vClass, aClass, dClass, vDis, aDis, dDis);
             } else {
                 if (out_t != null) out_t.println("We have already tried order "+best);
+            }
+            if (exhaustive) {
+                List orders = ocs.generateAllOrders(allVars);
+                m = orders.iterator();
+                exhaustive = false;
             }
        }
         return null;
@@ -2424,7 +2441,7 @@ public class FindBestDomainOrder {
                 ++counts[numRules];
 
             }
-            total += BDDInferenceRule.FBO_TRIALS;
+            total += BDDInferenceRule.MAX_FBO_TRIALS;
         }
 
         SortedSet sortedTrials = new TreeSet(new Comparator() {
