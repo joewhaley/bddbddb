@@ -165,6 +165,18 @@ public abstract class Relation {
     }
 
     /**
+     * @param x
+     * @return
+     */
+    public Attribute getAttribute(String x) {
+        for (Iterator i = attributes.iterator(); i.hasNext(); ) {
+            Attribute a = (Attribute) i.next();
+            if (x.equals(a.attributeName)) return a;
+        }
+        return null;
+    }
+    
+    /**
      * @return
      */
     public int numberOfAttributes() {

@@ -115,8 +115,8 @@ public class ApplyEx extends LowLevelOperation {
             Attribute a = (Attribute) i.next();
             BDDDomain d = r1.getBDDDomain(a);
             if (d == null) d = r2.getBDDDomain(a);
-            else {
-                System.out.println("Trying to project attribute "+a+" which is neither in "+r1+" "+r1.getAttributes()+" nor "+r2+" "+r2.getAttributes());
+            if (d == null) {
+                System.out.println("Trying to project attribute "+a+" which is neither in "+r1+" "+r1.getAttributes()+" "+r1.getBDDDomains()+" nor "+r2+" "+r2.getAttributes()+" "+r2.getBDDDomains());
             }
             if (d != null) b.andWith(d.set());
         }
