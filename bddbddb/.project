@@ -3,6 +3,7 @@
 	<name>bddbddb</name>
 	<comment></comment>
 	<projects>
+		<project>JavaBDD</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

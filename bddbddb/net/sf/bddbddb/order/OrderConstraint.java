@@ -22,9 +22,10 @@ public abstract class OrderConstraint {
         if (a == b) return true;
         String s1 = a.toString();
         String s2 = b.toString();
-        if (a instanceof Attribute) s1 += "_"+((Attribute) a).getRelation();
-        if (b instanceof Attribute) s2 += "_"+((Attribute) b).getRelation();
         int c = s1.compareTo(s2);
+        if (c == 0) {
+            c = ((Attribute) a).getRelation().toString().compareTo(((Attribute) b).getRelation().toString());
+        }
         Assert._assert(c != 0);
         return c < 0;
     }
