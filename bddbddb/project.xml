@@ -151,6 +151,7 @@
       <roles>
         <role>Project Manager</role>
       </roles>
+      <timezone>-8</timezone>
     </developer>
 
     <developer>
@@ -161,6 +162,7 @@
       <roles>
         <role>Developer</role>
       </roles>
+      <timezone>-8</timezone>
     </developer>
 
     <developer>
@@ -171,6 +173,7 @@
       <roles>
         <role>Developer</role>
       </roles>
+      <timezone>-8</timezone>
     </developer>
 
     <developer>
@@ -181,6 +184,18 @@
       <roles>
         <role>Developer</role>
       </roles>
+      <timezone>-8</timezone>
+    </developer>
+
+    <developer>
+      <name>Jim Zhuang</name>
+      <id>jzhuang</id>
+      <email>jimz@stanford.edu</email>
+      <organization>Stanford University</organization>
+      <roles>
+        <role>Developer</role>
+      </roles>
+      <timezone>-8</timezone>
     </developer>
 
   </developers>
