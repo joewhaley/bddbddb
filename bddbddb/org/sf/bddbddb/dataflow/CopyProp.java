@@ -1,9 +1,6 @@
-/*
- * Created on Jul 10, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
+// ConstantProp.java, created Jul 10, 2004 by mcarbin
+// Copyright (C) 2004 Michael Carbin <mcarbin@stanford.edu>
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.dataflow;
 
 import java.util.Comparator;
@@ -37,18 +34,13 @@ import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
 
 /**
- * @author mcarbin
+ * CopyProp
  * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @author mcarbin
+ * @version $Id$
  */
 public class CopyProp extends OperationProblem implements IRPass {
-    /**
-     * @author mcarbin
-     * 
-     * TODO To change the template for this generated type comment go to Window -
-     * Preferences - Java - Code Style - Code Templates
-     */
+    
     IR ir;
     Map opIns;
     boolean TRACE = false;
