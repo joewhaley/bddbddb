@@ -165,9 +165,16 @@ public class UFDomainAssignment extends DomainAssignment {
                 if (a1 == a2) continue;
                 if (a1.getDomain() != a2.getDomain()) continue;
                 Pair p2 = new Pair(r, a2);
-                Assert._assert(uf.find(p1) == p1);
-                Assert._assert(uf.find(p2) == p2);
-                neq_constraints.add(new Pair(p1, p2));
+                if (uf.find(p1) != p1) {
+                    System.out.println("Warning: "+p1+" != "+uf.find(p1));
+                    p1 = (Pair) uf.find(p1);
+                }
+                if (uf.find(p2) != p2) {
+                    System.out.println("Warning: "+p2+" != "+uf.find(p2));
+                    p2 = (Pair) uf.find(p2);
+                }
+                boolean b = neq_constraints.add(new Pair(p1, p2));
+                Assert._assert(b);
             }
         }
     }
