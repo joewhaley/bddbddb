@@ -212,6 +212,18 @@ public class BDDRelation extends Relation {
         updateNegated();
     }
 
+    public boolean verify() {
+        BDD s = relation.support();
+        calculateDomainSet();
+        BDD t = domainSet.and(s);
+        s.free();
+        boolean result = t.equals(domainSet);
+        if (!result) {
+            System.out.println("Warning, domains for "+this+" don't match BDD: "+activeDomains(relation)+" vs "+domains);
+        }
+        return result;
+    }
+    
     /**
      * @param filename
      * @throws IOException
