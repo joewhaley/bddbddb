@@ -30,6 +30,23 @@ public abstract class OrderConstraint {
         return c < 0;
     }
     
+    public static OrderConstraint makeConstraint(int type, Object a, Object b) {
+        if (compare(a, b)) {
+            switch (type) {
+                case 0: return new BeforeConstraint(a, b);
+                case 1: return new InterleaveConstraint(a, b);
+                case 2: return new AfterConstraint(a, b);
+            }
+        } else {
+            switch (type) {
+                case 0: return new BeforeConstraint(b, a);
+                case 1: return new InterleaveConstraint(b, a);
+                case 2: return new AfterConstraint(b, a);
+            }
+        }
+        return null;
+    }
+    
     public static OrderConstraint makePrecedenceConstraint(Object a, Object b) {
         if (compare(a, b)) return new BeforeConstraint(a, b);
         else return new AfterConstraint(b, a);
@@ -90,6 +107,7 @@ public abstract class OrderConstraint {
         return o.getConstraints().contains(this);
     }
     
+    public abstract int getType();
     public abstract boolean isOpposite(OrderConstraint that);
     public abstract OrderConstraint getOpposite1();
     public abstract OrderConstraint getOpposite2();
@@ -143,6 +161,8 @@ public abstract class OrderConstraint {
             return a+"<"+b;
         }
         
+        public int getType() { return 0; }
+        
         public boolean isOpposite(OrderConstraint that) {
             if (that instanceof AfterConstraint ||
                 that instanceof InterleaveConstraint) {
@@ -177,6 +197,8 @@ public abstract class OrderConstraint {
             return a+">"+b;
         }
         
+        public int getType() { return 2; }
+        
         public boolean isOpposite(OrderConstraint that) {
             if (that instanceof BeforeConstraint ||
                 that instanceof InterleaveConstraint) {
@@ -210,6 +232,8 @@ public abstract class OrderConstraint {
         public String toString() {
             return a+"~"+b;
         }
+        
+        public int getType() { return 1; }
         
         public boolean isOpposite(OrderConstraint that) {
             if (that instanceof BeforeConstraint ||
