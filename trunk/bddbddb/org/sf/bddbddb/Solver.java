@@ -69,8 +69,11 @@ public abstract class Solver {
     /** Trace output stream. */
     PrintStream out = System.out;
     
+    /** Input Datalog filename. */
+    String inputFilename;
     /** Base directory where to load/save files. */
     String basedir = System.getProperty("basedir");
+    /** Include directories. */
     String includedirs = System.getProperty("includedirs");
     /** List of paths to search when loading files. */
     List/*<String>*/ includePaths;
