@@ -49,7 +49,7 @@ public class BDDSolver extends Solver {
     int BDDNODES = Integer.parseInt(System.getProperty("bddnodes", "1000000"));
     int BDDCACHE = Integer.parseInt(System.getProperty("bddcache", "100000"));
     int BDDMINFREE = Integer.parseInt(System.getProperty("bddminfree", "20"));
-    String VARORDER = System.getProperty("bddvarorder", null);
+    public String VARORDER = System.getProperty("bddvarorder", null);
 
     /**
      *  
@@ -655,7 +655,7 @@ public class BDDSolver extends Solver {
      * @see org.sf.bddbddb.Solver#getInterpreter()
      */
     public Interpreter getInterpreter() {
-        BDDInterpreter interpret = new BDDInterpreter(this.bdd);
+        BDDInterpreter interpret = new BDDInterpreter(this, this.bdd);
         return interpret;
    }
 }

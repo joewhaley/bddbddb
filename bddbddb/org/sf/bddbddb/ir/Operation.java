@@ -16,10 +16,19 @@ import org.sf.bddbddb.Relation;
 public abstract class Operation implements IterationElement {
     static int opNumber = 0;
     
+    /**
+     * @return
+     */
     public static int getNumberOfOperations() { return opNumber+1; }
 
+    /**
+     * Comment for <code>id</code>
+     */
     public final int id;
 
+    /**
+     * 
+     */
     public Operation() {
         id = ++opNumber;
     }
@@ -43,7 +52,7 @@ public abstract class Operation implements IterationElement {
     public abstract Relation getRelationDest();
 
     /**
-     * @return
+     * @param r0
      */
     public abstract void setRelationDest(Relation r0);
 
