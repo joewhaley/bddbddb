@@ -1068,7 +1068,7 @@ public class BDDInferenceRule extends InferenceRule {
         fbdo.incorporateTrial(tc);
         
         XMLFactory.dumpXML("fbo.xml", fbdo.toXMLElement());
-        XMLFactory.dumpXML("trials.xml", fbdo.trialsToXMLElement());
+        XMLFactory.dumpXML(solver.TRIALFILE, fbdo.trialsToXMLElement());
     }
     
 }
