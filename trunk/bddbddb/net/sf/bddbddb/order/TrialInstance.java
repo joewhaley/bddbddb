@@ -101,4 +101,7 @@ public class TrialInstance extends OrderInstance implements Comparable {
         return this.ti.order.equals(((TrialInstance) o).ti.order);
     }
 
+    public int hashCode() {
+        return this.ti.hashCode();
+    }
 }
