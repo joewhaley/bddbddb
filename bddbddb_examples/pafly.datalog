@@ -47,10 +47,105 @@ A(v2,v1) :- Mret(m,v1), IE(i,m), Iret(i,v2).
 A(v2,v1) :- Mthr(m,v1), IE(i,m), Ithr(i,v2).
 IE(i,m2) :- mI(m,i,n), actual(i,0,v), vP(v,h), hT(h,t), cha(t,n,m2). split
 
-reachable (method:M0) { \
+reachable (method:M0) output { \
     PAFly.addToReachable(reachable); \
 }
 roots (method:M0) input
+stringToType (heap:H0,type:T0) input output
+stringToField (heap:H0,field:F0) input output
+stringToMethod (heap:H0,method:M0) input output
+defaultConstructor (type:T0, method:M0) output
+allConstructors (type:T0, method:M0) output
 
-reachable(m) :- roots(m). modifies (vP0,A,L,S,actual,formal,Mret,Mthr,Iret,Ithr,IE0,vT,hT,aT,mI,cha,roots,reachable)
-reachable(m) :- IE(_,m). modifies (vP0,A,L,S,actual,formal,Mret,Mthr,Iret,Ithr,IE0,vT,hT,aT,mI,cha,roots,reachable)
+reachable(m) :- roots(m). modifies (vP0,A,L,S,actual,formal,Mret,Mthr,Iret,Ithr,IE0,vT,hT,aT,mI,cha,roots,stringToType,stringToField,stringToMethod,reachable,defaultConstructor,allConstructors)
+reachable(m) :- IE(_,m). modifies (vP0,A,L,S,actual,formal,Mret,Mthr,Iret,Ithr,IE0,vT,hT,aT,mI,cha,roots,stringToType,stringToField,stringToMethod,reachable,defaultConstructor,allConstructors)
+
+forName (method:M0)
+forName("java.lang.Class.forName (Ljava/lang/String;)Ljava/lang/Class;").
+forName("java.lang.Class.forName (Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;").
+getClass (method:M0)
+getClass("java.lang.Object.getClass ()Ljava/lang/Class;").
+newInstance (method:M0)
+newInstance("java.lang.Class.newInstance ()Ljava/lang/Object;").
+newInstance("java.lang.reflect.Constructor.newInstance ([Ljava/lang/Object;)Ljava/lang/Object;").
+getConstructor (method:M0)
+getConstructor("java.lang.Class.getConstructor ([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;").
+getConstructor("java.lang.Class.getDeclaredConstructor ([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;").
+getConstructors (method:M0)
+getConstructors("java.lang.Class.getConstructors ()[Ljava/lang/reflect/Constructor;").
+getConstructors("java.lang.Class.getDeclaredConstructors ()[Ljava/lang/reflect/Constructor;").
+getField (m:M0)
+getField("java.lang.Class.getField (Ljava/lang/String;)Ljava/lang/reflect/Field;").
+getField("java.lang.Class.getDeclaredField (Ljava/lang/String;)Ljava/lang/reflect/Field;").
+
+mapIH (i:I0, h:H0)
+
+returnNewObject (i:I0) outputtuples { \
+    PAFly.addToHDomain(returnNewObject); \
+}
+
+vP(v,h) :- returnNewObject(i), Iret(i,v), mapIH(i,h).
+
+returnNewObject(i) :- IE(i,m), forName(m). modifies mapIH
+hT(h,t) :- IE(i,m), forName(m), Iret(i,v), mapIH(i,h), vT(v,t).
+returnNewObject(i) :- IE(i,m), getClass(m). modifies mapIH
+hT(h,t) :- IE(i,m), getClass(m), Iret(i,v), mapIH(i,h), vT(v,t).
+returnNewObject(i) :- IE(i,m), getConstructor(m). modifies mapIH
+hT(h,t) :- IE(i,m), getConstructor(m), Iret(i,v), mapIH(i,h), vT(v,t).
+returnNewObject(i) :- IE(i,m), getConstructors(m). modifies mapIH
+hT(h,t) :- IE(i,m), getConstructors(m), Iret(i,v), mapIH(i,h), vT(v,t).
+returnNewObject(i) :- IE(i,m), newInstance(m). modifies mapIH
+
+classObjectType (heap:H0, type:T0) outputtuples
+classObjectType(hc,t) :- forName(m), IE(i,m), mapIH(i,hc), actual(i,1,v), vP(v,h), stringToType(h,t).
+classObjectType(hc,t) :- getClass(m), IE(i,m), mapIH(i,hc), actual(i,0,v), vP(v,h), hT(h,t).
+
+resolvedNewInstance (i:I0, t:T0) outputtuples
+resolvedNewInstance(i,t) :- newInstance(m), IE(i,m), actual(i,0,vc), vP(vc,hc), classObjectType(hc,t).
+hT(h,t) :- resolvedNewInstance(i,t), mapIH(i,h).
+IE(i,m) :- resolvedNewInstance(i,t), defaultConstructor(t,m).
+vP(v,h) :- resolvedNewInstance(i,t), mapIH(i,h), defaultConstructor(t,m), formal(m,0,v).
+
+constructorObjectType (h:H0, t:T0) outputtuples
+constructorObjectType(h,t) :- getConstructor(cm), IE(i,cm), mapIH(i,h), actual(i,0,v), vP(v,hc), classObjectType(hc,t).
+
+resolvedNewInstance2 (i:I0, t:T0) outputtuples
+resolvedNewInstance2(i,t) :- newInstance(m), IE(i,m), actual(i,0,vc), vP(vc,hc), constructorObjectType(hc,t).
+hT(h,t) :- resolvedNewInstance2(i,t), mapIH(i,h).
+IE(i,m) :- resolvedNewInstance2(i,t), allConstructors(t,m).
+vP(v,h) :- resolvedNewInstance2(i,t), mapIH(i,h), allConstructors(t,m), formal(m,0,v).
+
+constructorObjectType(h,t) :- getConstructors(cm), IE(i,cm), mapIH(i,h), actual(i,0,v), vP(v,hc), classObjectType(hc,t).
+hP(h,f,h2) :- constructorObjectType(h,_), f = "null", h = h2.
+
+fieldObject (h:H0, f:F0) outputtuples
+
+fieldObject(h,f) :- getField(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToField(hc,f).
+S(v1,f,v2) :- IE(i,"java.lang.reflect.Field.put (Ljava/lang/Object;Ljava/lang/Object;)V"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
+              actual(i,1,v1), actual(i,2,v2).
+L(v1,f,v2) :- IE(i,"java.lang.reflect.Field.get (Ljava/lang/Object;)Ljava/lang/Object;"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
+              actual(i,1,v1), actual(i,2,v2).
+
+# TODO in java.lang.Class
+#   getField, getFields, getDeclaredField, getDeclaredFields
+#   getMethod, getMethods, getDeclaredMethod, getDeclaredMethods
+
+# TODO in java.lang.reflect.Method
+#   invoke
+
+# TODO in java.lang.reflect.Field
+#   get, set
+
+leadsToForName (v:V0,i:I0) output
+leadsToForName(v,i) :- IE(i,m), forName(m), actual(i,1,v).
+leadsToForName(v2,i) :- leadsToForName(v1,i), A(v1,v2).
+
+lhs (v:V0)
+lhs(v) :- A(v,_).
+
+typeString (v:V0)
+typeString(v) :- vP(v,h), stringToType(h,_).
+
+deadEndForName (v:V0,i:I0) outputtuples
+deadEndForName(v,i) :- leadsToForName(v,i), !lhs(v), !typeString(v).
+
