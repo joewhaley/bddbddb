@@ -3,9 +3,10 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.io.IOException;
+import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 
 /**
  * Relation
@@ -18,6 +19,7 @@ public abstract class Relation {
     List/* <Attribute> */attributes;
     Relation negated;
     public int id;
+    Constraints constraints;
 
     /**
      * Create a new Relation.
@@ -34,6 +36,7 @@ public abstract class Relation {
             Attribute a = (Attribute) i.next();
             if (a.relation == null) a.relation = this;
         }
+        constraints = new Constraints(this.attributes);
     }
 
     public abstract void initialize();
@@ -169,17 +172,31 @@ public abstract class Relation {
      * @return
      */
     public Attribute getAttribute(String x) {
-        for (Iterator i = attributes.iterator(); i.hasNext(); ) {
+        for (Iterator i = attributes.iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
             if (x.equals(a.attributeName)) return a;
         }
         return null;
     }
-    
+
     /**
      * @return
      */
     public int numberOfAttributes() {
         return attributes.size();
+    }
+
+    /**
+     * @return Returns the constraints.
+     */
+    public Constraints getConstraints() {
+        return constraints;
+    }
+
+    /**
+     * @param constraints The constraints to set.
+     */
+    public void setConstraints(Constraints constraints) {
+        this.constraints = constraints;
     }
 }

@@ -3,12 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -17,6 +11,15 @@ import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.MyStringTokenizer;
@@ -525,8 +528,10 @@ public abstract class Solver {
             return null;
         }
         Relation r = createRelation(name, attributes);
+        Pattern constraintPattern = Pattern.compile("(\\w+)([=<])(\\w+)");
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
+            Matcher constraintMatcher = constraintPattern.matcher(option);
             if (option.equals("output")) {
                 relationsToDump.add(r);
             } else if (option.equals("outputnot")) {
@@ -541,12 +546,43 @@ public abstract class Solver {
                 relationsToLoadTuples.add(r);
             } else if (option.equals("printsize")) {
                 relationsToPrintSize.add(r);
+            } else if (constraintMatcher.matches()) {
+                parseAndAddConstraint(r, constraintMatcher);
             } else {
                 outputError(lineNum, st.getPosition(), s, "Unexpected option '" + option + "'");
                 throw new IllegalArgumentException();
             }
         }
+        r.constraints.satisfy();
         return r;
+    }
+
+    public void parseAndAddConstraint(Relation r, Matcher m) {
+        if (m.matches()) {
+            String leftAttr = m.group(1);
+            String type = m.group(2);
+            String rightAttr = m.group(3);
+            Attribute left = null;
+            Attribute right = null;
+            for (Iterator it = r.getAttributes().iterator(); it.hasNext();) {
+                Attribute a = (Attribute) it.next();
+                if (a.attributeName.equals(leftAttr)) left = a;
+                if (a.attributeName.equals(rightAttr)) right = a;
+            }
+            if (left == null) {
+                System.out.println("Specified Attribute not found: " + leftAttr);
+                throw new IllegalArgumentException();
+            } else if (right == null) {
+                System.out.println("Specified Attribute not found: " + rightAttr);
+                throw new IllegalArgumentException();
+            }
+            Constraint c = new Constraint(left, right, 10);
+            if (type.equals("=")) r.constraints.addInterleavedConstraint(c);
+            else if (type.equals("<")) r.constraints.addBeforeConstraint(c);
+            if (TRACE) System.out.println("parsed constraint: " + leftAttr + " " + type + " " + rightAttr);
+        } else {
+            //handle error
+        }
     }
 
     void deleteRelation(Relation r) {

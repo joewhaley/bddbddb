@@ -122,7 +122,7 @@ public class BDDSolver extends Solver {
     /**
      *  
      */
-    void setVariableOrdering() {
+    public void setVariableOrdering() {
         if (VARORDER != null) {
             fixVarOrder();
             System.out.print("Setting variable ordering to " + VARORDER + ", ");
@@ -416,7 +416,7 @@ public class BDDSolver extends Solver {
         }
         return null;
     }
-    
+
     public MultiMap getBDDDomains() {
         return fielddomainsToBDDdomains;
     }

@@ -23,10 +23,41 @@ public abstract class Interpreter {
     Map/* IterationList,LoopStats */loopStats;
 
     public abstract void interpret();
-    class RelationStats {
-        int size;
+    public static class RelationStats {
+        public int size;
+
+        public RelationStats() {
+            size = 0;
+        }
+
+        /**
+         * @param that
+         * @return
+         */
+        public RelationStats join(RelationStats that) {
+            RelationStats result = new RelationStats();
+            result.size = (this.size > that.size) ? this.size : that.size;
+            return result;
+        }
+
+        public RelationStats copy() {
+            RelationStats result = new RelationStats();
+            result.size = this.size;
+            return result;
+        }
+
+        public boolean equals(Object o) {
+            if (o instanceof RelationStats) {
+                return this.size == ((RelationStats) o).size;
+            }
+            return false;
+        }
+
+        public String toString() {
+            return "size: " + Double.toString(size);
+        }
     }
-    class LoopStats {
+    public class LoopStats {
         Collection/* Relation */inputRelations;
     }
 }

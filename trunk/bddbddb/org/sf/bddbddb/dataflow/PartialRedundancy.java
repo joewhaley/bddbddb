@@ -46,7 +46,6 @@ import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.Assert;
 
 /**
  * @author mcarbin
@@ -66,7 +65,7 @@ public class PartialRedundancy implements IRPass {
     Solver solver;
     IR ir;
     Set allExpressions;
-    boolean TRACE = true;
+    boolean TRACE = false;
 
     public PartialRedundancy(IR ir) {
         this.ir = ir;
@@ -110,10 +109,15 @@ public class PartialRedundancy implements IRPass {
         IterationList list = ir.graph.getIterationList();
         DataflowSolver solver = new DataflowSolver();
         solver.solve(anticipated, list);
+        solver = new DataflowSolver();
         solver.solve(available, list);
+        solver = new DataflowSolver();
         solver.solve(earliest, list);
+        solver = new DataflowSolver();
         solver.solve(postponed, list);
+        solver = new DataflowSolver();
         solver.solve(latest, list);
+        solver = new DataflowSolver();
         solver.solve(used, list);
         return transform(list);
     }
@@ -349,6 +353,7 @@ public class PartialRedundancy implements IRPass {
             public Fact join(Fact that) {
                 AnticipatedFact thatFact = (AnticipatedFact) that;
                 AnticipatedFact result = new AnticipatedFact();
+                result.loc = this.loc;
                 result.expressions.addAll(this.expressions);
                 result.expressions.retainAll(thatFact.expressions);
                 return result;
@@ -453,6 +458,7 @@ public class PartialRedundancy implements IRPass {
                 AvailableFact thatFact = (AvailableFact) that;
                 result.expressions.addAll(this.expressions);
                 result.expressions.retainAll(thatFact.expressions);
+                result.loc = this.loc;
                 return result;
             }
 
@@ -644,6 +650,7 @@ public class PartialRedundancy implements IRPass {
                 PostponedFact result = new PostponedFact();
                 result.expressions.addAll(this.expressions);
                 result.expressions.retainAll(thatFact.expressions);
+                result.loc = this.loc;
                 return result;
             }
 
@@ -769,6 +776,7 @@ public class PartialRedundancy implements IRPass {
                 LatestFact result = new LatestFact();
                 result.expressions.addAll(this.expressions);
                 result.expressions.retainAll(thatFact.expressions);
+                result.loc = this.loc;
                 return result;
             }
         }
@@ -844,6 +852,7 @@ public class PartialRedundancy implements IRPass {
                 UsedFact result = (UsedFact) create();
                 result.addExpressions(this.expressions);
                 result.addExpressions(thatFact.expressions);
+                result.loc = this.loc;
                 return result;
             }
 
@@ -972,6 +981,7 @@ public class PartialRedundancy implements IRPass {
     }
     abstract class PreFact implements OperationFact {
         Operation op;
+        IterationList loc;
         public Set expressions;
 
         public PreFact() {
@@ -1009,7 +1019,9 @@ public class PartialRedundancy implements IRPass {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#copy(org.sf.bddbddb.IterationList)
          */
         public Fact copy(IterationList list) {
-            return this.copy();
+            PreFact result = this.copy();
+            result.loc = list;
+            return result;
         }
 
         /*
@@ -1018,6 +1030,7 @@ public class PartialRedundancy implements IRPass {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#setLocation(org.sf.bddbddb.IterationList)
          */
         public void setLocation(IterationList list) {
+            loc = list;
         }
 
         /*
@@ -1026,8 +1039,7 @@ public class PartialRedundancy implements IRPass {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#getLocation()
          */
         public IterationList getLocation() {
-            Assert.UNREACHABLE("");
-            return null;
+            return loc;
         }
 
         public String toString() {
@@ -1043,6 +1055,7 @@ public class PartialRedundancy implements IRPass {
         public PreFact copy() {
             PreFact result = create();
             result.expressions.addAll(this.expressions);
+            result.loc = loc;
             return result;
         }
 

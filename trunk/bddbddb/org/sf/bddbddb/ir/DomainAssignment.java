@@ -3,10 +3,13 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -20,6 +23,8 @@ import org.sf.bddbddb.Domain;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
+import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
+import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import org.sf.bddbddb.ir.dynamic.If;
 import org.sf.bddbddb.ir.dynamic.Nop;
 import org.sf.bddbddb.ir.highlevel.BooleanOperation;
@@ -57,6 +62,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     List inserted;
     boolean TRACE = false;
     ListIterator currentBlock;
+    Map/*Relation,Constraints*/constraintMap;
 
     public abstract void doAssignment();
 
@@ -88,8 +94,8 @@ public abstract class DomainAssignment implements OperationVisitor {
             if (TRACE) System.out.println("Doing loop depth " + index);
             for (Iterator j = s.iterator(); j.hasNext();) {
                 list = (IterationList) j.next();
-                System.out.print("Loop depth "+index+" "+list+"                                     \r");
                 if (TRACE) System.out.println("Doing " + list);
+                //add constraints for relprods first
                 for (ListIterator i = list.iterator(); i.hasNext();) {
                     Object o = i.next();
                     if (o instanceof ApplyEx) {
@@ -98,6 +104,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                         op.visit(this);
                     }
                 }
+                //add all other operation constraints in iteration order
                 for (ListIterator i = list.iterator(); i.hasNext();) {
                     Object o = i.next();
                     if (o instanceof Operation) {
@@ -131,31 +138,39 @@ public abstract class DomainAssignment implements OperationVisitor {
                 domainToAttributes.add(a.getDomain(), a);
             }
         }
+        constraintMap = new HashMap();
+    }
+
+    /**
+     *  
+     */
+    public DomainAssignment(Solver s, Constraints[] constraints) {
+        this(s);
+        for (int i = 0; i < constraints.length; i++) {
+            constraintMap.put(s.getRelation(i), constraints[i]);
+        }
     }
 
     void initialize() {
         BDDSolver s = (BDDSolver) solver;
-        
         // Attributes of the same relation must be assigned to different
         // domains.
         for (int i = 0; i < solver.getNumberOfRelations(); ++i) {
             Relation r = solver.getRelation(i);
-            System.out.print("Rel "+i+"/"+solver.getNumberOfRelations()+": "+r+"                     \r");
             forceDifferent(r);
         }
         // Equality relations are treated special here, because we don't support
         // renaming them yet.
-        for (Iterator i = s.equivalenceRelations.values().iterator(); i.hasNext(); ) {
+        for (Iterator i = s.equivalenceRelations.values().iterator(); i.hasNext();) {
             BDDRelation r = (BDDRelation) i.next();
             forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
             forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
         }
-        for (Iterator i = s.notequivalenceRelations.values().iterator(); i.hasNext(); ) {
+        for (Iterator i = s.notequivalenceRelations.values().iterator(); i.hasNext();) {
             BDDRelation r = (BDDRelation) i.next();
             forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
             forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
         }
-        
         // Add constraints from file.
         String domainFile = System.getProperty("domainfile", "domainfile");
         DataInputStream in = null;
@@ -164,14 +179,45 @@ public abstract class DomainAssignment implements OperationVisitor {
             loadDomainAssignment(in);
         } catch (IOException x) {
         } finally {
-            if (in != null) try { in.close(); } catch (IOException _) { }
+            if (in != null) try {
+                in.close();
+            } catch (IOException _) {
+            }
         }
     }
 
     abstract void forceDifferent(Relation r);
+
     abstract boolean forceEqual(Object o1, Object o2);
+
     abstract boolean forceNotEqual(Object o1, Object o2);
-    
+
+    abstract boolean forceBefore(Object o1, Object o2);
+
+    abstract boolean forceBefore(Relation r1, Attribute a1, Relation r2, Attribute a2);
+
+    abstract boolean forceInterleaved(Object o1, Object o2);
+
+    abstract boolean forceInterleaved(Relation r1, Attribute a1, Relation r2, Attribute a2);
+
+    public void forceConstraints(Relation r) {
+        Constraints cons = (Constraints) constraintMap.get(r);
+        //Assert._assert(cons != null, "Constraints for " + r + " are null");
+        if (cons != null) {
+            Collection bcons = cons.getBeforeConstraints();
+            if (TRACE && bcons.size() == 0) System.out.println("No before constraints for " + r);
+            for (Iterator it = bcons.iterator(); it.hasNext();) {
+                Constraint c = (Constraint) it.next();
+                forceBefore(r, (Attribute) c.left, r, (Attribute) c.right);
+            }
+            Collection icons = cons.getInterleavedConstraints();
+            for (Iterator it = icons.iterator(); it.hasNext();) {
+                Constraint c = (Constraint) it.next();
+                forceInterleaved(r, (Attribute) c.left, r, (Attribute) c.right);
+            }
+        }
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -248,6 +294,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                 }
             }
         }
+        forceConstraints(r0);
         return null;
     }
 
@@ -312,6 +359,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                 }
             }
         }
+        forceConstraints(r0);
         return null;
     }
 
@@ -355,6 +403,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                 return visit(op);
             }
         }
+        forceConstraints(r0);
         return null;
     }
 
@@ -476,6 +525,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                 return visit(op);
             }
         }
+        forceConstraints(r0);
         return null;
     }
 
@@ -499,6 +549,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                 return visit(op);
             }
         }
+        forceConstraints(r1);
         return null;
     }
 
@@ -531,8 +582,9 @@ public abstract class DomainAssignment implements OperationVisitor {
     public Object visit(Nop op) {
         return null;
     }
-    
+
     public abstract void saveDomainAssignment(DataOutput out) throws IOException;
+
     public void loadDomainAssignment(DataInput in) throws IOException {
         BDDSolver bs = (BDDSolver) solver;
         int count = 0;
@@ -558,14 +610,12 @@ public abstract class DomainAssignment implements OperationVisitor {
                         String s4 = st.nextToken();
                         Relation r = bs.getRelation(s3);
                         Attribute a = r != null ? r.getAttribute(s4) : null;
-                        if (r != null && a != null)
-                            o2 = new Pair(r, a);
+                        if (r != null && a != null) o2 = new Pair(r, a);
                     }
                 } else {
                     Relation r1 = bs.getRelation(s1);
                     Attribute a1 = r1 != null ? r1.getAttribute(s2) : null;
-                    if (r1 != null && a1 != null)
-                        o1 = new Pair(r1, a1);
+                    if (r1 != null && a1 != null) o1 = new Pair(r1, a1);
                     constraint = s3;
                     String s4 = st.nextToken();
                     if (!st.hasMoreTokens()) {
@@ -574,8 +624,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                         String s5 = st.nextToken();
                         Relation r2 = bs.getRelation(s4);
                         Attribute a2 = r2 != null ? r1.getAttribute(s5) : null;
-                        if (r2 != null && a2 != null)
-                            o2 = new Pair(r2, a2);
+                        if (r2 != null && a2 != null) o2 = new Pair(r2, a2);
                     }
                 }
                 boolean success = false;
@@ -584,16 +633,19 @@ public abstract class DomainAssignment implements OperationVisitor {
                         success = forceEqual(o1, o2);
                     } else if (constraint.equals("!=")) {
                         success = forceNotEqual(o1, o2);
+                    } else if (constraint.equals("<")) {
+                        success = forceBefore(o1, o2);
+                    } else if (constraint.equals("~")) {
+                        success = forceInterleaved(o1, o2);
                     }
                 }
                 if (!success) {
-                    System.out.println("Cannot add constraint: "+s);
+                    System.out.println("Cannot add constraint: " + s);
                 } else {
                     ++count;
                 }
             }
         }
-        System.out.println("Incorporated "+count+" constraints from file.");
+        System.out.println("Incorporated " + count + " constraints from file.");
     }
-    
 }

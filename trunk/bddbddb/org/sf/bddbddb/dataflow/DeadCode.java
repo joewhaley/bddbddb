@@ -14,13 +14,13 @@ import org.sf.bddbddb.ir.IR;
 import org.sf.bddbddb.ir.Operation;
 
 /**
- * @author Administrator
+ * @author mcarbin
  * 
- * TODO To change the template for this generated type comment go to Window -
+ * To change the template for this generated type comment go to Window -
  * Preferences - Java - Code Style - Code Templates
  */
 public class DeadCode implements IRPass {
-    public boolean TRACE = true;
+    public boolean TRACE = false;
     IR ir;
     Liveness liveness;
 
@@ -35,13 +35,12 @@ public class DeadCode implements IRPass {
      * @see org.sf.bddbddb.dataflow.IRPass#run()
      */
     public boolean run() {
-        System.out.print("Running DeadCode...");
         long time = System.currentTimeMillis();
         IterationList list = ir.graph.getIterationList();
         DataflowSolver solver = new DataflowSolver();
         solver.solve(liveness, list);
         boolean result = deadCodeElimination(list);
-        System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
+        System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         return result;
     }
 
