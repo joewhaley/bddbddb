@@ -397,7 +397,7 @@ public class SCCPathNumbering extends PathNumbering {
             return sb.toString();
         }
     }
-    public static String lineSep;
+    private static String lineSep;
 
     public Path getPath(Object callee, Number context) {
         BigInteger c = toBigInt(context);
