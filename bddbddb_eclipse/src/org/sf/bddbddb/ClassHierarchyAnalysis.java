@@ -3,14 +3,11 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.sf.bddbddb.PAFromSource.MethodWrapper;
-import org.sf.bddbddb.PAFromSource.TypeWrapper;
-import org.sf.bddbddb.util.IndexMap;
+import org.sf.bddbddb.util.IndexedMap;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 
@@ -30,24 +27,24 @@ public class ClassHierarchyAnalysis {
         this.Tmap = pa.Tmap;
         this.Nmap = pa.Nmap;
         this.Mmap = pa.Mmap;
-        this.T = pa.T2;
-        this.N = pa.N;
-        this.M = pa.M;
-        this.cha = pa.bdd.zero();
+        this.T = PAFromSource.T2;
+        this.N = PAFromSource.N;
+        this.M = PAFromSource.M;
+        this.cha = PAFromSource.bdd.zero();
         OBJECT = pa.OBJECT.getType();
     }
     
-    IndexMap Tmap;
-    IndexMap Nmap;
-    IndexMap Mmap;
+    IndexedMap Tmap;
+    IndexedMap Nmap;
+    IndexedMap Mmap;
     
     BDDDomain T, N, M;
     BDD cha;
     
     void addToCHA(ITypeBinding type, IMethodBinding name, IMethodBinding target) {
-        int T_i = Tmap.get(pa.new TypeWrapper(type));
-        int N_i = Nmap.get(pa.new MethodWrapper(name));
-        int M_i = Mmap.get(pa.new MethodWrapper(target));
+        int T_i = Tmap.get(new TypeWrapper(type));
+        int N_i = Nmap.get(new MethodWrapper(name));
+        int M_i = Mmap.get(new MethodWrapper(target));
         
         //System.out.println("adding to CHA: "+pa.new TypeWrapper(type)+" / "
         //    +pa.new MethodWrapper(name)+" / "+pa.new MethodWrapper(target));
@@ -77,7 +74,7 @@ public class ClassHierarchyAnalysis {
                 TypeWrapper tw = (TypeWrapper) o;
                 type = tw.getType();
             } else {
-                if (pa.GLOBAL_THIS.equals(o)) continue;
+                if (StringWrapper.GLOBAL_THIS.equals(o)) continue;
                 type = OBJECT;
             }
             //System.out.println(type.getBinaryName());
@@ -105,7 +102,7 @@ public class ClassHierarchyAnalysis {
             }
             if (method != null) {
                 int mod = method.getModifiers();
-                if (Modifier.isAbstract(mod) || Modifier.isPrivate(mod) || Modifier.isStatic(mod)) return null;
+                if (method.isConstructor() || Modifier.isAbstract(mod) || Modifier.isPrivate(mod) || Modifier.isStatic(mod)) return null;
                 return method;
             }
             //if (type.getKey().equals(OBJECT.getKey())) break;
