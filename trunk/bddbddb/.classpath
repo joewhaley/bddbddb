@@ -5,5 +5,6 @@
 	<classpathentry exported="true" sourcepath="/JavaBDD" kind="lib" path="javabdd.jar"/>
 	<classpathentry kind="lib" path="weka.jar"/>
 	<classpathentry sourcepath="/jwutil/main/src/java" kind="lib" path="jwutil-1.0.jar"/>
+	<classpathentry kind="lib" path="jdom.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>
