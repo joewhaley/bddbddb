@@ -10,6 +10,12 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.FileInputStream;
+import java.io.IOException;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.BDDSolver;
@@ -32,6 +38,7 @@ import org.sf.javabdd.BDDDomain;
 public class UFDomainAssignment extends DomainAssignment {
     UnionFind uf;
     LinkedHashSet neq_constraints;
+    Map physicalDomains;
     
     /**
      * @param s
@@ -84,7 +91,7 @@ public class UFDomainAssignment extends DomainAssignment {
         }
         
         BDDSolver s = (BDDSolver) solver;
-        Map physicalDomains = new HashMap();
+        physicalDomains = new HashMap();
         for (Iterator i = s.getBDDDomains().keySet().iterator(); i.hasNext();) {
             Domain d = (Domain) i.next();
             for (Iterator j = s.getBDDDomains(d).iterator(); j.hasNext();) {
@@ -245,35 +252,6 @@ public class UFDomainAssignment extends DomainAssignment {
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.DomainAssignment#forceEqual(org.sf.bddbddb.Relation,
-     *      org.sf.bddbddb.Attribute, int)
-     */
-    boolean forceEqual(Relation r1, Attribute a1, int k) {
-        Domain dom = a1.getDomain();
-        BDDDomain d = ((BDDSolver) solver).getBDDDomain(dom, k);
-        return forceEqual(new Pair(r1, a1), d);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.ir.DomainAssignment#forceEqual(org.sf.bddbddb.Relation,
-     *      org.sf.bddbddb.Attribute, org.sf.bddbddb.Relation,
-     *      org.sf.bddbddb.Attribute, boolean)
-     */
-    boolean forceEqual(Relation r1, Attribute a1, Relation r2, Attribute a2, boolean equal) {
-        Pair p1 = new Pair(r1, a1);
-        Pair p2 = new Pair(r2, a2);
-        if (equal) {
-            return forceEqual(p1, p2);
-        } else {
-            return forceNotEqual(p1, p2);
-        }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
      * @see org.sf.bddbddb.ir.DomainAssignment#allocNewRelation(org.sf.bddbddb.Relation)
      */
     Relation allocNewRelation(Relation old_r) {
@@ -288,4 +266,23 @@ public class UFDomainAssignment extends DomainAssignment {
         return r;
     }
 
+    public void saveDomainAssignment(DataOutput out) throws IOException {
+        BDDSolver s = (BDDSolver) solver;
+        for (int i = 0; i < s.getNumberOfRelations(); ++i) {
+            BDDRelation r = (BDDRelation) s.getRelation(i);
+            StringBuffer sb = new StringBuffer();
+            for (Iterator j = r.getAttributes().iterator(); j.hasNext();) {
+                Attribute a = (Attribute) j.next();
+                Pair p = new Pair(r, a);
+                Object assignment = uf.find(p);
+                BDDDomain b = (BDDDomain) physicalDomains.get(assignment);
+                if (b != null) {
+                    out.writeBytes(r+" "+a+" = "+b+"\n");
+                } else {
+                    System.out.println(p+" not assigned a domain!");
+                }
+            }
+        }
+    }
+    
 }

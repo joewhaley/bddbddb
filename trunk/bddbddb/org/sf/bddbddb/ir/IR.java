@@ -6,6 +6,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationFlowGraph;
 import org.sf.bddbddb.IterationList;
@@ -129,6 +132,16 @@ public class IR {
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
             ass.doAssignment();
+            DataOutputStream dos = null;
+            try {
+                dos = new DataOutputStream(new FileOutputStream("domainassign.gen"));
+                ass.saveDomainAssignment(dos);
+            } catch (IOException x) {
+                x.printStackTrace(System.err);
+            } finally {
+                if (dos != null) try { dos.close(); } catch (IOException x) {}
+            }
+        
             cleanUpAfterAssignment(list);
             System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }

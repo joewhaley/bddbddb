@@ -405,6 +405,18 @@ public class BDDSolver extends Solver {
         return (BDDDomain) list.get(k);
     }
 
+    /**
+     * @param s
+     * @return
+     */
+    public BDDDomain getBDDDomain(String s) {
+        for (int i = 0; i < bdd.numberOfDomains(); ++i) {
+            BDDDomain d = bdd.getDomain(i);
+            if (s.equals(d.getName())) return d;
+        }
+        return null;
+    }
+    
     public MultiMap getBDDDomains() {
         return fielddomainsToBDDdomains;
     }

@@ -7,8 +7,15 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.StringTokenizer;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.FileInputStream;
+import java.io.IOException;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
+import org.sf.bddbddb.BDDSolver;
 import org.sf.bddbddb.Domain;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
@@ -34,6 +41,8 @@ import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.MultiMap;
+import org.sf.bddbddb.util.Pair;
+import org.sf.javabdd.BDDDomain;
 
 /**
  * DomainAssignment
@@ -46,7 +55,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     Solver solver;
     MultiMap/* <Domain,Attribute> */domainToAttributes;
     List inserted;
-    boolean TRACE = false;
+    boolean TRACE = true;
     ListIterator currentBlock;
 
     public abstract void doAssignment();
@@ -132,13 +141,50 @@ public abstract class DomainAssignment implements OperationVisitor {
             System.out.print("Rel "+i+"/"+solver.getNumberOfRelations()+": "+r+"                     \r");
             forceDifferent(r);
         }
+        
+        String domainFile = System.getProperty("domainfile", "domainfile");
+        DataInputStream in = null;
+        try {
+            in = new DataInputStream(new FileInputStream(domainFile));
+            loadDomainAssignment(in);
+        } catch (IOException x) {
+        } finally {
+            if (in != null) try { in.close(); } catch (IOException _) { }
+        }
     }
 
     abstract void forceDifferent(Relation r);
+    abstract boolean forceEqual(Object o1, Object o2);
+    abstract boolean forceNotEqual(Object o1, Object o2);
+    
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.DomainAssignment#forceEqual(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Attribute, int)
+     */
+    boolean forceEqual(Relation r1, Attribute a1, int k) {
+        Domain dom = a1.getDomain();
+        BDDDomain d = ((BDDSolver) solver).getBDDDomain(dom, k);
+        return forceEqual(new Pair(r1, a1), d);
+    }
 
-    abstract boolean forceEqual(Relation r1, Attribute a1, int i);
-
-    abstract boolean forceEqual(Relation r1, Attribute a1, Relation r2, Attribute a2, boolean equal);
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.DomainAssignment#forceEqual(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Attribute, org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Attribute, boolean)
+     */
+    boolean forceEqual(Relation r1, Attribute a1, Relation r2, Attribute a2, boolean equal) {
+        Pair p1 = new Pair(r1, a1);
+        Pair p2 = new Pair(r2, a2);
+        if (equal) {
+            return forceEqual(p1, p2);
+        } else {
+            return forceNotEqual(p1, p2);
+        }
+    }
 
     void insertBefore(Operation op) {
         if (TRACE) System.out.println("Inserting before current operation: " + op);
@@ -468,4 +514,65 @@ public abstract class DomainAssignment implements OperationVisitor {
     public Object visit(Nop op) {
         return null;
     }
+    
+    public abstract void saveDomainAssignment(DataOutput out) throws IOException;
+    public void loadDomainAssignment(DataInput in) throws IOException {
+        BDDSolver bs = (BDDSolver) solver;
+        for (;;) {
+            String s = in.readLine();
+            if (s == null) break;
+            s = s.trim();
+            if (s.length() == 0) continue;
+            if (s.startsWith("#")) continue;
+            StringTokenizer st = new StringTokenizer(s);
+            {
+                Object o1 = null, o2 = null;
+                String constraint;
+                String s1 = st.nextToken();
+                String s2 = st.nextToken();
+                String s3 = st.nextToken();
+                if (s2.equals("=") || s2.equals("!=") || s2.equals("<") || s2.equals("~")) {
+                    o1 = bs.getBDDDomain(s1);
+                    constraint = s2;
+                    if (!st.hasMoreTokens()) {
+                        o2 = bs.getBDDDomain(s3);
+                    } else {
+                        String s4 = st.nextToken();
+                        Relation r = bs.getRelation(s3);
+                        Attribute a = r != null ? r.getAttribute(s4) : null;
+                        if (r != null && a != null)
+                            o2 = new Pair(r, a);
+                    }
+                } else {
+                    Relation r1 = bs.getRelation(s1);
+                    Attribute a1 = r1 != null ? r1.getAttribute(s2) : null;
+                    if (r1 != null && a1 != null)
+                        o1 = new Pair(r1, a1);
+                    constraint = s3;
+                    String s4 = st.nextToken();
+                    if (!st.hasMoreTokens()) {
+                        o2 = bs.getBDDDomain(s4);
+                    } else {
+                        String s5 = st.nextToken();
+                        Relation r2 = bs.getRelation(s4);
+                        Attribute a2 = r2 != null ? r1.getAttribute(s5) : null;
+                        if (r2 != null && a2 != null)
+                            o2 = new Pair(r2, a2);
+                    }
+                }
+                boolean success = false;
+                if (o1 != null && o2 != null) {
+                    if (constraint.equals("=")) {
+                        success = forceEqual(o1, o2);
+                    } else if (constraint.equals("!=")) {
+                        success = forceNotEqual(o1, o2);
+                    }
+                }
+                if (!success) {
+                    System.out.println("Cannot add constraint: "+s);
+                }
+            }
+        }
+    }
+    
 }
