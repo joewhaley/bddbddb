@@ -9,6 +9,7 @@ import java.util.Map;
 import java.io.IOException;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
+import org.sf.bddbddb.BDDSolver;
 import org.sf.bddbddb.ir.dynamic.If;
 import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Difference;
@@ -42,12 +43,14 @@ public class BDDInterpreter implements Interpreter {
     boolean TRACE = System.getProperty("traceinterpreter") != null;
 
     BDDFactory factory;
+    String varorder;
 
     /**
      * @param factory
      */
-    public BDDInterpreter(BDDFactory factory) {
+    public BDDInterpreter(BDDSolver solver, BDDFactory factory) {
         this.factory = factory;
+        this.varorder = solver.VARORDER;
     }
 
     protected BDD makeDomainsMatch(BDD b, BDDRelation r1, BDDRelation r2) {
@@ -61,6 +64,25 @@ public class BDDInterpreter implements Interpreter {
             any = true;
             pair.set(d1, d2);
             if (TRACE) System.out.println("   Renaming " + d1 + " to " + d2);
+            
+            if (true) {
+                int index1 = varorder.indexOf(d1.toString());
+                int index2 = varorder.indexOf(d2.toString());
+                for (Iterator j = r2.getAttributes().iterator(); j.hasNext(); ) {
+                    Attribute a2 = (Attribute) j.next();
+                    if (a2 == a) continue;
+                    BDDDomain d3 = r2.getBDDDomain(a2);
+                    int index3 = varorder.indexOf(d3.toString());
+                    boolean bad;
+                    if (index1 < index2)
+                        bad = (index3 >= index1 && index3 <= index2);
+                    else
+                        bad = (index3 >= index2 && index3 <= index1);
+                    if (bad) {
+                        System.out.println("Expensive rename! "+r1+"->"+r2+": "+d1+" to "+d2+" across "+d3);
+                    }
+                }
+            }
         }
         if (any) {
             if (TRACE) System.out.println("      Rename to make "+r1+" match "+r2);

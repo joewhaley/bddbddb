@@ -45,7 +45,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     MultiMap/*<Domain,Attribute>*/ domainToAttributes;
     List inserted;
     
-    boolean TRACE = true;
+    boolean TRACE = false;
 
     ListIterator currentBlock;
     
@@ -83,7 +83,16 @@ public abstract class DomainAssignment implements OperationVisitor {
                 if (TRACE) System.out.println("Doing "+list);
                 for (ListIterator i = list.iterator(); i.hasNext(); ) {
                     Object o = i.next();
+                    if (o instanceof ApplyEx) {
+                        Operation op = (Operation) o;
+                        currentBlock = i;
+                        op.visit(this);
+                    }
+                }
+                for (ListIterator i = list.iterator(); i.hasNext(); ) {
+                    Object o = i.next();
                     if (o instanceof Operation) {
+                        if (o instanceof ApplyEx) continue;
                         Operation op = (Operation) o;
                         currentBlock = i;
                         op.visit(this);
