@@ -91,6 +91,12 @@ sb_toString("java.lang.StringBuffer.toString ()Ljava/lang/String;").
 invoke (m:M0)
 invoke("java.lang.reflect.Method.invoke (Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;").
 
+sb2_append (m:M0)
+sb2_append("MyMockLib.MyStringBuffer.append (Ljava/lang/StringBuffer;Ljava/lang/String;)Ljava/lang/StringBuffer;").
+sb2_append("MyMockLib.MyStringBuffer.append (Ljava/lang/StringBuffer;Ljava/lang/Object;)Ljava/lang/StringBuffer;").
+sb2_toString (m:M0)
+sb2_toString("MyMockLib.MyStringBuffer.toString (Ljava/lang/StringBuffer;)Ljava/lang/String;").
+
 skipMethod (m:M0)
 skipMethod(m) :- forName(m).
 skipMethod(m) :- getClass(m).
@@ -101,6 +107,8 @@ skipMethod(m) :- getMethod(m).
 skipMethod(m) :- newInstance(m).
 skipMethod(m) :- sb_append(m).
 skipMethod(m) :- sb_toString(m).
+skipMethod(m) :- sb2_append(m).
+skipMethod(m) :- sb2_toString(m).
 skipMethod(m) :- invoke(m).
 
 mapIH (i:I0, h:H0)
@@ -174,6 +182,11 @@ leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_append(m
 leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,0,v1), IE(i2,m), sb_append(m), actual(i2,1,v2).
 leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_toString(m), actual(i2,0,v2).
 leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,0,v1), IE(i2,m), sb_init(m), actual(i2,1,v2).
+
+leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_append(m), actual(i2,1,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_append(m), actual(i2,2,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,1,v1), IE(i2,m), sb2_append(m), actual(i2,2,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_toString(m), actual(i2,1,v2).
 
 lhs (v:V0)
 lhs(v) :- A(v,_).
