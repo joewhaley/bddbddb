@@ -6,6 +6,7 @@ package org.sf.bddbddb;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -849,7 +850,7 @@ public class BDDInferenceRule extends InferenceRule {
         return sb.toString();
     }
     
-    //// FindBestOrder stuff below.
+    //// FindBestDomainOrder stuff below.
     
     static int MAX_ORDERS = 25;
     static int MAX_DIFF = 10000;
@@ -894,8 +895,49 @@ public class BDDInferenceRule extends InferenceRule {
     }
     
     void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, Collection vars1, Collection vars2) {
-        
+        System.out.println("Finding best order for "+vars1+","+vars2);
+        Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
+        List allVars = new LinkedList(allVarSet);
+        FindBestDomainOrder fbdo = FindBestDomainOrder.INSTANCE;
+        FindBestDomainOrder.OrderingInfo info = fbdo.getOrderInfo(this);
+        FindBestDomainOrder.UpdatableOrderingInfo info2 = info.createUpdatable();
+        int count = 5;
+        while (--count >= 0) {
+            FindBestDomainOrder.Order o = info2.gimmeAGoodOrder(allVars);
+            StringBuffer varOrder = new StringBuffer();
+            for (Iterator i = o.iterator(); i.hasNext(); ) {
+                Object p = i.next();
+                if (p instanceof Collection) {
+                    Collection c = (Collection) p;
+                    int num = 0;
+                    for (Iterator j = c.iterator(); j.hasNext(); ) {
+                        Variable v = (Variable) j.next();
+                        BDDDomain d = (BDDDomain) variableToBDDDomain.get(v);
+                        if (d != null) {
+                            if (num == 0) {
+                                varOrder.append('_');
+                            } else {
+                                varOrder.append('x');
+                            }
+                            varOrder.append(d);
+                            ++num;
+                        }
+                    }
+                } else {
+                    BDDDomain d = (BDDDomain) variableToBDDDomain.get(p);
+                    if (d != null) {
+                        if (varOrder.length() > 0) varOrder.append('_');
+                        varOrder.append(d);
+                    }
+                }
+            }
+            String vOrder = varOrder.toString();
+            FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
+            long time = fbo.tryOrder(true, vOrder);
+            info2.registerNewRawData(o, time);
+        }
     }
+    
     String findBestDomainOrder(BDDFactory bdd, List domains, String origVarOrder, BDD b1, BDD b2, BDD b3) {
         if (domains == null) {
             List domainSet1 = new LinkedList();
