@@ -2463,7 +2463,8 @@ public class FindBestDomainOrder {
      */
     public Element trialsToXMLElement() {
         Element trialCollections = new Element("trialCollections");
-        trialCollections.setAttribute("datalog", solver.inputFilename);
+        if (solver.inputFilename != null)
+            trialCollections.setAttribute("datalog", solver.inputFilename);
         for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
             TrialCollection c = (TrialCollection) i.next();
             trialCollections.addContent(c.toXMLElement());

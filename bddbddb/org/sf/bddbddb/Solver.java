@@ -347,6 +347,7 @@ public abstract class Solver {
         dis = (Solver) Class.forName(solverName).newInstance();
         if (dis.NOISY) dis.out.println("Opening Datalog program \"" + inputFilename + "\"");
         MyReader in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
+        dis.inputFilename = inputFilename;
         dis.initializeBasedir(inputFilename);
         dis.readDatalogProgram(in);
         if (dis.NOISY) dis.out.println(dis.nameToDomain.size() + " field domains.");
