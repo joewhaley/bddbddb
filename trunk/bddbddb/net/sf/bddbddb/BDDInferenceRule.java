@@ -190,6 +190,7 @@ public class BDDInferenceRule extends InferenceRule {
             RuleTerm rt = (RuleTerm) top.get(i);
             if (canQuantifyAfter[i] != null) canQuantifyAfter[i].free();
             canQuantifyAfter[i] = solver.bdd.one();
+            if (TRACE) solver.out.println("Calculating quantifiable variables for "+rt);
             currentVariableSet.addAll(rt.variables);
             outer : for (Iterator k = rt.variables.iterator(); k.hasNext();) {
                 Variable v = (Variable) k.next();
@@ -199,10 +200,12 @@ public class BDDInferenceRule extends InferenceRule {
                     if (rt2.variables.contains(v)) continue outer;
                 }
                 currentVariableSet.remove(v);
+                if (TRACE) solver.out.println("Can quantify "+v);
                 BDDDomain d2 = (BDDDomain) variableToBDDDomain.get(v);
                 canQuantifyAfter[i].andWith(d2.set());
             }
             variableSet[i] = currentVariableSet;
+            if (TRACE) solver.out.println("Variable set="+variableSet[i]);
             currentVariableSet = new LinkedList(currentVariableSet);
         }
         try {
@@ -681,7 +684,7 @@ public class BDDInferenceRule extends InferenceRule {
             for(int i = 0; i < newRelationValues.length; ++i)
                 newRelationValuesCopy[i] = (newRelationValues[i] != null) ? newRelationValues[i].id() : null;
         
-        BDD[] results = evalRelationsIncremental(solver.bdd, newRelationValues,rallRelationValues,canQuantifyAfter);
+        BDD[] results = evalRelationsIncremental(solver.bdd, newRelationValues, rallRelationValues, canQuantifyAfter);
         long thisTime = System.currentTimeMillis() - time;
         if(learn_best_order)
             if(thisTime > longestTime){
