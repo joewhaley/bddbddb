@@ -16,9 +16,9 @@ import java.util.Collection;
  * @version $Id$
  */
 public interface Navigator {
-    /** Returns the predecessors of <code>node</code>. */
+    /** Returns the successors of <code>node</code>. */
     public Collection next(Object node);
 
-    /** Returns the successors of <code>node</code>. */
+    /** Returns the predecessors of <code>node</code>. */
     public Collection prev(Object node);
 }
