@@ -717,8 +717,8 @@ public final class BitString implements Cloneable, java.io.Serializable {
             return true;
         }
 
-        /**
-         * @see joeq.Util.BitString.BitStringIterator#nextIndex()
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.util.BitString.BitStringIterator#nextIndex()
          */
         public int nextIndex() {
             while (t == 0) {
@@ -769,8 +769,8 @@ public final class BitString implements Cloneable, java.io.Serializable {
             return true;
         }
 
-        /**
-         * @see joeq.Util.BitString.BitStringIterator#nextIndex()
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.util.BitString.BitStringIterator#nextIndex()
          */
         public int nextIndex() {
             while (t == 0) {
