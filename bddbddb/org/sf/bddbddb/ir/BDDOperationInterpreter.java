@@ -58,7 +58,10 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         this.needsDomainMatch = true;
     }
 
+    public static boolean CHECK = true;
+    
     protected BDD makeDomainsMatch(BDD b, BDDRelation r1, BDDRelation r2) {
+        if (CHECK) { r1.verify(); r2.verify(); }
         if (!needsDomainMatch) return b;
         boolean any = false;
         BDDPairing pair = factory.makePair();
@@ -70,7 +73,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
             any = true;
             pair.set(d1, d2);
             if (TRACE) System.out.println("   Renaming " + d1 + " to " + d2);
-            if (true && varorder != null) {
+            if (CHECK && varorder != null) {
                 int index1 = varorder.indexOf(d1.toString());
                 int index2 = varorder.indexOf(d2.toString());
                 for (Iterator j = r2.getAttributes().iterator(); j.hasNext();) {
