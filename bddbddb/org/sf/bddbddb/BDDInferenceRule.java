@@ -998,6 +998,7 @@ public class BDDInferenceRule extends InferenceRule {
             return;
         }
         System.out.println("Finding best order for "+vars1+","+vars2);
+        long time = System.currentTimeMillis();
         FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
         try {
             fbo.init(b1, b2, b3, BDDFactory.and);
@@ -1006,6 +1007,7 @@ public class BDDInferenceRule extends InferenceRule {
             fbo.cleanup();
             return;
         }
+        System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
         FindBestDomainOrder.UpdatableOrderInfoCollection info2 = ruleinfo.createUpdatable();
         
         // Incorporate relation ordering info into our decisions.
@@ -1026,7 +1028,7 @@ public class BDDInferenceRule extends InferenceRule {
             System.out.println("Trying order "+vOrder);
             vOrder = solver.fixVarOrder(vOrder, false);
             System.out.println("Complete order "+vOrder);
-            long time = fbo.tryOrder(true, vOrder);
+            time = fbo.tryOrder(true, vOrder);
             bestTime = Math.min(time, bestTime);
             info2.registerNewTrial(o, time);
         }

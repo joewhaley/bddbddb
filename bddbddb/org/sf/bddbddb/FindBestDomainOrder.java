@@ -2028,6 +2028,7 @@ public class FindBestDomainOrder {
             // Find the order with the highest score that we haven't tried yet
             // and that is still possibly good.
             // todo: should be also consider the confidence?
+            long time = System.currentTimeMillis();
             Iterator i = generateAllOrders(variables).iterator();
             Order bestOrder = null; double bestScore = 0.;
             while (i.hasNext()) {
@@ -2045,6 +2046,7 @@ public class FindBestDomainOrder {
                 }
             }
             if (TRACE > 0) out.println(this+": best untried order "+bestOrder+" score "+format(bestScore));
+            if (TRACE > 0) out.println(this+": finding best untried order took "+(System.currentTimeMillis()-time)+" ms");
             return bestOrder;
         }
         
