@@ -399,10 +399,26 @@ public abstract class Solver {
     /**
      * Read and parse a Datalog program.
      * 
+     * @param inputFilename
+     * @throws IOException
+     */
+    public void readDatalogProgram(String inputFilename) throws IOException {
+        MyReader in = null;
+        try {
+            in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
+            readDatalogProgram(in);
+        } finally {
+            if (in != null) try { in.close(); } catch (IOException _) { }
+        }
+    }
+    
+    /**
+     * Read and parse a Datalog program.
+     * 
      * @param in
      * @throws IOException
      */
-    void readDatalogProgram(MyReader in) throws IOException {
+    public void readDatalogProgram(MyReader in) throws IOException {
         for (;;) {
             String s = readLine(in);
             if (s == null) break;
