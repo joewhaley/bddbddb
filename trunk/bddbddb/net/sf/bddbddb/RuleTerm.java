@@ -111,7 +111,7 @@ public class RuleTerm {
             Element e2 = (Element) i.next();
             Variable v = (Variable) nameToVar.get(e2.getName());
             Domain d = r.getAttribute(vars.size()).getDomain();
-            if (v == null) nameToVar.put(e2.getName(), new Variable(e2.getName(), d));
+            if (v == null) nameToVar.put(e2.getName(), v = new Variable(e2.getName(), d));
             Assert._assert(v.getDomain() == d);
         }
         return new RuleTerm(r, vars);
