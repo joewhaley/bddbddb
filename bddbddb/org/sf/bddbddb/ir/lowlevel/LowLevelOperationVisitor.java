@@ -14,5 +14,5 @@ public interface LowLevelOperationVisitor {
      * @param op
      * @return
      */
-    public abstract Object visit(Relprod op);
+    public abstract Object visit(ApplyEx op);
 }

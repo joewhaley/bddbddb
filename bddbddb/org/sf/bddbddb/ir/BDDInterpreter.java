@@ -23,12 +23,13 @@ import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.ir.highlevel.Union;
 import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
-import org.sf.bddbddb.ir.lowlevel.Relprod;
+import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
 import org.sf.javabdd.BDDPairing;
+import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
  * BDDInterpreter
@@ -322,19 +323,21 @@ public class BDDInterpreter implements Interpreter {
     }
 
     /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Relprod)
+     * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.ApplyEx)
      */
-    public Object visit(Relprod op) {
+    public Object visit(ApplyEx op) {
         BDDRelation r0 = (BDDRelation) op.getDest();
         BDDRelation r1 = (BDDRelation) op.getSrc1();
         BDDRelation r2 = (BDDRelation) op.getSrc2();
+        BDDOp bddop = op.getOp();
         BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         BDD b2 = makeDomainsMatch(r2.getBDD().id(), r2, r0);
         BDD b3 = op.getProjectSet();
-        if (TRACE) System.out.println("   Relprod " + r1 + "," + r2 + "," + op.getAttributes());
-        b1.andWith(b2);
-        r0.setBDD(b1);
-        if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount());
+        if (TRACE) System.out.println("   ApplyEx " + r1 + "," + r2 + "," + bddop + "," + op.getAttributes());
+        BDD b = b1.applyEx(b2, bddop, b3);
+        b1.free(); b2.free(); b3.free();
+        r0.setBDD(b);
+        if (TRACE) System.out.println("   ---> Nodes: " + b.nodeCount());
         return null;
     }
 }

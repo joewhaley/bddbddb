@@ -1,4 +1,4 @@
-// Relprod.java, created Jun 29, 2004 12:25:51 PM 2004 by jwhaley
+// ApplyEx.java, created Jun 29, 2004 12:25:51 PM 2004 by jwhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir.lowlevel;
@@ -11,16 +11,19 @@ import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
+import org.sf.javabdd.BDDFactory;
+import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
- * Relprod
+ * ApplyEx
  * 
  * @author jwhaley
  * @version $Id$
  */
-public class Relprod extends LowLevelOperation {
+public class ApplyEx extends LowLevelOperation {
 
     BDDRelation r0, r1, r2;
+    BDDOp op;
     List/*<Attribute>*/ attributes;
 
     /**
@@ -28,10 +31,11 @@ public class Relprod extends LowLevelOperation {
      * @param r1
      * @param r2
      */
-    public Relprod(BDDRelation r0, BDDRelation r1, BDDRelation r2, List/*<Attribute>*/ attributes) {
+    public ApplyEx(BDDRelation r0, BDDRelation r1, BDDOp op, BDDRelation r2, List/*<Attribute>*/ attributes) {
         this.r0 = r0;
         this.r1 = r1;
         this.r2 = r2;
+        this.op = op;
         this.attributes = attributes;
     }
 
@@ -46,7 +50,10 @@ public class Relprod extends LowLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#toString()
      */
     public String toString() {
-        return r0.toString()+" = relprod("+r1.toString()+","+r2.toString()+","+attributes+")";
+        String opName;
+        if (op == BDDFactory.and) opName = "relprod";
+        else opName = op.toString()+"Ex";
+        return r0.toString()+" = "+opName+"("+r1.toString()+","+r2.toString()+","+attributes+")";
     }
 
     /* (non-Javadoc)
@@ -96,5 +103,12 @@ public class Relprod extends LowLevelOperation {
      */
     public List getAttributes() {
         return attributes;
+    }
+    
+    /**
+     * @return
+     */
+    public BDDOp getOp() {
+        return op;
     }
 }

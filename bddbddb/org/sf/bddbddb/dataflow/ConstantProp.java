@@ -26,9 +26,10 @@ import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.ir.highlevel.Union;
 import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
-import org.sf.bddbddb.ir.lowlevel.Relprod;
+import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.Pair;
+import org.sf.javabdd.BDDFactory;
 
 /**
  * ConstantProp
@@ -303,14 +304,21 @@ public class ConstantProp extends RelationProblem {
         }
 
         /* (non-Javadoc)
-         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Relprod)
+         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.ApplyEx)
          */
-        public Object visit(Relprod op) {
+        public Object visit(ApplyEx op) {
             Relation r1 = op.getSrc1();
             Relation r2 = op.getSrc2();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             ConstantPropFact f2 = getRepresentativeFact(r2, op);
-            if (f1 == ZERO || f2 == ZERO) return ZERO;
+            if (op.getOp() == BDDFactory.and) {
+                if (f1 == ZERO || f2 == ZERO) return ZERO;
+            } else if (op.getOp() == BDDFactory.diff) {
+                if (f1 == ZERO) return ZERO;
+            } else if (op.getOp() == BDDFactory.or ||
+                       op.getOp() == BDDFactory.xor) {
+                if (f1 == ZERO && f2 == ZERO) return ZERO;
+            }
             return allocNewRelation(op.getDest(), op);
         }
     }
@@ -505,9 +513,8 @@ public class ConstantProp extends RelationProblem {
     }
     public class SimplifyVisitor implements OperationVisitor {
         public Object visit(Join op) {
-            List srcs = op.getSrcs();
-            Relation r1 = (Relation) srcs.get(0);
-            Relation r2 = (Relation) srcs.get(1);
+            Relation r1 = op.getSrc1();
+            Relation r2 = op.getSrc2();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             ConstantPropFact f2 = getRepresentativeFact(r2, op);
             if (f1 == ZERO || f2 == ZERO) {
@@ -518,8 +525,7 @@ public class ConstantProp extends RelationProblem {
         }
 
         public Object visit(Project op) {
-            List srcs = op.getSrcs();
-            Relation r1 = (Relation) srcs.get(0);
+            Relation r1 = op.getSrc();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             if (f1 == ZERO) {
                 return new Zero(op.getDest());
@@ -528,8 +534,7 @@ public class ConstantProp extends RelationProblem {
         }
 
         public Object visit(Rename op) {
-            List srcs = op.getSrcs();
-            Relation r1 = (Relation) srcs.get(0);
+            Relation r1 = op.getSrc();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             if (f1 == ZERO) {
                 return new Zero(op.getDest());
@@ -538,9 +543,8 @@ public class ConstantProp extends RelationProblem {
         }
 
         public Object visit(Union op) {
-            List srcs = op.getSrcs();
-            Relation r1 = (Relation) srcs.get(0);
-            Relation r2 = (Relation) srcs.get(1);
+            Relation r1 = op.getSrc1();
+            Relation r2 = op.getSrc2();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             ConstantPropFact f2 = getRepresentativeFact(r2, op);
             if (f1 == ZERO) {
@@ -560,9 +564,8 @@ public class ConstantProp extends RelationProblem {
         }
 
         public Object visit(Difference op) {
-            List srcs = op.getSrcs();
-            Relation r1 = (Relation) srcs.get(0);
-            Relation r2 = (Relation) srcs.get(1);
+            Relation r1 = op.getSrc1();
+            Relation r2 = op.getSrc2();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             ConstantPropFact f2 = getRepresentativeFact(r2, op);
             if (f1 == ZERO || isSame(f1, f2)) {
@@ -575,8 +578,7 @@ public class ConstantProp extends RelationProblem {
         }
 
         public Object visit(JoinConstant op) {
-            List srcs = op.getSrcs();
-            Relation r1 = (Relation) srcs.get(0);
+            Relation r1 = op.getSrc();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             if (f1 == ZERO) {
                 return new Zero(op.getDest());
@@ -617,10 +619,44 @@ public class ConstantProp extends RelationProblem {
         }
 
         /* (non-Javadoc)
-         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Relprod)
+         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.ApplyEx)
          */
-        public Object visit(Relprod op) {
-            return op; // for now.
+        public Object visit(ApplyEx op) {
+            Relation r1 = op.getSrc1();
+            Relation r2 = op.getSrc2();
+            ConstantPropFact f1 = getRepresentativeFact(r1, op);
+            ConstantPropFact f2 = getRepresentativeFact(r2, op);
+            if (op.getOp() == BDDFactory.and) {
+                if (f1 == ZERO || f2 == ZERO) {
+                    return new Zero(op.getDest());
+                }
+                if (isSame(f1, f2)) {
+                    // todo: check if this gets the attributes correct.
+                    return new Project(op.getDest(), r1);
+                }
+            } else if (op.getOp() == BDDFactory.diff) {
+                if (f1 == ZERO) {
+                    return new Zero(op.getDest());
+                }
+                if (f2 == ZERO) {
+                    // todo: check if this gets the attributes correct.
+                    return new Project(op.getDest(), r1);
+                }
+            } else if (op.getOp() == BDDFactory.or ||
+                       op.getOp() == BDDFactory.xor) {
+                if (f1 == ZERO) {
+                    if (f2 == ZERO) {
+                        return new Zero(op.getDest());
+                    } else {
+                        // todo: check if this gets the attributes correct.
+                        return new Project(op.getDest(), op.getSrc2());
+                    }
+                } else if (f2 == ZERO) {
+                    // todo: check if this gets the attributes correct.
+                    return new Project(op.getDest(), op.getSrc1());
+                }
+            }
+            return op;
         }
     }
 
