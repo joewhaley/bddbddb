@@ -41,8 +41,8 @@ public class ClassHierarchyAnalysis {
     BDDDomain T, N, M;
     BDD cha;
     
-    void addToCHA(ITypeBinding type, IMethodBinding name, IMethodBinding target) {
-        int T_i = Tmap.get(new TypeWrapper(type));
+    void addToCHA(Wrapper type, IMethodBinding name, IMethodBinding target) {
+        int T_i = Tmap.get(type);
         int N_i = Nmap.get(new MethodWrapper(name));
         int M_i = Mmap.get(new MethodWrapper(target));
         
@@ -80,7 +80,7 @@ public class ClassHierarchyAnalysis {
             //System.out.println(type.getBinaryName());
             IMethodBinding target = calculateVirtualTarget(type, name);
             if (target != null) {
-                addToCHA(type, name, target);
+                addToCHA((Wrapper)o, name, target);
             }
         }
     }

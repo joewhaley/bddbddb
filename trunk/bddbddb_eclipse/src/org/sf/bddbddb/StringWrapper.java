@@ -8,7 +8,7 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Name;
 
 /**
- * @author jimz
+ * @author jzhuang
  */
 public class StringWrapper implements Wrapper {
     public final static StringWrapper GLOBAL_THIS = 

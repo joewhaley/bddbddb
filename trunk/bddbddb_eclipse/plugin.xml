@@ -24,6 +24,7 @@
       <import plugin="org.eclipse.core.runtime"/>
       <import plugin="org.eclipse.core.resources"/>
       <import plugin="org.eclipse.jdt.core"/>
+      <import plugin="org.eclipse.text"/>
    </requires>
    <extension
          point="org.eclipse.ui.actionSets">
@@ -38,12 +39,21 @@
          </menu>
          <action
                toolbarPath="bddbddbGroup"
+               label="&amp;Transform source"
+               icon="icons/sample.gif"
+               tooltip="Transforms the source code after analysis"
+               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
+               menubarPath="bddbddbMenu/bddbddbGroup"
+               id="Transform"/>
+         <action
+               toolbarPath="bddbddbGroup"
                label="&amp;Generate relations"
-               class="org.sf.bddbddb.eclipse.actions.GenRelationsAction"
+               class="org.sf.bddbddb.eclipse.actions.GenerifyAction"
                tooltip="Generate relations from input program"
                icon="icons/sample.gif"
                menubarPath="bddbddbMenu/bddbddbGroup"
-               id="org.sf.bddbddb.eclipse.actions.GenRelationsAction"/>
+               id="GenRelations"/>
+
       </actionSet>
    </extension>
 

@@ -28,6 +28,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.sf.bddbddb.PAFromSource;
+import org.sf.bddbddb.SourceTransformation;
 
 /**
  * Our sample action implements workbench action delegate. The action proxy will
@@ -37,14 +38,16 @@ import org.sf.bddbddb.PAFromSource;
  * 
  * @see IWorkbenchWindowActionDelegate
  */
-public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
+public class GenerifyAction implements IWorkbenchWindowActionDelegate {
     private IWorkbenchWindow window;
     private ISelection selection;
+    static private PAFromSource pa = null;
+    
 
     /**
      * The constructor.
      */
-    public GenRelationsAction() {
+    public GenerifyAction() {
     }
 
     /**
@@ -54,6 +57,28 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
      * @see IWorkbenchWindowActionDelegate#run
      */
     public void run(IAction action) {
+        String id = action.getId();
+        if (id.equals("GenRelations")) {
+            genRelations();
+        }
+        else if (id.equals("Transform")) {
+            if (pa == null) {
+                MessageDialog.openInformation(window.getShell(),
+                    "bddbddb Eclipse Plug-in", 
+                    "Relations must be generated before the source can be transformed!");
+                return;
+            }
+            
+            SourceTransformation st = new SourceTransformation(pa);
+            st.test();
+        }
+        else {
+            MessageDialog.openInformation(window.getShell(),
+                "bddbddb Eclipse Plug-in", "Unrecognized action!");
+        }
+    }
+
+    private void genRelations() {
         if (selection instanceof IStructuredSelection && !selection.isEmpty()) {
             HashSet classes = new HashSet(); // no dups
             HashSet libs = new HashSet();    // no dups            
@@ -105,9 +130,9 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
             System.out.println("Dumping to path: \""+path+"\"");
             if (path != null)
                 System.setProperty("pas.dumppath", path.toOSString());
-            PAFromSource pa = new PAFromSource();
+            pa = new PAFromSource(classes, libs);
             try {
-                pa.run(classes, libs);
+                pa.run();
             } catch (IOException x) {
                 MessageDialog.openInformation(window.getShell(),
                     "bddbddb Eclipse Plug-in", "IO Exception occurred! "+x.toString());
