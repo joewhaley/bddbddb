@@ -4,14 +4,19 @@
 package net.sf.bddbddb.order;
 
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
+
+import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
+import net.sf.bddbddb.FindBestDomainOrder;
 import net.sf.bddbddb.InferenceRule;
 import net.sf.bddbddb.Variable;
 import net.sf.bddbddb.order.OrderConstraint.AfterConstraint;
 import net.sf.bddbddb.order.OrderConstraint.BeforeConstraint;
 import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;
+import weka.classifiers.Classifier;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -118,6 +123,105 @@ public abstract class WekaInterface {
         return v;
     }
     
+    public static weka.core.Attribute makeBucketAttribute(int numClusters) {
+        FastVector clusterValues = new FastVector(numClusters);
+        for (int i = 0; i < numClusters; ++i)
+            clusterValues.addElement(Integer.toString(i));
+        return new weka.core.Attribute("costBucket", clusterValues);
+    }
+
+    public static Classifier buildClassifier(String cClassName, Instances data) {
+        // Build the classifier.
+        Classifier classifier = null;
+        try {
+            long time = System.currentTimeMillis();
+            classifier = (Classifier) Class.forName(cClassName).newInstance();
+            classifier.buildClassifier(data);
+            if (FindBestDomainOrder.TRACE > 1) System.out.println("Classifier "+cClassName+" took "+(System.currentTimeMillis()-time)+" ms to build.");
+            if (FindBestDomainOrder.TRACE > 2) System.out.println(classifier);
+        } catch (Exception x) {
+            FindBestDomainOrder.out.println(cClassName + ": " + x.getLocalizedMessage());
+            return null;
+        }
+        return classifier;
+    }
+
+    public static double leaveOneOutCV(Instances data, String cClassName) {
+        return WekaInterface.cvError(data.numInstances(), data, cClassName);
+    }
+
+    public static double cvError(int numFolds, Instances data0, String cClassName) {
+        if (data0.numInstances() < numFolds)
+            return Double.NaN; //more folds than elements
+        if (numFolds == 0)
+            return Double.NaN; // no folds
+        if (data0.numInstances() == 0)
+            return 0; //no instances
+    
+        Instances data = new Instances(data0);
+        //data.randomize(new Random(System.currentTimeMillis()));
+        data.stratify(numFolds);
+        Assert._assert(data.classAttribute() != null);
+        double[] estimates = new double[numFolds];
+        for (int i = 0; i < numFolds; ++i) {
+            Instances trainData = data.trainCV(numFolds, i);
+            Assert._assert(trainData.classAttribute() != null);
+            Assert._assert(trainData.numInstances() != 0, "Cannot train classifier on 0 instances.");
+    
+            Instances testData = data.testCV(numFolds, i);
+            Assert._assert(testData.classAttribute() != null);
+            Assert._assert(testData.numInstances() != 0, "Cannot test classifier on 0 instances.");
+    
+            int temp = FindBestDomainOrder.TRACE;
+            FindBestDomainOrder.TRACE = 0;
+            Classifier classifier = buildClassifier(cClassName, trainData);
+            FindBestDomainOrder.TRACE = temp;
+            int count = testData.numInstances();
+            double loss = 0;
+            double sum = 0;
+            for (Enumeration e = testData.enumerateInstances(); e.hasMoreElements();) {
+                Instance instance = (Instance) e.nextElement();
+                Assert._assert(instance.classAttribute() != null && instance.classAttribute() == trainData.classAttribute());
+                Assert._assert(instance != null);
+                try {
+                    double testClass = classifier.classifyInstance(instance);
+                    double weight = instance.weight();
+                    if (testClass != instance.classValue())
+                        loss += weight;
+                    sum += weight;
+                } catch (Exception ex) {
+                    FindBestDomainOrder.out.println("Exception while classifying: " + instance + "\n" + ex);
+                }
+            }
+            estimates[i] = 1 - loss / sum;
+        }
+        double average = 0;
+        for (int i = 0; i < numFolds; ++i)
+            average += estimates[i];
+    
+        return average / numFolds;
+    }
+
+    public static TrialInstances binarize(double classValue, TrialInstances data) {
+        TrialInstances newInstances = data.infoClone();
+        weka.core.Attribute newAttr = makeBucketAttribute(2);
+        TrialInstances.setIndex(newAttr, newInstances.classIndex());
+        newInstances.setClass(newAttr);
+        newInstances.setClassIndex(data.classIndex());
+        for (Enumeration e = data.enumerateInstances(); e.hasMoreElements();) {
+            TrialInstance instance = (TrialInstance) e.nextElement();
+            TrialInstance newInstance = TrialInstance.cloneInstance(instance);
+            newInstance.setDataset(newInstances);
+            if (instance.classValue() <= classValue) {
+                newInstance.setClassValue(0);
+            } else {
+                newInstance.setClassValue(1);
+            }
+            newInstances.add(newInstance);
+        }
+        return newInstances;
+    }
+
     public static class OrderInstance extends Instance {
         
         public static OrderInstance construct(Order o, Instances dataSet) {

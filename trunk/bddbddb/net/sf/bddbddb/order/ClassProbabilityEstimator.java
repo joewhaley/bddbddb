@@ -18,5 +18,6 @@ import weka.core.Instances;
  */
 public abstract class ClassProbabilityEstimator extends Classifier{
     public abstract double classProbability(Instance instance, double targetClass);
+    public abstract double classVariance(Instance instaance, double targetClass);
     public abstract Instances getData();
 }

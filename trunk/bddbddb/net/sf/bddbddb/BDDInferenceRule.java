@@ -17,8 +17,9 @@ import java.util.Set;
 
 import jwutil.collections.AppendIterator;
 import jwutil.util.Assert;
-import net.sf.bddbddb.FindBestDomainOrder.TrialGuess;
 import net.sf.bddbddb.order.Order;
+import net.sf.bddbddb.order.TrialCollection;
+import net.sf.bddbddb.order.TrialGuess;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
@@ -70,7 +71,7 @@ public class BDDInferenceRule extends InferenceRule {
     /**
      * Number of times update() has been called on this rule.
      */
-    int updateCount;
+    public int updateCount;
     
     /**
      * Total time (in ms) spent updating this rule.
@@ -205,7 +206,7 @@ public class BDDInferenceRule extends InferenceRule {
             currentVariableSet = new LinkedList(currentVariableSet);
         }
         try {
-            learnedOrder.initialize();
+            //learnedOrder.initialize();
         } catch (NoClassDefFoundError e) {
             // weka is not in classpath.
             learnedOrder = null;
@@ -1038,7 +1039,7 @@ public class BDDInferenceRule extends InferenceRule {
         }
         System.out.println("Finding best order for "+vars1+","+vars2);
         long time = System.currentTimeMillis();
-        FindBestDomainOrder.TrialCollection tc = fbdo.getNewTrialCollection("rule"+this.id, time);
+        TrialCollection tc = fbdo.getNewTrialCollection(this, time);
         FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
         try {
             fbo.init(b1, b2, b3, BDDFactory.and);
@@ -1048,7 +1049,6 @@ public class BDDInferenceRule extends InferenceRule {
             return;
         }
         System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
-        
         int count = MAX_FBO_TRIALS;
         boolean first = true;
         long bestTime = Long.MAX_VALUE;

@@ -93,6 +93,45 @@ public class BaggedId3 extends ClassProbabilityEstimator {
         return distribution;
     }
     
+    public double classVariance(Instance instance, double targetClass){
+        Assert._assert(targetClass >= 0);
+        Assert._assert(targetClass < numClasses);
+            try {
+                return varianceForInstance(instance)[(int) targetClass];
+            } catch (NoSupportForMissingValuesException e) {
+                e.printStackTrace();
+            }
+            
+            return Double.NaN;
+    }
+    public double[] varianceForInstance(Instance instance) throws NoSupportForMissingValuesException{
+        
+        //should this be weighted?
+        double [][] classProbabilities = new double[NUM_TREES + 1][];
+        classProbabilities[NUM_TREES] = new double[numClasses];
+        double [] variance = new double[numClasses];
+        for(int i = 0; i < NUM_TREES; ++i){
+            double [] treeDist = trees[i].distributionForInstance(instance);
+            classProbabilities[i] = treeDist;
+            for(int j = 0; j <numClasses; ++j){
+                classProbabilities[NUM_TREES][j] += treeDist[j];
+            }
+        }
+        for(int j = 0; j <numClasses; ++j)
+            classProbabilities[NUM_TREES][j] /= NUM_TREES;
+        
+        for(int i = 0; i < NUM_TREES; ++i){
+           for(int j = 0; j <numClasses; ++j){
+             double diff = Math.abs(classProbabilities[i][j] - classProbabilities[NUM_TREES][j]);
+             variance[j] += diff * diff;
+           }
+        }
+        for(int j = 0; j <numClasses; ++j)
+            variance[j] /= NUM_TREES;
+       
+        return variance;
+    }
+    
     public Instances getData(){ return origData; }
      
 }
