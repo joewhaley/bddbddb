@@ -6,6 +6,7 @@
  */
 package org.sf.bddbddb.dataflow;
 
+import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.util.BitString;
 
 /**
@@ -16,6 +17,16 @@ import org.sf.bddbddb.util.BitString;
  */
 public abstract class BitVectorFact implements Problem.Fact {
     protected final BitString fact;
+
+    IterationList location;
+    
+    public void setLocation(IterationList list) {
+        location = list;
+    }
+
+    public IterationList getLocation() {
+        return location;
+    }
 
     protected BitVectorFact(int setSize) {
         fact = new BitString(setSize);

@@ -100,6 +100,7 @@ public abstract class RelationProblem extends Problem {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#setLocation(org.sf.bddbddb.IterationList)
          */
         public void setLocation(IterationList loc) {
+            //System.out.println("Setting location of "+System.identityHashCode(this)+" to "+loc);
             this.location = loc;
         }
 

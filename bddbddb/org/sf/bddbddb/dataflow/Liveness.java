@@ -136,12 +136,6 @@ public class Liveness extends OperationProblem implements IRPass {
             return op;
         }
 
-        public void setLocation(IterationList list) {
-        }
-
-        public Fact copy(IterationList list) {
-            return create(fact);
-        }
     }
 
     public TransferFunction getTransferFunction(Operation op) {

@@ -88,7 +88,7 @@ public class IR {
             Problem problem = new ConstantProp();
             IterationList list = graph.getIterationList();
             df_solver.solve(problem, list);
-            DataflowIterator di = df_solver.getIterator(problem, list);
+            DataflowIterator di = df_solver.getIterator(problem, graph);
             while (di.hasNext()) {
                 Object o = di.next();
                 if (TRACE) System.out.println("Next: " + o);
@@ -116,7 +116,12 @@ public class IR {
             System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
             if (TRACE && changed) System.out.println("IR Changed after Defuse");
         }
-        doPeephole(graph.getIterationList());
+        if (true) {
+            System.out.print("Running Peephole...");
+            long time = System.currentTimeMillis();
+            doPeephole(graph.getIterationList());
+            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+        }
         if (DOMAIN_ASSIGNMENT) {
             System.out.print("Running DomainAssignment...");
             long time = System.currentTimeMillis();
@@ -176,8 +181,6 @@ public class IR {
     }
 
     void doPeephole(IterationList list) {
-        System.out.print("Running Peephole...");
-        long time = System.currentTimeMillis();
         for (ListIterator i = list.iterator(); i.hasNext();) {
             Object o = i.next();
             if (o instanceof Copy) {
@@ -187,7 +190,6 @@ public class IR {
                 doPeephole((IterationList) o);
             }
         }
-        System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
     }
 
     boolean doDefUse() {
@@ -198,7 +200,7 @@ public class IR {
         DefUse problem = new DefUse(this);
         IterationList list = graph.getIterationList();
         df_solver.solve(problem, list);
-        DataflowIterator di = df_solver.getIterator(problem, list);
+        DataflowIterator di = df_solver.getIterator(problem, graph);
         List to_remove = new LinkedList();
         outer : while (di.hasNext()) {
             Object o = di.next();

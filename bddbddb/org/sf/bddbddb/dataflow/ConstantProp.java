@@ -499,7 +499,11 @@ public class ConstantProp extends RelationProblem {
         public boolean equals(RelationFacts that) {
             if (this.relationFacts == that.relationFacts) return true;
             if (relationFacts.size() != that.relationFacts.size()) {
-                if (TRACE) System.out.println("Size not equal");
+                if (TRACE) {
+                    System.out.println("Size not equal ("+relationFacts.size()+" vs "+that.relationFacts.size());
+                    Map m = new HashMap(relationFacts); m.keySet().removeAll(that.relationFacts.keySet());
+                    System.out.println("New stuff: "+m);
+                }
                 return false;
             }
             Iterator i = relationFacts.entrySet().iterator();

@@ -29,23 +29,20 @@ public class UnionBitVectorFact extends BitVectorFact {
     }
 
     public Fact join(Fact that) {
+        Assert._assert(location == ((BitVectorFact) that).location);
         BitString thatS = ((BitVectorFact) that).fact;
         BitString newS = new BitString(this.fact.size());
         newS.or(this.fact);
         boolean b = newS.or(thatS);
         if (!b) return this;
-        return create(newS);
-    }
-
-    public void setLocation(IterationList list) {
-    }
-
-    public IterationList getLocation() {
-        Assert.UNREACHABLE("");
-        return null;
+        UnionBitVectorFact f = create(newS);
+        f.location = this.location;
+        return f;
     }
 
     public Fact copy(IterationList list) {
-        return create(fact);
+        UnionBitVectorFact f = create(fact);
+        f.location = list;
+        return f;
     }
 }
