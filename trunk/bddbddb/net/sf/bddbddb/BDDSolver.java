@@ -93,7 +93,11 @@ public class BDDSolver extends Solver {
         System.out.println("Using BDD library "+bdd.getVersion());
         fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
         bdd.setMinFreeNodes(BDDMINFREE);
-        fbo = new FindBestDomainOrder(this);
+        try {
+            fbo = new FindBestDomainOrder(this);
+        } catch (NoClassDefFoundError x) {
+            System.out.println("No machine learning library found, learning disabled.");
+        }
     }
 
     /*
@@ -187,7 +191,13 @@ public class BDDSolver extends Solver {
             bdd.setVarOrder(varOrder);
             System.out.println("done.");
             // Grow variable table after setting var order.
-            bdd.setNodeTableSize(BDDNODES);
+            try {
+                bdd.setNodeTableSize(BDDNODES);
+            } catch (OutOfMemoryError x) {
+                System.out.println("Not enough memory, cannot grow node table size.");
+                bdd.setCacheSize(bdd.getNodeTableSize());
+                bdd.setCacheRatio(0.25);
+            }
             bdd.setMaxIncrease(BDDNODES/2);
         }
         if (BDDREORDER != null) {
