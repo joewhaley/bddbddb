@@ -58,13 +58,13 @@ public class BDDSolver extends Solver {
      * Initial size of BDD node table.
      * You can set this with "-Dbddnodes=xxx"
      */
-    int BDDNODES = Integer.parseInt(System.getProperty("bddnodes", "1000000"));
+    int BDDNODES = Integer.parseInt(System.getProperty("bddnodes", "5000000"));
     
     /**
      * Initial size of BDD operation cache.
      * You can set this with "-Dbddcache=xxx"
      */
-    int BDDCACHE = Integer.parseInt(System.getProperty("bddcache", "200000"));
+    int BDDCACHE = Integer.parseInt(System.getProperty("bddcache", "0"));
     
     /**
      * BDD minimum free parameter.  This tells the BDD library when to grow the
@@ -86,6 +86,7 @@ public class BDDSolver extends Solver {
      */
     public BDDSolver() {
         super();
+        if (BDDCACHE == 0) BDDCACHE = BDDNODES / 4;
         System.out.println("Initializing BDD library (" + BDDNODES + " nodes, cache size " + BDDCACHE + ", min free " + BDDMINFREE + "%)");
         bdd = BDDFactory.init(1000, BDDCACHE);
         System.out.println("Using BDD library "+bdd.getVersion());
@@ -186,6 +187,7 @@ public class BDDSolver extends Solver {
             System.out.println("done.");
             // Grow variable table after setting var order.
             bdd.setNodeTableSize(BDDNODES);
+            bdd.setMaxIncrease(BDDNODES/2);
         }
         if (BDDREORDER != null) {
             try {
