@@ -873,15 +873,27 @@ public class BDDInferenceRule extends InferenceRule {
         
     }
     
+    /**
+     * Run the find best domain order on the given inputs.
+     * 
+     * @param bdd  BDD factory
+     * @param b1   first input to relprod
+     * @param b2   second input to relprod
+     * @param b3   third input to relprod
+     * @param vars1  variables of b1
+     * @param vars2  variables of b2
+     */
     void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, Collection vars1, Collection vars2) {
         Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
         Object[] a = allVarSet.toArray();
+        // Sort the variables by domain so that we will first try orders that are close
+        // to the default one.
         Arrays.sort(a, new VarOrderComparator(solver.VARORDER));
         List allVars = Arrays.asList(a);
         
-        FindBestDomainOrder fbdo = FindBestDomainOrder.INSTANCE;
-        FindBestDomainOrder.OrderInfoCollection info = fbdo.getOrderInfo(this);
-        if (info.numberOfGoodOrders(allVars) <= 1) {
+        FindBestDomainOrder fbdo = solver.fbo;
+        FindBestDomainOrder.OrderInfoCollection ruleinfo = fbdo.getOrderInfo(this);
+        if (ruleinfo.numberOfGoodOrders(allVars) <= 1) {
             return;
         }
         System.out.println("Finding best order for "+vars1+","+vars2);
@@ -893,7 +905,7 @@ public class BDDInferenceRule extends InferenceRule {
             fbo.cleanup();
             return;
         }
-        FindBestDomainOrder.UpdatableOrderInfoCollection info2 = info.createUpdatable();
+        FindBestDomainOrder.UpdatableOrderInfoCollection info2 = ruleinfo.createUpdatable();
         int count = 8;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
@@ -940,7 +952,7 @@ public class BDDInferenceRule extends InferenceRule {
         // this metric (weight = number of seconds) is pretty lame.
         double confidence = (double) bestTime / 1000;
         
-        info.incorporateTrials(info2.trials, confidence);
+        ruleinfo.incorporateTrials(info2.trials, confidence);
         fbo.cleanup();
     }
     
