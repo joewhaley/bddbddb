@@ -11,6 +11,7 @@ import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.BDDSolver;
 import org.sf.bddbddb.ir.dynamic.If;
+import org.sf.bddbddb.ir.dynamic.Nop;
 import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Difference;
 import org.sf.bddbddb.ir.highlevel.Free;
@@ -42,7 +43,6 @@ import org.sf.javabdd.BDDFactory.BDDOp;
  */
 public class BDDInterpreter implements Interpreter {
     boolean TRACE = System.getProperty("traceinterpreter") != null;
-
     BDDFactory factory;
     String varorder;
     boolean needsDomainMatch;
@@ -68,28 +68,25 @@ public class BDDInterpreter implements Interpreter {
             any = true;
             pair.set(d1, d2);
             if (TRACE) System.out.println("   Renaming " + d1 + " to " + d2);
-            
             if (true) {
                 int index1 = varorder.indexOf(d1.toString());
                 int index2 = varorder.indexOf(d2.toString());
-                for (Iterator j = r2.getAttributes().iterator(); j.hasNext(); ) {
+                for (Iterator j = r2.getAttributes().iterator(); j.hasNext();) {
                     Attribute a2 = (Attribute) j.next();
                     if (a2 == a) continue;
                     BDDDomain d3 = r2.getBDDDomain(a2);
                     int index3 = varorder.indexOf(d3.toString());
                     boolean bad;
-                    if (index1 < index2)
-                        bad = (index3 >= index1 && index3 <= index2);
-                    else
-                        bad = (index3 >= index2 && index3 <= index1);
+                    if (index1 < index2) bad = (index3 >= index1 && index3 <= index2);
+                    else bad = (index3 >= index2 && index3 <= index1);
                     if (bad) {
-                        System.out.println("Expensive rename! "+r1+"->"+r2+": "+d1+" to "+d2+" across "+d3);
+                        System.out.println("Expensive rename! " + r1 + "->" + r2 + ": " + d1 + " to " + d2 + " across " + d3);
                     }
                 }
             }
         }
         if (any) {
-            if (TRACE) System.out.println("      Rename to make "+r1+" match "+r2);
+            if (TRACE) System.out.println("      Rename to make " + r1 + " match " + r2);
             b.replaceWith(pair);
         }
         pair.reset();
@@ -220,8 +217,7 @@ public class BDDInterpreter implements Interpreter {
         Attribute a = op.getAttribute();
         long value = op.getValue();
         BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
-        if (TRACE) System.out.println("   And " + r1 + "," + r0.getBDDDomain(a)
-            + ":" + value);
+        if (TRACE) System.out.println("   And " + r1 + "," + r0.getBDDDomain(a) + ":" + value);
         r.andWith(r0.getBDDDomain(a).ithVar(value));
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -237,8 +233,7 @@ public class BDDInterpreter implements Interpreter {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         Attribute a = op.getAttribute();
         long value = op.getValue();
-        if (TRACE) System.out.println("   Ithvar " + r0.getBDDDomain(a) + ":"
-            + value);
+        if (TRACE) System.out.println("   Ithvar " + r0.getBDDDomain(a) + ":" + value);
         BDD r = r0.getBDDDomain(a).ithVar(value);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -373,20 +368,35 @@ public class BDDInterpreter implements Interpreter {
         BDD b3 = op.getProjectSet();
         if (TRACE) System.out.println("   ApplyEx " + r1 + "," + r2 + "," + bddop + "," + op.getAttributes());
         BDD b = b1.applyEx(b2, bddop, b3);
-        b1.free(); b2.free(); b3.free();
+        b1.free();
+        b2.free();
+        b3.free();
         r0.setBDD(b);
         if (TRACE) System.out.println("   ---> Nodes: " + b.nodeCount());
         return null;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor#visit(org.sf.bddbddb.ir.dynamic.If)
      */
     public Object visit(If op) {
         return null;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor#visit(org.sf.bddbddb.ir.dynamic.Nop)
+     */
+    public Object visit(Nop op) {
+        return null;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Replace)
      */
     public Object visit(Replace op) {

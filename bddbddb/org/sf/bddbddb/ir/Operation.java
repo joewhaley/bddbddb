@@ -19,19 +19,20 @@ import org.sf.javabdd.BDDDomain;
  */
 public abstract class Operation implements IterationElement {
     static int opNumber = 0;
-    
+
     /**
      * @return
      */
-    public static int getNumberOfOperations() { return opNumber+1; }
-
+    public static int getNumberOfOperations() {
+        return opNumber + 1;
+    }
     /**
      * Comment for <code>id</code>
      */
     public final int id;
 
     /**
-     * 
+     *  
      */
     public Operation() {
         id = ++opNumber;
@@ -70,12 +71,14 @@ public abstract class Operation implements IterationElement {
      * @param r_new
      */
     public abstract void replaceSrc(Relation r_old, Relation r_new);
-    
+
     /**
      * @return
      */
     public abstract String getExpressionString();
-    
+
+    public abstract Operation copy();
+
     public static String getRenames(BDDRelation r1, BDDRelation r2) {
         StringBuffer sb = new StringBuffer();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
@@ -83,7 +86,7 @@ public abstract class Operation implements IterationElement {
             BDDDomain d1 = r1.getBDDDomain(a);
             BDDDomain d2 = r2.getBDDDomain(a);
             if (d2 == null || d1 == d2) continue;
-            sb.append(","+d1+"->"+d2);
+            sb.append("," + d1 + "->" + d2);
         }
         return sb.toString();
     }

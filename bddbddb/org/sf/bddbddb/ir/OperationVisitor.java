@@ -13,7 +13,5 @@ import org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor;
  * @author John Whaley
  * @version $Id$
  */
-public interface OperationVisitor extends HighLevelOperationVisitor,
-    LowLevelOperationVisitor, DynamicOperationVisitor {
-
+public interface OperationVisitor extends HighLevelOperationVisitor, LowLevelOperationVisitor, DynamicOperationVisitor {
 }
