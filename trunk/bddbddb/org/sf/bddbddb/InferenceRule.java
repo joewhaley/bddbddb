@@ -23,6 +23,7 @@ import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.LinearMap;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Navigator;
+import org.sf.bddbddb.util.Pair;
 
 /**
  * InferenceRule
@@ -451,8 +452,8 @@ public abstract class InferenceRule implements IterationElement{
             Relation r = generate1(solver, ir, rt);
             
             // Calculate renames.
-            boolean anyRenames = false;
             List newAttributes = new LinkedList();
+            Map renames = new LinearMap();
             for (int j = 0; j < rt.numberOfVariables(); ++j) {
                 Variable v = rt.getVariable(j);
                 if (unnecessaryVariables.contains(v)) continue;
@@ -461,21 +462,22 @@ public abstract class InferenceRule implements IterationElement{
                 if (a2 == null) {
                     if (result != null && result.attributes.contains(a)) {
                         // Attribute is already present in result, use a different attribute.
-                        a = new Attribute(a.attributeName+'\'', a.attributeDomain, "");
-                        anyRenames = true;
+                        a2 = new Attribute(a.attributeName+'\'', a.attributeDomain, "");
+                        renames.put(a, a2);
+                        a = a2;
                     }
                     varToAttrib.put(v, a2 = a);
                 } else if (!a2.equals(a)) {
-                    anyRenames = true;
+                    renames.put(a, a2);
                 }
                 newAttributes.add(a2);
             }
-            if (anyRenames) {
+            if (!renames.isEmpty()) {
                 //solver.out.println("Old attribute list: "+r.attributes);
                 //solver.out.println("New attribute list: "+newAttributes);
                 Relation new_r = solver.createRelation(r+"_r", newAttributes);
                 new_r.initialize();
-                Rename rename = new Rename(new_r, r);
+                Rename rename = new Rename(new_r, r, renames);
                 if (solver.TRACE)
                     solver.out.println("Generated: "+rename);
                 ir.add(rename);
@@ -545,7 +547,7 @@ public abstract class InferenceRule implements IterationElement{
             }
         }
         // Rename result to match head relation.
-        boolean anyRenames = false;
+        Map renames = new LinearMap();
         List newAttributes = new LinkedList();
         for (int j = 0; j < bottom.numberOfVariables(); ++j) {
             Variable v = bottom.getVariable(j);
@@ -555,16 +557,16 @@ public abstract class InferenceRule implements IterationElement{
             //solver.out.println("Variable "+v+" has attribute "+a2);
             Assert._assert(a2 != null);
             if (!a2.equals(a)) {
-                anyRenames = true;
+                renames.put(a2, a);
             }
             newAttributes.add(a);
         }
-        if (anyRenames) {
+        if (!renames.isEmpty()) {
             //solver.out.println("Old attribute list: "+result.attributes);
             //solver.out.println("New attribute list: "+newAttributes);
             Relation result2 = solver.createRelation(result+"_r2", newAttributes);
             result2.initialize();
-            Rename rename = new Rename(result2, result);
+            Rename rename = new Rename(result2, result, renames);
             if (solver.TRACE)
                 solver.out.println("Generated: "+rename);
             ir.add(rename);
