@@ -2029,7 +2029,8 @@ public class FindBestDomainOrder {
     public static boolean LV = false;
     public Collection selectOrder(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir) {
         
-        if (TRACE > 1) out.println("Selecting an order from a candidate set of "+orders.size()+" orders: "+orders);
+        if (TRACE > 1) out.println("Selecting an order from a candidate set of "+orders.size()+" orders.");
+        if (TRACE > 2) out.println("Orders: "+orders);
         return LV ? localVariance(orders, vData, aData, dData, ir) :
             uncertaintySample(orders, vData,aData, dData, ir);
         
