@@ -9,13 +9,13 @@ import java.math.BigInteger;
  * PermutationGenerator
  * 
  * @author jwhaley
- * @version $Id: PermutationGenerator.java,v 1.1 2004/06/15 21:38:55 joewhaley
- *          Exp $
+ * @version $Id$
  */
 public class PermutationGenerator {
     private int[] a;
     private BigInteger numLeft;
     private BigInteger total;
+    private boolean[] pattern;
 
     public PermutationGenerator(int n) {
         if (n < 1) {
@@ -30,7 +30,7 @@ public class PermutationGenerator {
         for (int i = 0; i < a.length; i++) {
             a[i] = i;
         }
-        numLeft = new BigInteger(total.toString());
+        numLeft = total;
     }
 
     /**
@@ -60,7 +60,7 @@ public class PermutationGenerator {
     private static BigInteger getFactorial(int n) {
         BigInteger fact = BigInteger.ONE;
         for (int i = n; i > 1; i--) {
-            fact = fact.multiply(new BigInteger(Integer.toString(i)));
+            fact = fact.multiply(BigInteger.valueOf(i));
         }
         return fact;
     }
