@@ -81,6 +81,8 @@ getMethod (m:M0)
 getMethod("java.lang.Class.getMethod (Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;").
 getMethod("java.lang.Class.getDeclaredMethod (Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;").
 
+sb_init (m:M0)
+sb_init("java.lang.StringBuffer.<init> (Ljava/lang/String;)V").
 sb_append (m:M0)
 sb_append("java.lang.StringBuffer.append (Ljava/lang/String;)Ljava/lang/StringBuffer;").
 sb_append("java.lang.StringBuffer.append (Ljava/lang/Object;)Ljava/lang/StringBuffer;").
@@ -171,11 +173,13 @@ leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_append(m
 leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_append(m), actual(i2,1,v2).
 leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,0,v1), IE(i2,m), sb_append(m), actual(i2,1,v2).
 leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_toString(m), actual(i2,0,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,0,v1), IE(i2,m), sb_init(m), actual(i2,1,v2).
 
 lhs (v:V0)
 lhs(v) :- A(v,_).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb_append(m).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb_toString(m).
+lhs(v) :- actual(i2,0,v), IE(i2,m), sb_init(m).
 
 typeString (v:V0)
 typeString(v) :- vP(v,h), stringToType(h,_).
