@@ -1633,7 +1633,7 @@ public class FindBestDomainOrder {
             out.println(" Attrib Classifier Weight: " + attrClassWeight);
             out.println(" Domain data points: "+dData.numInstances());
             out.println(" Domain Classifier Accuracy: " + dGenErr);
-            out.println(" Domain Classifier Weight: " + domClassweight);
+            out.println(" Domain Classifier Weight: " + domClassWeight);
             //out.println(" Domain data points: "+dData);
         
         }
