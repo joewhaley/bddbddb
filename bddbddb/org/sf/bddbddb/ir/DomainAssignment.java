@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.Domain;
 import org.sf.bddbddb.IterationList;
@@ -44,6 +43,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     int SIZE = 16;
     Solver solver;
     MultiMap/*<Domain,Attribute>*/ domainToAttributes;
+    List inserted;
     
     boolean TRACE = true;
 
@@ -93,16 +93,13 @@ public abstract class DomainAssignment implements OperationVisitor {
         }
     }
     
-    public abstract double validAssignments(Relation r);
-    
-    public abstract Map validAssignment(Relation r);
-    
     /**
      * 
      */
     public DomainAssignment(Solver s) {
         this.solver = s;
         domainToAttributes = new GenericMultiMap();
+        this.inserted = new LinkedList();
         int totalNumber = 0;
         for (int i = 0; i < s.getNumberOfRelations(); ++i) {
             Relation r = s.getRelation(i);
@@ -130,9 +127,10 @@ public abstract class DomainAssignment implements OperationVisitor {
     abstract void forceDifferent(Relation r);
     abstract boolean forceEqual(Relation r1, Attribute a1, int i);
     abstract boolean forceEqual(Relation r1, Attribute a1, Relation r2, Attribute a2, boolean equal);
-        
+    
     void insertBefore(Operation op) {
         if (TRACE) System.out.println("Inserting before current operation: "+op);
+        inserted.add(op);
         currentBlock.previous();
         currentBlock.add(op);
         currentBlock.next();
@@ -140,6 +138,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     
     void insertAfter(Operation op) {
         if (TRACE) System.out.println("Inserting after current operation: "+op);
+        inserted.add(op);
         currentBlock.add(op);
     }
     
@@ -176,8 +175,6 @@ public abstract class DomainAssignment implements OperationVisitor {
                 }
             }
         }
-        if (TRACE) System.out.println("Valid assignments for "+r0+": "+validAssignments(r0));
-        if (TRACE) System.out.println("Valid assignments for "+r1+": "+validAssignments(r1));
         return null;
     }
     
@@ -242,9 +239,6 @@ public abstract class DomainAssignment implements OperationVisitor {
                 }
             }
         }
-        if (TRACE) System.out.println("Valid assignments for "+r0+": "+validAssignments(r0));
-        if (TRACE) System.out.println("Valid assignments for "+r1+": "+validAssignments(r1));
-        if (TRACE) System.out.println("Valid assignments for "+r2+": "+validAssignments(r2));
         return null;
     }
     /* (non-Javadoc)
@@ -281,8 +275,6 @@ public abstract class DomainAssignment implements OperationVisitor {
                 return visit(op);
             }
         }
-        if (TRACE) System.out.println("Valid assignments for "+r0+": "+validAssignments(r0));
-        if (TRACE) System.out.println("Valid assignments for "+r1+": "+validAssignments(r1));
         return null;
     }
 
@@ -371,7 +363,6 @@ public abstract class DomainAssignment implements OperationVisitor {
                 return visit(op);
             }
         }
-        if (TRACE) System.out.println("Valid assignments for "+r0+": "+validAssignments(r0));
         return null;
     }
 
@@ -393,7 +384,6 @@ public abstract class DomainAssignment implements OperationVisitor {
                 return visit(op);
             }
         }
-        if (TRACE) System.out.println("Valid assignments for "+r1+": "+validAssignments(r1));
         return null;
     }
 

@@ -5,18 +5,17 @@ package org.sf.bddbddb.ir;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.BDDSolver;
 import org.sf.bddbddb.Domain;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
+import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.LinearMap;
 import org.sf.bddbddb.util.Pair;
@@ -32,7 +31,6 @@ import org.sf.javabdd.BDDDomain;
 public class UFDomainAssignment extends DomainAssignment {
     UnionFind uf;
     List neq_constraints;
-    Set usedDomains;
     
     /**
      * @param s
@@ -41,34 +39,49 @@ public class UFDomainAssignment extends DomainAssignment {
         super(s);
         uf = new UnionFind(4096);
         neq_constraints = new LinkedList();
-        usedDomains = new HashSet();
         this.initialize();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.ir.DomainAssignment#validAssignments(org.sf.bddbddb.Relation)
-     */
-    public double validAssignments(Relation r) {
-        // TODO Auto-generated method stub
-        return 1;
+    void initialize() {
+        super.initialize();
+        
+        // Different physical domains are distinct.
+        BDDSolver s = (BDDSolver) solver;
+        for (Iterator i = s.getBDDDomains().keySet().iterator(); i.hasNext();) {
+            Domain d = (Domain) i.next();
+            for (Iterator j = s.getBDDDomains(d).iterator(); j.hasNext();) {
+                BDDDomain b1 = (BDDDomain) j.next();
+                for (Iterator k = s.getBDDDomains(d).iterator(); k.hasNext();) {
+                    BDDDomain b2 = (BDDDomain) k.next();
+                    if (b1 == b2) continue;
+                    forceNotEqual(b1, b2);
+                }
+            }
+        }
     }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.ir.DomainAssignment#validAssignment(org.sf.bddbddb.Relation)
-     */
-    public Map validAssignment(Relation r) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
+    
     /* (non-Javadoc)
      * @see org.sf.bddbddb.ir.DomainAssignment#doAssignment()
      */
     public void doAssignment() {
+        for (Iterator j = inserted.iterator(); j.hasNext(); ) {
+            Copy op = (Copy) j.next();
+            if (TRACE) System.out.println("Visiting inserted operation: "+op);
+            Relation r0 = op.getRelationDest();
+            Relation r1 = op.getSrc();
+            for (Iterator i = r1.getAttributes().iterator(); i.hasNext(); ) {
+                Attribute a1 = (Attribute) i.next();
+                if (r0.getAttributes().contains(a1)) {
+                    if (!forceEqual(r1, a1, r0, a1, true)) {
+                        // This domain cannot be matched.
+                        if (TRACE) System.out.println("Domain "+a1+" cannot be matched.");
+                    } else {
+                        if (TRACE) System.out.println("Domain "+a1+" matched.");
+                    }
+                }
+            }
+        }
+        
         BDDSolver s = (BDDSolver) solver;
         Map physicalDomains = new HashMap();
         for (Iterator i = s.getBDDDomains().keySet().iterator(); i.hasNext();) {
@@ -95,7 +108,6 @@ public class UFDomainAssignment extends DomainAssignment {
                 } else {
                     // Choose a binding.
                     b = chooseBDDDomain(r, a);
-                    usedDomains.add(b);
                     uf.union(p, b);
                     if (TRACE) System.out.println(p + ": binding to " + b);
                     Object rep = uf.find(b);
@@ -110,19 +122,27 @@ public class UFDomainAssignment extends DomainAssignment {
     }
 
     BDDDomain chooseBDDDomain(BDDRelation r, Attribute a) {
-        // TODO: need to choose a binding intelligently.
         BDDSolver s = (BDDSolver) solver;
         Domain d = a.getDomain();
         Pair p = new Pair(r, a);
+        List legal = new ArrayList();
         for (Iterator i = s.getBDDDomains(d).iterator(); i.hasNext();) {
             BDDDomain b = (BDDDomain) i.next();
-            if (forceEqual(p, b)) {
-                return b;
+            if (wouldBeLegal(p, b)) {
+                legal.add(b);
             }
         }
-        BDDDomain b = s.allocateBDDDomain(d);
-        if (TRACE) System.out.println("Allocating new domain " + b);
-        return b;
+        if (legal.isEmpty()) {
+            BDDDomain b = s.allocateBDDDomain(d);
+            if (TRACE) System.out.println("Allocating new domain " + b);
+            return b;
+        }
+        if (legal.size() == 1) {
+            return (BDDDomain) legal.get(0);
+        }
+        // TODO: need to choose a binding intelligently.
+        if (TRACE) System.out.println("Legal bindings for " + p +": "+legal);
+        return (BDDDomain) legal.get(0);
     }
 
     /*
@@ -169,8 +189,7 @@ public class UFDomainAssignment extends DomainAssignment {
         return true;
     }
 
-    boolean forceEqual(Object a1, Object a2) {
-        if (TRACE) System.out.println("Forcing " + a1 + " = " + a2);
+    boolean wouldBeLegal(Object a1, Object a2) {
         Object rep_1 = uf.find(a1);
         Object rep_2 = uf.find(a2);
         if (rep_1 == rep_2) {
@@ -189,9 +208,17 @@ public class UFDomainAssignment extends DomainAssignment {
                 return false;
             }
         }
-        // Merging a1 and a2 is ok.
-        uf.union(a1, a2);
         return true;
+    }
+    
+    boolean forceEqual(Object a1, Object a2) {
+        if (TRACE) System.out.println("Forcing " + a1 + " = " + a2);
+        boolean result = wouldBeLegal(a1, a2);
+        if (result) {
+            // Merging a1 and a2 is ok.
+            uf.union(a1, a2);
+        }
+        return result;
     }
 
     /*
@@ -203,12 +230,6 @@ public class UFDomainAssignment extends DomainAssignment {
     boolean forceEqual(Relation r1, Attribute a1, int k) {
         Domain dom = a1.getDomain();
         BDDDomain d = ((BDDSolver) solver).getBDDDomain(dom, k);
-        usedDomains.add(d);
-        for (Iterator i = ((BDDSolver) solver).getBDDDomains(dom).iterator(); i.hasNext(); ) {
-            Object o = i.next();
-            if (o == d) continue;
-            forceNotEqual(d, o);
-        }
         return forceEqual(new Pair(r1, a1), d);
     }
 
@@ -220,10 +241,12 @@ public class UFDomainAssignment extends DomainAssignment {
      *      org.sf.bddbddb.Attribute, boolean)
      */
     boolean forceEqual(Relation r1, Attribute a1, Relation r2, Attribute a2, boolean equal) {
+        Pair p1 = new Pair(r1, a1);
+        Pair p2 = new Pair(r2, a2);
         if (equal) {
-            return forceEqual(new Pair(r1, a1), new Pair(r2, a2));
+            return forceEqual(p1, p2);
         } else {
-            return forceNotEqual(new Pair(r1, a1), new Pair(r2, a2));
+            return forceNotEqual(p1, p2);
         }
     }
 
