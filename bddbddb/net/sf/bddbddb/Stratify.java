@@ -37,7 +37,7 @@ public class Stratify {
     boolean TRACE_FULL = System.getProperty("tracestratify") != null;
     PrintStream out;
     public Solver solver;
-    public List/* <SCComponent> */firstSCCs;
+    public List/*<SCComponent>*/ firstSCCs;
     public MultiMap innerSCCs;
 
     Stratify(Solver solver) {
