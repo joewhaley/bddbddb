@@ -204,6 +204,15 @@ argTypes(h, v, t) :- heapInvokes(h, i), IE(i, m), vP(v3, h2), hT(h2, t), \
 retTypes(h, m, t) :- heapInvokes(h, i), vP(v3, h2), hT(h2, t), \
                         IE(i, m), Iret(i, v3), retMultiType(m).
 
+genericizedClass(t:T0) outputtuples
+
+genericizedClass(t) :- S(v, f, v2), vT(v, t), fieldMultiType(f).
+genericizedClass(t) :- cha(t, n, m), retMultiType(m).
+genericizedClass(t) :- formal(m, z, v), cha(t, n, m), paramMultiType(v).
+
+genericizedV(v:V0) outputtuples
+genericizedV(v) :- vP(v, h), hT(h, t), genericizedClass(t).
+
 
 #######
 # Stuff about generics
