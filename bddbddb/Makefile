@@ -1,5 +1,5 @@
 MODULES = org
-SUPPORT_LIBS = javabdd.jar
+SUPPORT_LIBS = javabdd.jar weka.jar
 JAR_NAME = bddbddb.jar
 
 ifeq (${OS},Windows_NT)
