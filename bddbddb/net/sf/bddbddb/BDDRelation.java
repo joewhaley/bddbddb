@@ -874,6 +874,21 @@ public class BDDRelation extends Relation {
     }
 
     /**
+     * Do any onUpdate actions.
+     * Called just after an update occurs.
+     * 
+     * @param oldValue  old value of relation
+     */
+    void doUpdate(BDD oldValue) {
+        if (onUpdate != null) {
+            for (Iterator i = onUpdate.iterator(); i.hasNext(); ) {
+                CodeFragment f = (CodeFragment) i.next();
+                f.invoke(this, oldValue);
+            }
+        }
+    }
+    
+    /**
      * Set the BDD domain assignment of this relation to the given one.
      * 
      * @param newdom  new BDD domain assignment

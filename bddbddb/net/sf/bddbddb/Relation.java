@@ -5,11 +5,13 @@ package net.sf.bddbddb;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 import java.math.BigInteger;
 import net.sf.bddbddb.dataflow.PartialOrder.Constraints;
+import net.sf.javabdd.BDD;
 import org.jdom.Element;
 
 /**
@@ -51,6 +53,11 @@ public abstract class Relation {
     Constraints constraints;
     
     /**
+     * Code fragments to be executed whenever this relation is updated.
+     */
+    List onUpdate;
+    
+    /**
      * Flag saying whether or not this relation is initialized.
      */
     boolean isInitialized;
@@ -72,6 +79,7 @@ public abstract class Relation {
             if (a.relation == null) a.relation = this;
         }
         constraints = new Constraints();
+        onUpdate = new LinkedList();
     }
 
     /**

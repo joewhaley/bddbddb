@@ -29,7 +29,6 @@ public class CodeFragment {
     Method method;
     
     /**
-     * @param string
      */
     public CodeFragment(String string, InferenceRule ir) {
         this.fragment = string;
@@ -37,6 +36,14 @@ public class CodeFragment {
         if (this.method == null) throw new IllegalArgumentException();
     }
 
+    /**
+     */
+    public CodeFragment(String string, Relation r) {
+        this.fragment = string;
+        this.method = genMethod(r);
+        if (this.method == null) throw new IllegalArgumentException();
+    }
+    
     /**
      * Find a place for a temp file in classpath.
      * 
@@ -57,6 +64,11 @@ public class CodeFragment {
         return null;
     }
     
+    /**
+     * Search for javac executable.
+     * 
+     * @return path to javac executable, or null
+     */
     static String searchForJavac(String path, String[] dirs) {
         String sep = System.getProperty("file.separator");
         for (int i = 0; i < dirs.length; ++i) {
@@ -125,7 +137,7 @@ public class CodeFragment {
         return null;
     }
     
-    Method genMethod(InferenceRule ir) {
+    Method genMethod(Object o) {
         File path = findWritablePath();
         if (path == null) {
             System.err.println("Cannot find writable directory in class path, skipping code fragment generation.");
@@ -157,17 +169,24 @@ public class CodeFragment {
             out.write("import net.sf.bddbddb.dataflow.*;\nimport net.sf.bddbddb.ir.*;\nimport net.sf.bddbddb.order.*;\n\n");
             out.write("public class ");
             out.write(className);
-            out.write(" {\n    public static void go(InferenceRule rule, BDD val) throws Exception {\n");
-            out.write("    java.util.List subgoals = rule.getSubgoals();\n");
-            int k = 0;
-            for (Iterator i = ir.top.iterator(); i.hasNext(); ) {
-                RuleTerm rt = (RuleTerm) i.next();
-                out.write("    RuleTerm subgoal"+k+" = (RuleTerm) subgoals.get("+k+");\n");
-                out.write("    Relation "+rt.relation.name+" = subgoal"+k+".getRelation();\n");
-                ++k;
+            out.write(" {\n    public static void go(");
+            if (o instanceof BDDInferenceRule) {
+                BDDInferenceRule ir = (BDDInferenceRule) o;
+                out.write("BDDInferenceRule rule, BDD val) throws Exception {\n");
+                out.write("    java.util.List subgoals = rule.getSubgoals();\n");
+                int k = 0;
+                for (Iterator i = ir.top.iterator(); i.hasNext(); ) {
+                    RuleTerm rt = (RuleTerm) i.next();
+                    out.write("    RuleTerm subgoal"+k+" = (RuleTerm) subgoals.get("+k+");\n");
+                    out.write("    Relation "+rt.relation.name+" = subgoal"+k+".getRelation();\n");
+                    ++k;
+                }
+                out.write("    RuleTerm head = rule.getHead();\n");
+                out.write("    Relation "+ir.bottom.relation.name+" = head.getRelation();\n");
+            } else {
+                BDDRelation r = (BDDRelation) o;
+                out.write("BDDRelation "+r.name+", BDD val) throws Exception {\n");
             }
-            out.write("    RuleTerm head = rule.getHead();\n");
-            out.write("    Relation "+ir.bottom.relation.name+" = head.getRelation();\n");
             out.write(fragment);
             out.write("\n    }\n}\n");
             out.close();
@@ -188,7 +207,8 @@ public class CodeFragment {
             
             Class c = Class.forName(className);
             try {
-                Method method = c.getDeclaredMethod("go", new Class[] { InferenceRule.class, BDD.class });
+                Class type = (o instanceof BDDInferenceRule) ? BDDInferenceRule.class : BDDRelation.class;
+                Method method = c.getDeclaredMethod("go", new Class[] { type, BDD.class });
                 return method;
             } catch (SecurityException e) {
                 System.err.println("Security exception occurred while accessing method for code fragment.");
@@ -209,7 +229,7 @@ public class CodeFragment {
      * @param rule
      * @param oldValue
      */
-    public void invoke(BDDInferenceRule rule, BDD oldValue) {
+    public void invoke(InferenceRule rule, BDD oldValue) {
         if (method == null) return;
         try {
             method.invoke(null, new Object[] { rule, oldValue });
@@ -225,4 +245,23 @@ public class CodeFragment {
         }
     }
     
+    /**
+     * @param r
+     * @param oldValue
+     */
+    public void invoke(Relation r, BDD oldValue) {
+        if (method == null) return;
+        try {
+            method.invoke(null, new Object[] { r, oldValue });
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 }
