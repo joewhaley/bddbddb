@@ -28,11 +28,17 @@
          <li>bottom-up and top-down evaluation strategies</li>
         </ul>
        </li>
+       <li><a href="http://www.fdi.ucm.es/profesor/fernan/DES/">DES (Datalog Educational System)</a>
+        <ul>
+         <li>Simple, interactive system for students to learn concepts</li>
+         <li>Primarily for educational purposes, not very efficient</li>
+        </ul>
+       </li>
       </ul>
       </p>
       <p>Datalog Development Environment:
       <ul>
-       <li><a href="http://members.lycos.co.uk/datalogide/">DIE (Datalog Integrated Environment</a></li>
+       <li><a href="http://members.lycos.co.uk/datalogide/">DIE (Datalog Integrated Environment)</a></li>
       </ul>
       </p>
       <p>Books on Datalog:
