@@ -33,18 +33,20 @@ aT (type:T0, type:T1) input
 cha (type:T1, name:N0, method:M0) input
 hP0 (ha:H0, field:F0, hb:H1) input
 IEfilter (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0) input
+mV (method:M0, var:V0) input
+mC (method:M0, context:VC0) input
 
 vPfilter (v:V0, h:H0)
 IEcs (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0)
 cA (vcdest:VC0, dest:V0, vcsrc:VC1, source:V1)
 
-cvP (vc:VC0, v:V0, hc:VC1, h:H0) output
-hP (hac:VC0, ha:H0, field:F0, hbc:VC1, hb:H1) output
+cvP (vc:VC0, v:V0, hc:VC2, h:H0) output
+hP (hac:VC2, ha:H0, field:F0, hbc:VC1, hb:H1) output
 IE (invoke:I0, target:M0) output
 
 ### Rules
 
-cvP(_,v,_,h) :- vP0(v,h).
+cvP(vc,v,hc,h) :- vP0(v,h), mV(m,v), mC(m,vc), vc=hc.
 cA(_,v1,_,v2) :- A(v1,v2).
 IEcs(vc2,i,vc1,m) :- IE0(i,m), IEfilter(vc2,i,vc1,m).
 vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
