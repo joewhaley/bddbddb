@@ -478,6 +478,7 @@ public class BDDInferenceRule extends InferenceRule {
             if (!canNowQuantify.isOne()) {
                 if (TRACE) {
                     solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
+                    solver.out.print("("+canNowQuantify.toStringWithDomains()+")");
                 }
                 if (TRACE || find_best_order) ttime = System.currentTimeMillis();
                 BDD topBdd = result.relprod(b, canNowQuantify);
