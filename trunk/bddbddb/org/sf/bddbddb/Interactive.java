@@ -3,6 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -143,19 +144,19 @@ public class Interactive {
                     }
                     continue;
                 }
-                boolean b = solver.parseDatalogLine(s, in);
-                if (b) {
+                Object result = solver.parseDatalogLine(s, in);
+                if (result != null) {
                     changed = true;
-                }
-                //System.out.println("Parsed successfully.");
-                if (s.indexOf('?') >= 0) {
-                    // This is a query, so we should run the solver.
-                    InferenceRule query = (InferenceRule) solver.rules.get(solver.rules.size()-1);
-                    Relation r = query.bottom.relation;
-                    Assert._assert(solver.relationsToPrintTuples.contains(r));
-                    solve();
-                    solver.rules.remove(query);
-                    solver.deleteRelation(r);
+                    if (s.indexOf('?') >= 0 && result instanceof Collection) {
+                        // This is a query, so we should run the solver.
+                        Collection queries = (Collection) result;
+                        solve();
+                        solver.rules.removeAll(queries);
+                        for (Iterator i = queries.iterator(); i.hasNext(); ) {
+                            InferenceRule ir = (InferenceRule) i.next();
+                            solver.deleteRelation(ir.bottom.relation);
+                        }
+                    }
                 }
             } catch (NoSuchElementException x) {
                 System.out.println("Invalid command.");
