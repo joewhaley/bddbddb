@@ -88,6 +88,11 @@ public abstract class InferenceRule implements IterationElement {
     boolean split;
 
     /**
+     * Flag specifying whether to limit the generated tuples to a single one.
+     */
+    boolean single;
+    
+    /**
      * Trace flags to control output of trace information about this rule.
      */
     boolean TRACE, TRACE_FULL;
@@ -116,7 +121,7 @@ public abstract class InferenceRule implements IterationElement {
      * @param top  subgoal terms
      * @param bottom  head term
      */
-    protected InferenceRule(Solver solver, List/* <RuleTerm> */top, RuleTerm bottom) {
+    protected InferenceRule(Solver solver, List/*<RuleTerm>*/ top, RuleTerm bottom) {
         this.solver = solver;
         this.top = top;
         this.bottom = bottom;
@@ -1003,4 +1008,21 @@ public abstract class InferenceRule implements IterationElement {
     public int hashCode() {
         return id;
     }
+
+    /**
+     * @return  map from names to variables
+     */
+    public Map getVarNameMap() {
+        HashMap nameToVar = new HashMap();
+        for (Iterator i = necessaryVariables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            nameToVar.put(v.getName(), v);
+        }
+        for (Iterator i = unnecessaryVariables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            nameToVar.put(v.getName(), v);
+        }
+        return nameToVar;
+    }
+    
 }

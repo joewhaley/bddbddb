@@ -1004,6 +1004,9 @@ public abstract class Solver {
             } else if (option.equals("number")) {
                 if (TRACE) out.println("Rule " + ir + " defines a numbering");
                 ir = createNumberingRule(ir);
+            } else if (option.equals("single")) {
+                if (TRACE) out.println("Rule " + ir + " only adds a single satisfying assignment");
+                ir.single = true;
             } else if (option.equals("cacheafterrename")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.cache_before_rename = false;

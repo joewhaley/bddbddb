@@ -297,7 +297,9 @@ public class BDDInferenceRule extends InferenceRule {
                         solver.out.print(v + " is unnecessary, quantifying out " + d);
                         ttime = System.currentTimeMillis();
                     }
-                    BDD q = relationValues[i].exist(d.set());
+                    BDD dset = d.set();
+                    BDD q = relationValues[i].exist(dset);
+                    dset.free();
                     if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
                     relationValues[i].free();
                     relationValues[i] = q;
@@ -375,6 +377,11 @@ public class BDDInferenceRule extends InferenceRule {
        if (TRACE_FULL) solver.out.println(" = " + result.toStringWithDomains());
 
         else if (TRACE) solver.out.println(" = " + result.nodeCount());
+       if (single) {
+           // Limit the result tuples to a single one.
+           result = limitToSingle(result);
+           if (TRACE) solver.out.println("Limited to single satisfying tuple: " + result.nodeCount());
+       }
         if (bottomRename != null) {
             if (TRACE) {
                 solver.out.print("Result domains " + domainsOf(result) + " -> ");
@@ -519,7 +526,9 @@ public class BDDInferenceRule extends InferenceRule {
                         solver.out.print(v + " is unnecessary, quantifying out " + d);
                         ttime = System.currentTimeMillis();
                     }
-                    BDD q = allRelationValues[i].exist(d.set());
+                    BDD dset = d.set();
+                    BDD q = allRelationValues[i].exist(dset);
+                    dset.free();
                     if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
                     allRelationValues[i].free();
                     allRelationValues[i] = q;
@@ -659,7 +668,7 @@ public class BDDInferenceRule extends InferenceRule {
         }
         if (TRACE) solver.out.print("Result: ");
         BDD result = solver.bdd.zero();
-               for (int i = 0; i < results.length; ++i) {
+        for (int i = 0; i < results.length; ++i) {
             if (results[i] != null) {
                 if (TRACE) {
                     ttime = System.currentTimeMillis();
@@ -672,6 +681,10 @@ public class BDDInferenceRule extends InferenceRule {
             }
         }
         if (TRACE) solver.out.println(" -> " + result.nodeCount());
+        if (single) {
+            result = limitToSingle(result);
+            if (TRACE) solver.out.println("Limited to single satisfying tuple: " + result.nodeCount());
+        }
         if (bottomRename != null) {
             if (TRACE) {
                 solver.out.print("Result domains: " + domainsOf(result) + " -> ");
@@ -720,6 +733,21 @@ public class BDDInferenceRule extends InferenceRule {
         return changed;
     }
 
+    BDD limitToSingle(BDD result) {
+        // Limit the result tuples to a single one.
+        BDD zero = solver.bdd.zero();
+        BDD set = solver.bdd.one();
+        for (Iterator k = bottom.variables.iterator(); k.hasNext(); ) {
+            Variable v = (Variable) k.next();
+            if (unnecessaryVariables.contains(v)) continue;
+            BDDDomain d2 = (BDDDomain) variableToBDDDomain.get(v);
+            set.andWith(d2.set());
+        }
+        BDD singleResult = result.satOne(set, zero);
+        result.free(); set.free(); zero.free();
+        return singleResult;
+    }
+    
     public BDD[] evalRelationsIncremental(BDDFactory bdd, BDD[] newRelationValues, BDD[] rallRelationValues, BDD[] canQuantifyAfter){
         long ttime = 0;
         BDD[] results = new BDD[newRelationValues.length];
