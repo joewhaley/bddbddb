@@ -43,3 +43,48 @@ genericIReturn(m) :- generic(v), Iret(i,v), mI(_,i,m).
 genericMReturn(m) :- generic(v), Iret(i,v), IE(i,m).
 
 #generic(v) :- genericMReturn(m), Mret(m,v).
+
+
+### Translate to other form of relations.
+assignStatement (dest:V, src:V) output
+loadStatement (dest:V, base:V, field:F) output
+storeStatement (base:V, field:F, src:V) output
+returnStatement (method:M, src:V) output
+invokeMethod (invoke:I, method:M) output
+invokeParameter (invoke:I, param:Z, src:V) output
+invokeReturn (invoke:I, dest:V) output
+newStatement (dest:V, type:TV) output
+castStatement (dest:V, type:TV, src:V) output
+pointsTo (context:C, var:V, object:H) output
+objectType (object:H, type:TV) output
+context2baseobject (context:C, location:V, object:H) output
+override (supermethod:M, submethod:M) output
+
+location2typevar (location:V, typevar:TV) input output
+concreteTypes (typevar:TV, concretetype:T) input output
+methodParameter (method:M, param:Z, type:TV) input output
+field (field:F, type:TV) input output
+returnValue (method:M, type:TV) input output
+
+map_V0_TV0 (v:V0, tv:TV0) input
+location2typevar(v,tv) :- map_V0_TV0(v,tv).
+map_T0_TV0 (t:T0, tv:TV0) input
+concreteTypes(tv,t) :- map_T0_TV0(t,tv).
+map_F0_TV0 (f:F0, tv:TV0) input
+field(f,tv) :- map_F0_TV0(f,tv).
+map_M0_TV0 (m:M0, tv:TV0) input
+returnValue(m,tv) :- map_M0_TV0(m,tv).
+
+assignStatement(v1,v2) :- A(v1,v2).
+loadStatement(v2,v1,f) :- L(v1,f,v2).
+storeStatement(v1,f,v2) :- S(v1,f,v2).
+returnStatement(m,v) :- Mret(m,v).
+invokeMethod(i,m) :- mI(m,i,_).
+invokeParameter(i,z,v) :- actual(i,z,v).
+invokeReturn(i,v) :- Iret(i,v).
+newStatement(v,tv) :- vP0(v,h), location2typevar(v,tv).
+castStatement(v1,tv,v2) :- A(v1,v2), vT(v2,t), !vT(v1,t), concreteTypes(tv,t).
+pointsTo(c,v,h) :- vP0(v,h).
+objectType(h,tv) :- hT(h,t), concreteTypes(tv,t).
+#context2baseobject(c,v,h).
+override(super,sub) :- cha(t1,n,super), cha(t2,n,sub), aT(t1,t2).
