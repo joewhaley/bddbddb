@@ -166,7 +166,7 @@ public class PAFromSource {
     static int bddcache = Integer.parseInt(System.getProperty("bddcache", "10000"));
     static BDDFactory bdd = BDDFactory.init(bddnodes, bddcache);
     
-    static BDDDomain V1 = null, V2, I, H1, Z, F, T1, T2, M, N, M2; // H2
+    static BDDDomain V1 = null, V2, I, H1, H2, Z, F, T1, T2, M, N, M2; 
     //BDDDomain V1c[], V2c[], H1c[], H2c[];
     
     static int V_BITS=19, I_BITS=19, H_BITS=16, Z_BITS=6, F_BITS=14, T_BITS=13, N_BITS=14, M_BITS=15;
@@ -221,7 +221,7 @@ public class PAFromSource {
     //BDD V1cdomain, V2cdomain, H1cdomain, H2cdomain;
 
     static int bddminfree = Integer.parseInt(System.getProperty("bddminfree", "20"));
-    static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_T2_H1";//System.getProperty("bddordering");
+    static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1";//System.getProperty("bddordering");
     //int MAX_PARAMS = Integer.parseInt(System.getProperty("pas.maxparams", "4"));
     static boolean reverseLocal = System.getProperty("bddreverse", "true").equals("true"); 
     
@@ -269,7 +269,7 @@ public class PAFromSource {
         V2 = makeDomain("V2", V_BITS);
         I = makeDomain("I", I_BITS);
         H1 = makeDomain("H1", H_BITS);
-        //H2 = makeDomain("H2", H_BITS);
+        H2 = makeDomain("H2", H_BITS); // needed to make domain alloc order match joeq
         Z = makeDomain("Z", Z_BITS);
         F = makeDomain("F", F_BITS);
         T1 = makeDomain("T1", T_BITS);
@@ -327,8 +327,10 @@ public class PAFromSource {
         try {
             String fn = loadPath+name+".bdd";
             if (new File(fn).exists()) {
-                out.println("loading existing bdd");
-                return bdd.load(fn);
+                out.println("loading existing bdd " + name);
+                BDD b= bdd.load(fn);
+                out.println("nodes: " + b.nodeCount());
+                return b;
             }
         } catch (IOException x) {
         }
@@ -357,6 +359,7 @@ public class PAFromSource {
         mI = initBDD("mI");
         IE = initBDD("IE0");
         visited = initBDD("visited");
+        cha = initBDD("cha");
     }
    
 
@@ -2410,6 +2413,7 @@ public class PAFromSource {
 
     private void generateTypeRelations() {
         // vT, aT
+        out.println("adding to vT, aT ...");
         Iterator it = Vmap.iterator();
         for (int i = 0; it.hasNext(); i++) {
             Wrapper v =(Wrapper)it.next();
@@ -2419,7 +2423,8 @@ public class PAFromSource {
             addToAT(v);
         }
         
-        // hT
+        // hT;
+        out.println("adding to hT ...");
         it = Hmap.iterator();
         for (int i = 0; it.hasNext(); i++) {
             Wrapper h =(Wrapper)it.next();
@@ -2493,6 +2498,7 @@ public class PAFromSource {
                 generateRelations(cu, true, true);
             }
         }
+        out.println(".java files processed");
     
         out.println("Processing .class files");
         for (Iterator i = libs.iterator(); i.hasNext(); ) {
@@ -2504,7 +2510,7 @@ public class PAFromSource {
                 generateRelations(cu, true, true);
             }
         }
-
+        out.println(".class files processed");
 
         System.out.println("Time spent : "+(System.currentTimeMillis()-time)/1000.);
     }
@@ -2541,7 +2547,6 @@ public class PAFromSource {
             writer.write(t.getKey()); 
             writer.write('\n');
             
-            
             if (!staticinits.isEmpty()) {
                 writer.write(" METHOD <clinit> ()V ROOT\n");
                 for (Iterator j = staticinits.iterator(); j.hasNext(); ) {
@@ -2557,7 +2562,7 @@ public class PAFromSource {
             }
 
             IMethodBinding[] mb = getSortedMethods(t);
-            
+
             for (int i = 0; i < mb.length; i++) {
                 writeMethod(writer, mb[i]);
                 if (mb[i].isConstructor()) {
@@ -2565,7 +2570,7 @@ public class PAFromSource {
                         Initializer in = (Initializer)j.next();
                         in.accept(new CallGraphPrinter(writer, mm));
                     }
-                    
+
                     // implicit calls to superconstructor?
                     String s = IMPLICITSUPERCALL + mb[i].getKey();
                     Collection targets = mm.getValues(s);
@@ -2573,11 +2578,12 @@ public class PAFromSource {
                         writeCallsite(writer, targets, new StringWrapper(s));
                     }
                 }
-                
+
                 MethodDeclaration md = (MethodDeclaration)declaredMethods.get(mb[i]);
                 if (md != null) {
                     md.accept(new CallGraphPrinter(writer, mm));
                 }
+                
             }
         }
         
@@ -2626,8 +2632,9 @@ public class PAFromSource {
         writer.write(String.valueOf(Imap.get(w)));
         writer.write('\n');
         
-        for (Iterator j = targets.iterator(); j.hasNext(); ) {   
-            writeTarget(writer, (MethodWrapper)j.next());
+        for (Iterator j = targets.iterator(); j.hasNext(); ) { 
+            Object m = j.next();
+            writeTarget(writer, (Wrapper)m);
         }
     }
     
@@ -2649,6 +2656,23 @@ public class PAFromSource {
         return false;
     }
 
+
+    private void writeTarget(BufferedWriter writer, Wrapper mw) throws IOException {
+        writer.write("   TARGET ");
+        if (mw instanceof MethodWrapper) {
+            IMethodBinding binding = ((MethodWrapper)mw).getBinding();
+            writer.write(binding.getDeclaringClass().getKey());
+            writer.write('.');
+            writer.write(getFormattedName(binding));
+        }
+        else {
+            writer.write(mw.toString());
+            writer.write(" from StringWrapper");
+        }
+        writer.write('\n');
+    }
+
+    
     private void writeMethod(BufferedWriter writer, IMethodBinding mb) throws IOException {
         writer.write(" METHOD ");
         writer.write(getFormattedName(mb));
@@ -2657,16 +2681,7 @@ public class PAFromSource {
         }
         writer.write("\n");
     }
-
-    private void writeTarget(BufferedWriter writer, MethodWrapper mw) throws IOException {
-        writer.write("   TARGET ");
-        IMethodBinding binding = mw.getBinding();
-        writer.write(binding.getDeclaringClass().getKey());
-        writer.write('.');
-        writer.write(getFormattedName(binding));
-        writer.write('\n');
-    }
-
+    
     private String getFormattedName(IMethodBinding mb) {
         StringBuffer sb = new StringBuffer(mb.isConstructor()? "<init>": mb.getName());
         sb.append(" (");
@@ -2723,6 +2738,7 @@ public class PAFromSource {
     }
 
     class CallGraphPrinter extends ASTVisitor {
+
         BufferedWriter writer;
         MultiMap ie;
 
@@ -2730,6 +2746,11 @@ public class PAFromSource {
             super(false); 
             writer = w; 
             ie = mm;
+        }
+        
+        public void postVisit(ASTNode arg0) {
+        }
+        public void preVisit(ASTNode arg0) {
         }
         
         // don't traverse inner types. will be taken care of by other printers
@@ -2766,7 +2787,7 @@ public class PAFromSource {
     }
   
     private void dumpBDDRelations() throws IOException {     
-        cha = new ClassHierarchyAnalysis(this).calculateCHA();
+        new ClassHierarchyAnalysis(this).calculateCHA();
         
         // difference in compatibility
         BDD S0 = S;//.exist(V1cV2cset);
@@ -2783,7 +2804,7 @@ public class PAFromSource {
                 BDDDomain d = bdd.getDomain(i);
                 if (d == V1 || d == V2)
                     dos.write("V\n");
-                else if (d == H1)// || d == H2)
+                else if (d == H1|| d == H2)
                     dos.write("H\n");
                 else if (d == T1 || d == T2)
                     dos.write("T\n");
@@ -2946,9 +2967,10 @@ public class PAFromSource {
         BufferedReader in = null;
         try {
             in = new BufferedReader(new FileReader(loadPath+name+".map"));
-            out.println("loading existing map");
-            
-            return NodeWrapperIndexMap.loadStringWrapperMap(name, in);
+            out.println("loading existing map " + name);
+            IndexedMap m = NodeWrapperIndexMap.loadStringWrapperMap(name, in); 
+            out.println("size: " + m.size());
+            return m;
         } catch (IOException x) {
         }
         return new NodeWrapperIndexMap(name, 1 << bits);
@@ -3096,7 +3118,7 @@ public class PAFromSource {
                 if (v.equals(StringWrapper.GLOBAL_THIS)) {
                     BDD bdd1 = V1.ithVar(V_i);
                     bdd1.andWith(T1.ithVar(0));
-                    out.println("adding to vT: 0 / " + StringWrapper.GLOBAL_THIS);
+                    //out.println("adding to vT: 0 / " + StringWrapper.GLOBAL_THIS);
                     if (TRACE_RELATIONS) out.println("Adding to vT: "+bdd1.toStringWithDomains());
                     vT.orWith(bdd1);
                 }
@@ -3116,8 +3138,8 @@ public class PAFromSource {
             TypeWrapper tw = new TypeWrapper(type);
             int T_i = Tmap.get(tw);
             bdd1.andWith(T1.ithVar(T_i));
-            out.println("adding to vT: " + V_i + " " + v+  " / " +
-                tw.getTypeName());
+            //out.println("adding to vT: " + V_i + " " + v+  " / " +
+                //tw.getTypeName());
             if (TRACE_RELATIONS) out.println("Adding to vT: "+bdd1.toStringWithDomains());
             vT.orWith(bdd1);
         }
@@ -3143,8 +3165,8 @@ public class PAFromSource {
             BDD T_bdd = T2.ithVar(T_i);
             BDD bdd1 = H1.ithVar(H_i);
             bdd1.andWith(T_bdd);
-            out.println("adding to hT: " + H_i + " " + h+ 
-                " / " + tw.getTypeName());
+            //out.println("adding to hT: " + H_i + " " + h+ 
+              //  " / " + tw.getTypeName());
             if (TRACE_RELATIONS) out.println("Adding to hT: "+bdd1.toStringWithDomains());
             hT.orWith(bdd1);
         }        
@@ -3157,7 +3179,7 @@ public class PAFromSource {
         BDD T1_bdd = T1.ithVar(T1_i);
         BDD bdd1 = T2.ithVar(T2_i);
         bdd1.andWith(T1_bdd);
-        out.println("Adding to aT: "+ T1_i + " " + t1+" / " + T2_i + " " + t2);
+       // out.println("Adding to aT: "+ T1_i + " " + t1+" / " + T2_i + " " + t2);
         if (TRACE_RELATIONS) out.println("Adding to aT: "+bdd1.toStringWithDomains());
         aT.orWith(bdd1);
     }

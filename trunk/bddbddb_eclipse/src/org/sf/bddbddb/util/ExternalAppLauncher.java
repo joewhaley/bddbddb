@@ -67,8 +67,9 @@ public class ExternalAppLauncher {
                 "-Dpa.dumppath="+loadPath,
                 "-Dpa.dumpfly",
                 "-Dpa.fullcha",
+                "-Dpa.addinstancemethods",
                 "-Dpa.autodiscover=no",
-                "-Dbddordering="+"N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1",
+                "-Dbddordering="+varorder,
                 mainClassName, "@"+tempFile.getAbsolutePath() };
             
             int r = launch(cmd);
