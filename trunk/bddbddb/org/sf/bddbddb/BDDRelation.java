@@ -93,6 +93,12 @@ public class BDDRelation extends Relation {
             domains.add(d);
             domainSet.andWith(d.set());
         }
+        if (negated != null) {
+            BDDRelation bddn = (BDDRelation) negated;
+            bddn.relation = solver.bdd.one();
+            bddn.domains = this.domains;
+            bddn.domainSet = this.domainSet;
+        }
     }
     
     // Called after variable order is set.
@@ -109,12 +115,6 @@ public class BDDRelation extends Relation {
             } else {
                 relation = b;
             }
-        }
-        if (negated != null) {
-            BDDRelation bddn = (BDDRelation) negated;
-            bddn.relation = solver.bdd.one();
-            bddn.domains = this.domains;
-            bddn.domainSet = this.domainSet;
         }
     }
     
