@@ -3,23 +3,17 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.io.IOException;
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.LinearSet;
-import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
@@ -894,6 +888,13 @@ public class BDDInferenceRule extends InferenceRule {
     }
     
     void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, Collection vars1, Collection vars2) {
+        Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
+        List allVars = new LinkedList(allVarSet);
+        FindBestDomainOrder fbdo = FindBestDomainOrder.INSTANCE;
+        FindBestDomainOrder.OrderInfoCollection info = fbdo.getOrderInfo(this);
+        if (info.numberOfGoodOrders(allVars) <= 1) {
+            return;
+        }
         System.out.println("Finding best order for "+vars1+","+vars2);
         FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
         try {
@@ -901,14 +902,6 @@ public class BDDInferenceRule extends InferenceRule {
         } catch (IOException x) {
             System.err.println("IO Exception occurred: " + x);
             fbo.cleanup();
-            return;
-        }
-        Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
-        List allVars = new LinkedList(allVarSet);
-        FindBestDomainOrder fbdo = FindBestDomainOrder.INSTANCE;
-        FindBestDomainOrder.OrderInfoCollection info = fbdo.getOrderInfo(this);
-        if (info.numberOfGoodOrders(allVars) <= 1) {
-            System.out.println("No more exploration necessary.");
             return;
         }
         FindBestDomainOrder.UpdatableOrderInfoCollection info2 = info.createUpdatable();
@@ -960,167 +953,6 @@ public class BDDInferenceRule extends InferenceRule {
         
         info.incorporateTrials(info2.trials, confidence);
         fbo.cleanup();
-    }
-    
-    String findBestDomainOrder(BDDFactory bdd, List domains, String origVarOrder, BDD b1, BDD b2, BDD b3) {
-        if (domains == null) {
-            List domainSet1 = new LinkedList();
-            List domainSet2 = new LinkedList();
-            List domainSet3 = new LinkedList();
-            addDomainsOf(b1, domainSet1);
-            addDomainsOf(b2, domainSet2);
-            addDomainsOf(b3, domainSet3);
-            Set domainSet = new LinearSet();
-            for (Iterator i = domainSet1.iterator(); i.hasNext();) {
-                Object o = i.next();
-                if (domainSet2.contains(o) || !domainSet3.contains(o)) domainSet.add(o);
-            }
-            for (Iterator i = domainSet2.iterator(); i.hasNext();) {
-                Object o = i.next();
-                if (domainSet1.contains(o) || !domainSet3.contains(o)) domainSet.add(o);
-            }
-            domains = new ArrayList(domainSet);
-        }
-        String origVarOrder2 = origVarOrder;
-        for (int i = 0; i < domains.size(); ++i) {
-            BDDDomain d1 = (BDDDomain) domains.get(i);
-            int index = origVarOrder2.indexOf(d1.getName());
-            String name = "$" + i + "$";
-            origVarOrder2 = origVarOrder2.substring(0, index) + name + origVarOrder2.substring(index + d1.getName().length());
-        }
-        SortedSet ranking = new TreeSet();
-        PermutationGenerator g = new PermutationGenerator(domains.size());
-        String varOrder2 = origVarOrder;
-        boolean first = true;
-        while (g.hasMore()) {
-            String varOrder = origVarOrder2;
-            int[] p = g.getNext();
-            for (int i = 0; i < p.length; ++i) {
-                BDDDomain d2 = (BDDDomain) domains.get(p[i]);
-                String name = "$" + i + "$";
-                int index = varOrder.indexOf(name);
-                varOrder = varOrder.substring(0, index) + d2.getName() + varOrder.substring(index + name.length());
-            }
-            List order = getDomainOrder(varOrder, domains, p);
-            long t = solver.getOrderConstraint(order);
-            if (t == Long.MAX_VALUE) continue;
-            PermData pd = new PermData(order, varOrder, t);
-            pd.first = first;
-            first = false;
-            ranking.add(pd);
-            varOrder2 = varOrder;
-        }
-        if (ranking.size() <= 1) {
-            if (ranking.size() == 0) solver.out.println("Warning: no valid permutations for " + domains);
-            return varOrder2;
-        } else {
-            if (ranking.size() > MAX_ORDERS) {
-                solver.out.println("Too many orders (" + ranking.size() + "), skipping all but the best " + MAX_ORDERS + ".");
-            }
-            Iterator i = ranking.iterator();
-            PermData pd = (PermData) i.next();
-            long bestTime = pd.time;
-            int j = 1;
-            while (i.hasNext()) {
-                pd = (PermData) i.next();
-                if (j > MAX_ORDERS && pd.time > 50 || pd.time > bestTime + MAX_DIFF) {
-                    solver.out.println(pd.order + " too slow (" + pd.time + " ms)");
-                    solver.registerOrderConstraint(pd.order, Long.MAX_VALUE);
-                    i.remove();
-                }
-                ++j;
-            }
-        }
-        FindBestOrder fbo = null;
-        solver.out.println("Trying " + ranking.size() + " permutations of " + domains);
-        if (true) {
-            fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
-            try {
-                fbo.init(b1, b2, b3, BDDFactory.and);
-            } catch (IOException x) {
-                System.err.println("IO Exception occurred: " + x);
-                fbo.cleanup();
-                fbo = null;
-            }
-        }
-        String bestVarOrder = origVarOrder;
-        List bestOrder = null;
-        long bestTime = Long.MAX_VALUE;
-        Iterator i = ranking.iterator();
-        while (i.hasNext()) {
-            PermData pd = (PermData) i.next();
-            List order = pd.order;
-            String varOrder = pd.varOrder;
-            long time;
-            if (fbo != null) {
-                solver.out.println("Trying " + order);
-                time = fbo.tryOrder(true, varOrder);
-            } else {
-                int[] varOrdering = bdd.makeVarOrdering(true, varOrder);
-                solver.out.print("Setting variable order to " + varOrder + ", ");
-                bdd.setVarOrder(varOrdering);
-                solver.out.println("done.");
-                solver.out.print(b1.nodeCount() + "x" + b2.nodeCount() + " = ");
-                time = System.currentTimeMillis();
-                BDD result = b1.relprod(b2, b3);
-                time = System.currentTimeMillis() - time;
-                solver.out.println(result.nodeCount() + " (" + time + " ms)");
-                result.free();
-            }
-            solver.registerOrderConstraint(order, time);
-            if (time < bestTime) {
-                bestTime = time;
-                bestOrder = order;
-                bestVarOrder = varOrder;
-                solver.out.println("New best order: " + bestOrder + " time: " + bestTime + " ms");
-            }
-        }
-        if (fbo != null) fbo.cleanup();
-        solver.out.println("Best relative order: " + bestOrder);
-        solver.out.println("Best variable ordering: " + bestVarOrder);
-        return bestVarOrder;
-    }
-
-    /**
-     * @param varorder
-     * @param domains
-     * @param p
-     * @return
-     */
-    static List getDomainOrder(String varorder, List domains, int[] p) {
-        List order = new LinkedList();
-        for (int i = 0; i < p.length; ++i) {
-            BDDDomain d = (BDDDomain) domains.get(p[i]);
-            for (ListIterator j = order.listIterator();;) {
-                if (!j.hasNext()) {
-                    j.add(d);
-                    break;
-                }
-                BDDDomain d2 = (BDDDomain) j.next();
-                if (varorder.indexOf(d.getName()) < varorder.indexOf(d2.getName())) {
-                    j.previous();
-                    j.add(d);
-                    break;
-                }
-            }
-        }
-        return order;
-    }
-
-    /**
-     * Helper function to add the domains of the given BDD to the given collection.
-     * 
-     * @param b  BDD
-     * @param domains  collection to add to
-     */
-    static void addDomainsOf(BDD b, Collection domains) {
-        BDD s = b.support();
-        int[] a = s.scanSetDomains();
-        s.free();
-        if (a == null) return;
-        for (int i = 0; i < a.length; ++i) {
-            domains.add(b.getFactory().getDomain(a[i]));
-        }
     }
     
 }
