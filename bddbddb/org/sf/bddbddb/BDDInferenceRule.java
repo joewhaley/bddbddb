@@ -192,7 +192,7 @@ public class BDDInferenceRule extends InferenceRule {
             if (!incrementalize || updateCount == 1)
                 ir = this.generateIR();
             else
-                ir = this.generateIR/*_incremental*/();
+                ir = this.generateIR_incremental();
             Interpreter interpret = new BDDInterpreter();
             boolean anyChange = false;
             for (Iterator i = ir.iterator(); i.hasNext(); ) {
