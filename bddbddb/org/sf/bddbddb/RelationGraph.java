@@ -36,14 +36,15 @@ public class RelationGraph implements Graph {
     }
     
     RelationGraph(Relation roots, Relation edges) {
-        Assert._assert(roots.fieldDomains.size() == 1);
-        Assert._assert(edges.fieldDomains.size() == 2);
-        FieldDomain fd = (FieldDomain) roots.fieldDomains.get(0);
+        Assert._assert(roots.attributes.size() == 1);
+        Assert._assert(edges.attributes.size() == 2);
+        Attribute a = (Attribute) roots.attributes.get(0);
+        Domain fd = a.attributeDomain;
         this.rootVariable = new Variable(fd.toString(), fd);
         List varList = Collections.singletonList(rootVariable);
         this.root = new RuleTerm(varList, roots);
-        Assert._assert(edges.fieldDomains.get(0) == fd);
-        Assert._assert(edges.fieldDomains.get(1) == fd);
+        Assert._assert(edges.getAttribute(0).attributeDomain == fd);
+        Assert._assert(edges.getAttribute(1).attributeDomain == fd);
         List varList2 = new Pair(rootVariable, rootVariable);
         RuleTerm edge = new RuleTerm(varList2, edges);
         this.edges = Collections.singletonList(edge);

@@ -40,12 +40,9 @@ public abstract class Solver {
     String basedir = System.getProperty("basedir");
     
     abstract InferenceRule createInferenceRule(List/*<RuleTerm>*/ top, RuleTerm bottom);
-    abstract Relation createEquivalenceRelation(FieldDomain fd);
-    abstract Relation createNotEquivalenceRelation(FieldDomain fd);
-    abstract Relation createRelation(String name,
-                                     List/*<String>*/ names,
-                                     List/*<FieldDomain>*/ fieldDomains,
-                                     List/*<String>*/ fieldOptions);
+    abstract Relation createEquivalenceRelation(Domain fd);
+    abstract Relation createNotEquivalenceRelation(Domain fd);
+    abstract Relation createRelation(String name, List/*<Attribute>*/ attributes);
     NumberingRule createNumberingRule(InferenceRule ir) {
         return new NumberingRule(this, ir);
     }
@@ -91,18 +88,18 @@ public abstract class Solver {
     public abstract void solve();
     public abstract void finish();
         
-    public FieldDomain getFieldDomain(String name) {
-        return (FieldDomain) nameToFieldDomain.get(name);
+    public Domain getFieldDomain(String name) {
+        return (Domain) nameToFieldDomain.get(name);
     }
     
     public Relation getRelation(String name) {
         return (Relation) nameToRelation.get(name);
     }
     
-    Map/*<String,FieldDomain>*/ nameToFieldDomain;
+    Map/*<String,Domain>*/ nameToFieldDomain;
     Map/*<String,Relation>*/ nameToRelation;
-    Map/*<FieldDomain,Relation>*/ equivalenceRelations;
-    Map/*<FieldDomain,Relation>*/ notequivalenceRelations;
+    Map/*<Domain,Relation>*/ equivalenceRelations;
+    Map/*<Domain,Relation>*/ notequivalenceRelations;
     List/*<InferenceRule>*/ rules;
     Collection/*<Relation>*/ relationsToLoad;
     Collection/*<Relation>*/ relationsToLoadTuples;
@@ -294,7 +291,7 @@ public abstract class Solver {
                     }
                     if (isNumber) {
                         // field domain
-                        FieldDomain fd = parseFieldDomain(lineNum, s);
+                        Domain fd = parseFieldDomain(lineNum, s);
                         if (TRACE) out.println("Parsed field domain "+fd+" size "+fd.size);
                         if (nameToFieldDomain.containsKey(fd.name)) {
                             System.err.println("Error, field domain "+fd.name+" redefined on line "+in.getLineNumber()+", ignoring.");
@@ -440,7 +437,7 @@ public abstract class Solver {
         }
     }
     
-    FieldDomain parseFieldDomain(int lineNum, String s) throws IOException {
+    Domain parseFieldDomain(int lineNum, String s) throws IOException {
         MyStringTokenizer st = new MyStringTokenizer(s);
         String name = nextToken(st);
         String num = nextToken(st);
@@ -451,7 +448,7 @@ public abstract class Solver {
             outputError(lineNum, st.getPosition(), s, "Expected a number, got \""+num+"\"");
             throw new IllegalArgumentException();
         }
-        FieldDomain fd = new FieldDomain(name, size);
+        Domain fd = new Domain(name, size);
         if (st.hasMoreTokens()) {
             String mapName = nextToken(st);
             DataInputStream dis = null;
@@ -477,13 +474,10 @@ public abstract class Solver {
             outputError(lineNum, st.getPosition(), s, "Expected \"(\", got \""+openParen+"\"");
             throw new IllegalArgumentException();
         }
-        List fieldNames = new LinkedList();
-        List fieldDomains = new LinkedList();
-        List fieldOptions = new LinkedList();
+        List attributes = new LinkedList();
         
         for (;;) {
             String fName = nextToken(st);
-            fieldNames.add(fName);
             String colon = nextToken(st);
             if (!colon.equals(":")) {
                 outputError(lineNum, st.getPosition(), s, "Expected \":\", got \""+colon+"\"");
@@ -512,16 +506,17 @@ public abstract class Solver {
                 }
                 fdName = fdName.substring(0, numIndex);
             }
-            FieldDomain fd = getFieldDomain(fdName);
+            Domain fd = getFieldDomain(fdName);
             if (fd == null) {
                 outputError(lineNum, st.getPosition(), s, "Unknown field domain "+fdName);
                 throw new IllegalArgumentException();
             }
-            fieldDomains.add(fd);
+            String option;
             if (fdNum != -1)
-                fieldOptions.add(fdName+fdNum);
+                option = fdName+fdNum;
             else
-                fieldOptions.add("");
+                option = "";
+            attributes.add(new Attribute(fName, fd, option));
             String comma = nextToken(st);
             if (comma.equals(")")) break;
             if (!comma.equals(",")) {
@@ -529,7 +524,7 @@ public abstract class Solver {
                 throw new IllegalArgumentException();
             }
         }
-        Relation r = createRelation(name, fieldNames, fieldDomains, fieldOptions);
+        Relation r = createRelation(name, attributes);
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
             if (option.equals("output")) {
@@ -647,7 +642,7 @@ public abstract class Solver {
             
             Variable var1 = (Variable) nameToVar.get(varName1);
             Variable var2 = (Variable) nameToVar.get(varName2);
-            FieldDomain fd;
+            Domain fd;
             if (var1 == null) {
                 if (var2 == null) {
                     outputError(lineNum, st.getPosition(), s, "Cannot use \"=\" on two unbound variables.");
@@ -687,11 +682,12 @@ public abstract class Solver {
         if (negated) r = r.makeNegated(this);
         List/*<Variable>*/ vars = new LinkedList();
         for (;;) {
-            if (r.fieldDomains.size() <= vars.size()) {
+            if (r.attributes.size() <= vars.size()) {
                 outputError(lineNum, st.getPosition(), s, "Too many fields for "+r);
                 throw new IllegalArgumentException();
             }
-            FieldDomain fd = (FieldDomain) r.fieldDomains.get(vars.size());
+            Attribute a = (Attribute) r.attributes.get(vars.size());
+            Domain fd = a.attributeDomain;
             String varName = nextToken(st);
             Variable var = parseVariable(fd, nameToVar, varName);
             if (false && vars.contains(var)) { // temporarily disabled to handle "number" rules.
@@ -711,7 +707,7 @@ public abstract class Solver {
                 throw new IllegalArgumentException();
             }
         }
-        if (r.fieldDomains.size() != vars.size()) {
+        if (r.attributes.size() != vars.size()) {
             outputError(lineNum, st.getPosition(), s, "Wrong number of vars in rule term for "+relationName);
             throw new IllegalArgumentException();
         }
@@ -720,7 +716,7 @@ public abstract class Solver {
         return rt;
     }
     
-    Variable parseVariable(FieldDomain fd, Map nameToVar, String varName) {
+    Variable parseVariable(Domain fd, Map nameToVar, String varName) {
         char firstChar = varName.charAt(0);
         Variable var;
         if (firstChar >= '0' && firstChar <= '9') {
@@ -744,7 +740,7 @@ public abstract class Solver {
 //        return r;
 //    }
     
-    Relation getEquivalenceRelation(FieldDomain fd) {
+    Relation getEquivalenceRelation(Domain fd) {
         Relation r = (Relation) equivalenceRelations.get(fd);
         if (r == null) {
             equivalenceRelations.put(fd, r = createEquivalenceRelation(fd));
@@ -752,7 +748,7 @@ public abstract class Solver {
         return r;
     }
     
-    Relation getNotEquivalenceRelation(FieldDomain fd) {
+    Relation getNotEquivalenceRelation(Domain fd) {
         Relation r = (Relation) notequivalenceRelations.get(fd);
         if (r == null) {
             notequivalenceRelations.put(fd, r = createNotEquivalenceRelation(fd));

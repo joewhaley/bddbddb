@@ -150,14 +150,14 @@ public abstract class InferenceRule {
             Map neededVariables = new LinearMap();
             Map variableOptions = new HashMap();
             Iterator i = rt1.variables.iterator();
-            Iterator j = rt1.relation.fieldDomains.iterator();
-            Iterator k = rt1.relation.fieldOptions.iterator();
+            Iterator j = rt1.relation.attributes.iterator();
             while (i.hasNext()) {
                 Variable v = (Variable) i.next();
-                FieldDomain d = (FieldDomain) j.next();
-                String o = (String) k.next();
+                Attribute a = (Attribute) j.next();
+                Domain d = a.attributeDomain;
+                String o = a.attributeOptions;
                 if (!myNewNecessaryVariables.contains(v)) continue;
-                FieldDomain d2 = (FieldDomain) neededVariables.get(v);
+                Domain d2 = (Domain) neededVariables.get(v);
                 if (d2 != null && d != d2) {
                     throw new IllegalArgumentException(v+": "+d+" != "+d2);
                 }
@@ -171,14 +171,14 @@ public abstract class InferenceRule {
                 variableOptions.put(v, o);
             }
             i = rt2.variables.iterator();
-            j = rt2.relation.fieldDomains.iterator();
-            k = rt2.relation.fieldOptions.iterator();
+            j = rt2.relation.attributes.iterator();
             while (i.hasNext()) {
                 Variable v = (Variable) i.next();
-                FieldDomain d = (FieldDomain) j.next(); 
-                String o = (String) k.next();
+                Attribute a = (Attribute) j.next();
+                Domain d = a.attributeDomain;
+                String o = a.attributeOptions;
                 if (!myNewNecessaryVariables.contains(v)) continue;
-                FieldDomain d2 = (FieldDomain) neededVariables.get(v);
+                Domain d2 = (Domain) neededVariables.get(v);
                 if (d2 != null && d != d2) {
                     throw new IllegalArgumentException(v+": "+d+" != "+d2);
                 }
@@ -192,23 +192,20 @@ public abstract class InferenceRule {
                 variableOptions.put(v, o);
             }
             // Make a new relation for the bottom.
-            List fieldNames = new LinkedList();
-            List fieldDomains = new LinkedList();
-            List fieldOptions = new LinkedList();
+            List attributes = new LinkedList();
             List newVariables = new LinkedList();
             for (i = neededVariables.entrySet().iterator(); i.hasNext(); ) {
                 Map.Entry e = (Map.Entry) i.next();
                 Variable v = (Variable) e.getKey();
-                FieldDomain d = (FieldDomain) e.getValue();
+                Domain d = (Domain) e.getValue();
                 String o = (String) variableOptions.get(v);
-                fieldNames.add("_"+v);
-                fieldDomains.add(d);
-                fieldOptions.add(o);
+                Attribute a = new Attribute("_"+v, d, o);
+                attributes.add(a);
                 newVariables.add(v);
             }
             String relationName = bottom.relation.name+"_"+myIndex+"_"+count;
-            if (s.TRACE) s.out.println("Field names: "+fieldNames+" Field domains: "+fieldDomains+" Options: "+fieldOptions);
-            Relation newRelation = s.createRelation(relationName, fieldNames, fieldDomains, fieldOptions);
+            if (s.TRACE) s.out.println("New attributes: "+attributes);
+            Relation newRelation = s.createRelation(relationName, attributes);
             if (s.TRACE) s.out.println("New relation: "+newRelation);
             Object o = s.nameToRelation.put(newRelation.name, newRelation);
             Assert._assert(o == null);

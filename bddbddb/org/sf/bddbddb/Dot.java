@@ -202,13 +202,14 @@ public class Dot {
         int sourceIndex;
         int sinkIndex;
         int labelIndex;
-        FieldDomain labelDomain;
+        Domain labelDomain;
         LabelSource(Relation r, int sourceI, int sinkI, int labelI) {
             relation = r;
             sourceIndex = sourceI;
             sinkIndex = sinkI;
             labelIndex = labelI;
-            labelDomain = (FieldDomain) relation.fieldDomains.get(labelIndex);
+            Attribute a = (Attribute) relation.attributes.get(labelIndex);
+            labelDomain = a.attributeDomain;
         }
         
         String getLabel(RelationGraph.GraphNode source, RelationGraph.GraphNode sink) {
@@ -337,18 +338,18 @@ public class Dot {
     }
     
     private class DomainModifier extends NodeAttributeModifier {
-        FieldDomain fd;
+        Domain fd;
         String property;
         String value;
         
-        DomainModifier(String p, String v, FieldDomain f) {
+        DomainModifier(String p, String v, Domain f) {
             property = p;
             value = v;
             fd = f;
         }
         
         boolean match(GraphNode n, Map a) {
-            FieldDomain f = n.v.getFieldDomain();
+            Domain f = n.v.getFieldDomain();
             
             if (f.equals(fd)) {
                 a.put(property,value);
@@ -370,11 +371,12 @@ public class Dot {
             value = v;
             relation = r;
             
-            Assert._assert(r.fieldDomains.size()==1);
+            Assert._assert(r.attributes.size()==1);
         }
 
         boolean match(GraphNode n, Map a) {
-            FieldDomain f = (FieldDomain) relation.fieldDomains.iterator().next();
+            Attribute attr = (Attribute) relation.attributes.iterator().next();
+            Domain f = attr.attributeDomain;
             if (n.v.getFieldDomain().equals(f)) {
                 if (relation.contains(0, n.number)) {
                     a.put(property,value);

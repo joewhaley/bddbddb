@@ -18,6 +18,8 @@ public class RuleTerm {
     Relation relation;
     
     /**
+     * Create a new RuleTerm.
+     * 
      * @param variables
      * @param relation
      */
@@ -27,6 +29,9 @@ public class RuleTerm {
         this.relation = relation;
     }
     
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append(relation);
@@ -39,4 +44,17 @@ public class RuleTerm {
         return sb.toString();
     }
     
+    /**
+     * @return Returns the relation.
+     */
+    public Relation getRelation() {
+        return relation;
+    }
+    
+    /**
+     * @return Returns the variables.
+     */
+    public List getVariables() {
+        return variables;
+    }
 }

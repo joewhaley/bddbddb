@@ -12,8 +12,11 @@ package org.sf.bddbddb;
 public class Variable {
     
     String name;
-    FieldDomain fieldDomain;
+    Domain fieldDomain;
     
+    /**
+     * Create empty variable.
+     */
     public Variable() {
         this("_");
     }
@@ -29,7 +32,7 @@ public class Variable {
     /**
      * @param name
      */
-    public Variable(String name, FieldDomain fd) {
+    public Variable(String name, Domain fd) {
         super();
         this.name = name;
         this.fieldDomain = fd;
@@ -52,17 +55,20 @@ public class Variable {
     /**
      * @return Returns the fieldDomain.
      */
-    public FieldDomain getFieldDomain() {
+    public Domain getFieldDomain() {
         return fieldDomain;
     }
     
     /**
      * @param fieldDomain The fieldDomain to set.
      */
-    public void setFieldDomain(FieldDomain fieldDomain) {
+    public void setFieldDomain(Domain fieldDomain) {
         this.fieldDomain = fieldDomain;
     }
     
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         return name;
     }
