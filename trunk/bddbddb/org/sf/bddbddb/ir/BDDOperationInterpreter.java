@@ -70,7 +70,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
             any = true;
             pair.set(d1, d2);
             if (TRACE) System.out.println("   Renaming " + d1 + " to " + d2);
-            if (true) {
+            if (true && varorder != null) {
                 int index1 = varorder.indexOf(d1.toString());
                 int index2 = varorder.indexOf(d2.toString());
                 for (Iterator j = r2.getAttributes().iterator(); j.hasNext();) {
