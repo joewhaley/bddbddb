@@ -4,11 +4,9 @@
 package org.sf.bddbddb.dataflow;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-
-import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.ir.Operation;
+import org.sf.bddbddb.util.Assert;
 
 /**
  * RelationProblem
@@ -17,104 +15,35 @@ import org.sf.bddbddb.ir.Operation;
  * @version $Id$
  */
 public abstract class OperationProblem extends Problem {
+    
+    Map/*<Operation,OperationFact>*/ operationFacts;
+    
+    public OperationProblem() {
+        this.initialize();
+    }
+    
+    public void initialize() {
+        operationFacts = new HashMap();
+    }
+    
+    public OperationFact getFact(Operation o) {
+        return (OperationFact) operationFacts.get(o);
+    }
+
+    public void setFact(Operation o, OperationFact f) {
+        Assert._assert(f.getOperation() == o);
+        operationFacts.put(o, f);
+        //System.out.println("Setting operation "+o+" to "+f);
+    }
+
     public abstract boolean direction();
 
-    public abstract static class OperationFacts implements Fact {
-        Map/* <Operation,OperationFact> */operationFacts;
+    public static interface OperationFact extends Fact {
+        public Operation getOperation();
+    }
+    
+    public abstract class OperationTransferFunction extends TransferFunction {
 
-        IterationList location;
-
-        OperationFact lastFact;
-
-        public abstract OperationFacts create();
-
-        public OperationFacts() {
-            initialize();
-        }
-
-        public void initialize() {
-            operationFacts = new HashMap();
-        }
-
-        public OperationFact getFact(Operation o) {
-            return (OperationFact) operationFacts.get(o);
-        }
-
-        /**
-         * @param op
-         * @param fact
-         * @return
-         */
-        public Object setFact(Operation op, OperationFact fact) {
-            return operationFacts.put(op, fact);
-        }
-
-        public int hashCode() {
-            return operationFacts.hashCode();
-        }
-
-        public boolean equals(Object o) {
-            OperationFacts that = (OperationFacts) o;
-            if (this.operationFacts == that.operationFacts) return true;
-            if (operationFacts.size() != that.operationFacts.size()) {
-                System.out.println("Size not equal");
-                return false;
-            }
-            Iterator i = operationFacts.entrySet().iterator();
-            while (i.hasNext()) {
-                Map.Entry e = (Map.Entry) i.next();
-                Object key = e.getKey();
-                Object value = e.getValue();
-                Object value2 = that.operationFacts.get(key);
-                if (!value.equals(value2)) {
-                    System.out.println("Key " + key + " differs: " + value
-                        + " vs " + value2);
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        public void setLocation(IterationList loc) {
-            this.location = loc;
-        }
-
-        public IterationList getLocation() {
-            return location;
-        }
-
-        public Fact join(Fact fact) {
-            OperationFacts that = (OperationFacts) fact;
-            OperationFacts result = (OperationFacts) that.copy(location);
-            OperationFact thisLastFact = (OperationFact) getLastFact();
-            OperationFact thatLastFact = (OperationFact) that.getLastFact();
-            if (thisLastFact != null) {
-                OperationFact resultLastFact = (OperationFact) thisLastFact
-                    .join(thatLastFact);
-
-                result.setLastFact(resultLastFact);
-            }
-            result.location = location;
-            return result;
-        }
-
-        public OperationFact getLastFact() {
-            return lastFact;
-        }
-
-        public void setLastFact(OperationFact fact) {
-            lastFact = fact;
-        }
-
-        public Fact copy(IterationList loc) {
-            OperationFacts result = create();
-            result.operationFacts.putAll(this.operationFacts);
-            result.location = loc;
-            result.lastFact = this.lastFact;
-            return result;
-        }
     }
 
-    public static abstract interface OperationFact extends Fact {
-    }
 }

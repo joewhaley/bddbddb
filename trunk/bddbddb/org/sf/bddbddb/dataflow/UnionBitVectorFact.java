@@ -13,9 +13,7 @@ import org.sf.bddbddb.util.BitString;
 
 /**
  * @author Collective
- * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @version $Id$
  */
 public class UnionBitVectorFact extends BitVectorFact {
     public UnionBitVectorFact(int setSize) {
@@ -25,18 +23,21 @@ public class UnionBitVectorFact extends BitVectorFact {
     public UnionBitVectorFact(BitString s) {
         super(s);
     }
-
+    
+    public UnionBitVectorFact create(BitString s) {
+        return new UnionBitVectorFact(s);
+    }
+    
     public Fact join(Fact that) {
         BitString thatS = ((BitVectorFact) that).fact;
         BitString newS = new BitString(this.fact.size());
         newS.or(this.fact);
         boolean b = newS.or(thatS);
         if (!b) return this;
-        return new UnionBitVectorFact(newS);
+        return create(newS);
     }
 
     public void setLocation(IterationList list) {
-        Assert.UNREACHABLE("");
     }
 
     public IterationList getLocation() {
@@ -45,7 +46,6 @@ public class UnionBitVectorFact extends BitVectorFact {
     }
 
     public Fact copy(IterationList list) {
-        Assert.UNREACHABLE("");
-        return null;
+        return create(fact);
     }
 }

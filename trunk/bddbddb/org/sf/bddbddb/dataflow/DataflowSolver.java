@@ -12,7 +12,6 @@ import org.sf.bddbddb.dataflow.Problem.Fact;
 import org.sf.bddbddb.dataflow.Problem.TransferFunction;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.dynamic.If;
-import org.sf.bddbddb.util.Assert;
 
 /**
  * DataflowSolver
@@ -24,7 +23,7 @@ public class DataflowSolver {
     boolean TRACE = false;
 
     /** Matches blocks to their dataflow information. */
-    Map/* <IterationList,Fact> */blockToFact;
+    Map/*<IterationList,Fact>*/ blockToFact;
 
     public DataflowSolver() {
         blockToFact = new HashMap();
@@ -158,19 +157,15 @@ public class DataflowSolver {
         // Cache current dataflow information at start of block.
         Fact startFact = currentFact.copy(g);
         for (;;) {
-            Assert._assert(startFact.getLocation() == g);
-            Assert._assert(currentFact.getLocation() == g);
             blockToFact.put(g, startFact);
-            for (Iterator i = p.direction() ? g.iterator() : g
-                .reverseIterator(); i.hasNext();) {
+            for (Iterator i = p.direction() ? g.iterator() : g.reverseIterator(); i.hasNext();) {
                 Object o = i.next();
                 if (o instanceof IterationList || o instanceof If) {
                     IterationList list = null;
                     Fact preIfFact = null;
                     if (o instanceof If) {
                         if (p.direction()) {
-                            TransferFunction tf = p
-                                .getTransferFunction((Operation) o);
+                            TransferFunction tf = p.getTransferFunction((Operation) o);
                             currentFact = tf.apply(currentFact);
                         }
                         preIfFact = currentFact.copy(g);
@@ -186,8 +181,7 @@ public class DataflowSolver {
                     if (o instanceof If) {
                         currentFact = preIfFact.join(currentFact);
                         if (!p.direction()) {
-                            TransferFunction tf = p
-                                .getTransferFunction((Operation) o);
+                            TransferFunction tf = p.getTransferFunction((Operation) o);
                             currentFact = tf.apply(currentFact);
                         }
                     }
@@ -197,8 +191,6 @@ public class DataflowSolver {
                     TransferFunction tf = p.getTransferFunction(op);
                     currentFact = tf.apply(currentFact);
                 }
-                Assert._assert(startFact.getLocation() == g);
-                Assert._assert(currentFact.getLocation() == g);
             }
             if (!g.isLoop()) break;
             Fact joinResult = startFact.join(currentFact);

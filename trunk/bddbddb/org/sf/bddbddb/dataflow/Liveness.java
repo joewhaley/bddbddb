@@ -2,24 +2,18 @@ package org.sf.bddbddb.dataflow;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.IR;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.util.BitString;
+import org.sf.bddbddb.util.BitString.BitStringIterator;
 
 /**
  * @author Administrator
  */
 public class Liveness extends OperationProblem {
     public IR ir;
-
-    public LivenessFacts currentFacts;
-
-    IterationList currentLocation;
-
-    Operation lastOp;
 
     int numRelations;
 
@@ -35,51 +29,42 @@ public class Liveness extends OperationProblem {
     }
 
     public Fact getBoundary() {
-        return new LivenessFacts();
+        return new LivenessFact(numRelations);
     }
 
-    public class LivenessFacts extends OperationFacts {
-        public OperationFacts create() {
-            return new LivenessFacts();
-        }
-
-        public String toString() {
-            StringBuffer sb = new StringBuffer();
-            for (Iterator it = operationFacts.entrySet().iterator(); it
-                .hasNext();) {
-                Map.Entry e = (Map.Entry) it.next();
-                Object key = e.getKey();
-                Object value = e.getValue();
-                sb.append(key + ": " + value);
-                sb.append('\n');
-            }
-            return sb.toString();
-        }
-    }
-
-    public class LivenessFact extends UnionBitVectorFact implements
-        OperationFact {
+    public class LivenessFact extends UnionBitVectorFact implements OperationFact {
+        
+        Operation op;
+        
         public LivenessFact(BitString fact) {
             super(fact);
         }
-
+        
         public LivenessFact(int size) {
             super(size);
         }
-
-        public Fact join(Fact that) {
-            return new LivenessFact(
-                ((UnionBitVectorFact) super.join(that)).fact);
+        
+        public UnionBitVectorFact create(BitString bs) {
+            return new LivenessFact(bs);
         }
-
+        
+        public Fact join(Fact that) {
+            if (TRACE) System.out.println("Joining "+this+" and "+that);
+            Fact result = super.join(that);
+            if (TRACE) System.out.println("Result = "+result);
+            return result;
+        }
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
         public String toString() {
-            Integer one = new Integer(1);
             StringBuffer sb = new StringBuffer();
-            for (int i = 0; i < fact.size(); i++) {
-                if (fact.get(i)) {
-                    sb.append(ir.getRelation(i));
-                    sb.append(" ");
-                }
+            sb.append(op);
+            sb.append(" : ");
+            for (BitStringIterator i = fact.iterator(); i.hasNext(); ) {
+                sb.append(ir.getRelation(i.nextIndex()));
+                sb.append(" ");
             }
             return sb.toString();
         }
@@ -87,41 +72,50 @@ public class Liveness extends OperationProblem {
         public boolean isAlive(Relation r) {
             return fact.get(r.id);
         }
+
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.dataflow.OperationProblem.OperationFact#getOperation()
+         */
+        public Operation getOperation() {
+            return op;
+        }
+        
+        public void setLocation(IterationList list) {
+        }
+        
+        public Fact copy(IterationList list) {
+            return create(fact);
+        }
     }
 
     public TransferFunction getTransferFunction(Operation op) {
         return new LivenessTF(op);
     }
 
-    public class LivenessTF extends TransferFunction {
+    public class LivenessTF extends OperationTransferFunction {
         Operation op;
-
-        LivenessFact lastFact;
-
-        LivenessFact currFact;
 
         public LivenessTF(Operation op) {
             this.op = op;
         }
 
         public Fact apply(Fact f) {
-            currentFacts = (LivenessFacts) f;
-            lastFact = (LivenessFact) currentFacts.getLastFact();
-            currFact = (LivenessFact) currentFacts.getFact(op);
-            LivenessFact newFact = new LivenessFact(numRelations);
-            if (lastFact != null) newFact.fact.copyBits(lastFact.fact);
+            //super.apply(f);
+            LivenessFact oldFact = (LivenessFact) f;
+            BitString bs = (BitString) oldFact.fact.clone();
             //kill
             Relation r = op.getRelationDest();
-            if (r != null) newFact.fact.clear(r.id);
+            if (r != null) bs.clear(r.id);
             //gen
             List srcs = op.getSrcs();
             for (Iterator it = srcs.iterator(); it.hasNext();) {
                 Object o = it.next();
-                if (o instanceof Relation) newFact.fact.set(((Relation) o).id);
+                if (o instanceof Relation) bs.set(((Relation) o).id);
             }
-            currentFacts.operationFacts.put(op, newFact);
-            currentFacts.setLastFact(newFact);
-            return currentFacts;
+            LivenessFact newFact = (LivenessFact) oldFact.create(bs);
+            newFact.op = op;
+            setFact(op, newFact);
+            return newFact;
         }
     }
 }
