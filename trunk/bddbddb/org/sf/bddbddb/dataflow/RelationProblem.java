@@ -45,13 +45,11 @@ public abstract class RelationProblem extends Problem {
             RelationFacts result = create();
             result.relationFacts.putAll(this.relationFacts);
             RelationFacts that = (RelationFacts) fact;
-            for (Iterator i = that.relationFacts.entrySet().iterator(); i
-                .hasNext();) {
+            for (Iterator i = that.relationFacts.entrySet().iterator(); i.hasNext(); ) {
                 Map.Entry e = (Map.Entry) i.next();
                 Relation r = (Relation) e.getKey();
                 RelationFact f = (RelationFact) e.getValue();
-                RelationFact old = (RelationFact) result.relationFacts
-                    .put(r, f);
+                RelationFact old = (RelationFact) result.relationFacts.put(r, f);
                 if (old != null) {
                     f = (RelationFact) f.join(old);
                     result.relationFacts.put(r, f);
