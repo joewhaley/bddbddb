@@ -102,7 +102,7 @@ public class PAFly {
         for (Iterator i = Tmap.iterator(); i.hasNext(); ) {
             String st = (String) i.next();
             jq_Reference t;
-            if (st.equals("null")) t = null;
+            if (st.equals("null") || st.equals("NULL_TYPE")) t = null;
             else t = (jq_Reference) jq_Type.parseType(st);
             visitType(t);
         }
@@ -248,7 +248,7 @@ public class PAFly {
                 for (int i = 0; i < Tmap.size(); ++i) {
                     String T1_s = (String) Tmap.get(i);
                     jq_Reference t1 = null;
-                    if (T1_s != null && !T1_s.equals("null"))
+                    if (T1_s != null && !T1_s.equals("null") && !T1_s.equals("NULL_TYPE"))
                         t1 = (jq_Reference) jq_Type.parseType(T1_s);
                     if (t1 instanceof jq_Class) {
                         jq_Class c = (jq_Class) t1;
@@ -400,7 +400,7 @@ public class PAFly {
         jq_Method n = (jq_Method) jq_Member.parseMember(N_s);
         String T1_s = (String) Tmap.get(T1_i);
         jq_Reference t1 = null;
-        if (T1_s != null && !T1_s.equals("null"))
+        if (T1_s != null && !T1_s.equals("null") && !T1_s.equals("NULL_TYPE"))
             t1 = (jq_Reference) jq_Type.parseType(T1_s);
         jq_Method m;
         if (n.isStatic()) {
@@ -482,7 +482,7 @@ public class PAFly {
         for (int T2_i = 0; T2_i < Tmap.size(); ++T2_i) {
             String s = (String) Tmap.get(T2_i);
             jq_Reference t2;
-            if (s.equals("null")) t2 = null;
+            if (s.equals("null") || s.equals("NULL_TYPE")) t2 = null;
             else t2 = (jq_Reference) jq_Type.parseType(s);
             if (t2 != null) t2.prepare();
             if (t2 != null && !t2.isPrepared()) {
