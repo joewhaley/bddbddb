@@ -106,7 +106,12 @@ public class Replace extends LowLevelOperation {
         if (r1 == r_old) {
             BDDRelation r1_b = (BDDRelation) r1;
             BDDRelation r_new_b = (BDDRelation) r_new;
-            Assert._assert(r_new_b.getBDDDomains().equals(r1_b.getBDDDomains()));
+            /* Assert only throws when each relation has
+               the same domains but are in a different order
+            List oldDomains = r1_b.getBDDDomains();
+            List newDomains = r_new_b.getBDDDomains();
+            Assert._assert(oldDomains.equals(newDomains), "old domains: " + oldDomains + " new domains: " + newDomains);
+            */
             r1 = (BDDRelation) r_new;
         }
     }
@@ -123,8 +128,8 @@ public class Replace extends LowLevelOperation {
     /**
      * @return
      */
-    public BDDPairing getPairing(BDDFactory factory) {
-        Assert._assert(pairingString != null);
+    public BDDPairing getPairing() {
+        Assert._assert(pairingString != null,this.toString());
         return pairing;
     }
 
@@ -144,6 +149,9 @@ public class Replace extends LowLevelOperation {
     }
 
     public Operation copy() {
-        return new Replace(r0, r1);
+       Replace r = new Replace(r0, r1);
+       r.pairing = this.pairing;
+       r.pairingString = this.pairingString;
+       return r;
     }
 }

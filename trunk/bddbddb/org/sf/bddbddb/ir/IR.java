@@ -43,7 +43,7 @@ import org.sf.javabdd.BDDPairing;
 import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
- * @author Collective
+ * @author mcarbin
  */
 public class IR {
     public Solver solver;
@@ -158,11 +158,14 @@ public class IR {
                 } catch (IOException x) {
                 }
             }
+            System.out.println("cleaning up");
             cleanUpAfterAssignment(list);
             System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
+        //printIR();
+      
         while (true) {
-            boolean changed = false;
+        boolean changed = false;
             if (PRE) {
                 if (TRACE) System.out.print("Running Partial Redundancy...");
                 long time = System.currentTimeMillis();
@@ -190,8 +193,11 @@ public class IR {
                 if (TRACE && b) System.out.println("IR Changed after dead code elimination");
                 changed |= b;
             }
-            if (!changed) break;
-        }
+           if (!changed) break;
+           // printIR();
+       }
+       
+        
         if (FREE_DEAD) {
             if (TRACE) System.out.print("Running Liveness Analysis...");
             long time = System.currentTimeMillis();

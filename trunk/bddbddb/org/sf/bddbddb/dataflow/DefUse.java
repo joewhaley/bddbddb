@@ -5,7 +5,9 @@ package org.sf.bddbddb.dataflow;
 
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.IR;
@@ -26,7 +28,8 @@ public class DefUse extends OperationProblem {
     BitString[] uses; /* <Relation,Operation> */
     Operation[] opMap;
     IR ir;
-
+    Map/*Operation,DefUseFact*/ opIns;
+    
     public DefUse(IR ir) {
         this.ir = ir;
         int numRelations = ir.getNumberOfRelations();
@@ -42,8 +45,16 @@ public class DefUse extends OperationProblem {
         }
         opMap = new Operation[numOperations];
         initialize(ir.graph.getIterationList());
+        opIns = new HashMap();
     }
 
+    public void setIn(Operation op, Fact fact){
+        opIns.put(op,fact);
+    }
+    
+    public DefUseFact getIn(Operation op){
+        return (DefUseFact) opIns.get(op);
+    }
     void initialize(IterationList block) {
         for (Iterator i = block.iterator(); i.hasNext();) {
             Object o = i.next();
@@ -251,6 +262,7 @@ public class DefUse extends OperationProblem {
         public Fact apply(Fact f) {
             //super.apply(f);
             DefUseFact oldFact = (DefUseFact) f;
+            setIn(op, oldFact);
             BitString bs = (BitString) oldFact.fact.clone();
             //kill
             Relation r = op.getRelationDest();
