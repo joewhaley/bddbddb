@@ -3,6 +3,12 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import java.io.File;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,12 +20,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.io.File;
-import java.io.PrintStream;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
+import java.util.Random;
+
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.math.Distributions;
@@ -38,9 +40,11 @@ import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.bddbddb.order.WekaInterface;
 import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
 import net.sf.bddbddb.order.WekaInterface.OrderInstance;
+
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
+
 import weka.classifiers.Classifier;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -170,9 +174,54 @@ public class FindBestDomainOrder {
         }
     }
     
+    public final static int WEIGHT_WINDOW_SIZE = 3;
+    public final static double DECAY_FACTOR = -.5;
+    
     void incorporateTrial(TrialCollection c) {
         constraintInfo.addTrials(c);
-        if (TRACE > 2) dump();
+
+        int varCount, attrCount, domCount;
+        int numTrials = 0;
+        varCount = attrCount = domCount = 0;
+        Object[] collections = allTrials.toArray();
+        for (int i = collections.length - 1; i >= 0 && i > collections.length - 1 - WEIGHT_WINDOW_SIZE; --i) {
+            TrialCollection tc = (TrialCollection) collections[i];
+            long min = tc.getMinimum().cost + 1;
+            Object[] trials = tc.getTrials().toArray();
+            for (int j = trials.length - 1; j >= 0 /* && numTrials < WEIGHT_WINDOW_SIZE */; --j) {
+                TrialInfo ti = (TrialInfo) trials[j];
+                TrialPrediction p = ti.pred;
+                double score = (ti.cost + 1) / (double) min;
+                double loss = Math.exp(DECAY_FACTOR * numTrials);
+
+                if (p.varPredict < score && p.varPredict != -1)
+                    varCount += loss;
+                if (p.attrPredict < score && p.attrPredict != -1)
+                    attrCount += loss;
+                if (p.domPredict < score && p.domPredict != -1)
+                    domCount += loss;
+
+                ++numTrials;
+            }
+        }
+        if (WEIGHT_WINDOW_SIZE != 0) {
+            varClassWeight = 1 - (varCount / (double) numTrials);
+            attrClassWeight = 1 - (attrCount / (double) numTrials);
+            domClassWeight = 1 - (domCount / (double) numTrials);
+        } else {
+            varClassWeight = 1;
+            attrClassWeight = 1;
+            domClassWeight = 1;
+        }
+        if (TRACE > 1) {
+            out.println(" Var Classifier Weight: " + varClassWeight);
+            out.println(" Attr Classifier Weight: " + attrClassWeight);
+            out.println(" Domain Classifier Weight: " + domClassWeight);
+            out.println(" Trials Considered: " + numTrials);
+        }
+
+        if (TRACE > 2)
+            dump();
     }
     
     /**
@@ -705,6 +754,35 @@ public class FindBestDomainOrder {
         return 0;
     }
     
+    
+    public static class TrialPrediction {
+        double varPredict, attrPredict, domPredict;
+
+        public TrialPrediction(double varPredict, double attrPredict, double domPredict) {
+            this.varPredict = varPredict;
+            this.attrPredict = attrPredict;
+            this.domPredict = domPredict;
+        }
+    }
+
+    public static class TrialGuess {
+        public Order order;
+
+        public TrialPrediction prediction;
+
+        public TrialGuess(Order o, TrialPrediction p) {
+            order = o;
+            prediction = p;
+        }
+
+        public Order getOrder() {
+            return order;
+        }
+
+        public TrialPrediction getPrediction() {
+            return prediction;
+        }
+    }
     /**
      * Information about a particular trial.
      * 
@@ -727,14 +805,20 @@ public class FindBestDomainOrder {
          */
         TrialCollection collection;
         
+        /*
+         * The predicted results for this trial.
+         */
+        TrialPrediction pred;
         /**
          * Construct a new TrialInfo.
          * 
          * @param o  order
+         * @param p predict value for this trial
          * @param c  cost
          */
-        public TrialInfo(Order o, long c, TrialCollection col) {
+        public TrialInfo(Order o, TrialPrediction p, long c, TrialCollection col) {
             this.order = o;
+            this.pred = p;
             this.cost = c;
             this.collection = col;
         }
@@ -785,13 +869,21 @@ public class FindBestDomainOrder {
             Element dis = new Element("trialInfo");
             dis.setAttribute("order", order.toString());
             dis.setAttribute("cost", Long.toString(cost));
+            dis.setAttribute("varPredict", Double.toString(pred.varPredict));
+            dis.setAttribute("attrPredict", Double.toString(pred.attrPredict));
+            dis.setAttribute("domPredict", Double.toString(pred.domPredict));
             return dis;
         }
         
         public static TrialInfo fromXMLElement(Element e, Map nameToVar, TrialCollection col) {
             Order o = Order.parse(e.getAttributeValue("order"), nameToVar);
             long c = Long.parseLong(e.getAttributeValue("cost"));
-            return new TrialInfo(o, c, col);
+            
+            double vPredict = e.getAttributeValue("varPredict") == null ? Double.MAX_VALUE  : Double.parseDouble(e.getAttributeValue("varPredict"));
+            double aPredict = e.getAttributeValue("attrPredict") == null ? Double.MAX_VALUE : Double.parseDouble(e.getAttributeValue("attrPredict"));
+            double dPredict = e.getAttributeValue("domPredict") == null ? Double.MAX_VALUE  : Double.parseDouble(e.getAttributeValue("domPredict"));
+            
+            return new TrialInfo(o, new TrialPrediction(vPredict,aPredict,dPredict), c, col);
         }
     }
     
@@ -857,10 +949,11 @@ public class FindBestDomainOrder {
          * Add the information about a trial to this collection.
          * 
          * @param o  order
+         * @param p predicted value for this trial
          * @param cost  cost of operation
          */
-        public void addTrial(Order o, long cost) {
-            addTrial(new TrialInfo(o, cost, this));
+        public void addTrial(Order o, TrialPrediction p, long cost) {
+            addTrial(new TrialInfo(o, p, cost, this));
         }
         
         /**
@@ -1059,6 +1152,8 @@ public class FindBestDomainOrder {
         
         private void addTrials(TrialCollection tc, OrderTranslator trans) {
             MultiMap c2Trials = new GenericMultiMap();
+            
+           
             for (Iterator i = tc.getTrials().iterator(); i.hasNext(); ) {
                 TrialInfo ti = (TrialInfo) i.next();
                 Order o = ti.order;
@@ -1070,7 +1165,11 @@ public class FindBestDomainOrder {
                     OrderConstraint oc = (OrderConstraint) j.next();
                     c2Trials.add(oc, ti);
                 }
+                
+              
             }
+    
+            
             for (Iterator i = c2Trials.keySet().iterator(); i.hasNext(); ) {
                 OrderConstraint oc = (OrderConstraint) i.next();
                 ConstraintInfo info = getOrCreateInfo(oc);
@@ -1444,6 +1543,53 @@ public class FindBestDomainOrder {
         return classifier;
     }
     
+    public static int NUM_CV_FOLDS = 10;
+
+    public double genAccuracy(String cClassName, Instances data0) {
+        Instances data = new Instances(data0);
+        //should stratify
+        data.randomize(new Random(System.currentTimeMillis()));
+        Assert._assert(data.classAttribute() != null);
+        if (data.numInstances() < NUM_CV_FOLDS)
+            return Double.NaN; //more folds than elements
+        if (data.numInstances() == 0)
+            return Double.NaN; //no instances
+        double[] estimates = new double[NUM_CV_FOLDS];
+        for (int i = 0; i < NUM_CV_FOLDS; ++i) {
+            Instances trainData = data.trainCV(NUM_CV_FOLDS, i);
+            Assert._assert(trainData.classAttribute() != null);
+            Assert._assert(trainData.numInstances() != 0, "Cannot train classifier on 0 instances.");
+
+            Instances testData = data.testCV(NUM_CV_FOLDS, i);
+            Assert._assert(testData.classAttribute() != null);
+            Assert._assert(testData.numInstances() != 0, "Cannot test classifier on 0 instances.");
+
+            int temp = TRACE;
+            TRACE = 0;
+            Classifier classifier = buildClassifier(cClassName, trainData);
+            TRACE = temp;
+            int count = testData.numInstances();
+            for (Enumeration e = testData.enumerateInstances(); e.hasMoreElements();) {
+                Instance instance = (Instance) e.nextElement();
+                Assert._assert(instance.classAttribute() != null && instance.classAttribute() == trainData.classAttribute());
+                Assert._assert(instance != null);
+                try {
+                    double testClass = classifier.classifyInstance(instance);
+                    if (testClass != instance.classValue())
+                        --count;
+                } catch (Exception ex) {
+                    out.println("Exception while classifying: " + instance + "\n" + ex);
+                }
+            }
+
+            estimates[i] = count / (double) testData.numInstances();
+        }
+        double average = 0;
+        for (int i = 0; i < NUM_CV_FOLDS; ++i)
+            average += estimates[i];
+
+        return average / NUM_CV_FOLDS;
+    }
     public static boolean DISCRETIZE1 = true;
     public static boolean DISCRETIZE2 = true;
     public static boolean DISCRETIZE3 = true;
@@ -1458,7 +1604,11 @@ public class FindBestDomainOrder {
     
     MultiMap neverAgain = new GenericMultiMap();
     
-    public Order tryNewGoodOrder2(TrialCollection tc, List allVars, InferenceRule ir) {
+
+    public double varClassWeight = 1;
+    public double attrClassWeight = 1;
+    public double domClassWeight = 1;
+    public TrialGuess tryNewGoodOrder2(TrialCollection tc, List allVars, InferenceRule ir) {
         
         // TODO: improve this code.
         TrialInstances vData, aData, dData;
@@ -1466,17 +1616,28 @@ public class FindBestDomainOrder {
         aData = buildAttribInstances(ir, allVars);
         dData = buildDomainInstances(ir, allVars);
         
-        if (DISCRETIZE1) vData.discretize();
+        double [] vBuckets, aBuckets, dBuckets;
+        if (DISCRETIZE1) vBuckets = vData.discretize();
+       
         if (DISCRETIZE2) aData.discretize();
         if (DISCRETIZE3) dData.threshold(1000);
         
+        double vGenErr, aGenErr, dGenErr;
+        vGenErr = genAccuracy(CLASSIFIER1, vData);
+        aGenErr = genAccuracy(CLASSIFIER2, aData);
+        dGenErr = genAccuracy(CLASSIFIER3, dData);
+        
         if (TRACE > 1) {
             out.println(" Var data points: "+vData.numInstances());
+            out.println(" " + CLASSIFIER1 + " Var Classifier Accuracy: " + vGenErr);
             //out.println(" Var data points: "+vData);
             out.println(" Attrib data points: "+aData.numInstances());
+            out.println(" " + CLASSIFIER2 + " Attrib Classifier Accuracy: " + aGenErr);
             //out.println(" Attrib data points: "+aData);
             out.println(" Domain data points: "+dData.numInstances());
+            out.println(" " + CLASSIFIER3 + " Domain Classifier Accuracy: " + dGenErr);
             //out.println(" Domain data points: "+dData);
+        
         }
         
         Classifier vClassifier = null, aClassifier = null, dClassifier = null;
@@ -1498,6 +1659,7 @@ public class FindBestDomainOrder {
         OrderTranslator a2d = AttribToDomainTranslator.INSTANCE;
         OrderIterator i = new OrderIterator(allVars);
         Order best = null; double bestScore = Double.MAX_VALUE;
+        TrialPrediction prediction = null;
         Collection never = neverAgain.getValues(ir);
         while (i.hasNext()) {
             Order o_v = i.nextOrder();
@@ -1539,11 +1701,12 @@ public class FindBestDomainOrder {
             }
             
             // Combine the scores in some fashion.
-            double score = vScore + aScore + dScore*10;
+            double score = vScore  +  aScore  + dScore * 10;
             if (best == null || bestScore > score) {
                 if (TRACE > 1) out.println("Better order "+o_v+" score = "+score+" (v="+vScore+",a="+aScore+",d="+dScore+")");
                 best = o_v;
                 bestScore = score;
+                prediction = new TrialPrediction(vScore,aScore,dScore);
             }
         }
         if (TRACE > 1) out.println("Best = "+best+" score = "+bestScore);
@@ -1556,7 +1719,7 @@ public class FindBestDomainOrder {
             List allAttribs = VarToAttribMap.convert(allVars, ir);
             if (a != null) printGoodOrder(allAttribs, aData, a);
         }
-        return best;
+        return new TrialGuess(best, prediction);
     }
     
     void printGoodOrder(Collection allVars, Instances inst, MyId3 v) {
@@ -1584,7 +1747,7 @@ outer:
             }
         }
     }
-    
+
     public static void main(String[] args) throws Exception {
         String inputFilename = System.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
@@ -1609,7 +1772,9 @@ outer:
             allVars.addAll(ir.necessaryVariables);
             System.out.println("Variables = "+allVars);
             
-            Order order = dis.tryNewGoodOrder2(null, allVars, ir);
+            TrialGuess guess = dis.tryNewGoodOrder2(null, allVars, ir);
+            Order order = guess.order;
+            
             System.out.println("Resulting order: "+order);
         }
         
