@@ -39,6 +39,7 @@ public abstract class Relation {
     public abstract void saveTuples() throws IOException;
     public abstract void saveNegatedTuples() throws IOException;
     public abstract Relation copy();
+    public abstract void free();
     
     /**
      * @return number of tuples in relation
@@ -147,4 +148,5 @@ public abstract class Relation {
     public int numberOfAttributes() {
         return attributes.size();
     }
+    
 }

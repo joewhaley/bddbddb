@@ -38,4 +38,9 @@ public abstract class BooleanOperation extends Operation {
         return r0.toString()+" = "+getName()+"("+r1.toString()+","+r2.toString()+")";
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#getDest()
+     */
+    public Relation getDest() { return r0; }
+    
 }

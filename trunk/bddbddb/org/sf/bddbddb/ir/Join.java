@@ -46,4 +46,8 @@ public class Join extends Operation {
         return i.perform(this);
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#getDest()
+     */
+    public Relation getDest() { return r0; }
 }
