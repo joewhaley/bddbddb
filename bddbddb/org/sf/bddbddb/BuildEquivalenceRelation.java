@@ -3,9 +3,15 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.Iterator;
+import java.util.List;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import org.sf.bddbddb.util.IndexMap;
+import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 
@@ -55,8 +61,37 @@ public class BuildEquivalenceRelation {
             b.andWith(domains[i].varRange(0, sizes[i]));
             System.out.println(domains[i]+" [0.."+sizes[i]+"] corresponds to "+targetDomain+"["+index+".."+(index+sizes[i])+"]");
             System.out.println("Result: "+b.nodeCount()+" nodes");
-            s.bdd.save("map_"+domains[i]+"_"+targetDomain+".bdd", b);
+            bdd_save("map_"+domains[i]+"_"+targetDomain+".bdd", b, new Pair(domains[i], targetDomain));
             index += sizes[i] + 1;
+        }
+    }
+    
+    public static void bdd_save(String filename, BDD b, List ds) throws IOException {
+        BufferedWriter out = null;
+        try {
+            out = new BufferedWriter(new FileWriter(filename));
+            out.write('#');
+            for (Iterator i = ds.iterator(); i.hasNext(); ) {
+                BDDDomain d = (BDDDomain) i.next();
+                out.write(' ');
+                out.write(d.getName());
+                out.write(':');
+                out.write(Integer.toString(d.varNum()));
+            }
+            out.write('\n');
+            for (Iterator i = ds.iterator(); i.hasNext(); ) {
+                BDDDomain d = (BDDDomain) i.next();
+                out.write('#');
+                int[] vars = d.vars();
+                for (int j = 0; j < vars.length; ++j) {
+                    out.write(' ');
+                    out.write(Integer.toString(vars[j]));
+                }
+                out.write('\n');
+            }
+            b.getFactory().save(out, b);
+        } finally {
+            if (out != null) try { out.close(); } catch (IOException _) { }
         }
     }
     
