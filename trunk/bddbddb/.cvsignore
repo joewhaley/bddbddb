@@ -5,3 +5,4 @@ libbuddy.so
 .source_list
 *.class
 target
+velocity.log
