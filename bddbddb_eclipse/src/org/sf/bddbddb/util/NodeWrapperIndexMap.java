@@ -113,7 +113,8 @@ public class NodeWrapperIndexMap implements IndexedMap {
             String s = in.readLine();
             if (s == null) break;
             StringWrapper o = new StringWrapper(s);
-            dis.hash.put(o, new Integer(dis.list.size()));
+            Object q = dis.hash.put(o, new Integer(dis.list.size()));
+            Assert._assert(q == null, (q == null) ? "": q.toString());
             dis.list.add(o);
         }
         return dis;

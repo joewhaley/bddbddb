@@ -163,8 +163,8 @@ public class PAFromSource {
     });
     MultiMap initializers = new GenericMultiMap();
     
-    static int bddnodes = Integer.parseInt(System.getProperty("bddnodes", "100000"));
-    static int bddcache = Integer.parseInt(System.getProperty("bddcache", "10000"));
+    static int bddnodes = Integer.parseInt(System.getProperty("bddnodes", "1000000"));
+    static int bddcache = Integer.parseInt(System.getProperty("bddcache", "100000"));
     static BDDFactory bdd = BDDFactory.init(bddnodes, bddcache);
     
     static BDDDomain V1 = null, V2, I, H1, H2, Z, F, T1, T2, M, N, M2, TV; 
@@ -268,7 +268,7 @@ public class PAFromSource {
         //if (USE_VCONTEXT || USE_HCONTEXT) 
         //  bddnodes *= 2;
 
-        bdd.setMaxIncrease(bddnodes/4);
+        bdd.setMaxIncrease(bddnodes);
         bdd.setMinFreeNodes(bddminfree);
 
         V1 = makeDomain("V1", V_BITS);
@@ -3058,6 +3058,7 @@ public class PAFromSource {
         Nmap = makeMap("name", N_BITS);
         Mmap = makeMap("method", M_BITS);
         TVmap = makeMap("typevar", TV_BITS);
+        out.println("maps loaded");
         
         Vmap.get(StringWrapper.GLOBAL_THIS);
         Hmap.get(StringWrapper.GLOBAL_THIS);
@@ -3190,6 +3191,7 @@ public class PAFromSource {
     
     private void addToConcreteTypes(int T_i, Wrapper t) {
         if (t.equals(StringWrapper.GLOBAL_THIS)) return;
+        if (t.equals(new StringWrapper("null"))) return;
         BDD bdd1 = T1.ithVar(T_i);
         bdd1.andWith(TV.ithVar(TVmap.get(t)));
         if (TRACE_RELATIONS) out.println("Adding to concreteTypes: "+bdd1.toStringWithDomains());
@@ -3197,6 +3199,7 @@ public class PAFromSource {
     }
     
     private void addToField2TypeVar(int F_i, Wrapper f) {
+        if (f.equals(new StringWrapper("null"))) return;       
         BDD bdd1 = F.ithVar(F_i);
         bdd1.andWith(TV.ithVar(TVmap.get(f)));
         if (TRACE_RELATIONS) out.println("Adding to field2typevar: "+bdd1.toStringWithDomains());
@@ -3230,6 +3233,7 @@ public class PAFromSource {
     }
     
     private void addToParam2TypeVar(long M_i, long z, Wrapper tv) {
+        if (tv.equals(StringWrapper.GLOBAL_THIS)) return;
         BDD bdd1 = M.ithVar(M_i);
         bdd1.andWith(Z.ithVar(z));
         bdd1.andWith(TV.ithVar(TVmap.get(tv)));

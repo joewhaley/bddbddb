@@ -7,10 +7,8 @@ import java.util.Set;
 import java.io.IOException;
 import org.eclipse.core.internal.resources.File;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IClassFile;
-import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -38,17 +36,15 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
     private IWorkbenchWindow window;
     private ISelection selection;
     static private PAFromSource pa = new PAFromSource();
-    //static String dumpPath = ""
-    static String loadPath = "";
+    private static String loadPath = "";
     private Set appPaths = new HashSet();
     
     /**
      * The constructor.
      */
     public GenerifyAction() {
-        
 
-        
+          
     }
 
     private void showDialog(String s) {

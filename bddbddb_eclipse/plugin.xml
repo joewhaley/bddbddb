@@ -17,6 +17,9 @@
       <library name="javabdd.jar">
          <export name="*"/>
       </library>
+      <library name="joeq_core.jar">
+         <export name="*"/>
+      </library>
    </runtime>
 
    <requires>

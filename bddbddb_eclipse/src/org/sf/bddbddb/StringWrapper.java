@@ -3,16 +3,14 @@
  */
 package org.sf.bddbddb;
 
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.Name;
 
 /**
  * @author jzhuang
  */
 public class StringWrapper implements Wrapper {
     public final static StringWrapper GLOBAL_THIS = 
-        new StringWrapper("global(null)");
+        new StringWrapper("1: global(null)");
     public final static StringWrapper ARRAY_FIELD = 
         new StringWrapper("null");
     public final static StringWrapper DUMMY_METHOD = 
