@@ -13,6 +13,7 @@ import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.OperationVisitor;
 import org.sf.bddbddb.ir.dynamic.If;
+import org.sf.bddbddb.ir.dynamic.Nop;
 import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Difference;
 import org.sf.bddbddb.ir.highlevel.Free;
@@ -329,6 +330,14 @@ public class ConstantProp extends RelationProblem {
         public Object visit(If op) {
             return null;
         }
+
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor#visit(org.sf.bddbddb.ir.dynamic.Nop)
+         */
+        public Object visit(Nop op){
+            return null;
+        }
+
 
         /* (non-Javadoc)
          * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Replace)
@@ -681,6 +690,14 @@ public class ConstantProp extends RelationProblem {
         public Object visit(If op) {
             return op;
         }
+        
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor#visit(org.sf.bddbddb.ir.dynamic.Nop)
+         */
+        public Object visit(Nop op){
+            return op;
+        }
+
         
         /* (non-Javadoc)
          * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Replace)

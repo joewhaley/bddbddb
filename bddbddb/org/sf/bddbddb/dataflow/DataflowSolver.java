@@ -21,9 +21,8 @@ import org.sf.bddbddb.ir.dynamic.If;
  */
 public class DataflowSolver {
     boolean TRACE = false;
-
     /** Matches blocks to their dataflow information. */
-    Map/*<IterationList,Fact>*/ blockToFact;
+    Map/* <IterationList,Fact> */blockToFact;
 
     public DataflowSolver() {
         blockToFact = new HashMap();
@@ -42,24 +41,18 @@ public class DataflowSolver {
     public DataflowIterator getIterator(Problem p, IterationList g) {
         return new DataflowIterator(p, g);
     }
-
     public class DataflowIterator implements ListIterator {
         Problem p;
-
         Fact fact;
-
         IterationList block;
-
         ListIterator ops;
-
         DataflowIterator nested;
 
         public DataflowIterator(Problem p, IterationList block) {
             this(p, DataflowSolver.this.getFact(block), block);
         }
 
-        public DataflowIterator(Problem p, Fact startingFact,
-            IterationList block) {
+        public DataflowIterator(Problem p, Fact startingFact, IterationList block) {
             this.p = p;
             this.fact = startingFact;
             this.block = block;
@@ -193,10 +186,12 @@ public class DataflowSolver {
                 }
             }
             if (!g.isLoop()) break;
-            Fact joinResult = startFact.join(currentFact);
+            Fact blockFact = currentFact;
+            Fact loopEdgeFact = solve(currentFact, p, g.getLoopEdge());
+            Fact joinResult = startFact.join(loopEdgeFact);
             if (joinResult.equals(startFact)) {
-                if (TRACE) System.out.println("No change after join, exiting.");
-                currentFact = joinResult;
+                if (TRACE) System.out.println("No change after join, exiting. join result:" + joinResult);
+                currentFact = blockFact;
                 break;
             }
             if (TRACE) System.out.println("Result: " + joinResult);
