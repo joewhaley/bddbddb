@@ -13,13 +13,10 @@ import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.Stratify;
 import org.sf.bddbddb.dataflow.ConstantProp;
-import org.sf.bddbddb.dataflow.CopyProp;
 import org.sf.bddbddb.dataflow.DataflowSolver;
-import org.sf.bddbddb.dataflow.DeadCode;
 import org.sf.bddbddb.dataflow.DefUse;
 import org.sf.bddbddb.dataflow.IRPass;
 import org.sf.bddbddb.dataflow.Liveness;
-import org.sf.bddbddb.dataflow.PartialRedundancy;
 import org.sf.bddbddb.dataflow.Problem;
 import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
@@ -42,13 +39,14 @@ public class IR {
     public Solver solver;
     public IterationFlowGraph graph;
     boolean ALL_OPTS = !System.getProperty("allopts", "no").equals("no");
-    boolean FREE_DEAD = ALL_OPTS || !System.getProperty("freedead", "no").equals("no");
-    boolean CONSTANTPROP = ALL_OPTS || !System.getProperty("constantprop", "no").equals("no");
-    boolean DEFUSE = ALL_OPTS || !System.getProperty("defuse", "no").equals("no");
-    boolean PRE = ALL_OPTS || !System.getProperty("pre", "no").equals("no");
-    boolean COPYPROP = ALL_OPTS || !System.getProperty("copyprop", "no").equals("no");
-    boolean DEAD_CODE = ALL_OPTS || !System.getProperty("deadcode", "no").equals("no");
-    boolean DOMAIN_ASSIGNMENT = ALL_OPTS && !System.getProperty("domainassign", "no").equals("no")
+    boolean FREE_DEAD = ALL_OPTS && !System.getProperty("freedead", "yes").equals("no") || !System.getProperty("freedead", "no").equals("no");
+    boolean CONSTANTPROP = ALL_OPTS && !System.getProperty("constantprop", "yes").equals("no")
+        || !System.getProperty("constantprop", "no").equals("no");
+    boolean DEFUSE = ALL_OPTS && !System.getProperty("defuse", "yes").equals("no") || !System.getProperty("defuse", "no").equals("no");
+    boolean PRE = ALL_OPTS && !System.getProperty("pre", "yes").equals("no") || !System.getProperty("pre", "no").equals("no");
+    boolean COPYPROP = ALL_OPTS && !System.getProperty("copyprop", "yes").equals("no") || !System.getProperty("copyprop", "no").equals("no");
+    boolean DEAD_CODE = ALL_OPTS && !System.getProperty("deadcode", "yes").equals("no") || !System.getProperty("deadcode", "no").equals("no");
+    boolean DOMAIN_ASSIGNMENT = ALL_OPTS && !System.getProperty("domainassign", "yes").equals("no")
         || !System.getProperty("domainassign", "no").equals("no");
     boolean TRACE = false;
 
@@ -107,41 +105,18 @@ public class IR {
                     di.enter(b);
                 }
             }
-            System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
+            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
-        while (true) {
-            if (TRACE) System.out.println("optimization pass:");
+        if (DEFUSE) {
+            if (TRACE) System.out.print("Running Def Use...");
+            long time = System.currentTimeMillis();
             boolean changed = false;
-            if (PRE) {
-                IRPass pre = new PartialRedundancy(this);
-                boolean b = pre.run();
-                if (TRACE && b) System.out.println("IR changed after partial redundancy");
-                changed |= b;
-            }
-            if (COPYPROP) {
-                IRPass copy = new CopyProp(this);
-                boolean b = copy.run();
-                if (TRACE && b) System.out.println("IR changed after copy propagation");
-                changed |= b;
-            }
-            if (DEAD_CODE) {
-                IRPass deadCode = new DeadCode(this);
-                boolean b = deadCode.run();
-                if (TRACE && b) System.out.println("IR Changed after dead code elimination");
-                changed |= b;
-            }
-            if (DEFUSE) {
-                boolean b = doDefUse();
-                if (TRACE && b) System.out.println("IR Changed after Defuse");
-                changed |= b;
-            }
-            if (!changed) break;
+            while (doDefUse())
+                changed = true;
+            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+            if (TRACE && changed) System.out.println("IR Changed after Defuse");
         }
         doPeephole(graph.getIterationList());
-        if (FREE_DEAD) {
-            IRPass liveness = new Liveness(this);
-            liveness.run();
-        }
         if (DOMAIN_ASSIGNMENT) {
             System.out.print("Running DomainAssignment...");
             long time = System.currentTimeMillis();
@@ -150,7 +125,37 @@ public class IR {
             ass.addConstraints(list);
             ass.doAssignment();
             cleanUpAfterAssignment(list);
-            System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
+            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+        }
+        /*
+         * while (true) { boolean changed = false; if (PRE) { if(TRACE)
+         * System.out.print("Running Partial Redundancy..."); long time =
+         * System.currentTimeMillis(); IRPass pre = new PartialRedundancy(this);
+         * boolean b = pre.run(); if(TRACE)
+         * System.out.println(((System.currentTimeMillis()-time)/1000.)+"s"); if
+         * (TRACE && b) System.out.println("IR changed after partial
+         * redundancy"); changed |= b; } if (COPYPROP && false) { if(TRACE)
+         * System.out.print("Running Copy Propagation..."); long time =
+         * System.currentTimeMillis(); IRPass copy = new CopyProp(this); boolean
+         * b = copy.run(); if(TRACE)
+         * System.out.println(((System.currentTimeMillis()-time)/1000.)+"s"); if
+         * (TRACE && b) System.out.println("IR changed after copy propagation");
+         * changed |= b; } if (DEAD_CODE) { if(TRACE) System.out.print("Running
+         * Dead Code Elimination..."); long time = System.currentTimeMillis();
+         * IRPass deadCode = new DeadCode(this); boolean b = deadCode.run();
+         * if(TRACE)
+         * System.out.println(((System.currentTimeMillis()-time)/1000.)+"s"); if
+         * (TRACE && b) System.out.println("IR Changed after dead code
+         * elimination"); changed |= b; }
+         * 
+         * if (!changed) break; }
+         */
+        if (FREE_DEAD) {
+            if (TRACE) System.out.print("Running Liveness Analysis...");
+            long time = System.currentTimeMillis();
+            IRPass liveness = new Liveness(this);
+            liveness.run();
+            if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
     }
 
@@ -182,7 +187,7 @@ public class IR {
                 doPeephole((IterationList) o);
             }
         }
-        System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
+        System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
     }
 
     boolean doDefUse() {
@@ -251,15 +256,8 @@ public class IR {
             list.removeElements(to_remove);
             change = true;
         }
-        System.out.println(((System.currentTimeMillis()-time)/1000.)+"s");
+        System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         return change;
-    }
-
-    public void interpret() {
-        BDDInterpreter interpret = (BDDInterpreter) solver.getInterpreter();
-        if (DOMAIN_ASSIGNMENT) interpret.needsDomainMatch = false;
-        IterationList list = graph.getIterationList();
-        list.interpret(interpret);
     }
 
     /**

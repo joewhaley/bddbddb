@@ -17,7 +17,6 @@ import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
-import org.sf.bddbddb.ir.Interpreter;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.MyStringTokenizer;
@@ -453,7 +452,7 @@ public abstract class Solver {
                 dis = new DataInputStream(new FileInputStream(basedir + mapName));
                 fd.loadMap(dis);
             } catch (IOException x) {
-                System.err.println("WARNING: Cannot load mapfile \""+basedir + mapName+"\", skipping.");
+                System.err.println("WARNING: Cannot load mapfile \"" + basedir + mapName + "\", skipping.");
             } finally {
                 if (dis != null) dis.close();
             }
@@ -824,11 +823,6 @@ public abstract class Solver {
             dot.outputGraph();
         }
     }
-
-    /**
-     * @return
-     */
-    public abstract Interpreter getInterpreter();
 
     /**
      * @return

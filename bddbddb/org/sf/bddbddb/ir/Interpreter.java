@@ -1,11 +1,32 @@
+/*
+ * Created on Jul 13, 2004
+ * 
+ * TODO To change the template for this generated file go to Window -
+ * Preferences - Java - Code Style - Code Templates
+ */
 package org.sf.bddbddb.ir;
 
-import org.sf.bddbddb.ir.dynamic.DynamicInterpreter;
-import org.sf.bddbddb.ir.highlevel.HighLevelInterpreter;
-import org.sf.bddbddb.ir.lowlevel.LowLevelInterpreter;
+import java.util.Collection;
+import java.util.Map;
 
 /**
- * @author Collective
+ * Interpreter
+ * 
+ * @author mcarbin
+ *  
  */
-public interface Interpreter extends OperationVisitor, HighLevelInterpreter, LowLevelInterpreter, DynamicInterpreter {
+public abstract class Interpreter {
+    boolean TRACE = false;
+    IR ir;
+    OperationInterpreter opInterpreter;
+    Map/* Relation,RelationStats */relationStats;
+    Map/* IterationList,LoopStats */loopStats;
+
+    public abstract void interpret();
+    class RelationStats {
+        int size;
+    }
+    class LoopStats {
+        Collection/* Relation */inputRelations;
+    }
 }
