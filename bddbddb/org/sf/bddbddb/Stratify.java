@@ -371,7 +371,7 @@ public class Stratify {
         Set inputs = new HashSet();
         inputs.addAll(solver.relationsToLoad);
         inputs.addAll(solver.relationsToLoadTuples);
-        for (i = solver.equivalenceRelations.values().iterator(); i.hasNext(); ) {
+        for (i = solver.getComparisonRelations().iterator(); i.hasNext(); ) {
             Relation r = (Relation) i.next();
             inputs.add(r);
             if (r.getNegated() != null) inputs.add(r.getNegated());

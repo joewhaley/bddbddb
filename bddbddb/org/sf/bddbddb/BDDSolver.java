@@ -137,7 +137,7 @@ public class BDDSolver extends Solver {
             BDDRelation r = (BDDRelation) i.next();
             r.initialize2();
         }
-        for (Iterator i = equivalenceRelations.values().iterator(); i.hasNext();) {
+        for (Iterator i = getComparisonRelations().iterator(); i.hasNext();) {
             BDDRelation r = (BDDRelation) i.next();
             r.initialize2();
         }
@@ -407,7 +407,28 @@ public class BDDSolver extends Solver {
         BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
         return r;
     }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#createLessThanRelation(org.sf.bddbddb.Domain)
+     */
+    Relation createLessThanRelation(Domain fd) {
+        String name = fd + "_lt";
+        Attribute a1 = new Attribute(fd + "1", fd, "");
+        Attribute a2 = new Attribute(fd + "2", fd, "");
+        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        return r;
+    }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#createGreaterThanRelation(org.sf.bddbddb.Domain)
+     */
+    Relation createGreaterThanRelation(Domain fd) {
+        String name = fd + "_gt";
+        Attribute a1 = new Attribute(fd + "1", fd, "");
+        Attribute a2 = new Attribute(fd + "2", fd, "");
+        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        return r;
+    }
     /*
      * (non-Javadoc)
      * 
@@ -438,5 +459,7 @@ public class BDDSolver extends Solver {
     public BDDFactory getBDDFactory() {
         return this.bdd;
     }
+
+
     
 }
