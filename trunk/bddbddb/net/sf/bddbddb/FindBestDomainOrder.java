@@ -3,12 +3,6 @@
 //Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
-import java.io.File;
-import java.io.PrintStream;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,8 +15,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Stack;
-
+import java.io.File;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.math.Distributions;
@@ -41,11 +39,9 @@ import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.bddbddb.order.WekaInterface;
 import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
 import net.sf.bddbddb.order.WekaInterface.OrderInstance;
-
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
-
 import weka.classifiers.Classifier;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -1256,35 +1252,6 @@ public class FindBestDomainOrder {
      // TODO: improve this code.
      return true;
  }
-
- /**
-  * @param tc
-  * @param allVars
-  * @param t
-  * @return
-  */
- public Order tryNewGoodOrder(TrialCollection tc, List allVars, OrderTranslator t) {
-     // TODO: improve this code.
-     OrderInfo best = null;
-     Order bestOrder = null;
-     OrderIterator i = new OrderIterator(allVars);
-     while (i.hasNext()) {
-         Order o = i.nextOrder();
-         if (tc.contains(o)) continue;
-         OrderInfo oi = predict(o, t);
-         if (PER_RULE_CONSTRAINTS) {
-             OrderInfo oi2 = predict(o, null);
-             oi.score = (oi.score + oi2.score) / 2;
-             oi.infoGain = (oi.infoGain + oi2.infoGain) / 2;
-         }
-         if (best == null || best.compareTo(oi) < 0) {
-             best = oi;
-             bestOrder = o;
-         }
-     }
-     if (TRACE > 1) out.println("Best = "+best+" order = "+bestOrder);
-     return bestOrder;
- }
  
  public static class TrialInstance extends OrderInstance implements Comparable {
      
@@ -1842,6 +1809,252 @@ public class FindBestDomainOrder {
          if (a != null) printGoodOrder(allAttribs, aData, a);
      }
      return new TrialGuess(best, prediction);
+ }
+ 
+ public TrialGuess tryNewGoodOrder(TrialCollection tc, List allVars, InferenceRule ir) {
+     
+     // Build instances based on the experimental data.
+     TrialInstances vData, aData, dData;
+     vData = buildVarInstances(ir, allVars);
+     aData = buildAttribInstances(ir, allVars);
+     dData = buildDomainInstances(ir, allVars);
+     
+     // Readjust the weights using an exponential decay factor.
+     adjustWeights(vData,aData,dData);
+     Discretization vDis = null, aDis = null, dDis = null;
+     
+     // Discretize the experimental data.
+     if (DISCRETIZE1) vDis = vData.discretize();
+     if (DISCRETIZE2) aDis = aData.discretize();
+     if (DISCRETIZE3) dDis = dData.threshold(1000);
+     
+     // Calculate the accuracy of each classifier using cv folds.
+     double vGenErr, aGenErr, dGenErr;
+     vGenErr = genAccuracy(CLASSIFIER1, vData);
+     aGenErr = genAccuracy(CLASSIFIER2, aData);
+     dGenErr = genAccuracy(CLASSIFIER3, dData);
+     
+     if (TRACE > 1) {
+         out.println(" Var data points: "+vData.numInstances());
+         out.println(" Var Classifier Accuracy: " + vGenErr);
+         out.println(" Var Classifier Weight: " + varClassWeight);
+         //out.println(" Var data points: "+vData);
+         out.println(" Attrib data points: "+aData.numInstances());
+         out.println(" Attrib Classifier Accuracy: " + aGenErr);
+         out.println(" Attrib Classifier Weight: " + attrClassWeight);
+         //out.println(" Attrib data points: "+aData);
+         out.println(" Domain data points: "+dData.numInstances());
+         out.println(" Domain Classifier Accuracy: " + dGenErr);
+         out.println(" Domain Classifier Weight: " + domClassWeight);
+         //out.println(" Domain data points: "+dData);
+     
+     }
+     
+     // Build the classifiers.
+     Classifier vClassifier = null, aClassifier = null, dClassifier = null;
+     if (vData.numInstances() > 0)
+         vClassifier = buildClassifier(CLASSIFIER1, vData);
+     if (aData.numInstances() > 0)
+         aClassifier = buildClassifier(CLASSIFIER2, aData);
+     if (dData.numInstances() > 0)
+         dClassifier = buildClassifier(CLASSIFIER3, dData);
+     
+     if (TRACE > 2) {
+         out.println("Var classifier: "+vClassifier);
+         out.println("Attrib classifier: "+aClassifier);
+         out.println("Domain classifier: "+dClassifier);
+     }
+     
+     // Calculate the mean value of each of the discretized buckets.
+     double [] vBucketMeans = new double[vDis == null ? 0 : vDis.buckets.length];
+     double [] aBucketMeans = new double[aDis == null ? 0 : aDis.buckets.length];
+     double [] dBucketMeans = new double[dDis == null ? 0 : dDis.buckets.length];
+     if(TRACE > 2) out.print("Var Bucket Means: ");
+     for(int i = 0; i < vBucketMeans.length; ++i){
+         vBucketMeans[i] = vDis.buckets[i].meanOrMode(vDis.buckets[i].classIndex());
+         if(TRACE > 2) out.print(vBucketMeans[i] + " ");
+     }
+     if(TRACE > 2) {
+        out.println();
+        out.print("Attr Bucket Means: ");
+     }
+     for(int i = 0; i < aBucketMeans.length; ++i){
+         aBucketMeans[i] = aDis.buckets[i].meanOrMode(aData.classIndex());
+         if(TRACE > 2) out.print(aBucketMeans[i] + " ");
+     }
+     if(TRACE > 2) {
+         out.println();
+         out.print("Domain Bucket Means: ");
+     }
+     for(int i = 0; i < dBucketMeans.length; ++i){
+         dBucketMeans[i] = dDis.buckets[i].meanOrMode(dData.classIndex());
+         if(TRACE > 2) out.print(dBucketMeans[i] + " ");
+     }
+     if(TRACE > 2) out.println();
+     
+     // Build multi-map from attributes/domains to variables.
+     MultiMap a2v, d2v;
+     a2v = new GenericMultiMap();
+     d2v = new GenericMultiMap();
+     for (Iterator i = allVars.iterator(); i.hasNext(); ) {
+         Variable v = (Variable) i.next();
+         Attribute a = (Attribute) ir.getAttribute(v);
+         if (a != null) {
+             a2v.add(a, v);
+             d2v.add(a.getDomain(), v);
+         }
+     }
+     
+     // Grab the best from the classifiers and try to build an optimal order.
+     int vClass = 0, aClass = 0, dClass = 0;
+     
+     MyId3 v = (MyId3) vClassifier, a = (MyId3) aClassifier, d = (MyId3) dClassifier;
+     OrderConstraintSet ocs = tryConstraints(v, vClass, vData, a, aClass, aData, d, dClass, dData, a2v, d2v);
+     if (ocs == null) {
+         // Sort all combinations of the top n.
+         
+     }
+     
+     int vMax = 0, aMax = 0, dMax = 0;
+     Order best = null;
+ outer:
+     for (;;) {
+         
+         if (best != null) {
+             double bestScore = vBucketMeans[vClass] * varClassWeight;
+             bestScore += aBucketMeans[aClass] * attrClassWeight;
+             bestScore += dBucketMeans[dClass] * domClassWeight;
+             
+             double vLowerBound,vUpperBound, aLowerBound,aUpperBound, dLowerBound, dUpperBound;
+             vLowerBound = vUpperBound = aLowerBound = aUpperBound = dLowerBound = dUpperBound = -1;
+            
+             if (vDis != null && !Double.isNaN(vClass) && vClass != NO_CLASS){
+                 vLowerBound = vDis.cutPoints == null || vClass == 0 ? 0 : vDis.cutPoints[(int) vClass - 1];
+                 vUpperBound = vDis.cutPoints == null || vClass == vDis.cutPoints.length ?  Double.MAX_VALUE : vDis.cutPoints[(int) vClass];  
+             }
+            
+             if (aDis != null && !Double.isNaN(aClass) && aClass != NO_CLASS){
+                 aLowerBound = aDis.cutPoints == null || aClass == 0 ? 0 : aDis.cutPoints[(int) aClass - 1];
+                  aUpperBound = aDis.cutPoints == null || aClass == aDis.cutPoints.length ? Double.MAX_VALUE : aDis.cutPoints[(int) aClass];
+             }
+             if (dDis != null && !Double.isNaN(dClass) && dClass != NO_CLASS){
+                 dLowerBound = dDis.cutPoints == null || dClass == 0 ? 0 : dDis.cutPoints[(int) dClass - 1];
+                 dUpperBound = dDis.cutPoints != null || dClass == dDis.cutPoints.length ? Double.MAX_VALUE : dDis.cutPoints[(int) dClass];
+             }
+             TrialPrediction prediction;
+             prediction = new TrialPrediction(vLowerBound,vUpperBound,aLowerBound, aUpperBound,dLowerBound, dUpperBound);
+             return new TrialGuess(best, prediction);
+         }
+         
+         /*
+         int vNext, aNext, dNext;
+         double vNextScore, aNextScore, dNextScore;
+         if (vClass < vBucketMeans.length) {
+             vNext = vClass + 1;
+             if (aClass == aMax) 
+             vNextScore = computeScore(vNext, aNext, dNext,
+                 vBucketMeans, aBucketMeans, dBucketMeans,
+                 varClassWeight, attrClassWeight, domClassWeight);
+         }
+         */
+         double vDiff, aDiff, dDiff;
+         vDiff = (vClass == vBucketMeans.length) ? Double.POSITIVE_INFINITY : vBucketMeans[vClass+1];
+         vDiff -= vBucketMeans[vClass];
+         vDiff *= varClassWeight;
+         aDiff = (aClass == aBucketMeans.length) ? Double.POSITIVE_INFINITY : aBucketMeans[aClass+1];
+         aDiff -= aBucketMeans[aClass];
+         aDiff *= attrClassWeight;
+         dDiff = (dClass == dBucketMeans.length) ? Double.POSITIVE_INFINITY : dBucketMeans[dClass+1];
+         dDiff -= dBucketMeans[dClass];
+         dDiff *= domClassWeight;
+         
+     }
+     
+ }
+
+ static OrderConstraintSet tryConstraints(MyId3 v, int vClass, Instances vData,
+                                          MyId3 a, int aClass, Instances aData,
+                                          MyId3 d, int dClass, Instances dData,
+                                          MultiMap a2v, MultiMap d2v) {
+     Collection vBestAttribs = v.getAttribCombos(vData.numAttributes(), vClass);
+     for (Iterator v_i = vBestAttribs.iterator(); v_i.hasNext(); ) {
+         double[] v_c = (double[]) v_i.next();
+         OrderConstraintSet ocs = new OrderConstraintSet();
+         boolean v_r = constrainOrder(ocs, v_c, vData, null);
+         if (!v_r) {
+             continue;
+         }
+
+         Collection aBestAttribs = a.getAttribCombos(aData.numAttributes(), aClass);
+         OrderConstraintSet ocsBackup = ocs.copy();
+         for (Iterator a_i = aBestAttribs.iterator(); a_i.hasNext(); ) {
+             double[] a_c = (double[]) a_i.next();
+             boolean a_r = constrainOrder(ocs, a_c, aData, a2v);
+             if (!a_r) {
+                 ocs = ocsBackup;
+                 ocsBackup = ocs.copy();
+                 continue;
+             }
+             
+             Collection dBestAttribs = d.getAttribCombos(dData.numAttributes(), dClass);
+             OrderConstraintSet ocsBackup2 = ocs.copy();
+             for (Iterator d_i = dBestAttribs.iterator(); d_i.hasNext(); ) {
+                 double[] d_c = (double[]) d_i.next();
+                 boolean d_r = constrainOrder(ocs, d_c, dData, d2v);
+                 if (d_r) {
+                     return ocs;
+                 }
+                 ocs = ocsBackup2;
+                 ocsBackup2 = ocs.copy();
+             }
+         }
+     }
+     return null;
+ }
+ 
+ static double computeScore(int vC, int aC, int dC,
+                            double[] vMeans, double[] aMeans, double[] dMeans,
+                            double vWeight, double aWeight, double dWeight) {
+     double score = vMeans[vC] * vWeight;
+     score += aMeans[aC] * aWeight;
+     score += dMeans[dC] * dWeight;
+     return score;
+ }
+ 
+ static boolean constrainOrder(OrderConstraintSet ocs, double[] c, Instances data, MultiMap map) {
+     for (int iii = 0; iii < c.length; ++iii) {
+         if (Double.isNaN(c[iii])) continue;
+         int k = (int) c[iii];
+         OrderAttribute oa = (OrderAttribute) data.attribute(iii);
+         OrderConstraint oc = oa.getConstraint(k);
+         if (map != null) {
+             Collection c1 = map.getValues(oc.getFirst());
+             Collection c2 = map.getValues(oc.getSecond());
+             boolean any = false;
+             for (Iterator ii = c1.iterator(); ii.hasNext(); ) {
+                 Object a = ii.next();
+                 for (Iterator jj = c2.iterator(); jj.hasNext(); ) {
+                     Object b = jj.next();
+                     OrderConstraint cc = OrderConstraint.makeConstraint(oc.getType(), a, b);
+                     boolean r = ocs.constrain(cc);
+                     if (r) {
+                         any = true;
+                     }
+                 }
+             }
+             if (!any) {
+                 if (TRACE > 1) out.println("Constraint "+oc+" conflicts with "+ocs);
+                 return false;
+             }
+         } else {
+             boolean r = ocs.constrain(oc);
+             if (!r) {
+                 if (TRACE > 1) out.println("Constraint "+oc+" conflicts with "+ocs);
+                 return false;
+             }
+         }
+     }
+     return true;
  }
  
  void printGoodOrder(Collection allVars, Instances inst, MyId3 v) {
