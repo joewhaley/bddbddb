@@ -7,13 +7,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Map;
+import jwutil.util.Assert;
 import org.sf.bddbddb.IterationFlowGraph;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.dataflow.Problem.Fact;
 import org.sf.bddbddb.dataflow.Problem.TransferFunction;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.dynamic.If;
-import org.sf.bddbddb.util.Assert;
 
 /**
  * DataflowSolver

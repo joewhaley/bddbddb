@@ -97,14 +97,14 @@ public class Load extends HighLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the filename
      */
     public String getFileName() {
         return fileName;
     }
 
     /**
-     * @return
+     * @return  whether it is tuples
      */
     public boolean isTuples() {
         return tuples;

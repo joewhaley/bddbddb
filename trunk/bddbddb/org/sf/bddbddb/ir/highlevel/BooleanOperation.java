@@ -4,8 +4,8 @@
 package org.sf.bddbddb.ir.highlevel;
 
 import java.util.List;
+import jwutil.collections.Pair;
 import org.sf.bddbddb.Relation;
-import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
@@ -30,7 +30,7 @@ public abstract class BooleanOperation extends HighLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the name of this operation
      */
     public abstract String getName();
 
@@ -85,7 +85,7 @@ public abstract class BooleanOperation extends HighLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the BDDOp for this operation
      */
     public abstract BDDOp getBDDOp();
 

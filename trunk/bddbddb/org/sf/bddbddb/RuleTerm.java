@@ -68,31 +68,31 @@ public class RuleTerm {
     }
 
     /**
-     * @return
+     * @return  number of variables in this rule term
      */
     public int numberOfVariables() {
         return variables.size();
     }
 
     /**
-     * @param i
-     * @return
+     * @param i  index
+     * @return  variable at the given index
      */
     public Variable getVariable(int i) {
         return (Variable) variables.get(i);
     }
 
     /**
-     * @param v
-     * @return
+     * @param v  variable
+     * @return  index of the given variable
      */
     public int getVariableIndex(Variable v) {
         return variables.indexOf(v);
     }
 
     /**
-     * @param v
-     * @return
+     * @param v  variable
+     * @return  attribute of the given variable
      */
     public Attribute getAttribute(Variable v) {
         return relation.getAttribute(getVariableIndex(v));

@@ -10,8 +10,8 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.Pair;
+import jwutil.collections.IndexMap;
+import jwutil.collections.Pair;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 

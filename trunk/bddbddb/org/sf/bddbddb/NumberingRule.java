@@ -12,10 +12,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.GlobalPathNumbering;
-import org.sf.bddbddb.util.PathNumbering;
-import org.sf.bddbddb.util.SCCPathNumbering;
+import jwutil.graphs.GlobalPathNumbering;
+import jwutil.graphs.PathNumbering;
+import jwutil.graphs.SCCPathNumbering;
+import jwutil.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 

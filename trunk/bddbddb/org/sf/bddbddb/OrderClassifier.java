@@ -1,9 +1,6 @@
-/*
- * Created on Jul 27, 2004
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
- */
+// OrderClassifier.java, created Jul 27, 2004 8:57:36 PM 2004 by mcarbin
+// Copyright (C) 2004 Michael Carbin <mcarbin@stanford.edu>
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Arrays;
@@ -21,10 +18,10 @@ import java.util.TreeSet;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Pair;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.MultiMap;
+import jwutil.collections.Pair;
+import jwutil.util.Assert;
 import org.sf.javabdd.BDDDomain;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.Id3;
@@ -41,7 +38,7 @@ import weka.filters.unsupervised.attribute.PKIDiscretize;
  * OrderClassifier
  * 
  * @author mcarbin
- *
+ * @version $Id$
  */
 public class OrderClassifier {
     private Instances data = null;
@@ -564,7 +561,7 @@ public class OrderClassifier {
             return (int) ((this.time - that.time) / Math.abs(this.time - that.time));
         }
         /**
-         * @return
+         * @return  time for this instance
          */
         public long getTime() {
             return time;
@@ -648,27 +645,24 @@ public class OrderClassifier {
     }
     
     /**
-     * @return
+     * @return  number of attributes
      */
     public int getNumAttributes() {
         return attributes.size() - 1 ;
     }
     
-    
     /**
-     * @return
+     * @return  data
      */
     public Instances getData() {
         return data;
     }
     
-    
     /**
-     * 
+     * @return  sorted orders
      */
     public SortedSet getOrders() {
         return orders;
-        
     }
 }
 

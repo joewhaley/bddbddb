@@ -5,9 +5,9 @@ package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
 import java.util.List;
+import jwutil.util.Assert;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
-import org.sf.bddbddb.util.Assert;
 
 /**
  * Free

@@ -5,7 +5,7 @@ package org.sf.bddbddb;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import org.sf.bddbddb.util.IndexMap;
+import jwutil.collections.IndexMap;
 
 /**
  * A Domain represents a domain in bddbddb.

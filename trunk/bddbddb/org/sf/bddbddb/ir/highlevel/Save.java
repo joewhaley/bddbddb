@@ -104,14 +104,14 @@ public class Save extends HighLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the file name being saved
      */
     public String getFileName() {
         return fileName;
     }
 
     /**
-     * @return
+     * @return  whether we are saving tuples
      */
     public boolean isTuples() {
         return tuples;

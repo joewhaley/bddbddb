@@ -1,6 +1,6 @@
 // Stratify.java, created May 3, 2004 7:07:16 PM 2004 by jwhaley
-//Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
-//Licensed under the terms of the GNU LGPL; see COPYING for details.
+// Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Arrays;
@@ -15,15 +15,15 @@ import java.util.Map;
 import java.util.Set;
 import java.io.IOException;
 import java.io.PrintStream;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.DumpDotGraph;
-import org.sf.bddbddb.util.Filter;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.HashWorklist;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Navigator;
-import org.sf.bddbddb.util.SCCTopSortedGraph;
-import org.sf.bddbddb.util.SCComponent;
+import jwutil.collections.Filter;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.HashWorklist;
+import jwutil.collections.MultiMap;
+import jwutil.graphs.DumpDotGraph;
+import jwutil.graphs.Navigator;
+import jwutil.graphs.SCCTopSortedGraph;
+import jwutil.graphs.SCComponent;
+import jwutil.util.Assert;
 
 /**
  * Implements stratification and decides iteration order.

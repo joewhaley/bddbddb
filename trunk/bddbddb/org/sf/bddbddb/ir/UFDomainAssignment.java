@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import jwutil.collections.LinearMap;
+import jwutil.collections.Pair;
+import jwutil.collections.UnionFind;
+import jwutil.util.Assert;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.BDDSolver;
@@ -20,10 +24,6 @@ import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.LinearMap;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.UnionFind;
 import org.sf.javabdd.BDDDomain;
 
 /**

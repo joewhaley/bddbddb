@@ -1,9 +1,6 @@
-/*
- * Created on Jul 13, 2004
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
- */
+//PartialOrder.java, created Jul 3, 2004 1:44:46 PM by mcarbin
+//Copyright (C) 2004 Michael Carbin <mcarbin@stanford.edu>
+//Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.dataflow;
 
 import java.util.Arrays;
@@ -18,6 +15,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.HashWorklist;
+import jwutil.collections.MultiMap;
+import jwutil.collections.Pair;
+import jwutil.collections.UnionFind;
+import jwutil.graphs.Navigator;
+import jwutil.util.Assert;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationList;
@@ -44,19 +48,12 @@ import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.HashWorklist;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Navigator;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.UnionFind;
 
 /**
- * @author Administrator
- *
- * TODO To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Style - Code Templates
+ * Partial order.
+ * 
+ * @author Michael Carbin
+ * @version $Id$
  */
 public class PartialOrder extends OperationProblem {
     IR ir;
@@ -983,10 +980,9 @@ public class PartialOrder extends OperationProblem {
         }
         
         /**
-         * @return
+         * @return collection of nodes
          */
         public Collection getNodes() {
-            
             return nodes;
         }
 

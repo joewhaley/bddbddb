@@ -11,10 +11,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.io.PrintStream;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.Graph;
-import org.sf.bddbddb.util.Navigator;
-import org.sf.bddbddb.util.Pair;
+import jwutil.collections.Pair;
+import jwutil.graphs.Graph;
+import jwutil.graphs.Navigator;
+import jwutil.util.Assert;
 
 /**
  * Allows relations to be treated as edges in a graph, so we can use

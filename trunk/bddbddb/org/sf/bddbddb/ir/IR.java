@@ -1,15 +1,20 @@
+// IR.java, created Jun 29, 2004 12:24:59 PM 2004 by mcarbin
+// Copyright (C) 2004 Michael Carbin
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
-
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import jwutil.collections.IndexMap;
+import jwutil.collections.MultiMap;
+import jwutil.util.Assert;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationFlowGraph;
 import org.sf.bddbddb.IterationList;
@@ -39,14 +44,14 @@ import org.sf.bddbddb.ir.highlevel.Rename;
 import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.MultiMap;
 import org.sf.javabdd.BDDPairing;
 import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
+ * Intermediate representation.
+ * 
  * @author mcarbin
+ * @version $Id$
  */
 public class IR {
     public Solver solver;

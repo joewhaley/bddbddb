@@ -1,9 +1,6 @@
-/*
- * Created on Jul 7, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
+// If.java, created Jul 7, 2004 11:50:51 PM by joewhaley
+// Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir.dynamic;
 
 import java.util.Collections;
@@ -15,10 +12,10 @@ import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.OperationVisitor;
 
 /**
- * @author Collective
+ * If
  * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @author John Whaley
+ * @version $Id$
  */
 public class If extends Operation {
     IRBoolean bool;
@@ -90,7 +87,7 @@ public class If extends Operation {
     }
 
     /**
-     * @return
+     * @return the target block
      */
     public IterationList getBlock() {
         return block;

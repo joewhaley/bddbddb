@@ -1,9 +1,6 @@
-/*
- * Created on Sep 3, 2004
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
- */
+// Learner.java, created Sep 3, 2004 8:57:36 PM 2004 by mcarbin
+// Copyright (C) 2004 Michael Carbin <mcarbin@stanford.edu>
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Collection;
@@ -13,22 +10,22 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.LinearSet;
+import jwutil.collections.MultiMap;
+import jwutil.collections.UnionFind;
+import jwutil.util.Assert;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
 import org.sf.bddbddb.dataflow.PartialOrder.ConstraintGraph;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import org.sf.bddbddb.ir.PartialOrderDomainAssignment;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.LinearSet;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.UnionFind;
 import org.sf.javabdd.BDDDomain;
 
 /**
  * Learner
  * 
  * @author mcarbin
- *
+ * @version $Id$
  */
 public interface Learner {
     

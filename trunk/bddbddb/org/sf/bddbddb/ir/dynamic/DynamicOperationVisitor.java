@@ -1,21 +1,24 @@
-// LowLevelOperationVisitor.java, created Jul 3, 2004 11:50:51 PM by joewhaley
+// DynamicOperationVisitor.java, created Jul 3, 2004 11:50:51 PM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir.dynamic;
 
 /**
- * LowLevelOperationVisitor
+ * DynamicOperationVisitor
  * 
  * @author John Whaley
- * @version $Id: LowLevelOperationVisitor.java,v 1.2 2004/07/07 06:30:23
- *          joewhaley Exp $
+ * @version $Id$
  */
 public interface DynamicOperationVisitor {
     /**
      * @param op
-     * @return
+     * @return  the result
      */
     public abstract Object visit(If op);
 
+    /**
+     * @param op
+     * @return  the result
+     */
     public abstract Object visit(Nop op);
 }

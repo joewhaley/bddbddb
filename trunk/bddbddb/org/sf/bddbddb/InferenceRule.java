@@ -12,6 +12,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.LinearMap;
+import jwutil.collections.MultiMap;
+import jwutil.graphs.Navigator;
+import jwutil.util.Assert;
 import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Difference;
 import org.sf.bddbddb.ir.highlevel.GenConstant;
@@ -22,11 +27,6 @@ import org.sf.bddbddb.ir.highlevel.Project;
 import org.sf.bddbddb.ir.highlevel.Rename;
 import org.sf.bddbddb.ir.highlevel.Union;
 import org.sf.bddbddb.ir.highlevel.Universe;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.LinearMap;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Navigator;
 
 /**
  * An InferenceRule represents a single Datalog rule.

@@ -45,8 +45,8 @@ public class Copy extends HighLevelOperation {
         return r0.toString() + " = " + getExpressionString();
     }
 
-    /**
-     * @return
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
         return "copy(" + r1.toString() + ")";

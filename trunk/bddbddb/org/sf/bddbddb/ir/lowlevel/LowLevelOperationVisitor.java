@@ -13,13 +13,13 @@ package org.sf.bddbddb.ir.lowlevel;
 public interface LowLevelOperationVisitor {
     /**
      * @param op
-     * @return
+     * @return  the result
      */
     public abstract Object visit(ApplyEx op);
 
     /**
      * @param op
-     * @return
+     * @return  the result
      */
     public abstract Object visit(Replace op);
 }
