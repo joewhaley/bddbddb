@@ -17,6 +17,7 @@ import java.io.IOException;
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
+import org.sf.javabdd.BDDFactory;
 import org.sf.javabdd.BDD.BDDIterator;
 
 /**
@@ -26,17 +27,37 @@ import org.sf.javabdd.BDD.BDDIterator;
  * @version $Id$
  */
 public class BDDRelation extends Relation {
-    BDDSolver solver;
-    BDD relation;
-    List/* <BDDDomain> */domains;
+    
+    /**
+     * Link to solver.
+     */
+    protected BDDSolver solver;
+    
+    /**
+     * Value of relation.
+     */
+    protected BDD relation;
+    
+    /**
+     * List of BDDDomains that are used in this relation.
+     * The indices coincide with those of the attributes.
+     */
+    protected List/*<BDDDomain>*/ domains;
+    
+    /**
+     * Cache of the BDD set.
+     */
     private BDD domainSet;
 
     /**
-     * @param solver
-     * @param name
-     * @param attributes
+     * Construct a new BDDRelation.
+     * This is only to be called internally.
+     * 
+     * @param solver  solver
+     * @param name  name of relation
+     * @param attributes  list of attributes for relation
      */
-    public BDDRelation(BDDSolver solver, String name, List attributes) {
+    BDDRelation(BDDSolver solver, String name, List attributes) {
         super(solver, name, attributes);
         this.solver = solver;
         if (solver.TRACE) solver.out.println("Created BDDRelation " + this);
@@ -44,10 +65,10 @@ public class BDDRelation extends Relation {
 
     /*
      * (non-Javadoc)
+     * Called before variable order is set.
      * 
      * @see org.sf.bddbddb.Relation#initialize()
      */
-    // Called before variable order is set.
     public void initialize() {
         if (isInitialized) return;
         if (negated != null && name.startsWith("!")) {
@@ -121,7 +142,12 @@ public class BDDRelation extends Relation {
         isInitialized = true;
     }
 
-    public BDD calculateDomainSet() {
+    /**
+     * (Re-)calculate the domain set. 
+     * 
+     * @return  the domain set
+     */
+    BDD calculateDomainSet() {
         if (domainSet != null) domainSet.free();
         this.domainSet = solver.bdd.one();
         for (Iterator i = domains.iterator(); i.hasNext();) {
@@ -132,9 +158,9 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     *  
+     * Do more initialization.  This initializes the values of equivalence relations.
+     * Called after variable order is set, so the computation is faster.
      */
-    // Called after variable order is set.
     public void initialize2() {
         Assert._assert(isInitialized);
         boolean is_equiv = solver.equivalenceRelations.values().contains(this);
@@ -175,7 +201,7 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     *  
+     * Updated the negated form of this relation.
      */
     void updateNegated() {
         if (negated != null) {
@@ -186,7 +212,9 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @param filename
+     * Load this relation from the given file.
+     * 
+     * @param filename  the file to load
      * @throws IOException
      */
     public void load(String filename) throws IOException {
@@ -215,6 +243,11 @@ public class BDDRelation extends Relation {
         updateNegated();
     }
 
+    /**
+     * Verify that the domains for this BDD are correct.
+     * 
+     * @return  whether the domains are correct
+     */
     public boolean verify() {
         BDD s = relation.support();
         calculateDomainSet();
@@ -228,7 +261,9 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @param filename
+     * Load this relation in tuple form from the given file.
+     * 
+     * @param filename  the file to load
      * @throws IOException
      */
     public void loadTuples(String filename) throws IOException {
@@ -281,7 +316,9 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @param filename
+     * Save the value of this relation to the given file.
+     * 
+     * @param filename  name of file to save
      * @throws IOException
      */
     public void save(String filename) throws IOException {
@@ -310,6 +347,12 @@ public class BDDRelation extends Relation {
         saveTuples(solver.basedir + name + ".rtuples", relation);
     }
 
+    /**
+     * Save the value of this relation in tuple form to the given file.
+     * 
+     * @param filename  name of file to save
+     * @throws IOException
+     */
     public void saveTuples(String filename) throws IOException {
         System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
         saveTuples(solver.basedir + name + ".rtuples", relation);
@@ -326,8 +369,10 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @param fileName
-     * @param relation
+     * Save the given relation in tuple form to the given file.
+     * 
+     * @param fileName  name of file to save
+     * @param relation  value to save
      * @throws IOException
      */
     public void saveTuples(String fileName, BDD relation) throws IOException {
@@ -388,17 +433,20 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @param relation
-     * @return
+     * Return a string representation of the active domains of the given relation.
+     * 
+     * @param relation  relation to check
+     * @return  string representation of the active domains
      */
-    public String activeDomains(BDD relation) {
+    public static String activeDomains(BDD relation) {
+        BDDFactory bdd = relation.getFactory();
         BDD s = relation.support();
         int[] a = s.scanSetDomains();
         s.free();
         if (a == null) return "(none)";
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i < a.length; ++i) {
-            sb.append(solver.bdd.getDomain(a[i]));
+            sb.append(bdd.getDomain(a[i]));
             if (i < a.length - 1) sb.append(',');
         }
         return sb.toString();
@@ -424,11 +472,15 @@ public class BDDRelation extends Relation {
         final Iterator i = relation.iterator(domainSet);
         return new MyTupleIterator(i, domains);
     }
+    
+    /**
+     * Implementation of TupleIterator for BDDs.
+     */
     static class MyTupleIterator extends TupleIterator {
-        Iterator i;
-        List domains;
+        protected Iterator i;
+        protected List domains;
 
-        MyTupleIterator(Iterator i, List domains) {
+        protected MyTupleIterator(Iterator i, List domains) {
             this.i = i;
             this.domains = domains;
         }
@@ -526,14 +578,18 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @return
+     * Return the value of this relation in BDD form.
+     * 
+     * @return BDD form of this relation
      */
     public BDD getBDD() {
         return relation;
     }
 
     /**
-     * @param b
+     * Set the value of this relation from the given BDD.
+     * 
+     * @param b  BDD value to set from
      */
     public void setBDD(BDD b) {
         if (relation != null) relation.free();
@@ -541,16 +597,20 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @param i
-     * @return
+     * Get the BDDDomain with the given index.
+     * 
+     * @param i  index
+     * @return  BDDDomain at that index
      */
     public BDDDomain getBDDDomain(int i) {
         return (BDDDomain) domains.get(i);
     }
 
     /**
-     * @param a
-     * @return
+     * Get the BDDDomain that matches the given attribute.
+     * 
+     * @param a  attribute
+     * @return  BDDDomain that matches that attribute
      */
     public BDDDomain getBDDDomain(Attribute a) {
         int i = attributes.indexOf(a);
@@ -559,7 +619,9 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * @return
+     * Returns the list of BDD domains this relation is using.
+     * 
+     * @return  the list of BDDDomains this relation is using
      */
     public List getBDDDomains() {
         return domains;
@@ -592,6 +654,11 @@ public class BDDRelation extends Relation {
         }
     }
 
+    /**
+     * Set the BDD domain assignment of this relation to the given one.
+     * 
+     * @param newdom  new BDD domain assignment
+     */
     public void setDomainAssignment(List newdom) {
         Assert._assert(newdom.size() == attributes.size());
         Assert._assert(new HashSet(newdom).size() == newdom.size(), newdom.toString());

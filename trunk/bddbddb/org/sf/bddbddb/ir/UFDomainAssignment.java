@@ -27,12 +27,22 @@ import org.sf.bddbddb.util.UnionFind;
 import org.sf.javabdd.BDDDomain;
 
 /**
- * UFDomainAssignment
+ * Performs domain assignment based on a union-find data structure.
+ * The general model is to introduce constraints in their order of importance.
+ * If a constraint cannot be satisfied, a replace operation is introduced at
+ * that point.
+ * 
+ * This domain assignment works by keeping track of attributes that are the
+ * same in a union-find data structure, and keeping a set of not-equal
+ * constraints that must be obeyed.  When a new constraint (equal or not-equal)
+ * is considered that does not obey the current constraints, it is not added
+ * and a replace operation is generated at that point.
  * 
  * @author John Whaley
  * @version $Id$
  */
 public class UFDomainAssignment extends DomainAssignment {
+    
     UnionFind uf;
     LinkedHashSet neq_constraints;
     Map physicalDomains;
@@ -135,6 +145,14 @@ public class UFDomainAssignment extends DomainAssignment {
         s.setVariableOrdering();
     }
 
+    /**
+     * Choose a BDD domain to allocate for the given attribute in the given relation.
+     * Allocates a new BDD domain if none of the existing ones would be legal.
+     * 
+     * @param r  relation
+     * @param a  attribute
+     * @return  BDD domain
+     */
     BDDDomain chooseBDDDomain(BDDRelation r, Attribute a) {
         BDDSolver s = (BDDSolver) solver;
         Domain d = a.getDomain();
@@ -142,7 +160,7 @@ public class UFDomainAssignment extends DomainAssignment {
         List legal = new ArrayList();
         for (Iterator i = s.getBDDDomains(d).iterator(); i.hasNext();) {
             BDDDomain b = (BDDDomain) i.next();
-            if(TRACE) System.out.println("assign " + p + " = " + b);
+            if (TRACE) System.out.println("assign " + p + " = " + b);
             if (wouldBeLegal(p, b)) {
                 legal.add(b);
             }

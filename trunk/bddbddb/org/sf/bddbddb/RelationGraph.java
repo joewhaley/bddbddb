@@ -15,24 +15,61 @@ import org.sf.bddbddb.util.Navigator;
 import org.sf.bddbddb.util.Pair;
 
 /**
- * RelationGraph
+ * Allows relations to be treated as edges in a graph, so we can use
+ * graph algorithms on them.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public class RelationGraph implements Graph {
-    boolean TRACE = true;
-    PrintStream out = System.out;
+    
+    /**
+     * Trace flag.
+     */
+    protected boolean TRACE = true;
+    
+    /**
+     * Trace output stream.
+     */
+    protected PrintStream out = System.out;
+    
+    /**
+     * The rule term that represents the set of roots.
+     */
     RuleTerm root;
+    
+    /**
+     * The variable used as the root.
+     */
     Variable rootVariable;
-    List/* <RuleTerm> */edges;
+    
+    /**
+     * List of rule terms that represent edges in the graph.
+     */
+    List/*<RuleTerm>*/ edges;
 
-    RelationGraph(RuleTerm root, Variable rootVar, List/* <RuleTerm> */edges) {
+    /**
+     * Construct a new relation graph with the given root term, root variable, and list
+     * of terms that represent edges in the graph.
+     * 
+     * @param root  root term
+     * @param rootVar  root variable
+     * @param edges  list of terms representing edges in the graph
+     */
+    RelationGraph(RuleTerm root, Variable rootVar, List/*<RuleTerm>*/ edges) {
         this.root = root;
         this.rootVariable = rootVar;
         this.edges = edges;
     }
 
+    /**
+     * Construct a new relation graph that uses a given relation as the set of
+     * roots and another as the set of edges.  This is just an easier way of 
+     * constructing a simple graph so that you don't have to build up rule terms.
+     * 
+     * @param roots  set of roots
+     * @param edges  set of edges
+     */
     RelationGraph(Relation roots, Relation edges) {
         Assert._assert(roots.attributes.size() == 1);
         Assert._assert(edges.attributes.size() == 2);
@@ -40,44 +77,90 @@ public class RelationGraph implements Graph {
         Domain fd = a.attributeDomain;
         this.rootVariable = new Variable(fd.toString(), fd);
         List varList = Collections.singletonList(rootVariable);
-        this.root = new RuleTerm(varList, roots);
+        this.root = new RuleTerm(roots, varList);
         Assert._assert(edges.getAttribute(0).attributeDomain == fd);
         Assert._assert(edges.getAttribute(1).attributeDomain == fd);
         List varList2 = new Pair(rootVariable, rootVariable);
-        RuleTerm edge = new RuleTerm(varList2, edges);
+        RuleTerm edge = new RuleTerm(edges, varList2);
         this.edges = Collections.singletonList(edge);
     }
+    
+    /**
+     * A node in the relation graph.
+     */
     static class GraphNode {
         Variable v;
         long number;
 
+        /**
+         * Make a new graph node with the given variable and value.
+         * 
+         * @param var  variable
+         * @param num  value
+         */
         GraphNode(Variable var, long num) {
             this.v = var;
             this.number = num;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
         public int hashCode() {
             return v.hashCode() ^ (int) number;
         }
 
+        /**
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(GraphNode that) {
             return this.v == that.v && this.number == that.number;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object o) {
             return equals((GraphNode) o);
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
         public String toString() {
             return v.toString() + ":" + number;
         }
     }
 
-    public static GraphNode makeGraphNode(Variable v, long num) {
+    /**
+     * Make a new graph node with the given variable and value.
+     * 
+     * @param v  variable
+     * @param num  value
+     * @return  new graph node
+     */
+    static GraphNode makeGraphNode(Variable v, long num) {
         return new GraphNode(v, num);
     }
+    
+    /**
+     * Navigator object for this graph.
+     */
     Nav navigator = new Nav();
+    
+    /**
+     * Navigator for a relation graph.
+     */
     class Nav implements Navigator {
+        
+        /**
+         * Get the edges from a node where the from and to variables match the indices given.
+         * 
+         * @param node  graph node
+         * @param fromIndex  index of from variable
+         * @param toIndex  index of to variable
+         * @return  collection of edges
+         */
         Collection getEdges(Object node, int fromIndex, int toIndex) {
             GraphNode gn = (GraphNode) node;
             if (TRACE) out.println("Getting edges of " + gn + " indices (" + fromIndex + "," + toIndex + ")");

@@ -9,7 +9,9 @@ import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.IndexedMap;
 
 /**
- * Domain
+ * A Domain represents a domain in bddbddb.
+ * Domain objects are globally unique: There is only one Domain object for each
+ * domain in the system.
  * 
  * @author jwhaley
  * @version $Id$

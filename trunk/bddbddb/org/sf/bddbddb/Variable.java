@@ -4,14 +4,22 @@
 package org.sf.bddbddb;
 
 /**
- * Variable
+ * A Variable is a variable in a rule.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public class Variable {
-    String name;
-    Domain domain;
+    
+    /**
+     * Name of variable.
+     */
+    protected String name;
+    
+    /**
+     * Domain of variable.
+     */
+    protected Domain domain;
 
     /**
      * Create empty variable.
@@ -21,7 +29,9 @@ public class Variable {
     }
 
     /**
-     * @param name
+     * Create a new variable with the given name.
+     * 
+     * @param name  name of variable
      */
     public Variable(String name) {
         super();
@@ -29,7 +39,10 @@ public class Variable {
     }
 
     /**
-     * @param name
+     * Create a new variable with the given name and domain.
+     * 
+     * @param name  name of variable
+     * @param fd  domain of variable
      */
     public Variable(String name, Domain fd) {
         super();
@@ -45,6 +58,8 @@ public class Variable {
     }
 
     /**
+     * Set the name of this variable.
+     * 
      * @param name
      *            The name to set.
      */
@@ -53,15 +68,18 @@ public class Variable {
     }
 
     /**
-     * @return Returns the fieldDomain.
+     * Get the domain of this variable.
+     * 
+     * @return  domain of this variable
      */
     public Domain getDomain() {
         return domain;
     }
 
     /**
-     * @param domain
-     *            The fieldDomain to set.
+     * Set the domain of this variable.
+     * 
+     * @param domain  the domain to set.
      */
     public void setDomain(Domain domain) {
         this.domain = domain;
