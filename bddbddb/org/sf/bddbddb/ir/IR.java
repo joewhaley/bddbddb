@@ -1,5 +1,6 @@
 package org.sf.bddbddb.ir;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,13 +12,17 @@ import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.Stratify;
 import org.sf.bddbddb.dataflow.ConstantProp;
 import org.sf.bddbddb.dataflow.DataflowSolver;
+import org.sf.bddbddb.dataflow.DefUse;
 import org.sf.bddbddb.dataflow.Liveness;
 import org.sf.bddbddb.dataflow.Problem;
 import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
+import org.sf.bddbddb.dataflow.DefUse.DefUseFact;
 import org.sf.bddbddb.dataflow.Liveness.LivenessFact;
+import org.sf.bddbddb.dataflow.RelationProblem.RelationFacts;
 import org.sf.bddbddb.ir.highlevel.Free;
 import org.sf.bddbddb.ir.highlevel.Load;
+import org.sf.bddbddb.ir.highlevel.Project;
 import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.MultiMap;
@@ -31,8 +36,7 @@ public class IR {
     IterationFlowGraph graph;
     
     boolean FREE_DEAD = !System.getProperty("freedead", "no").equals("no");
-    boolean CONSTANTPROP = !System.getProperty("constantprop", "no").equals(
-        "no");
+    boolean CONSTANTPROP = !System.getProperty("constantprop", "no").equals("no");
     boolean TRACE;
     
     public static IR create(Stratify s) {
@@ -78,12 +82,45 @@ public class IR {
                 if (o instanceof Operation) {
                     Operation op = (Operation) o;
                     ConstantPropFacts f = (ConstantPropFacts) di.getFact();
-                    Operation op2 = ((ConstantProp) problem)
-                        .simplify(op, f);
+                    Operation op2 = ((ConstantProp) problem).simplify(op, f);
                     if (op != op2) {
                         if (TRACE) System.out.println("Replacing " + op
                             + " with " + op2);
                         di.set(op2);
+                    }
+                } else {
+                    IterationList b = (IterationList) o;
+                    di.enter(b);
+                }
+            }
+        }
+        if (false) {
+            DataflowSolver df_solver = new DataflowSolver();
+            DefUse problem = new DefUse();
+            IterationList list = graph.getIterationList();
+            df_solver.solve(problem, list);
+            DataflowIterator di = df_solver.getIterator(problem, list);
+            while (di.hasNext()) {
+                Object o = di.next();
+                if (TRACE) System.out.println("Next: " + o);
+                if (o instanceof Operation) {
+                    Operation op = (Operation) o;
+                    RelationFacts f = (RelationFacts) di.getFact();
+                    if (op.getDest() != null) {
+                        Collection uses = problem.getUses(op.getDest());
+                        if (uses.size() == 0) {
+                            if (TRACE) System.out.println("Removing: " + op);
+                            di.remove();
+                            continue;
+                        }
+                    }
+                    if (op instanceof Project) {
+                        Project p = (Project) op;
+                        Relation src = p.getSrc();
+                        DefUseFact duf = (DefUseFact) f.getFact(src);
+                        if (duf.getDefs().size() == 1) {
+                            Operation op2 = (Operation) duf.getDefs().iterator().next();
+                        }
                     }
                 } else {
                     IterationList b = (IterationList) o;
