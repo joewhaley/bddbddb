@@ -66,7 +66,7 @@ public class BDDSolver extends Solver {
      * BDD minimum free parameter.  This tells the BDD library when to grow the
      * node table.  You can set this with "-Dbddminfree=xxx"
      */
-    int BDDMINFREE = Integer.parseInt(System.getProperty("bddminfree", "20"));
+    double BDDMINFREE = Integer.parseInt(System.getProperty("bddminfree", ".20"));
     
     /**
      * BDD variable ordering.
