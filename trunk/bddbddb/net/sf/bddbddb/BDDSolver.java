@@ -270,7 +270,6 @@ public class BDDSolver extends Solver {
      */
     public void solve() {
         if (USE_IR) {
-            ir = IR.create(stratify);
             BDDInterpreter interpreter = new BDDInterpreter(ir);
             interpreter.interpret();
             //stratify.solve();
@@ -280,13 +279,14 @@ public class BDDSolver extends Solver {
             BDDInterpreter interpreter = new BDDInterpreter(null);
             long time = System.currentTimeMillis();
             interpreter.interpret(list);
-            if (LEARN_BEST_ORDER) {
+  /*          if (LEARN_BEST_ORDER) {
                 time = System.currentTimeMillis() - time;
                 System.out.println("SOLVE_TIME: " + time);
                 reportStats();
                 Learner learner = new IndividualRuleLearner(this, stratify);
                 learner.learn();
             }
+    */
         }
     }
     
@@ -310,7 +310,7 @@ public class BDDSolver extends Solver {
         } catch (IOException x) {
         }
         //fbo.dump();
-        fbo.printTrialsDistro();
+        //fbo.printTrialsDistro();
         //fbo.printBestTrials();
         //fbo.printBestBDDOrders();
     }

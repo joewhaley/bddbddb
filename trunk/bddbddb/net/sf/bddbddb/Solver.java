@@ -97,7 +97,7 @@ public abstract class Solver {
     List/*<InferenceRule>*/ rules;
     /** Iteration order. */
     IterationFlowGraph ifg;
-    
+
     /** Flag that is set on initialization. */
     boolean isInitialized;
     
@@ -240,7 +240,7 @@ public abstract class Solver {
         stratify.stratify();
         
         if (USE_IR) {
-            IR ir = IR.create(stratify);
+            ir = IR.create(stratify);
             ifg = ir.graph;
             ir.optimize();
             if (PRINT_IR) ir.printIR();

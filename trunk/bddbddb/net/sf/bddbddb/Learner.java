@@ -52,13 +52,14 @@ public interface Learner {
                 
                 Assert._assert(rule != null);
                 System.out.println("Learning: " + rule);
-                rule.learn();
+      /*          rule.learn();
                 Assert._assert(rule.getLearnedOrder() != null);
                 Constraints ruleCons = rule.getLearnedOrder().getConstraints();
                 if(ruleCons == null) continue;
                 constraints.addAll(ruleCons.getAllConstraints());
                 rule.getLearnedOrder().saveConstraints();
-            }
+        */
+             }
             System.out.println("all learned constraints: " + constraints);
             ConstraintGraph graph = new ConstraintGraph();
             UnionFind uf = new UnionFind(4096);
