@@ -130,6 +130,9 @@ public class PartialOrder extends OperationProblem {
             return result;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object o) {
             if (o instanceof PartialOrderFact) {
                 PartialOrderFact that = (PartialOrderFact) o;
@@ -138,6 +141,13 @@ public class PartialOrder extends OperationProblem {
             return false;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode() {
+            return this.constraintsMap.hashCode();
+        }
+        
         /* (non-Javadoc)
          * @see org.sf.bddbddb.dataflow.Problem.Fact#copy(org.sf.bddbddb.IterationList)
          */
