@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.StringTokenizer;
+
 import jwutil.util.Assert;
 import net.sf.bddbddb.FindBestDomainOrder;
 import net.sf.bddbddb.Variable;

@@ -1857,7 +1857,8 @@ public class FindBestDomainOrder {
                 d2v.add(a.getDomain(), v);
             }
         }
-
+        
+        boolean addNullValues = !returnBest;
         // Grab the best from the classifiers and try to build an optimal order.
         Set candidates = null;
         Collection sel = null;
@@ -1869,30 +1870,43 @@ public class FindBestDomainOrder {
         int vBuckets = vDis == null ? 1 : vDis.buckets.length / 2 + 1;
         int aBuckets = aDis == null ? 1 : aDis.buckets.length / 2 + 1;
         int dBuckets = dDis == null ? 1 : dDis.buckets.length / 2 + 1;
+        double max = (vBucketMeans.length != 0 ? vBucketMeans[vBucketMeans.length-1] : 0);
+        max += (aBucketMeans.length != 0 ? aBucketMeans[aBucketMeans.length-1] : 0);
+        max += (dBucketMeans.length != 0 ? dBucketMeans[dBucketMeans.length-1] : 0);
         boolean[][][] done = new boolean[vBuckets+1][aBuckets+1][dBuckets+1];
     outermost:
         while (candidates == null || candidates.size() < CANDIDATE_SET_SIZE) {
             int numV = Math.min(end, vBuckets);
             int numA = Math.min(end, aBuckets);
             int numD = Math.min(end, dBuckets);
-            if (false && end > vBuckets && end > aBuckets && end > dBuckets) {
+            if (true && end > vBuckets && end > aBuckets && end > dBuckets) {
                 // Also include the "empty" classification for all of them.
                 numV++; numA++; numD++;
             }
-            double[][] combos = new double[numV*numA*numD][];
+            int maxNum = addNullValues ? ((numV+1)*(numA+1)*(numD+1)) : (numV*numA*numD);
+            double[][] combos = new double[maxNum][];
             int p = 0;
-            for (int vi = 0; vi < numV; ++vi) {
-                for (int ai = 0; ai < numA; ++ai) {
-                    for (int di = 0; di < numD; ++di) {
+            int start = addNullValues ? -1 : 0; 
+            for (int vi = start; vi < numV; ++vi) {
+                for (int ai = start; ai < numA; ++ai) {
+                    for (int di = start; di < numD; ++di) {
                         double vScore, aScore, dScore;
-                        if (vi < vBuckets && vi < vBucketMeans.length) vScore = vBucketMeans[vi];
-                        else vScore = (vBucketMeans.length != 0 ? vBucketMeans[vBucketMeans.length-1]+1 : 1);
-                        if (ai < aBuckets && ai < aBucketMeans.length) aScore = aBucketMeans[ai];
-                        else aScore = (aBucketMeans.length != 0 ? aBucketMeans[aBucketMeans.length-1]+1 : 1);
-                        if (di < dBuckets && di < dBucketMeans.length) dScore = dBucketMeans[di];
-                        else dScore = (dBucketMeans.length != 0 ? dBucketMeans[dBucketMeans.length-1]+1 : 1);
-                        double score = varClassWeight * vScore + attrClassWeight * aScore + domClassWeight * dScore;
-                        double[] result = new double[] { score, vi, ai, di };
+                        double nullScore = 1;
+                        if (vi == -1) vScore = nullScore;
+                        else if (vi < vBuckets && vi < vBucketMeans.length) vScore = vBucketMeans[vi];
+                        else vScore = max;
+                        if (ai == -1) aScore = nullScore;
+                        else if (ai < aBuckets && ai < aBucketMeans.length) aScore = aBucketMeans[ai];
+                        else aScore = max;
+                        if (di == -1) dScore = nullScore;
+                        else if (di < dBuckets && di < dBucketMeans.length) dScore = dBucketMeans[di];
+                        else dScore = max;
+                        double score = varClassWeight * vScore;
+                        score += attrClassWeight * aScore;
+                        score += domClassWeight * dScore;
+                        double[] result = new double[] { score, vi==-1?Double.NaN:vi,
+                                                                ai==-1?Double.NaN:ai,
+                                                                di==-1?Double.NaN:di };
                         if (TRACE > 2) {
                             out.println("Score for v="+vi+" a="+ai+" d="+di+": "+format(score));
                         }
@@ -1919,9 +1933,13 @@ public class FindBestDomainOrder {
                     if (TRACE > 1) out.println("reached end ("+vi+","+ai+","+di+"), trying again with a higher cutoff.");
                     break;
                 }
-                if (done[vi][ai][di]) continue;
-                done[vi][ai][di] = true;
-                if (vi == vBuckets) vClass = -1;
+                if (!Double.isNaN(vClass) && !Double.isNaN(aClass) && !Double.isNaN(dClass)) {
+                    if (done[vi][ai][di]) continue;
+                    done[vi][ai][di] = true;
+                } else {
+                    addNullValues = false;
+                }
+                if (vi == vBuckets) vClass = -1; // any
                 if (ai == aBuckets) aClass = -1;
                 if (di == dBuckets) dClass = -1;
                 if (out_t != null) out_t.println("v="+vClass+" a="+aClass+" d="+dClass+": "+format(bestScore));
@@ -1948,20 +1966,22 @@ public class FindBestDomainOrder {
             }
             if (end > vBuckets && end > aBuckets && end > dBuckets) {
                 if (TRACE > 1) out.println("Reached end, no possible guesses!");
-                // TODO: we can do something better here!
-                OrderIterator i = new OrderIterator(allVars);
-                while (i.hasNext()) {
-                    Order o_v = i.nextOrder();
-                    if (tc != null && tc.contains(o_v)) continue;
-                    if (never != null && never.contains(o_v)) continue;
-                    if (TRACE > 1) out.println("Just trying "+o_v);
-                    if (returnBest) {
-                        sel = Collections.singleton(o_v);
-                        break outermost;
-                    } else {
-                        // Add this order to the collection.
-                        candidates.add(o_v);
-                        if (candidates.size() >= CANDIDATE_SET_SIZE) break;
+                if (false) {
+                    // TODO: we can do something better here!
+                    OrderIterator i = new OrderIterator(allVars);
+                    while (i.hasNext()) {
+                        Order o_v = i.nextOrder();
+                        if (tc != null && tc.contains(o_v)) continue;
+                        if (never != null && never.contains(o_v)) continue;
+                        if (TRACE > 1) out.println("Just trying "+o_v);
+                        if (returnBest) {
+                            sel = Collections.singleton(o_v);
+                            break outermost;
+                        } else {
+                            // Add this order to the collection.
+                            candidates.add(o_v);
+                            if (candidates.size() >= CANDIDATE_SET_SIZE) break;
+                        }
                     }
                 }
                 if (returnBest) {
@@ -2076,7 +2096,7 @@ public class FindBestDomainOrder {
         int i = 0;
         for(Iterator it = orders.iterator(); it.hasNext(); ++i){
             Order o_v = (Order) it.next();
-            //a little skecthy, since this is different data but it should work
+            //a little sketchy, since this is different data but it should work
             OrderInstance vInstance = TrialInstance.construct(o_v, vData);
             Order o_a = v2a.translate(o_v);
             OrderInstance aInstance = TrialInstance.construct(o_a, aData);
@@ -2157,15 +2177,15 @@ public class FindBestDomainOrder {
         vLowerBound = vUpperBound = aLowerBound = aUpperBound = dLowerBound = dUpperBound = -1;
 
         if (vDis != null && !Double.isNaN(vClass) && vClass != NO_CLASS) {
-            vLowerBound = vDis.cutPoints == null || vClass == 0 ? 0 : vDis.cutPoints[(int) vClass - 1];
+            vLowerBound = vDis.cutPoints == null || vClass <= 0 ? 0 : vDis.cutPoints[(int) vClass - 1];
             vUpperBound = vDis.cutPoints == null || vClass == vDis.cutPoints.length ? Double.MAX_VALUE : vDis.cutPoints[(int) vClass];
         }
         if (aDis != null && !Double.isNaN(aClass) && aClass != NO_CLASS) {
-            aLowerBound = aDis.cutPoints == null || aClass == 0 ? 0 : aDis.cutPoints[(int) aClass - 1];
+            aLowerBound = aDis.cutPoints == null || aClass <= 0 ? 0 : aDis.cutPoints[(int) aClass - 1];
             aUpperBound = aDis.cutPoints == null || aClass == aDis.cutPoints.length ? Double.MAX_VALUE : aDis.cutPoints[(int) aClass];
         }
         if (dDis != null && !Double.isNaN(dClass) && dClass != NO_CLASS) {
-            dLowerBound = dDis.cutPoints == null || dClass == 0 ? 0 : dDis.cutPoints[(int) dClass - 1];
+            dLowerBound = dDis.cutPoints == null || dClass <= 0 ? 0 : dDis.cutPoints[(int) dClass - 1];
             dUpperBound = dDis.cutPoints != null || dClass == dDis.cutPoints.length ? Double.MAX_VALUE : dDis.cutPoints[(int) dClass];
         }
         TrialPrediction prediction = new TrialPrediction(vLowerBound,vUpperBound,aLowerBound, aUpperBound,dLowerBound, dUpperBound);
@@ -2201,7 +2221,7 @@ public class FindBestDomainOrder {
             MultiMap a2v, MultiMap d2v) {
         Collection results = new LinkedList();
         Collection vBestAttribs;
-        if (vClass < 0 && v != null)
+        if ((vClass >= 0 || Double.isNaN(vClass)) && v != null)
             vBestAttribs = v.getAttribCombos(vData.numAttributes(), vClass);
         else
             vBestAttribs = Collections.singleton(makeEmptyConstraint());
@@ -2216,7 +2236,7 @@ public class FindBestDomainOrder {
             if (out_t != null) out_t.println(" Order constraints (var="+(int)vClass+"): "+ocs);
 
             Collection aBestAttribs;
-            if (aClass >= 0 && a != null)
+            if ((aClass >= 0 || Double.isNaN(aClass)) && a != null)
                 aBestAttribs = a.getAttribCombos(aData.numAttributes(), aClass);
             else
                 aBestAttribs = Collections.singleton(makeEmptyConstraint());
@@ -2233,7 +2253,7 @@ public class FindBestDomainOrder {
                 if (out_t != null) out_t.println("  Order constraints (attrib="+(int)aClass+"): "+ocs);
 
                 Collection dBestAttribs;
-                if (dClass >= 0 && d != null)
+                if ((dClass >= 0 || Double.isNaN(dClass)) && d != null)
                     dBestAttribs = d.getAttribCombos(dData.numAttributes(), dClass);
                 else
                     dBestAttribs = Collections.singleton(makeEmptyConstraint());
