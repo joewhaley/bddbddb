@@ -242,7 +242,7 @@ public class PAFly {
                 jq_Class t = tryLoadingClass(s);
                 if (t != null) {
                     int T_i = Tmap.get(t.toString());
-                    if (TRACE_RELATIONS) out.println("Adding to stringToType: "+H_i+","+T_i);
+                    if (true) out.println("Adding to stringToType: "+H_i+","+T_i+" "+t);
                     stringToType.add(H_i, T_i);
                 }
                 for (int i = 0; i < Tmap.size(); ++i) {
@@ -933,7 +933,9 @@ public class PAFly {
                 return null;
             }
         } catch (NoClassDefFoundError e) {
-        } catch(java.lang.ClassCircularityError e) {
+            System.out.println(stringConst+" : "+e);
+        } catch (java.lang.ClassCircularityError e) {
+            System.out.println(stringConst+" CCE: "+e);
         }
         return null;
     }
