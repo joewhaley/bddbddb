@@ -79,6 +79,7 @@ public abstract class DomainAssignment implements OperationVisitor {
             if (TRACE) System.out.println("Doing loop depth " + index);
             for (Iterator j = s.iterator(); j.hasNext();) {
                 list = (IterationList) j.next();
+                System.out.print("Loop depth "+index+" "+list+"                \r");
                 if (TRACE) System.out.println("Doing " + list);
                 for (ListIterator i = list.iterator(); i.hasNext();) {
                     Object o = i.next();
