@@ -10,48 +10,10 @@
 </manifest>
 <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
 <javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.dataflow"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{BuildEquivalenceRelation.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{BDDSolver.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{OrderClassifier.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{FindBestDomainOrder.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{IterationElement.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{IterationFlowGraph.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{DomainAssignment.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Variable.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Interactive.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{OperationVisitor.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{BDDInterpreter.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{LearnedOrder.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.lowlevel{ApplyEx.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{InferenceRule.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{Operation.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Attribute.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{BDDOperationInterpreter.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{NumberingRule.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Solver.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.lowlevel{LowLevelInterpreter.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Dot.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Constant.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Stratify.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{TupleIterator.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.lowlevel{LowLevelOperationVisitor.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{BDDInferenceRule.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{IterationList.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Learner.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{BDDRelation.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{RuleTerm.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Relation.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{OperationInterpreter.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{RelationGraph.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.lowlevel{Replace.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.lowlevel{LowLevelOperation.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{PartialOrderDomainAssignment.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{Domain.java"/>
 <javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.highlevel"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb{SolverGUI.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{Interpreter.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{IR.java"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir{UFDomainAssignment.java"/>
+<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.lowlevel"/>
 <javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.dynamic"/>
+<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb"/>
+<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir"/>
 </selectedElements>
 </jardesc>
