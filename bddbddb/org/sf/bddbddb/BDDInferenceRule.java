@@ -924,22 +924,28 @@ public class BDDInferenceRule extends InferenceRule {
      */
     public void free() {
         super.free();
-        for (int i = 0; i < oldRelationValues.length; ++i) {
-            if (oldRelationValues[i] != null) {
-                oldRelationValues[i].free();
-                oldRelationValues[i] = null;
+        if (oldRelationValues != null) {
+            for (int i = 0; i < oldRelationValues.length; ++i) {
+                if (oldRelationValues[i] != null) {
+                    oldRelationValues[i].free();
+                    oldRelationValues[i] = null;
+                }
             }
         }
-        for (int i = 0; i < canQuantifyAfter.length; ++i) {
-            if (canQuantifyAfter[i] != null) {
-                canQuantifyAfter[i].free();
-                canQuantifyAfter[i] = null;
+        if (canQuantifyAfter != null) {
+            for (int i = 0; i < canQuantifyAfter.length; ++i) {
+                if (canQuantifyAfter[i] != null) {
+                    canQuantifyAfter[i].free();
+                    canQuantifyAfter[i] = null;
+                }
             }
         }
-        for (int i = 0; i < renames.length; ++i) {
-            if (renames[i] != null) {
-                renames[i].reset();
-                renames[i] = null;
+        if (renames != null) {
+            for (int i = 0; i < renames.length; ++i) {
+                if (renames[i] != null) {
+                    renames[i].reset();
+                    renames[i] = null;
+                }
             }
         }
         if (bottomRename != null) {
