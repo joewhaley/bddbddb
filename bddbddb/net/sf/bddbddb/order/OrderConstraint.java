@@ -68,6 +68,14 @@ public abstract class OrderConstraint {
             return false;
     }
     
+    public int compareTo(Object o) {
+        return compareTo((OrderConstraint) o);
+    }
+    
+    public int compareTo(OrderConstraint o) {
+        return this.toString().compareTo(o.toString());
+    }
+    
     public boolean isAttributeConstraint() {
         return a instanceof Attribute;
     }
