@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Stack;
 
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
@@ -174,51 +175,9 @@ public class FindBestDomainOrder {
         }
     }
     
-    public final static int WEIGHT_WINDOW_SIZE = 3;
-    public final static double DECAY_FACTOR = -.5;
-    
+   
     void incorporateTrial(TrialCollection c) {
         constraintInfo.addTrials(c);
-
-        int varCount, attrCount, domCount;
-        int numTrials = 0;
-        varCount = attrCount = domCount = 0;
-        Object[] collections = allTrials.toArray();
-        for (int i = collections.length - 1; i >= 0 && i > collections.length - 1 - WEIGHT_WINDOW_SIZE; --i) {
-            TrialCollection tc = (TrialCollection) collections[i];
-            long min = tc.getMinimum().cost + 1;
-            Object[] trials = tc.getTrials().toArray();
-            for (int j = trials.length - 1; j >= 0 /* && numTrials < WEIGHT_WINDOW_SIZE */; --j) {
-                TrialInfo ti = (TrialInfo) trials[j];
-                TrialPrediction p = ti.pred;
-                double score = (ti.cost + 1) / (double) min;
-                double loss = Math.exp(DECAY_FACTOR * numTrials);
-
-                if (p.varPredict < score && p.varPredict != -1)
-                    varCount += loss;
-                if (p.attrPredict < score && p.attrPredict != -1)
-                    attrCount += loss;
-                if (p.domPredict < score && p.domPredict != -1)
-                    domCount += loss;
-
-                ++numTrials;
-            }
-        }
-        if (WEIGHT_WINDOW_SIZE != 0) {
-            varClassWeight = 1 - (varCount / (double) numTrials);
-            attrClassWeight = 1 - (attrCount / (double) numTrials);
-            domClassWeight = 1 - (domCount / (double) numTrials);
-        } else {
-            varClassWeight = 1;
-            attrClassWeight = 1;
-            domClassWeight = 1;
-        }
-        if (TRACE > 1) {
-            out.println(" Var Classifier Weight: " + varClassWeight);
-            out.println(" Attr Classifier Weight: " + attrClassWeight);
-            out.println(" Domain Classifier Weight: " + domClassWeight);
-            out.println(" Trials Considered: " + numTrials);
-        }
 
         if (TRACE > 2)
             dump();
@@ -756,13 +715,21 @@ public class FindBestDomainOrder {
     
     
     public static class TrialPrediction {
-        double varPredict, attrPredict, domPredict;
-
+        double [] predictions;
+        public static int VARIABLE = 0;
+        public static int ATTRIBUTE = 1;
+        public static int DOMAIN = 2;
+        
         public TrialPrediction(double varPredict, double attrPredict, double domPredict) {
-            this.varPredict = varPredict;
-            this.attrPredict = attrPredict;
-            this.domPredict = domPredict;
+            predictions = new double[3];
+            predictions[VARIABLE] = varPredict;
+            predictions[ATTRIBUTE] = attrPredict;
+            predictions[DOMAIN] = domPredict;
         }
+        
+        public double getVarPrediction(){ return predictions[VARIABLE]; }
+        public double getAttrPrediction(){ return predictions[ATTRIBUTE]; }
+        public double getDomPrediction(){ return predictions[DOMAIN]; }
     }
 
     public static class TrialGuess {
@@ -869,9 +836,9 @@ public class FindBestDomainOrder {
             Element dis = new Element("trialInfo");
             dis.setAttribute("order", order.toString());
             dis.setAttribute("cost", Long.toString(cost));
-            dis.setAttribute("varPredict", Double.toString(pred.varPredict));
-            dis.setAttribute("attrPredict", Double.toString(pred.attrPredict));
-            dis.setAttribute("domPredict", Double.toString(pred.domPredict));
+            dis.setAttribute("varPredict", Double.toString(pred.getVarPrediction()));
+            dis.setAttribute("attrPredict", Double.toString(pred.getAttrPrediction()));
+            dis.setAttribute("domPredict", Double.toString(pred.getDomPrediction()));
             return dis;
         }
         
@@ -1335,6 +1302,8 @@ public class FindBestDomainOrder {
             this.ti = that.ti;
         }
         
+        public TrialInfo getTrialInfo(){ return ti; }
+        
         public double getCost() {
             return value(numAttributes()-1);
         }
@@ -1543,6 +1512,33 @@ public class FindBestDomainOrder {
         return classifier;
     }
     
+    public final static int WEIGHT_WINDOW_SIZE = Integer.MAX_VALUE;
+    public final static double DECAY_FACTOR = -.1;
+
+    public double computeWeight(int type, TrialInstances instances){
+        int numTrials = 0;
+        int losses = 0;
+        double weight = 1;
+        for(int i = instances.numInstances() - 1; i >= 0 && numTrials < WEIGHT_WINDOW_SIZE;--i){
+           TrialInstance instance = (TrialInstance) instances.instance(i);
+           double trueCost = instance.getCost();
+           double predCost = instance.getTrialInfo().pred.predictions[type];
+           if(predCost < trueCost){
+               losses += Math.exp(DECAY_FACTOR * numTrials);
+           }
+           ++numTrials;
+        }
+        if (numTrials != 0) {
+            weight = 1 - losses / (double) numTrials;
+        }
+        return weight;
+    }
+    public void adjustWeights(TrialInstances vData, TrialInstances aData, TrialInstances dData){
+        varClassWeight = computeWeight(TrialPrediction.VARIABLE, vData);
+        attrClassWeight = computeWeight(TrialPrediction.ATTRIBUTE, aData);
+        domClassWeight = computeWeight(TrialPrediction.DOMAIN, dData);
+    
+    }
     public static int NUM_CV_FOLDS = 10;
 
     public double genAccuracy(String cClassName, Instances data0) {
@@ -1581,7 +1577,6 @@ public class FindBestDomainOrder {
                     out.println("Exception while classifying: " + instance + "\n" + ex);
                 }
             }
-
             estimates[i] = count / (double) testData.numInstances();
         }
         double average = 0;
@@ -1608,6 +1603,7 @@ public class FindBestDomainOrder {
     public double varClassWeight = 1;
     public double attrClassWeight = 1;
     public double domClassWeight = 1;
+    public static int DOMAIN_THRESHOLD = 1000;
     public TrialGuess tryNewGoodOrder2(TrialCollection tc, List allVars, InferenceRule ir) {
         
         // TODO: improve this code.
@@ -1616,10 +1612,10 @@ public class FindBestDomainOrder {
         aData = buildAttribInstances(ir, allVars);
         dData = buildDomainInstances(ir, allVars);
         
-        double [] vBuckets, aBuckets, dBuckets;
+        adjustWeights(vData,aData,dData);
+        double [] vBuckets = null, aBuckets = null, dBuckets = {DOMAIN_THRESHOLD, Double.MAX_VALUE};
         if (DISCRETIZE1) vBuckets = vData.discretize();
-       
-        if (DISCRETIZE2) aData.discretize();
+        if (DISCRETIZE2) aBuckets = aData.discretize();
         if (DISCRETIZE3) dData.threshold(1000);
         
         double vGenErr, aGenErr, dGenErr;
@@ -1629,13 +1625,15 @@ public class FindBestDomainOrder {
         
         if (TRACE > 1) {
             out.println(" Var data points: "+vData.numInstances());
-            out.println(" " + CLASSIFIER1 + " Var Classifier Accuracy: " + vGenErr);
+            out.println(" Var Classifier Accuracy: " + vGenErr);
+            out.println(" Var Classifier Weight: " + varClassWeight);
             //out.println(" Var data points: "+vData);
             out.println(" Attrib data points: "+aData.numInstances());
-            out.println(" " + CLASSIFIER2 + " Attrib Classifier Accuracy: " + aGenErr);
-            //out.println(" Attrib data points: "+aData);
+            out.println(" Attrib Classifier Accuracy: " + aGenErr);
+            out.println(" Attrib Classifier Weight: " + attrClassWeight);
             out.println(" Domain data points: "+dData.numInstances());
-            out.println(" " + CLASSIFIER3 + " Domain Classifier Accuracy: " + dGenErr);
+            out.println(" Domain Classifier Accuracy: " + dGenErr);
+            out.println(" Domain Classifier Weight: " + domClassweight);
             //out.println(" Domain data points: "+dData);
         
         }
@@ -1706,6 +1704,16 @@ public class FindBestDomainOrder {
                 if (TRACE > 1) out.println("Better order "+o_v+" score = "+score+" (v="+vScore+",a="+aScore+",d="+dScore+")");
                 best = o_v;
                 bestScore = score;
+                
+                if (vBuckets != null && vScore != -1){
+                    vScore = vScore == vBuckets.length ?  Double.MAX_VALUE : vBuckets[(int) vScore];
+                }
+                if (aBuckets != null && aScore != -1){
+                    aScore = aScore == aBuckets.length ? Double.MAX_VALUE : aBuckets[(int) aScore];
+                }
+                if(dBuckets != null && dScore != -1){
+                    dScore = dScore == dBuckets.length ? Double.MAX_VALUE : dBuckets[(int) dScore];
+                }
                 prediction = new TrialPrediction(vScore,aScore,dScore);
             }
         }
