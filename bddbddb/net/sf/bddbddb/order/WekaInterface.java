@@ -5,9 +5,11 @@ package net.sf.bddbddb.order;
 
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import jwutil.collections.Pair;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.FindBestDomainOrder;
@@ -91,6 +93,23 @@ public abstract class WekaInterface {
                 v.addElement(oa);
             }
         }
+   //     System.out.println(new HashSet(c) + " Size: " + v.size());
+        
+    }
+    
+    public static Collection /*UnorderedPair*/ generateAllPairs(Collection c){
+        Collection pairs = new LinkedList();
+        for (Iterator i = c.iterator(); i.hasNext(); ) {
+            Object a = i.next();
+            Iterator j = c.iterator();
+            while (j.hasNext() && j.next() != a) ;
+            while (j.hasNext()) {
+                Object b = j.next();
+                Pair pair = new UnorderedPair(a, b);
+                pairs.add(pair);
+            }
+        }
+        return pairs;
     }
 
     public static FastVector constructVarAttributes(Collection vars) {
@@ -241,7 +260,10 @@ public abstract class WekaInterface {
                 if (oa != null) {
                     d[oa.index()] = getType(oc);
                 } else {
-                    System.out.println("Warning: cannot find constraint "+oc+" in set "+dataSet);
+                    
+                    System.out.println("Warning: while building OrderInstance for " + o + " couldn't find constraint "+oc+" in data set");
+                    System.out.println("dataset\n: " + dataSet);
+                    Assert.UNREACHABLE();
                 }
             }
             return new OrderInstance(weight, d, o);

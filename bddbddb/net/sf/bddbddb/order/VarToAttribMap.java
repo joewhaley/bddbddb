@@ -5,10 +5,11 @@ package net.sf.bddbddb.order;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
+
 import jwutil.collections.UnmodifiableIterator;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.InferenceRule;
@@ -22,8 +23,8 @@ import net.sf.bddbddb.Variable;
  */
 public class VarToAttribMap extends AbstractMap {
     
-    public static List convert(List vars, InferenceRule ir) {
-        List result = new LinkedList();
+    public static Collection convert(Collection vars, InferenceRule ir) {
+        Collection result = new HashSet();
         for (Iterator i = vars.iterator(); i.hasNext(); ) {
             Variable v = (Variable) i.next();
             Attribute a = (Attribute) ir.getAttribute(v);

@@ -19,12 +19,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -32,39 +32,40 @@ import java.util.TreeSet;
 import jwutil.collections.FlattenedCollection;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
-import jwutil.math.Distributions;
 import jwutil.util.Assert;
-import net.sf.bddbddb.order.AttribToDomainMap;
+import net.sf.bddbddb.BDDInferenceRule.VarOrderComparator;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
-import net.sf.bddbddb.order.ClassProbabilityEstimator;
+import net.sf.bddbddb.order.CandidateSampler;
 import net.sf.bddbddb.order.ConstraintInfo;
 import net.sf.bddbddb.order.Discretization;
-import net.sf.bddbddb.order.FilterTranslator;
 import net.sf.bddbddb.order.MapBasedTranslator;
 import net.sf.bddbddb.order.MyId3;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraint;
 import net.sf.bddbddb.order.OrderConstraintSet;
-import net.sf.bddbddb.order.OrderIterator;
 import net.sf.bddbddb.order.OrderTranslator;
 import net.sf.bddbddb.order.TrialCollection;
+import net.sf.bddbddb.order.TrialDataRepository;
 import net.sf.bddbddb.order.TrialGuess;
 import net.sf.bddbddb.order.TrialInfo;
 import net.sf.bddbddb.order.TrialInstance;
 import net.sf.bddbddb.order.TrialInstances;
 import net.sf.bddbddb.order.TrialPrediction;
-import net.sf.bddbddb.order.VarToAttribMap;
 import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.bddbddb.order.WekaInterface;
+import net.sf.bddbddb.order.CandidateSampler.UncertaintySampler;
+import net.sf.bddbddb.order.TrialDataRepository.TrialDataGroup;
 import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
 import net.sf.bddbddb.order.WekaInterface.OrderInstance;
+import net.sf.javabdd.BDD;
+import net.sf.javabdd.BDDFactory;
+import net.sf.javabdd.FindBestOrder;
 
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
 
 import weka.classifiers.Classifier;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -120,6 +121,7 @@ public class FindBestDomainOrder {
      */
     Collection allTrials;
 
+    TrialDataRepository dataRepository;
     /**
      * Whether we should keep track of per-rule constraints, in addition to global
      * constraints.
@@ -139,9 +141,12 @@ public class FindBestDomainOrder {
     public FindBestDomainOrder(Solver s) {
         constraintInfo = new ConstraintInfoCollection(s);
         allTrials = new LinkedList();
-        if (s instanceof BDDSolver)
+        if (s instanceof BDDSolver){
             solver = (BDDSolver) s;
+            dataRepository = new TrialDataRepository(allTrials, solver);
+        }
     }
+        
 
     /**
      * Construct a new FindBestDomainOrder object with the given info.
@@ -581,81 +586,7 @@ public class FindBestDomainOrder {
                         1)); // (0.0, -0.0) or (NaN, !NaN)
     }
 
-    public static void addToInstances(Instances data, TrialCollection tc, OrderTranslator t) {
-        if (tc.size() == 0) return;
-        double best;
-        if (tc.getMinimum().isMax()) best = 1;
-        else best = (double) tc.getMinimum().cost + 1;
-        for (Iterator j = tc.trials.values().iterator(); j.hasNext();) {
-            TrialInfo ti = (TrialInfo) j.next();
-            double score = (double) (ti.cost + 1) / best;
-            Order o = t == null ? ti.order : t.translate(ti.order);
-            if (o.numberOfElements() <= 1) continue;
-            TrialInstance tinst = TrialInstance.construct(ti, o, score, data);
-            if (tinst != null) data.add(tinst);
-        }
-        
-      
-    }
 
-    TrialInstances buildVarInstances(InferenceRule ir, List allVars) {
-        FastVector attributes = new FastVector();
-        WekaInterface.addAllPairs(attributes, allVars);
-        attributes.addElement(new weka.core.Attribute("score"));
-        int capacity = 30;
-        OrderTranslator filter = new FilterTranslator(allVars);
-        TrialInstances data = new TrialInstances("Var Ordering Constraints", attributes, capacity);
-        if (allVars.size() <= 1) return data;
-        for (Iterator i = allTrials.iterator(); i.hasNext();) {
-            TrialCollection tc2 = (TrialCollection) i.next();
-            InferenceRule ir2 = tc2.getRule(solver);
-            if (ir != ir2) continue;
-            addToInstances(data, tc2, filter);
-        }
-        data.setClassIndex(data.numAttributes() - 1);
-        return data;
-    }
-
-    TrialInstances buildAttribInstances(InferenceRule ir, List allVars) {
-        List allAttribs = VarToAttribMap.convert(allVars, ir);
-        if (TRACE > 1) out.println("Attribs: "+allAttribs);
-        FastVector attributes = new FastVector();
-        WekaInterface.addAllPairs(attributes, allAttribs);
-        attributes.addElement(new weka.core.Attribute("score"));
-        int capacity = 30;
-        TrialInstances data = new TrialInstances("Attribute Ordering Constraints", attributes, capacity);
-        if (allAttribs.size() <= 1) return data;
-        for (Iterator i = allTrials.iterator(); i.hasNext();) {
-            TrialCollection tc2 = (TrialCollection) i.next();
-            InferenceRule ir2 = tc2.getRule(solver);
-            OrderTranslator t = new VarToAttribTranslator(ir2);
-            t = new OrderTranslator.Compose(t, new FilterTranslator(allAttribs));
-            addToInstances(data, tc2, t);
-        }
-        data.setClassIndex(data.numAttributes() - 1);
-        return data;
-    }
-
-    TrialInstances buildDomainInstances(InferenceRule ir, List allVars) {
-        List allDomains = AttribToDomainMap.convert(VarToAttribMap.convert(allVars, ir));
-        if (TRACE > 1) out.println("Domains: "+allDomains);
-        FastVector attributes = new FastVector();
-        WekaInterface.addAllPairs(attributes, allDomains);
-        attributes.addElement(new weka.core.Attribute("score"));
-        int capacity = 30;
-        TrialInstances data = new TrialInstances("Domain Ordering Constraints", attributes, capacity);
-        if (allDomains.size() <= 1) return data;
-        for (Iterator i = allTrials.iterator(); i.hasNext();) {
-            TrialCollection tc2 = (TrialCollection) i.next();
-            InferenceRule ir2 = tc2.getRule(solver);
-            OrderTranslator t = new VarToAttribTranslator(ir2);
-            t = new OrderTranslator.Compose(t, AttribToDomainTranslator.INSTANCE);
-            t = new OrderTranslator.Compose(t, new FilterTranslator(allDomains));
-            addToInstances(data, tc2, t);
-        }
-        data.setClassIndex(data.numAttributes() - 1);
-        return data;
-    }
 
     public final static int WEIGHT_WINDOW_SIZE = Integer.MAX_VALUE;
 
@@ -708,13 +639,6 @@ public class FindBestDomainOrder {
         return WekaInterface.cvError(NUM_CV_FOLDS, data, cClassName);
     }
 
-    public static double RMS(double vProb, double vCent, double aProb, double aCent, double dProb, double dCent) {
-        double vDiff = Math.abs(vProb - vCent);
-        double aDiff = Math.abs(aProb - aCent);
-        double dDiff = Math.abs(dProb - dCent);
-        return Math.sqrt(((vDiff * vDiff) + (aDiff * aDiff) + (dDiff * dDiff)) / 3);
-
-    }
 
     public static boolean DISCRETIZE1 = true;
     public static boolean DISCRETIZE2 = true;
@@ -722,7 +646,7 @@ public class FindBestDomainOrder {
     public static String CLASSIFIER1 = "net.sf.bddbddb.order.MyId3";
     public static String CLASSIFIER2 = "net.sf.bddbddb.order.MyId3";
     public static String CLASSIFIER3 = "net.sf.bddbddb.order.MyId3";
-    public static String CPE = "net.sf.bddbddb.order.BaggedId3";
+
     
     public void neverTryAgain(InferenceRule ir, Order o) {
           if (true) {
@@ -784,7 +708,18 @@ public class FindBestDomainOrder {
             if (w != null) try { w.close(); } catch (IOException _) { }
         }
     }
+
     
+    private void addTrial(InferenceRule rule, List variables, TrialCollection tc, Order o, TrialPrediction prediction, long time) {
+        
+        TrialInfo info = new TrialInfo(o,prediction,time, tc);
+      /*  tc.addTrial(o,guess.prediction, time);
+       */
+        tc.addTrial(info);
+        dataRepository.addTrial(rule, variables, info);
+    }
+    
+    public static int INITIAL_SET = 10;
     public TrialGuess tryNewGoodOrder(TrialCollection tc, List allVars, InferenceRule ir,
             boolean returnBest) {
         return tryNewGoodOrder(tc, allVars, ir, null, returnBest);
@@ -794,11 +729,19 @@ public class FindBestDomainOrder {
             Order chosenOne,
             boolean returnBest) {
 
+        System.out.println("Variables: " + allVars);
+        TrialDataGroup vDataGroup = this.dataRepository.getVariableDataGroup(ir, allVars);
+        TrialDataGroup aDataGroup = dataRepository.getAttribDataGroup(ir,allVars);
+        TrialDataGroup dDataGroup = dataRepository.getDomainDataGroup(ir,allVars);
+        
         // Build instances based on the experimental data.
         TrialInstances vData, aData, dData;
-        vData = buildVarInstances(ir, allVars);
-        aData = buildAttribInstances(ir, allVars);
-        dData = buildDomainInstances(ir, allVars);
+        vData = vDataGroup.getTrialInstances();
+        aData = aDataGroup.getTrialInstances();
+        dData = dDataGroup.getTrialInstances();
+        vData = dataRepository.buildVarInstances(ir, allVars);
+        aData = dataRepository.buildAttribInstances(ir, allVars);
+        dData = dataRepository.buildDomainInstances(ir, allVars);
 
         // Readjust the weights using an exponential decay factor.
         adjustWeights(vData, aData, dData);
@@ -921,6 +864,75 @@ public class FindBestDomainOrder {
         }
         if(TRACE > 2) out.println();
 
+
+        Collection sel = null;
+        Collection candidates = null;
+        if(chosenOne == null){
+            Collection triedOrders = returnBest ? Collections.EMPTY_LIST : getTriedOrders((BDDInferenceRule) ir);
+            
+            Object object = generateCandidateSet( ir, allVars, 
+                    vBucketMeans, aBucketMeans, dBucketMeans, vClassifier,
+                    aClassifier, dClassifier, vData,
+                    aData, dData, vDis, aDis,
+                    dDis, triedOrders, returnBest);
+            if(object == null) return null;
+            else if(object instanceof Collection)
+                candidates = (Collection) object;
+            else if(object instanceof TrialGuess)
+                return (TrialGuess) object;
+        }else {
+            sel = Collections.singleton(chosenOne);
+        }
+        boolean force = (tc != null && tc.size() < 2) ||
+            vData.numInstances() < INITIAL_SET ||
+            aData.numInstances() < INITIAL_SET ||
+            dData.numInstances() < INITIAL_SET;
+        
+        if (!returnBest)
+            sel = selectOrder(candidates, vData, aData, dData, ir, force);
+        
+        if (sel == null || sel.isEmpty()) return null;
+        Order o_v = (Order) sel.iterator().next();
+        try {
+            OrderTranslator v2a = new VarToAttribTranslator(ir);
+            OrderTranslator a2d = AttribToDomainTranslator.INSTANCE;
+            double vClass = 0, aClass = 0, dClass = 0;
+            if (vClassifier != null) {
+                OrderInstance vInst = OrderInstance.construct(o_v, vData);
+                vClass = vClassifier.classifyInstance(vInst);
+            }
+            Order o_a = v2a.translate(o_v);
+            if (aClassifier != null) {
+                OrderInstance aInst = OrderInstance.construct(o_a, aData);
+                aClass = aClassifier.classifyInstance(aInst);
+            }
+            Order o_d = a2d.translate(o_a);
+            if (dClassifier != null) {
+                OrderInstance dInst = OrderInstance.construct(o_d, dData);
+                dClass = dClassifier.classifyInstance(dInst);
+            }
+            int vi = (int) vClass, ai = (int) aClass, di = (int) dClass;
+            double vScore = 0, aScore = 0, dScore = 0;
+            if (vi < vBucketMeans.length) vScore = vBucketMeans[vi];
+            if (ai < aBucketMeans.length) aScore = aBucketMeans[ai];
+            if (di < dBucketMeans.length) dScore = dBucketMeans[di];
+            double score = varClassWeight * vScore;
+            score += attrClassWeight * aScore;
+            score += domClassWeight * dScore;
+            return genGuess(o_v, score, vClass, aClass, dClass, vDis, aDis, dDis);
+        } catch (Exception x) {
+            x.printStackTrace();
+            Assert.UNREACHABLE(x.toString());
+            return null;
+        }
+    }
+    
+    public Object generateCandidateSet(InferenceRule ir, List allVars, double [] vBucketMeans,
+            double[] aBucketMeans, double [] dBucketMeans, Classifier vClassifier,
+            Classifier aClassifier, Classifier dClassifier, TrialInstances vData,
+            TrialInstances aData, TrialInstances dData, Discretization vDis, Discretization aDis,
+            Discretization dDis, Collection triedOrders, boolean returnBest){
+        
         // Build multi-map from attributes/domains to variables.
         MultiMap a2v, d2v;
         a2v = new GenericMultiMap();
@@ -935,8 +947,6 @@ public class FindBestDomainOrder {
         }
         
         Set candidates = null;
-        Collection sel = null;
-        if (chosenOne == null) {
             boolean addNullValues = !returnBest;
             // Grab the best from the classifiers and try to build an optimal order.
             if (!returnBest) candidates = new LinkedHashSet();
@@ -1025,7 +1035,7 @@ public class FindBestDomainOrder {
                         if (out_t != null) out_t.println("Constraints cannot be combined.");
                         continue;
                     }
-                    Collection triedOrders = getTriedOrders((BDDInferenceRule)ir);
+                   // Collection triedOrders = getTriedOrders((BDDInferenceRule)ir);
                     for (Iterator i = ocss.iterator(); i.hasNext(); ) {
                         OrderConstraintSet ocs = (OrderConstraintSet) i.next();
                         if (out_t != null) out_t.println("Constraints: "+ocs);
@@ -1046,7 +1056,7 @@ public class FindBestDomainOrder {
                 }
                 if (end > vBuckets && end > aBuckets && end > dBuckets) {
                     if (TRACE > 1) out.println("Reached end, no more possible guesses!");
-                    if (false) {
+                 /*   if (false) {
                         // TODO: we can do something better here!
                         OrderIterator i = new OrderIterator(allVars);
                         while (i.hasNext()) {
@@ -1065,6 +1075,7 @@ public class FindBestDomainOrder {
                             }
                         }
                     }
+                    */
                     if (returnBest) {
                         return null;
                     }
@@ -1073,57 +1084,17 @@ public class FindBestDomainOrder {
                 end *= 2;
                 if (TRACE > 1) out.println("Cutoff is now "+end);
             }
-        } else {
-            sel = Collections.singleton(chosenOne);
-        }
         
-        boolean force = (tc != null && tc.size() < 2) ||
-            vData.numInstances() < INITIAL_SET ||
-            aData.numInstances() < INITIAL_SET ||
-            dData.numInstances() < INITIAL_SET;
         
-        if (!returnBest)
-            sel = selectOrder(candidates, vData, aData, dData, ir, force);
-        
-        if (sel == null || sel.isEmpty()) return null;
-        Order o_v = (Order) sel.iterator().next();
-        try {
-            OrderTranslator v2a = new VarToAttribTranslator(ir);
-            OrderTranslator a2d = AttribToDomainTranslator.INSTANCE;
-            double vClass = 0, aClass = 0, dClass = 0;
-            if (vClassifier != null) {
-                OrderInstance vInst = OrderInstance.construct(o_v, vData);
-                vClass = vClassifier.classifyInstance(vInst);
-            }
-            Order o_a = v2a.translate(o_v);
-            if (aClassifier != null) {
-                OrderInstance aInst = OrderInstance.construct(o_a, aData);
-                aClass = aClassifier.classifyInstance(aInst);
-            }
-            Order o_d = a2d.translate(o_a);
-            if (dClassifier != null) {
-                OrderInstance dInst = OrderInstance.construct(o_d, dData);
-                dClass = dClassifier.classifyInstance(dInst);
-            }
-            int vi = (int) vClass, ai = (int) aClass, di = (int) dClass;
-            double vScore = 0, aScore = 0, dScore = 0;
-            if (vi < vBucketMeans.length) vScore = vBucketMeans[vi];
-            if (ai < aBucketMeans.length) aScore = aBucketMeans[ai];
-            if (di < dBucketMeans.length) dScore = dBucketMeans[di];
-            double score = varClassWeight * vScore;
-            score += attrClassWeight * aScore;
-            score += domClassWeight * dScore;
-            return genGuess(o_v, score, vClass, aClass, dClass, vDis, aDis, dDis);
-        } catch (Exception x) {
-            x.printStackTrace();
-            Assert.UNREACHABLE(x.toString());
-            return null;
-        }
+        return candidates;
     }
-
     public static int CANDIDATE_SET_SIZE = 500;
+    public static int SAMPLE_SIZE = 1;
+    public static double UNCERTAINTY_THRESHOLD = 0.25;
+    public static boolean WEIGHT_UNCERTAINTY_SAMPLE = false;
+    public static double VCENT = .5, ACENT = .5, DCENT = 1;
+    static CandidateSampler candidateSetSampler = new UncertaintySampler(SAMPLE_SIZE, UNCERTAINTY_THRESHOLD, VCENT, ACENT, DCENT);
     
-    public static boolean LV = false;
     public Collection selectOrder(Collection orders,
             TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir, boolean force) {
         Assert._assert(orders != null); //catch error if happens
@@ -1133,167 +1104,11 @@ public class FindBestDomainOrder {
         }
         if (TRACE > 1) out.println("Selecting an order from a candidate set of "+orders.size()+" orders.");
         if (TRACE > 2) out.println("Orders: "+orders);
-        return LV ? localVariance(orders, vData, aData, dData, ir) :
-            uncertaintySample(orders, vData,aData, dData, ir, force);
-        
+       
+        return candidateSetSampler.sample(orders, vData, aData, dData, ir, force);  
     }
     
-    public static double UNCERTAINTY_THRESHOLD = 0.25;
-    public static boolean WEIGHT_UNCERTAINTY_SAMPLE = false;
-    public static double VCENT = .5, ACENT = .5, DCENT = 1;
-    public static double MAX_SCORE = 1 / Math.sqrt(2); //for these centers
-     public Collection uncertaintySample(Collection orders,
-             TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir, boolean force) {
-        ClassProbabilityEstimator vCPE = null, aCPE  = null, dCPE = null;
-        vCPE = (ClassProbabilityEstimator) WekaInterface.buildClassifier(CPE, WekaInterface.binarize(0, vData));
-        aCPE = (ClassProbabilityEstimator) WekaInterface.buildClassifier(CPE, WekaInterface.binarize(0, aData));
-        dCPE = (ClassProbabilityEstimator) WekaInterface.buildClassifier(CPE, WekaInterface.binarize(0, dData));
-        
-        OrderTranslator v2a = new VarToAttribTranslator(ir);
-        OrderTranslator a2d = AttribToDomainTranslator.INSTANCE;
-        
-        Order best = null;
-        double bestScore = Double.POSITIVE_INFINITY;
-        double [] distribution = new double[orders.size()];
-        double normalFact = 0;
-        Order [] orderArr = new Order[orders.size()];
-        int i = 0;
-        for (Iterator it = orders.iterator(); it.hasNext(); ++i){
-            Order o_v = (Order) it.next();
-            orderArr[i] = o_v;
-            OrderInstance vInstance = TrialInstance.construct(o_v, vData);
-            Order o_a = v2a.translate(o_v);
-            OrderInstance aInstance = TrialInstance.construct(o_a, aData);
-            Order o_d = a2d.translate(o_a);
-            OrderInstance dInstance = TrialInstance.construct(o_d, dData);
-            
-            double vScore = vCPE != null ? vCPE.classProbability(vInstance, 0) : VCENT;
-            double aScore = aCPE != null ? aCPE.classProbability(aInstance, 0) : ACENT;
-            double dScore = dCPE != null ? dCPE.classProbability(dInstance, 0) : DCENT;
-            
-            double score = RMS(vScore, VCENT, aScore, ACENT, dScore, DCENT);
-            distribution[i] = MAX_SCORE - score;
-            normalFact += MAX_SCORE - score;
-            
-            if (score < bestScore) {
-                if (TRACE > 1){ 
-                    out.println("Uncertain order "+o_v+" score: "+format(score)+" (v="+format(vScore)+",a="+format(aScore)+",d="+format(dScore)+")");
-                    double vVariance = vCPE != null ? vCPE.classVariance(vInstance, 0) : 0;
-                    double aVariance = aCPE != null ? aCPE.classVariance(aInstance, 0) : 0;
-                    double dVariance = dCPE != null ? dCPE.classVariance(dInstance, 0) : 0;
-                    out.println("\tVariances: var:" + format(vVariance) + " attrib:" + format(aVariance) + " dom:" +dVariance);
-                }
-                
-                bestScore = score;
-                best = o_v;
-            }
-        }
-        Collection ordersToTry = new LinkedList();
-        if (force || bestScore < UNCERTAINTY_THRESHOLD) {
-            if (WEIGHT_UNCERTAINTY_SAMPLE) {
-                return sample(orderArr, distribution, normalFact);
-            }
-            if(best != null) //don't add null order to list
-                ordersToTry.add(best);
-        }
-        return ordersToTry;
-    }
 
-     public static int INITIAL_SET = 10;
-
-    public static int NUM_LV_ESTIMATORS = 10;
-    public static Random random = new Random(System.currentTimeMillis());
-    public Collection localVariance(Collection orders, TrialInstances vData, TrialInstances aData, TrialInstances dData, InferenceRule ir) {
-        ClassProbabilityEstimator [] vEstimators = new ClassProbabilityEstimator[NUM_LV_ESTIMATORS];
-        ClassProbabilityEstimator [] aEstimators = new ClassProbabilityEstimator[NUM_LV_ESTIMATORS];
-        ClassProbabilityEstimator [] dEstimators = new ClassProbabilityEstimator[NUM_LV_ESTIMATORS];
-        
-        for(int i = 0; i < NUM_LV_ESTIMATORS; ++i){
-            TrialInstances vBootData = (TrialInstances) vData.resample(random);
-            TrialInstances aBootData = (TrialInstances) aData.resample(random);
-            TrialInstances dBootData = (TrialInstances) dData.resample(random);
-            vEstimators[i] = (ClassProbabilityEstimator) WekaInterface.buildClassifier(CPE, WekaInterface.binarize(0, vBootData));
-            aEstimators[i] = (ClassProbabilityEstimator) WekaInterface.buildClassifier(CPE, WekaInterface.binarize(0, aBootData));
-            dEstimators[i] = (ClassProbabilityEstimator) WekaInterface.buildClassifier(CPE, WekaInterface.binarize(0, dBootData));
-        }
-        
-        double [] distribution = new double[orders.size()];
-        Order[] orderArr = new Order[orders.size()];
-
-        double normalFact = 0;
-        double [][] estimates = new double[NUM_LV_ESTIMATORS + 1][3];
-        
-        OrderTranslator v2a = new VarToAttribTranslator(ir);
-        OrderTranslator a2d = AttribToDomainTranslator.INSTANCE;
-        
-        int i = 0;
-        for(Iterator it = orders.iterator(); it.hasNext(); ++i){
-            Order o_v = (Order) it.next();
-            //a little sketchy, since this is different data but it should work
-            OrderInstance vInstance = TrialInstance.construct(o_v, vData);
-            Order o_a = v2a.translate(o_v);
-            OrderInstance aInstance = TrialInstance.construct(o_a, aData);
-            Order o_d = a2d.translate(o_a);
-            OrderInstance dInstance = TrialInstance.construct(o_d, dData);
-            
-            orderArr[i] = o_v;
-            estimates[NUM_LV_ESTIMATORS][0] = 0;
-            estimates[NUM_LV_ESTIMATORS][1] = 0;
-            estimates[NUM_LV_ESTIMATORS][2] = 0;
-            for(int j = 0; j < NUM_LV_ESTIMATORS; ++j){
-               estimates[j][0] = vEstimators[j] != null ? vEstimators[j].classProbability(vInstance,0) : 0.5;
-               estimates[j][1] = aEstimators[j] != null ? aEstimators[j].classProbability(aInstance,0) : 0.5;
-               estimates[j][2] = dEstimators[j] != null ? dEstimators[j].classProbability(dInstance,0) : 0.5;
-               estimates[NUM_LV_ESTIMATORS][0] += vEstimators[j] != null ? estimates[j][0] : 0;
-               estimates[NUM_LV_ESTIMATORS][1] += aEstimators[j] != null ? estimates[j][1] : 0;
-               estimates[NUM_LV_ESTIMATORS][2] += dEstimators[j] != null ? estimates[j][2] : 0;
-            }
-            estimates[NUM_LV_ESTIMATORS][0] /= NUM_LV_ESTIMATORS;
-            estimates[NUM_LV_ESTIMATORS][1] /= NUM_LV_ESTIMATORS;
-            estimates[NUM_LV_ESTIMATORS][2] /= NUM_LV_ESTIMATORS;
-            
-            for(int j = 0; j < NUM_LV_ESTIMATORS; ++j){
-                double vDiff = estimates[j][0] - estimates[NUM_LV_ESTIMATORS][0];
-                double aDiff = estimates[j][1] - estimates[NUM_LV_ESTIMATORS][1];
-                double dDiff = estimates[j][2] - estimates[NUM_LV_ESTIMATORS][2];
-                distribution[i] += (vDiff * vDiff) + (aDiff * aDiff) + (dDiff * dDiff);
-            }
-            normalFact += distribution[i];
-        }
-        
-     /*   Collection ordersToTry = new LinkedHashSet();
-        for(i = 0; i < SAMPLE_SIZE; ++i){
-            double choice = random.nextDouble() * normalFact;
-            double current = 0.;
-            for(int j = 0; j < distribution.length; ++j) {
-                current += distribution[j];
-                if (current > choice) {
-                    ordersToTry.add(orderArr[j]);
-                    break;
-                }
-            }
-        }
-        return ordersToTry;*/
-        return sample(orderArr, distribution, normalFact);
-    }
-    
-    public static int SAMPLE_SIZE = 1;
-    public Collection sample(Order [] orders, double [] distribution, double normalFact){
-        Collection ordersToTry = new LinkedHashSet();
-        for(int i = 0; i < SAMPLE_SIZE; ++i){
-            double choice = random.nextDouble() * normalFact;
-            double current = 0.;
-            for(int j = 0; j < distribution.length; ++j) {
-                current += distribution[j];
-                if (current > choice) {
-                    ordersToTry.add(orders[j]);
-                    break;
-                }
-            }
-        }
-        return ordersToTry;
-    }
-  
     
     /**
      * Returns all the orders that have been tried on a particular rule update
@@ -1547,16 +1362,20 @@ public class FindBestDomainOrder {
         return tryNewGoodOrder(null, allVars, ir, o, false);
     }
     
+   static int MAX_GEN_ORDERS = 1000;
     void printBestBDDOrders(StringBuffer sb, double score, Collection domains, OrderConstraintSet ocs,
             MultiMap rulesToTrials, List rules) {
         if (rules == null || rules.isEmpty()) {
+            if(TRACE > 1) out.println("No more rules, Generating orders");
             Collection orders;
             if (ocs.approxNumOrders(domains.size()) > 1000) {
+                if(TRACE > 1) out.println("More than " + MAX_GEN_ORDERS + " orders. Dumping...random sample");
                 orders = new LinkedList();
                 for (int i = 0; i < 5; ++i) {
                     orders.add(ocs.generateRandomOrder(domains));
                 }
             } else {
+                if(TRACE > 1) out.println("Generating orders from constraints: " + ocs);
                 orders = ocs.generateAllOrders(domains);
             }
             for (Iterator j = orders.iterator(); j.hasNext(); ) {
@@ -1570,7 +1389,12 @@ public class FindBestDomainOrder {
             InferenceRule ir = (InferenceRule) rules.get(0);
             List rest = rules.subList(1, rules.size());
             if (ir instanceof BDDInferenceRule && rulesToTrials.containsKey(ir)) {
-                BDDInferenceRule bddir = (BDDInferenceRule) rules.get(0);
+             
+                BDDInferenceRule bddir = (BDDInferenceRule) ir;
+                if(TRACE > 1) {
+                    out.println("Generating constraints for rule:\n" + ir.toString());
+                    out.println("Total rule run time: " + bddir.totalTime);
+                }
                 OrderTranslator t = new MapBasedTranslator(bddir.variableToBDDDomain);
                 TrialCollection tc = new TrialCollection(bddir, 0);
                 for (int i = 0; i < 5; ++i) {
@@ -1578,17 +1402,34 @@ public class FindBestDomainOrder {
                     if (tg == null) break;
                     OrderConstraintSet ocs2 = new OrderConstraintSet(ocs);
                     Order bddOrder = t.translate(tg.order);
-                    boolean worked = ocs2.constrain(bddOrder);
+                    out.println("Adding constraints for: " + bddOrder);
+                    Collection invalidConstraints = new LinkedList();
+                    boolean worked = ocs2.constrain(bddOrder, invalidConstraints);
                     double score2 = tg.prediction.score * (bddir.totalTime+1) / 1000;
-                    if (worked) {
+                    tc.addTrial(tg.order, null, 0);
+                    if (!worked) 
+                        out.println("Couldn't add constraints: " + invalidConstraints);
+                    
+                    printBestBDDOrders(sb, score + score2, domains, ocs2, rulesToTrials, rest);
+                    
+                    /*      if (worked) {
+                        
                         printBestBDDOrders(sb, score + score2, domains, ocs2, rulesToTrials, rest);
+                    }else{
+                        out.println("Couldn't add constraints: " + invalidConstraints);
                     }
                     tc.addTrial(tg.order, null, 0);
+                */
                 }
             } else {
                 printBestBDDOrders(sb, score, domains, ocs, rulesToTrials, rest);
             }
         }
+        
+        //Only one order
+    
+        out.println("Can't add more constraints: " + ocs);
+        out.println("Left over rules (" + rules.size() + ": " + rules);
         Order o = ocs.generateRandomOrder(domains);
         for (Iterator k = rules.iterator(); k.hasNext(); ) {
            InferenceRule ir = (InferenceRule) k.next();
@@ -1617,6 +1458,17 @@ public class FindBestDomainOrder {
         sb.append('\n');
     }
     
+    public Set getVisitedRules(){
+        Set visitedRules = new HashSet();
+        for(Iterator it = allTrials.iterator(); it.hasNext(); ){
+            TrialCollection tc = (TrialCollection) it.next();
+            visitedRules.add(tc.getRule(solver));
+        }
+    
+        if(TRACE > 2) out.println("Visited Rules: " + visitedRules);
+        return visitedRules;  
+    }
+    
     public void printBestBDDOrders() {
         MultiMap ruleToTrials = new GenericMultiMap();
         for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
@@ -1637,7 +1489,7 @@ public class FindBestDomainOrder {
                 return r1.id - r2.id;
             }
         });
-        sortedRules.addAll(solver.getRules());
+        sortedRules.addAll(getVisitedRules());
         ArrayList list = new ArrayList(sortedRules);
         Collection domains = new FlattenedCollection(solver.getBDDDomains().values());
         System.out.println("BDD Domains: "+domains);
@@ -1786,7 +1638,7 @@ public class FindBestDomainOrder {
         FindBestDomainOrder dis = ((BDDSolver) s).fbo;
         //dis.loadTrials("trials.xml");
         //dis.dump();
-
+/*
         for (Iterator i = s.rules.iterator(); i.hasNext();) {
             InferenceRule ir = (InferenceRule) i.next();
             if (ir.necessaryVariables == null) continue;
@@ -1800,10 +1652,78 @@ public class FindBestDomainOrder {
 
             System.out.println("Resulting guess: "+guess);
         }
-
-        printTrialsDistro(dis.allTrials, s);
-        dis.printBestTrials();
+*/
+        //printTrialsDistro(dis.allTrials, s);
+        //dis.printBestTrials();
         dis.printBestBDDOrders();
     }
-    
+
+    /**
+     * Run the find best domain order on the given inputs.
+     * 
+     * @param bdd  BDD factory
+     * @param b1   first input to relprod
+     * @param b2   second input to relprod
+     * @param b3   third input to relprod
+     * @param r1   first rule term
+     * @param r2   second rule term
+     * @param vars1  variables of b1
+     * @param vars2  variables of b2
+     */
+    static void findBestDomainOrder(BDDSolver solver, BDDInferenceRule rule, BDDFactory bdd, BDD b1, BDD b2, BDD b3, RuleTerm r1, RuleTerm r2, Collection vars1, Collection vars2) {
+        Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
+        allVarSet.removeAll(rule.unnecessaryVariables);
+        Object[] a = allVarSet.toArray();
+        // Sort the variables by domain so that we will first try orders that are close
+        // to the default one.
+        Arrays.sort(a, rule.new VarOrderComparator(solver.VARORDER));
+        List allVars = Arrays.asList(a);
+        
+        FindBestDomainOrder fbdo = solver.fbo;
+        if (!fbdo.hasOrdersToTry(allVars, rule)) {
+            System.out.println("No more orders to try, skipping find best order for "+vars1+","+vars2);
+            return;
+        }
+        System.out.println("Finding best order for "+vars1+","+vars2);
+        long time = System.currentTimeMillis();
+        TrialCollection tc = fbdo.getNewTrialCollection(rule, time);
+        FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
+        try {
+            fbo.init(b1, b2, b3, BDDFactory.and);
+        } catch (IOException x) {
+            System.err.println("IO Exception occurred: " + x);
+            fbo.cleanup();
+            return;
+        }
+        System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
+        int count = BDDInferenceRule.MAX_FBO_TRIALS;
+        boolean first = true;
+        long bestTime = Long.MAX_VALUE;
+        while (--count >= 0) {
+            //Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
+            TrialGuess guess = fbdo.tryNewGoodOrder(tc, allVars, rule, first);
+            if (guess == null || guess.order == null) break;
+            Order o = guess.order;
+            String vOrder = o.toVarOrderString(rule.variableToBDDDomain);
+            System.out.println("Trying order "+vOrder);
+            vOrder = solver.fixVarOrder(vOrder, false);
+            System.out.println("Complete order "+vOrder);
+            time = fbo.tryOrder(true, vOrder);
+            time = Math.min(time, BDDInferenceRule.LONG_TIME);
+            bestTime = Math.min(time, bestTime);
+            fbdo.addTrial(rule, allVars,tc, o,guess.prediction, time);
+            
+            if (time >= BDDInferenceRule.LONG_TIME)
+                fbdo.neverTryAgain(rule, o);
+            first = false;
+        }
+        fbo.cleanup();
+        
+        fbdo.incorporateTrial(tc);
+        
+        XMLFactory.dumpXML("fbo.xml", fbdo.toXMLElement());
+        XMLFactory.dumpXML(solver.TRIALFILE, fbdo.trialsToXMLElement());
+    }
+
+
 }

@@ -12,7 +12,6 @@ import java.util.Random;
 
 import jwutil.util.Assert;
 import net.sf.bddbddb.FindBestDomainOrder;
-import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -69,6 +68,7 @@ public class TrialInstances extends Instances {
 
     public Discretization discretize(double power) {
         int numBins = (int) Math.pow(numInstances(), power);
+       System.out.println("Num bins: " + numBins);
         return discretize(new MyDiscretize(power), numBins, this.classIndex());
     }
 

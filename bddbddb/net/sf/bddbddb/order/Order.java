@@ -16,9 +16,7 @@ import java.util.StringTokenizer;
 
 import jwutil.util.Assert;
 import net.sf.bddbddb.FindBestDomainOrder;
-import net.sf.bddbddb.Variable;
 import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;
-import net.sf.javabdd.BDDDomain;
 
 /**
  * Represents an order.  This is just a List with a few extra utility functions.
