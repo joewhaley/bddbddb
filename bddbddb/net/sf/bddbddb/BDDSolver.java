@@ -123,7 +123,7 @@ public class BDDSolver extends Solver {
             if (index1 < index2)
                 TRIALFILE = "trials_"+inputFilename.substring(index1, index2)+".xml";
         }
-        if (TRIALFILE != null) fbo.loadTrials(TRIALFILE);
+        if (TRIALFILE != null && fbo != null) fbo.loadTrials(TRIALFILE);
     }
 
     public String getBaseName() {
