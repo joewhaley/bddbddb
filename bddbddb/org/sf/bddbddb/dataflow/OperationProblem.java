@@ -24,7 +24,7 @@ public abstract class OperationProblem extends Problem {
 
         IterationList location;
 
-        Operation lastOp;
+        OperationFact lastFact;
 
         public abstract OperationFacts create();
 
@@ -38,6 +38,15 @@ public abstract class OperationProblem extends Problem {
 
         public OperationFact getFact(Operation o) {
             return (OperationFact) operationFacts.get(o);
+        }
+
+        /**
+         * @param op
+         * @param fact
+         * @return
+         */
+        public Object setFact(Operation op, OperationFact fact) {
+            return operationFacts.put(op, fact);
         }
 
         public int hashCode() {
@@ -76,28 +85,13 @@ public abstract class OperationProblem extends Problem {
 
         public Fact join(Fact fact) {
             OperationFacts that = (OperationFacts) fact;
-            OperationFacts result = (OperationFacts) create();
-            result.operationFacts.putAll(this.operationFacts);
-            for (Iterator i = that.operationFacts.entrySet().iterator(); i
-                .hasNext();) {
-                Map.Entry e = (Map.Entry) i.next();
-                Operation o = (Operation) e.getKey();
-                OperationFact f = (OperationFact) e.getValue();
-                OperationFact old = (OperationFact) result.operationFacts.put(
-                    o, f);
-                if (old != null) {
-                    f = (OperationFact) f.join(old);
-                    result.operationFacts.put(o, f);
-                }
-            }
+            OperationFacts result = (OperationFacts) that.copy(location);
             OperationFact thisLastFact = (OperationFact) getLastFact();
             OperationFact thatLastFact = (OperationFact) that.getLastFact();
             if (thisLastFact != null) {
                 OperationFact resultLastFact = (OperationFact) thisLastFact
                     .join(thatLastFact);
-                ;
 
-                result.setLastOp(that.lastOp);
                 result.setLastFact(resultLastFact);
             }
             result.location = location;
@@ -105,16 +99,19 @@ public abstract class OperationProblem extends Problem {
         }
 
         public OperationFact getLastFact() {
-            if (lastOp != null) return getFact(lastOp);
-            return null;
-        }
-
-        public void setLastOp(Operation op) {
-            lastOp = op;
+            return lastFact;
         }
 
         public void setLastFact(OperationFact fact) {
-            operationFacts.put(lastOp, fact);
+            lastFact = fact;
+        }
+
+        public Fact copy(IterationList loc) {
+            OperationFacts result = create();
+            result.operationFacts.putAll(this.operationFacts);
+            result.location = loc;
+            result.lastFact = this.lastFact;
+            return result;
         }
     }
 
