@@ -46,8 +46,8 @@ public abstract class Solver {
     IndexMap/* <Relation> */relations;
     Map/* <String,Domain> */nameToDomain;
     Map/* <String,Relation> */nameToRelation;
-    Map/* <Domain,Relation> */equivalenceRelations;
-    Map/* <Domain,Relation> */notequivalenceRelations;
+    public Map/* <Domain,Relation> */equivalenceRelations;
+    public Map/* <Domain,Relation> */notequivalenceRelations;
     List/* <InferenceRule> */rules;
     Collection/* <Relation> */relationsToLoad;
     Collection/* <Relation> */relationsToLoadTuples;

@@ -10,7 +10,6 @@ import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
-import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;

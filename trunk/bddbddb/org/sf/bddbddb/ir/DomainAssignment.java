@@ -134,13 +134,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     }
 
     void initialize() {
-        // Attributes of the same relation must be assigned to different
-        // domains.
-        for (int i = 0; i < solver.getNumberOfRelations(); ++i) {
-            Relation r = solver.getRelation(i);
-            System.out.print("Rel "+i+"/"+solver.getNumberOfRelations()+": "+r+"                     \r");
-            forceDifferent(r);
-        }
+        BDDSolver s = (BDDSolver) solver;
         
         String domainFile = System.getProperty("domainfile", "domainfile");
         DataInputStream in = null;
@@ -150,6 +144,21 @@ public abstract class DomainAssignment implements OperationVisitor {
         } catch (IOException x) {
         } finally {
             if (in != null) try { in.close(); } catch (IOException _) { }
+        }
+        
+        // Attributes of the same relation must be assigned to different
+        // domains.
+        for (int i = 0; i < solver.getNumberOfRelations(); ++i) {
+            Relation r = solver.getRelation(i);
+            System.out.print("Rel "+i+"/"+solver.getNumberOfRelations()+": "+r+"                     \r");
+            forceDifferent(r);
+        }
+        // Equality relations are treated special here, because we don't support
+        // renaming them yet.
+        for (Iterator i = s.equivalenceRelations.values().iterator(); i.hasNext(); ) {
+            BDDRelation r = (BDDRelation) i.next();
+            forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
+            forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
         }
     }
 
