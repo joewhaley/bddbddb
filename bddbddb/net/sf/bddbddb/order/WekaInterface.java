@@ -205,8 +205,8 @@ public abstract class WekaInterface {
             double sum = 0;
             for (Enumeration e = testData.enumerateInstances(); e.hasMoreElements();) {
                 Instance instance = (Instance) e.nextElement();
-                Assert._assert(instance.classAttribute() != null && instance.classAttribute() == trainData.classAttribute());
                 Assert._assert(instance != null);
+                Assert._assert(instance.classAttribute() != null && instance.classAttribute() == trainData.classAttribute());
                 try {
                     double testClass = classifier.classifyInstance(instance);
                     double weight = instance.weight();
