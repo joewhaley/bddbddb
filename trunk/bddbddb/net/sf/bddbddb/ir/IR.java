@@ -100,8 +100,10 @@ public class IR {
         }
         return new IR(solver, ifg);
     }
+   
     //public void optimize(){}
     public void optimize() {
+
         if (CONSTANTPROP) {
             System.out.print("Running ConstantProp...");
             long time = System.currentTimeMillis();
