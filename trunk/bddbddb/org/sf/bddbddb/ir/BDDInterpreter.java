@@ -29,6 +29,8 @@ public class BDDInterpreter extends Interpreter {
     }
 
     public void interpret() {
+        if (ir.DOMAIN_ASSIGNMENT)
+            ((BDDOperationInterpreter)opInterpreter).needsDomainMatch = false;
         interpret(ir.graph.getIterationList());
     }
 

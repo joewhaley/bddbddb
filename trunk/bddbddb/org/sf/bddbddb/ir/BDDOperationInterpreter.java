@@ -47,7 +47,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     boolean TRACE = System.getProperty("traceinterpreter") != null;
     BDDFactory factory;
     String varorder;
-    boolean needsDomainMatch;
+    public boolean needsDomainMatch;
 
     /**
      * @param factory
