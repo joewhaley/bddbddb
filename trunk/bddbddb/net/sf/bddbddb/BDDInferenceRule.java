@@ -1052,7 +1052,7 @@ public class BDDInferenceRule extends InferenceRule {
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
             //Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
-            TrialGuess guess = fbdo.tryNewGoodOrder2(tc, allVars, this);
+            TrialGuess guess = fbdo.tryNewGoodOrder(tc, allVars, this);
             Order o = guess.order;
             if (o == null) break;
             String vOrder = o.toVarOrderString(variableToBDDDomain);
