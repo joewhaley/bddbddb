@@ -66,7 +66,6 @@ public class BDDOperationInterpreter implements OperationInterpreter {
             r2.verify();
         }
         if (!needsDomainMatch) return b;
-        System.out.println("making domains match");
         boolean any = false;
         BDDPairing pair = factory.makePair();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
