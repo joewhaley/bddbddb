@@ -261,12 +261,31 @@ public class BDDInferenceRule extends InferenceRule {
         return pairing;
     }
 
+    void doPreUpdate() {
+        if (preCode != null) {
+            for (Iterator i = preCode.iterator(); i.hasNext(); ) {
+                CodeFragment f = (CodeFragment) i.next();
+                f.invoke(this, null);
+            }
+        }
+    }
+    
+    void doPostUpdate(BDD oldValue) {
+        if (postCode != null) {
+            for (Iterator i = postCode.iterator(); i.hasNext(); ) {
+                CodeFragment f = (CodeFragment) i.next();
+                f.invoke(this, oldValue);
+            }
+        }
+    }
+    
     /*
      * (non-Javadoc)
      * 
      * @see net.sf.bddbddb.InferenceRule#update()
      */
     public boolean update() {
+        doPreUpdate();
         ++updateCount;
         if (incrementalize) {
             if (oldRelationValues != null) return updateIncremental();
@@ -316,6 +335,7 @@ public class BDDInferenceRule extends InferenceRule {
                 }
                 if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
                 if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
+                doPostUpdate(null);
                 return false;
             }
         }
@@ -368,24 +388,27 @@ public class BDDInferenceRule extends InferenceRule {
             }
             if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
         }
-           
-       BDD result = evalRelations(solver.bdd,relationValues,canQuantifyAfter,time);
-       long thisTime = System.currentTimeMillis() - time;
-       if(learnedOrder != null && thisTime > longestTime){
-           longestTime = thisTime;
-           longestIteration = updateCount;
-           Assert._assert(oldRelationValues != null && canQuantifyAfter != null, Boolean.toString(incrementalize));
-           learnedOrder.saveBddsToLoad(oldRelationValues, canQuantifyAfter);
-       }
-       if(result == null) return false;
-       if (TRACE_FULL) solver.out.println(" = " + result.toStringWithDomains());
+        
+        BDD result = evalRelations(solver.bdd, relationValues, canQuantifyAfter, time);
+        long thisTime = System.currentTimeMillis() - time;
+        if (learnedOrder != null && thisTime > longestTime){
+            longestTime = thisTime;
+            longestIteration = updateCount;
+            Assert._assert(oldRelationValues != null && canQuantifyAfter != null, Boolean.toString(incrementalize));
+            learnedOrder.saveBddsToLoad(oldRelationValues, canQuantifyAfter);
+        }
+        if (result == null) {
+            doPostUpdate(null);
+            return false;
+        }
+        if (TRACE_FULL) solver.out.println(" = " + result.toStringWithDomains());
 
         else if (TRACE) solver.out.println(" = " + result.nodeCount());
-       if (single) {
-           // Limit the result tuples to a single one.
-           result = limitToSingle(result);
-           if (TRACE) solver.out.println("Limited to single satisfying tuple: " + result.nodeCount());
-       }
+        if (single) {
+            // Limit the result tuples to a single one.
+            result = limitToSingle(result);
+            if (TRACE) solver.out.println("Limited to single satisfying tuple: " + result.nodeCount());
+        }
         if (bottomRename != null) {
             if (TRACE) {
                 solver.out.print("Result domains " + domainsOf(result) + " -> ");
@@ -425,11 +448,12 @@ public class BDDInferenceRule extends InferenceRule {
         }
         if (TRACE_FULL) solver.out.println("Relation " + r + " is now: " + r.relation.toStringWithDomains());
         boolean changed = !oldRelation.equals(r.relation);
-        oldRelation.free();
         if (TRACE) solver.out.println("Relation " + r + " changed: " + changed);
         if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
         if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
         r.updateNegated();
+        doPostUpdate(oldRelation);
+        oldRelation.free();
         return changed;
     }
 
@@ -544,6 +568,7 @@ public class BDDInferenceRule extends InferenceRule {
                     allRelationValues[i].free();
                 if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
                 if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
+                doPostUpdate(null);
                 return false;
             }
         }
@@ -728,12 +753,13 @@ public class BDDInferenceRule extends InferenceRule {
         }
         if (TRACE_FULL) solver.out.println("Relation " + r + " is now: " + r.relation.toStringWithDomains());
         boolean changed = !oldRelation.equals(r.relation);
-        oldRelation.free();
-        oldRelationValues = allRelationValues;
         if (TRACE) solver.out.println("Relation " + r + " changed: " + changed);
         if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
         if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
         r.updateNegated();
+        doPostUpdate(oldRelation);
+        oldRelation.free();
+        oldRelationValues = allRelationValues;
         return changed;
     }
 
@@ -880,8 +906,6 @@ public class BDDInferenceRule extends InferenceRule {
         }
         return sb.toString();
     }
-
-
 
     public void learn(){
         learnedOrder.learn();

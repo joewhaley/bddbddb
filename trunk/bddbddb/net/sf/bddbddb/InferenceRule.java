@@ -115,6 +115,16 @@ public abstract class InferenceRule implements IterationElement {
      * Flag that shows whether or not this inference rule has been initialized yet.
      */
     boolean isInitialized;
+    
+    /**
+     * Code fragments to be executed before invoking this rule.
+     */
+    List preCode;
+
+    /**
+     * Code fragments to be executed after invoking this rule.
+     */
+    List postCode;
 
     /**
      * Construct a new inference rule.
@@ -133,6 +143,8 @@ public abstract class InferenceRule implements IterationElement {
         this.TRACE = solver.TRACE;
         this.TRACE_FULL = solver.TRACE_FULL;
         this.id = id;
+        this.preCode = new LinkedList();
+        this.postCode = new LinkedList();
     }
 
     /**
@@ -385,6 +397,8 @@ public abstract class InferenceRule implements IterationElement {
             //s.rules.add(newRule);
             newRules.add(newRule);
             newRule.copyOptions(this);
+            newRule.preCode.addAll(this.preCode);
+            this.preCode.clear();
             // Now include the bottom of the new rule on the top of our rule.
             top.add(0, newBottom);
             // Reinitialize this rule because the terms have changed.
