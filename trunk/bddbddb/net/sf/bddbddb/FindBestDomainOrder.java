@@ -1108,32 +1108,6 @@ public class FindBestDomainOrder {
         return constraintInfo.predict(o, trans);
     }
     
-    public static void main(String[] args) {
-        
-        for (int i = 0; i < 20; ++i) {
-            System.out.println("Recurrence A000670 ("+i+") = "+Distributions.recurrenceA000670(i));
-        }
-        List orders = generateAllOrders(Arrays.asList(args));
-        System.out.println("Number of orders: "+orders.size());
-        Iterator i = new OrderIterator(Arrays.asList(args));
-        int k = 0;
-        while (i.hasNext()) {
-            Order o = (Order) i.next();
-            System.out.println((++k)+": "+o);
-            boolean b = orders.remove(o);
-            Assert._assert(b);
-            if (false) {
-                Iterator j = new OrderIterator(Arrays.asList(args));
-                while (j.hasNext()) {
-                    Order p = (Order) j.next();
-                    System.out.print(" with "+p+" = ");
-                    System.out.println(o.findLongSimilarities(p));
-                }
-            }
-        }
-        Assert._assert(orders.isEmpty());
-    }
-    
     /**
      * Returns this FindBestDomainOrder as an XML element.
      * 
@@ -1276,7 +1250,8 @@ public class FindBestDomainOrder {
     }
     
     static Instances discretize(Instances data, FastVector attributes) {
-        
+        // TODO: there is probably a better way of doing this other than
+        // reconstructing everything.
         PKIDiscretize d = new PKIDiscretize();
         d.setAttributeIndices("last");
         try {
@@ -1314,15 +1289,64 @@ public class FindBestDomainOrder {
         
     }
     
-    public static boolean DISCRETIZE1 = false;
-    public static boolean DISCRETIZE2 = false;
-    public static String CLASSIFIER1 = "weka.classifiers.trees.REPTree";
-    public static String CLASSIFIER2 = "weka.classifiers.trees.DecisionStump";
+    public Instances constructInstances(String name, FastVector attributes,
+                                        boolean translateToAttrib, Map filter,
+                                        InferenceRule thisRuleOnly) {
+        int capacity = 30;
+        Instances data = new Instances(name, attributes, capacity);
+
+        // Add all of the relevant trials to the set of instances to consider.
+        OrderTranslator filterAttribs = filter == null ? null : new MapBasedTranslator(filter);
+        for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
+            TrialCollection tc2 = (TrialCollection) i.next();
+            if (tc2.size() == 0) continue;
+            InferenceRule ir2 = tc2.getRule(solver);
+            if (thisRuleOnly != null && thisRuleOnly != ir2) continue;
+            OrderTranslator t2 = translateToAttrib ? new VarToAttribTranslator(ir2) : null;
+            double best = (double) tc2.getMinimum().cost;
+            for (Iterator j = tc2.trials.values().iterator(); j.hasNext(); ) {
+                TrialInfo ti = (TrialInfo) j.next();
+                double score = (double) ti.cost / best;
+                Order o = t2 == null ? ti.order : t2.translate(ti.order);
+                Order o2 = filterAttribs == null ? o : filterAttribs.translate(o);
+                if (o2.numberOfElements() <= 1) continue;
+                data.add(new TrialInstance(data, o2, score, ti));
+            }
+        }
+        return data;
+    }
     
-    public Order tryNewGoodOrder2(TrialCollection tc, List allVars, InferenceRule ir) {
+    Instances data, data2;
+    public Classifier buildVarBasedClassifier(List allVars, InferenceRule ir) {
+        // Compute the set of all possible ordering attributes for this operation.
+        FastVector attributes2;
+        attributes2 = new FastVector();
+        addAllPairs(attributes2, allVars);
+        attributes2.addElement(new weka.core.Attribute("cost"));
         
-        // TODO: improve this code.
+        // Construct the set of instances.
+        data2 = constructInstances("Variable Ordering Constraints", attributes2, false, null, ir);
         
+        // Discretize the trials.
+        if (DISCRETIZE2) {
+            data2 = discretize(data2, attributes2);
+        } else {
+            data2.setClassIndex(data2.numAttributes()-1);
+        }
+        
+        // Build the classifier.
+        Classifier classifier2 = null;
+        try {
+            classifier2 = (Classifier) Class.forName(CLASSIFIER2).newInstance();
+            classifier2.buildClassifier(data2);
+        } catch (Exception x) {
+            out.println(x);
+        }
+        
+        return classifier2;
+    }
+    
+    public Classifier buildAttribBasedClassifier(List allVars, InferenceRule ir) {
         // Compute the set of all possible ordering attributes for this operation.
         LinkedHashMap allAttribs = new LinkedHashMap();
         for (Iterator i = allVars.iterator(); i.hasNext(); ) {
@@ -1332,71 +1356,42 @@ public class FindBestDomainOrder {
             allAttribs.put(a, a);
         }
         FastVector attributes = new FastVector();
+        FastVector attributes2 = null;
         addAllPairs(attributes, allAttribs.keySet());
         attributes.addElement(new weka.core.Attribute("cost"));
         
         // Construct the set of instances.
-        int capacity = 30;
-        Instances data = new Instances("Attribute Ordering Constraints", attributes, capacity);
-
-        Instances data2 = null;
-        FastVector attributes2 = null;
-        if (PER_RULE_CONSTRAINTS) {
-            attributes2 = new FastVector();
-            addAllPairs(attributes2, allVars);
-            attributes2.addElement(new weka.core.Attribute("cost"));
-            data2 = new Instances("Variable Ordering Constraints", attributes2, capacity);
-        }
-
-        // Add all of the relevant trials to the set of instances to consider.
-        OrderTranslator filterAttribs = new MapBasedTranslator(allAttribs);
-        for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
-            TrialCollection tc2 = (TrialCollection) i.next();
-            if (tc2.size() == 0) continue;
-            InferenceRule ir2 = tc2.getRule(solver);
-            OrderTranslator t2 = new VarToAttribTranslator(ir2);
-            double best = (double) tc2.getMinimum().cost;
-            for (Iterator j = tc2.trials.values().iterator(); j.hasNext(); ) {
-                TrialInfo ti = (TrialInfo) j.next();
-                double score = (double) ti.cost / best;
-                if (PER_RULE_CONSTRAINTS && ir == ir2) {
-                    data2.add(new TrialInstance(data2, ti.order, score, ti));
-                }
-                Order o = t2.translate(ti.order);
-                Order o2 = filterAttribs.translate(o);
-                if (o2.numberOfElements() <= 1) continue;
-                data.add(new TrialInstance(data, o2, score, ti));
-            }
-        }
+        data = constructInstances("Attribute Ordering Constraints", attributes, true, allAttribs, null);
         
+        // Discretize the trials.
         if (DISCRETIZE1) {
-            // Discretize the trials.
             data = discretize(data, attributes);
         } else {
             data.setClassIndex(data.numAttributes()-1);
         }
-        if (PER_RULE_CONSTRAINTS) {
-            if (DISCRETIZE2) {
-                data2 = discretize(data2, attributes2);
-            } else {
-                data2.setClassIndex(data2.numAttributes()-1);
-            }
-        }
         
         // Build the classifier.
-        Classifier classifier = null, classifier2 = null;
+        Classifier classifier = null;
         try {
             classifier = (Classifier) Class.forName(CLASSIFIER1).newInstance();
             classifier.buildClassifier(data);
-            if (PER_RULE_CONSTRAINTS) {
-                classifier2 = (Classifier) Class.forName(CLASSIFIER2).newInstance();
-                classifier2.buildClassifier(data2);
-            }
         } catch (Exception x) {
             out.println(x);
-            //x.printStackTrace();
-            //return null;
         }
+        return classifier;
+    }
+    
+    public static boolean DISCRETIZE1 = false;
+    public static boolean DISCRETIZE2 = false;
+    public static String CLASSIFIER1 = "weka.classifiers.trees.M5P";
+    public static String CLASSIFIER2 = "weka.classifiers.lazy.KStar";
+    
+    public Order tryNewGoodOrder2(TrialCollection tc, List allVars, InferenceRule ir) {
+        
+        // TODO: improve this code.
+        Classifier classifier = null, classifier2 = null;
+        classifier = buildAttribBasedClassifier(allVars, ir);
+        if (PER_RULE_CONSTRAINTS) classifier2 = buildVarBasedClassifier(allVars, ir);
         
         // Iterate through all orders, classify them, and find the best one.
         OrderTranslator t = new VarToAttribTranslator(ir);
@@ -1425,5 +1420,46 @@ public class FindBestDomainOrder {
         }
         if (TRACE > 1) out.println("Best = "+best+" score = "+bestScore);
         return best;
+    }
+    
+    public static void main(String[] args) throws Exception {
+        String inputFilename = System.getProperty("datalog");
+        if (args.length > 0) inputFilename = args[0];
+        if (inputFilename == null) {
+            return;
+        }
+        String solverName = System.getProperty("solver", "net.sf.bddbddb.BDDSolver");
+        Solver s;
+        s = (Solver) Class.forName(solverName).newInstance();
+        s.load(inputFilename);
+        
+        FindBestDomainOrder dis = new FindBestDomainOrder(s);
+        dis.loadTrials("trials.xml");
+        
+        for (Iterator i = s.rules.iterator(); i.hasNext(); ) {
+            InferenceRule ir = (InferenceRule) i.next();
+            List allVars = new LinkedList();
+            allVars.addAll(ir.necessaryVariables);
+            Classifier classifier = null, classifier2 = null;
+            classifier = dis.buildAttribBasedClassifier(allVars, ir);
+            classifier2 = dis.buildVarBasedClassifier(allVars, ir);
+            
+            OrderTranslator t = new VarToAttribTranslator(ir);
+            OrderIterator it = new OrderIterator(allVars);
+            while (it.hasNext()) {
+                Order o = it.nextOrder();
+                OrderInstance inst = new OrderInstance(dis.data, t.translate(o));
+                OrderInstance inst2 = new OrderInstance(dis.data2, o);
+                try {
+                    double score = classifier != null ? classifier.classifyInstance(inst) : 0.;
+                    out.println("Order "+inst.o+" instance "+inst+" score = "+score);
+                    double score2 = classifier2 != null ? classifier2.classifyInstance(inst2) : 0.;
+                    out.println("Order "+o+" instance "+inst2+" score = "+score2);
+                } catch (Exception x) {
+                    out.println("Exception while predicting "+inst+" "+o+":\n"+x);
+                }
+            }
+        }
+        
     }
 }
