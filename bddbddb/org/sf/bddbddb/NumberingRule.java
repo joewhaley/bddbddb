@@ -180,6 +180,7 @@ public class NumberingRule extends InferenceRule {
                 }
             }
         }
+        ((BDDRelation) bottom.relation).updateNegated();
         return true;
     }
 
