@@ -101,7 +101,7 @@ public class Dot {
         String currentLine = in.readLine();
         while (currentLine != null) {
             System.out.println("Parsing "+currentLine);
-            MyStringTokenizer st = new MyStringTokenizer(currentLine, " ,()");
+            MyStringTokenizer st = new MyStringTokenizer(currentLine, " \t,()");
             parseLine(st);
             currentLine = in.readLine();
         }
