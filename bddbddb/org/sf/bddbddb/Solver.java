@@ -424,6 +424,7 @@ public abstract class Solver {
         for (;;) {
             String s = readLine(in);
             if (s == null) break;
+            if (s.equals("__"))
             parseDatalogLine(s, in);
         }
     }
