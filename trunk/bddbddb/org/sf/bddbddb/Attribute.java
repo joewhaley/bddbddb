@@ -33,14 +33,23 @@ public class Attribute {
     public String toString() {
         return attributeName;
     }
-    
+
     /**
      * @return
      */
     public Domain getDomain() {
         return attributeDomain;
     }
-    
+
+    public boolean equals(Object o) {
+        if (o instanceof Attribute) {
+            Attribute that = (Attribute) o;
+            return attributeName.equals(that.attributeName) && attributeDomain.name.equals(that.attributeDomain.name)
+                && attributeOptions.equals(that.attributeOptions);
+        }
+        return false;
+    }
+
     /**
      * @return
      */
