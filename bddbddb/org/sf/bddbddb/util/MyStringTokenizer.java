@@ -7,19 +7,17 @@ import java.util.Enumeration;
 import java.util.NoSuchElementException;
 
 /**
- * MyStringTokenizer is like StringTokenizer, but gives you access to
- * the string and position, and also ignores tokens inbetween quotation marks.
+ * MyStringTokenizer is like StringTokenizer, but gives you access to the string
+ * and position, and also ignores tokens inbetween quotation marks.
  */
-public class MyStringTokenizer implements Enumeration
-{
+public class MyStringTokenizer implements Enumeration {
     public String getString() {
         return str;
     }
-    
+
     public int getPosition() {
         return currentPosition;
     }
-    
     private int currentPosition;
     private int newPosition;
     private int maxPosition;
@@ -27,7 +25,6 @@ public class MyStringTokenizer implements Enumeration
     private String delimiters;
     private boolean retDelims;
     private boolean delimsChanged;
-
     private char maxDelimChar;
 
     private void setMaxDelimChar() {
@@ -35,12 +32,10 @@ public class MyStringTokenizer implements Enumeration
             maxDelimChar = 0;
             return;
         }
-
         char m = 0;
         for (int i = 0; i < delimiters.length(); i++) {
             char c = delimiters.charAt(i);
-            if (m < c)
-            m = c;
+            if (m < c) m = c;
         }
         maxDelimChar = m;
     }
@@ -65,14 +60,11 @@ public class MyStringTokenizer implements Enumeration
     }
 
     private int skipDelimiters(int startPos) {
-        if (delimiters == null)
-            throw new NullPointerException();
-
+        if (delimiters == null) throw new NullPointerException();
         int position = startPos;
         while (!retDelims && position < maxPosition) {
             char c = str.charAt(position);
-            if ((c > maxDelimChar) || (delimiters.indexOf(c) < 0))
-                break;
+            if ((c > maxDelimChar) || (delimiters.indexOf(c) < 0)) break;
             position++;
         }
         return position;
@@ -85,15 +77,13 @@ public class MyStringTokenizer implements Enumeration
             char c = str.charAt(position);
             if (c == '"') {
                 inString = !inString;
-            } else
-                if (!inString && ((c <= maxDelimChar) && (delimiters.indexOf(c) >= 0)))
-                    break;
+            } else if (!inString
+                && ((c <= maxDelimChar) && (delimiters.indexOf(c) >= 0))) break;
             position++;
         }
         if (retDelims && (startPos == position)) {
             char c = str.charAt(position);
-            if ((c <= maxDelimChar) && (delimiters.indexOf(c) >= 0))
-                position++;
+            if ((c <= maxDelimChar) && (delimiters.indexOf(c) >= 0)) position++;
         }
         return position;
     }
@@ -104,20 +94,17 @@ public class MyStringTokenizer implements Enumeration
     }
 
     public String nextToken() {
-
-        currentPosition = (newPosition >= 0 && !delimsChanged) ?  
-            newPosition : skipDelimiters(currentPosition);
-
+        currentPosition = (newPosition >= 0 && !delimsChanged)
+            ? newPosition
+            : skipDelimiters(currentPosition);
         delimsChanged = false;
         newPosition = -1;
-
-        if (currentPosition >= maxPosition)
-            throw new NoSuchElementException();
+        if (currentPosition >= maxPosition) throw new NoSuchElementException();
         int start = currentPosition;
         currentPosition = scanToken(currentPosition);
         return str.substring(start, currentPosition);
     }
-    
+
     public String nextToken(String delim) {
         delimiters = delim;
         delimsChanged = true;
@@ -137,13 +124,11 @@ public class MyStringTokenizer implements Enumeration
         int count = 0;
         int currpos = currentPosition;
         while (currpos < maxPosition) {
-                currpos = skipDelimiters(currpos);
-            if (currpos >= maxPosition)
-            break;
-                currpos = scanToken(currpos);
+            currpos = skipDelimiters(currpos);
+            if (currpos >= maxPosition) break;
+            currpos = scanToken(currpos);
             count++;
         }
         return count;
     }
-    
 }

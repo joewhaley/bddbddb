@@ -12,9 +12,7 @@ import java.util.Collection;
  * @version $Id$
  */
 public interface Graph {
-
     Collection getRoots();
 
     Navigator getNavigator();
-
 }

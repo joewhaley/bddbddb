@@ -1,4 +1,4 @@
-//Dot.java, created May 10, 2004 by cunkel
+// Dot.java, created May 10, 2004 by cunkel
 //Copyright (C) 2004 cunkel
 //Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
@@ -29,14 +29,14 @@ import org.sf.bddbddb.util.Worklist;
  */
 public class Dot {
     private Solver solver;
-    private Collection/*EdgeSource*/ edgeSources;
-    private Collection/*NodeAttributeModifier*/ nodeModifiers;
+    private Collection/* EdgeSource */edgeSources;
+    private Collection/* NodeAttributeModifier */nodeModifiers;
     private Worklist worklist;
-    private Collection/*String*/ nodes;
-    private Collection/*String*/ edges;
-    private Collection/*Relation*/ usedRelations;
+    private Collection/* String */nodes;
+    private Collection/* String */edges;
+    private Collection/* Relation */usedRelations;
     private String outputFileName;
-    
+
     Dot() {
         edgeSources = new LinkedList();
         nodeModifiers = new LinkedList();
@@ -56,54 +56,51 @@ public class Dot {
         while (i.hasNext()) {
             worklist.push(i.next());
         }
-        
         while (!worklist.isEmpty()) {
             GraphNode n = (GraphNode) worklist.pull();
             visitNode(n);
         }
-        
         DataOutputStream dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(solver.basedir+outputFileName));
-            
+            dos = new DataOutputStream(new FileOutputStream(solver.basedir
+                + outputFileName));
             dos.writeBytes("digraph {\n");
             dos.writeBytes("  size=\"7.5,10\";\n");
-            //dos.writeBytes("  rotate=90;\n");
+            //dos.writeBytes(" rotate=90;\n");
             dos.writeBytes("  concentrate=true;\n");
             dos.writeBytes("  ratio=fill;\n");
             dos.writeBytes("  rankdir=LR;");
             dos.writeBytes("\n");
-            
             i = nodes.iterator();
             while (i.hasNext()) {
                 dos.writeBytes("  ");
                 dos.writeBytes((String) i.next());
             }
             dos.writeBytes("\n");
-            
             i = edges.iterator();
             while (i.hasNext()) {
                 dos.writeBytes("  ");
                 dos.writeBytes((String) i.next());
             }
             dos.writeBytes("}\n");
-        }
-        finally {
-            if (dos != null) { dos.close(); }
+        } finally {
+            if (dos != null) {
+                dos.close();
+            }
         }
     }
-    
+
     void parseInput(Solver s, LineNumberReader in) throws IOException {
         solver = s;
         String currentLine = in.readLine();
         while (currentLine != null) {
-            System.out.println("Parsing "+currentLine);
+            System.out.println("Parsing " + currentLine);
             MyStringTokenizer st = new MyStringTokenizer(currentLine, " \t,()");
             parseLine(st);
             currentLine = in.readLine();
         }
     }
-    
+
     private void parseLine(MyStringTokenizer st) {
         if (!st.hasMoreTokens()) {
             return;
@@ -119,37 +116,30 @@ public class Dot {
             if (!roots.equals("roots")) {
                 throw new IllegalArgumentException();
             }
-            
             Relation edgeRelation = solver.getRelation(relationName);
             Relation rootsRelation = solver.getRelation(rootsName);
-            
             usedRelations.add(edgeRelation);
             usedRelations.add(rootsRelation);
-
-            EdgeSource es = new EdgeSource(edgeRelation,
-                                           rootsRelation);
-            
+            EdgeSource es = new EdgeSource(edgeRelation, rootsRelation);
             if (st.hasMoreTokens()) {
                 String label = st.nextToken();
                 if (!label.equals("label")) {
                     throw new IllegalArgumentException();
                 }
                 relationName = st.nextToken();
-                String [] e = new String[3];
+                String[] e = new String[3];
                 e[0] = st.nextToken();
                 e[1] = st.nextToken();
                 e[2] = st.nextToken();
                 int sourceIndex = -1;
                 int labelIndex = -1;
                 int sinkIndex = -1;
-                for (int i=0; i<3; i++) {
+                for (int i = 0; i < 3; i++) {
                     if (e[i].equals("source")) {
                         sourceIndex = i;
-                    }
-                    else if (e[i].equals("sink")) {
+                    } else if (e[i].equals("sink")) {
                         sinkIndex = i;
-                    }
-                    else if (e[i].equals("label")) {
+                    } else if (e[i].equals("label")) {
                         labelIndex = i;
                     }
                 }
@@ -158,48 +148,42 @@ public class Dot {
                 if (labelIndex == -1) throw new IllegalArgumentException();
                 Relation labelRelation = solver.getRelation(relationName);
                 usedRelations.add(labelRelation);
-                                
-                es.setLabelSource(new LabelSource(labelRelation, sourceIndex, sinkIndex, labelIndex));
+                es.setLabelSource(new LabelSource(labelRelation, sourceIndex,
+                    sinkIndex, labelIndex));
             }
             edgeSources.add(es);
-        }
-        else if (s.equals("domain")) {
+        } else if (s.equals("domain")) {
             String domainName = st.nextToken();
             String attribute = st.nextToken();
             String value = st.nextToken();
-            
-            nodeModifiers.add(new DomainModifier(attribute, value, solver.getDomain(domainName)));
-        }
-        else if (s.equals("default")) {
+            nodeModifiers.add(new DomainModifier(attribute, value, solver
+                .getDomain(domainName)));
+        } else if (s.equals("default")) {
             String attribute = st.nextToken();
             String value = st.nextToken();
-            
             nodeModifiers.add(new DefaultModifier(attribute, value));
-        }
-        else if (s.equals("relation")) {
+        } else if (s.equals("relation")) {
             String relationName = st.nextToken();
             String attribute = st.nextToken();
             String value = st.nextToken();
-            
-            BDDRelation relation = (BDDRelation) solver.getRelation(relationName);
+            BDDRelation relation = (BDDRelation) solver
+                .getRelation(relationName);
             usedRelations.add(relation);
-            nodeModifiers.add(new InRelationModifier(attribute, value, relation));
-        }
-        else if (s.equals("output")) {
+            nodeModifiers
+                .add(new InRelationModifier(attribute, value, relation));
+        } else if (s.equals("output")) {
             outputFileName = st.nextToken();
-        }
-        else {
+        } else {
             throw new IllegalArgumentException();
         }
     }
-    
-    
     private static class LabelSource {
         Relation relation;
         int sourceIndex;
         int sinkIndex;
         int labelIndex;
         Domain labelDomain;
+
         LabelSource(Relation r, int sourceI, int sinkI, int labelI) {
             relation = r;
             sourceIndex = sourceI;
@@ -208,121 +192,115 @@ public class Dot {
             Attribute a = (Attribute) relation.attributes.get(labelIndex);
             labelDomain = a.attributeDomain;
         }
-        
-        String getLabel(RelationGraph.GraphNode source, RelationGraph.GraphNode sink) {
-            long [] restriction = new long[3];
+
+        String getLabel(RelationGraph.GraphNode source,
+            RelationGraph.GraphNode sink) {
+            long[] restriction = new long[3];
             restriction[0] = restriction[1] = restriction[2] = -1;
             restriction[sourceIndex] = source.number;
             restriction[sinkIndex] = sink.number;
             TupleIterator i = relation.iterator(restriction);
             String label = null;
             while (i.hasNext()) {
-                long [] labelTuple = i.nextTuple();
+                long[] labelTuple = i.nextTuple();
                 long labelNumber = labelTuple[labelIndex];
-                String l = labelDomain.toString((int)labelNumber);
+                String l = labelDomain.toString((int) labelNumber);
                 if (label == null) {
                     label = l;
-                }
-                else {
+                } else {
                     label = label + ", " + l;
                 }
             }
             return label;
         }
     }
-    
-    
     private static class EdgeSource {
         Relation relation;
         Relation roots;
         LabelSource labelSource;
-        
         Graph g;
-        
+
         EdgeSource(Relation rel, Relation rts) {
             relation = rel;
             roots = rts;
             labelSource = null;
             g = null;
         }
-        
+
         public void setLabelSource(LabelSource source) {
             labelSource = source;
         }
-        
+
         public Collection roots() {
             if (g == null) {
                 g = new RelationGraph(roots, relation);
             }
-            
-            return g.getRoots(); 
+            return g.getRoots();
         }
-        
-        public void visitSources(Dot dot, RelationGraph.GraphNode sink, boolean addEdges) {
-            if (g == null) {
-                g = new RelationGraph(roots, relation);
-            }
-            
-            Collection c = g.getNavigator().prev(sink);
-            
-            Iterator i = c.iterator();
-            while (i.hasNext()) {
-                RelationGraph.GraphNode source = (RelationGraph.GraphNode)i.next();
-                
-                dot.enqueue(source);
-                
-                if (addEdges) {
-                    String label = null;
-                    if (labelSource != null) {
-                        label = labelSource.getLabel(source, sink);
-                    }
-                    if (label != null) {
-                        dot.addEdge(dot.nodeName(source) + " -> " + dot.nodeName(sink) + 
-                                    " [label=\"" + label + "\"];\n");
-                    } else {
-                        dot.addEdge(dot.nodeName(source) + " -> " + dot.nodeName(sink) + ";\n");
-                    }
-                        
-                }
-            }
-        }
-        
-        public void visitSinks(Dot dot, RelationGraph.GraphNode source, boolean addEdges) {
-            if (g == null) {
-                g = new RelationGraph(roots, relation);
-            }
-            
-            Collection c = g.getNavigator().next(source);
-            
-            Iterator i = c.iterator();
-            while (i.hasNext()) {
-                RelationGraph.GraphNode sink = (RelationGraph.GraphNode)i.next();
-                
-                dot.enqueue(sink);
-                
-                if (addEdges) {
-                    String label = null;
-                    if (labelSource != null) {
-                        label = labelSource.getLabel(source, sink);
-                    }
-                    if (label != null) {
-                        dot.addEdge(dot.nodeName(source) + " -> " + dot.nodeName(sink) + 
-                                    " [label=\"" + label + "\"];\n");
-                    } else {
-                        dot.addEdge(dot.nodeName(source) + " -> " + dot.nodeName(sink) + ";\n");
-                    }
-                }
-            }
-        }
-    }
 
-    private static abstract class NodeAttributeModifier {
-        abstract boolean match(RelationGraph.GraphNode n, Map a);    
+        public void visitSources(Dot dot, RelationGraph.GraphNode sink,
+            boolean addEdges) {
+            if (g == null) {
+                g = new RelationGraph(roots, relation);
+            }
+            Collection c = g.getNavigator().prev(sink);
+            Iterator i = c.iterator();
+            while (i.hasNext()) {
+                RelationGraph.GraphNode source = (RelationGraph.GraphNode) i
+                    .next();
+                dot.enqueue(source);
+                if (addEdges) {
+                    String label = null;
+                    if (labelSource != null) {
+                        label = labelSource.getLabel(source, sink);
+                    }
+                    if (label != null) {
+                        dot.addEdge(dot.nodeName(source) + " -> "
+                            + dot.nodeName(sink) + " [label=\"" + label
+                            + "\"];\n");
+                    } else {
+                        dot.addEdge(dot.nodeName(source) + " -> "
+                            + dot.nodeName(sink) + ";\n");
+                    }
+                }
+            }
+        }
+
+        public void visitSinks(Dot dot, RelationGraph.GraphNode source,
+            boolean addEdges) {
+            if (g == null) {
+                g = new RelationGraph(roots, relation);
+            }
+            Collection c = g.getNavigator().next(source);
+            Iterator i = c.iterator();
+            while (i.hasNext()) {
+                RelationGraph.GraphNode sink = (RelationGraph.GraphNode) i
+                    .next();
+                dot.enqueue(sink);
+                if (addEdges) {
+                    String label = null;
+                    if (labelSource != null) {
+                        label = labelSource.getLabel(source, sink);
+                    }
+                    if (label != null) {
+                        dot.addEdge(dot.nodeName(source) + " -> "
+                            + dot.nodeName(sink) + " [label=\"" + label
+                            + "\"];\n");
+                    } else {
+                        dot.addEdge(dot.nodeName(source) + " -> "
+                            + dot.nodeName(sink) + ";\n");
+                    }
+                }
+            }
+        }
     }
-    
+    private static abstract class NodeAttributeModifier {
+        abstract boolean match(RelationGraph.GraphNode n, Map a);
+    }
     private class DefaultModifier extends NodeAttributeModifier {
         String property;
         String value;
+
         DefaultModifier(String p, String v) {
             property = p;
             value = v;
@@ -331,44 +309,39 @@ public class Dot {
         boolean match(GraphNode n, Map a) {
             a.put(property, value);
             return true;
-        }     
+        }
     }
-    
     private class DomainModifier extends NodeAttributeModifier {
         Domain fd;
         String property;
         String value;
-        
+
         DomainModifier(String p, String v, Domain f) {
             property = p;
             value = v;
             fd = f;
         }
-        
+
         boolean match(GraphNode n, Map a) {
             Domain f = n.v.getDomain();
-            
             if (f.equals(fd)) {
-                a.put(property,value);
+                a.put(property, value);
                 return true;
-            }
-            else {
+            } else {
                 return false;
             }
-        }        
+        }
     }
-    
     private class InRelationModifier extends NodeAttributeModifier {
         BDDRelation relation;
         String property;
         String value;
-        
+
         InRelationModifier(String p, String v, BDDRelation r) {
             property = p;
             value = v;
             relation = r;
-            
-            Assert._assert(r.attributes.size()==1);
+            Assert._assert(r.attributes.size() == 1);
         }
 
         boolean match(GraphNode n, Map a) {
@@ -376,12 +349,12 @@ public class Dot {
             Domain f = attr.attributeDomain;
             if (n.v.getDomain().equals(f)) {
                 if (relation.contains(0, n.number)) {
-                    a.put(property,value);
+                    a.put(property, value);
                     return true;
                 }
             }
             return false;
-        }        
+        }
     }
 
     public void enqueue(GraphNode x) {
@@ -395,10 +368,10 @@ public class Dot {
     public String nodeName(GraphNode n) {
         return "\"" + n.toString() + "\"";
     }
-    
-    private void visitNode (GraphNode x) {
+
+    private void visitNode(GraphNode x) {
         Map attributes = new HashMap();
-        String nodeName = (String) x.v.getDomain().map.get((int)x.number);
+        String nodeName = (String) x.v.getDomain().map.get((int) x.number);
         if (nodeName != null) {
             attributes.put("label", nodeName);
         }
@@ -411,8 +384,8 @@ public class Dot {
         i = attributes.keySet().iterator();
         boolean firstAttribute = true;
         while (i.hasNext()) {
-            String attribute = (String)i.next();
-            String value = (String)attributes.get(attribute);
+            String attribute = (String) i.next();
+            String value = (String) attributes.get(attribute);
             if (!firstAttribute) {
                 node += ", ";
             }
@@ -436,6 +409,3 @@ public class Dot {
         return usedRelations;
     }
 }
-
-
-

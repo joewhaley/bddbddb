@@ -10,23 +10,25 @@ package org.sf.bddbddb.util;
  * @version $Id$
  */
 public abstract class Assert {
-    
     /**
-     * Assert that the given predicate is true.  If it is false, we
-     * print a stack trace and exit.
+     * Assert that the given predicate is true. If it is false, we print a stack
+     * trace and exit.
      * 
-     * @param b predicate to check
+     * @param b
+     *            predicate to check
      */
     public static void _assert(boolean b) {
         _assert(b, "");
     }
 
     /**
-     * Assert that the given predicate is true.  If it is false, we print
-     * the given reason and a stack trace, and exit.
+     * Assert that the given predicate is true. If it is false, we print the
+     * given reason and a stack trace, and exit.
      * 
-     * @param b predicate to check
-     * @param reason string to print if the assertion fails
+     * @param b
+     *            predicate to check
+     * @param reason
+     *            string to print if the assertion fails
      */
     public static void _assert(boolean b, String reason) {
         if (!b) {
@@ -39,10 +41,10 @@ public abstract class Assert {
     /**
      * Print an UNREACHABLE message and a stack trace and exit.
      * 
-     * @param s message to print
+     * @param s
+     *            message to print
      */
     public static void UNREACHABLE(String s) {
         _assert(false, "UNREACHABLE: " + s);
     }
-
 }

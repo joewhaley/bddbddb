@@ -9,14 +9,14 @@ import java.math.BigInteger;
  * PermutationGenerator
  * 
  * @author jwhaley
- * @version $Id$
+ * @version $Id: PermutationGenerator.java,v 1.1 2004/06/15 21:38:55 joewhaley
+ *          Exp $
  */
 public class PermutationGenerator {
-    
     private int[] a;
     private BigInteger numLeft;
     private BigInteger total;
-    
+
     public PermutationGenerator(int n) {
         if (n < 1) {
             throw new IllegalArgumentException();
@@ -32,28 +32,28 @@ public class PermutationGenerator {
         }
         numLeft = new BigInteger(total.toString());
     }
-    
+
     /**
      * Return number of permutations not yet generated
      */
     public BigInteger getNumLeft() {
         return numLeft;
     }
-    
+
     /**
      * Return total number of permutations
      */
     public BigInteger getTotal() {
         return total;
     }
-    
+
     /**
      * Are there more permutations?
      */
     public boolean hasMore() {
         return numLeft.compareTo(BigInteger.ZERO) == 1;
     }
-    
+
     /**
      * Compute factorial
      */
@@ -64,7 +64,7 @@ public class PermutationGenerator {
         }
         return fact;
     }
-    
+
     /**
      * Generate next permutation (algorithm from Rosen p. 284)
      */

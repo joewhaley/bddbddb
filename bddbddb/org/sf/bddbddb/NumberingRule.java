@@ -25,25 +25,23 @@ import org.sf.javabdd.BDDDomain;
  * @version $Id$
  */
 public class NumberingRule extends InferenceRule {
-    
     boolean TRACE = false;
     PrintStream out = System.out;
-    
     Solver solver;
     RelationGraph rg;
     PathNumbering pn;
     long totalTime;
-    
-    static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph", "no").equals("no");
-    
+    static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph",
+        "no").equals("no");
+
     NumberingRule(Solver s, InferenceRule ir) {
         super(s, ir.top, ir.bottom);
         Assert._assert(ir.top.size() > 1);
         this.solver = s;
     }
-    
+
     void initialize() {
-        if (TRACE) out.println("Initializing numbering rule: "+this);
+        if (TRACE) out.println("Initializing numbering rule: " + this);
         RuleTerm root = (RuleTerm) top.get(0);
         Variable rootVar;
         if (root.variables.size() == 1) {
@@ -55,16 +53,18 @@ public class NumberingRule extends InferenceRule {
             Assert._assert(rootVars.size() == 1);
             rootVar = (Variable) rootVars.get(0);
         }
-        if (TRACE) out.println("Root variable: "+rootVar);
+        if (TRACE) out.println("Root variable: " + rootVar);
         List edges = top.subList(1, top.size());
         rg = new RelationGraph(root, rootVar, edges);
     }
-    
-    public Collection/*<InferenceRule>*/ split(int myIndex, Solver s) {
+
+    public Collection/* <InferenceRule> */split(int myIndex, Solver s) {
         throw new InternalError("Cannot split a numbering rule!");
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.InferenceRule#update()
      */
     public boolean update() {
@@ -72,86 +72,81 @@ public class NumberingRule extends InferenceRule {
             Assert.UNREACHABLE("Can't put numbering in a cycle.");
             return false;
         }
-        
         long time = System.currentTimeMillis();
-        
         pn = new SCCPathNumbering();
         BigInteger num = pn.countPaths(rg);
         Iterator i = bottom.variables.iterator();
         Variable v1, v2;
         v1 = (Variable) i.next();
         v2 = (Variable) i.next();
-        if (TRACE) out.println("Finding relations with ("+v1+","+v2+")");
-        
+        if (TRACE) out
+            .println("Finding relations with (" + v1 + "," + v2 + ")");
         // Which relation(s) are we talking about here?
-        for (i = rg.edges.iterator(); i.hasNext(); ) {
+        for (i = rg.edges.iterator(); i.hasNext();) {
             RuleTerm rt = (RuleTerm) i.next();
-            if (rt.variables.get(0) == v1 &&
-                rt.variables.get(1) == v2) {
-                if (TRACE) out.println("Match: "+rt);
-                
+            if (rt.variables.get(0) == v1 && rt.variables.get(1) == v2) {
+                if (TRACE) out.println("Match: " + rt);
                 // TODO: generalize this to be not BDD-specific
                 BDDRelation bddr = (BDDRelation) bottom.relation;
                 Iterator k = bddr.domains.iterator();
                 BDDDomain d0, d1, d2, d3;
                 d0 = (BDDDomain) k.next();
                 d1 = (BDDDomain) k.next();
-                if (TRACE) out.println("Domains for edge: "+d0+" -> "+d1);
+                if (TRACE) out.println("Domains for edge: " + d0 + " -> " + d1);
                 d2 = (BDDDomain) k.next();
                 d3 = (BDDDomain) k.next();
-                if (TRACE) out.println("Domains for numbering: "+d2+" -> "+d3);
+                if (TRACE) out.println("Domains for numbering: " + d2 + " -> "
+                    + d3);
                 Assert._assert(d0 != d1);
                 Assert._assert(d2 != d3);
-                
-                for (TupleIterator j = rt.relation.iterator(); j.hasNext(); ) {
+                for (TupleIterator j = rt.relation.iterator(); j.hasNext();) {
                     long[] t = j.nextTuple();
                     Object source = RelationGraph.makeGraphNode(v1, t[0]);
                     Object target = RelationGraph.makeGraphNode(v2, t[1]);
                     PathNumbering.Range r0 = pn.getRange(source);
                     PathNumbering.Range r1 = pn.getEdge(source, target);
-                    if (TRACE) out.println("Edge: "+source+" -> "+target+"\t"+r0+" -> "+r1);
-                    
+                    if (TRACE) out.println("Edge: " + source + " -> " + target
+                        + "\t" + r0 + " -> " + r1);
                     if (r0 == null) {
                         if (TRACE) out.println("Unreachable edge!");
                         Assert._assert(r1 == null);
                         continue;
                     }
                     Assert._assert(r1 != null);
-                    
                     // TODO: generalize this to be not BDD-specific
-                    BDD result = buildMap(d2, PathNumbering.toBigInt(r0.low), PathNumbering.toBigInt(r0.high),
-                                          d3, PathNumbering.toBigInt(r1.low), PathNumbering.toBigInt(r1.high));
+                    BDD result = buildMap(d2, PathNumbering.toBigInt(r0.low),
+                        PathNumbering.toBigInt(r0.high), d3, PathNumbering
+                            .toBigInt(r1.low), PathNumbering.toBigInt(r1.high));
                     result.andWith(d0.ithVar(t[0]));
                     result.andWith(d1.ithVar(t[1]));
                     bddr.relation.orWith(result);
                 }
             }
         }
-        
         time = System.currentTimeMillis() - time;
-        if (TRACE) out.println("Time spent: "+time+" ms");
-        
+        if (TRACE) out.println("Time spent: " + time + " ms");
         totalTime += time;
-        
         if (DUMP_DOTGRAPH) {
             DataOutputStream dos = null;
             try {
-                dos = new DataOutputStream(new FileOutputStream(solver.basedir+bottom.relation.name+".dot"));
+                dos = new DataOutputStream(new FileOutputStream(solver.basedir
+                    + bottom.relation.name + ".dot"));
                 pn.dotGraph(dos, rg.getRoots(), rg.getNavigator());
             } catch (IOException x) {
                 System.err.println("Error while dumping dot graph.");
                 x.printStackTrace();
             } finally {
-                if (dos != null) try { dos.close(); } catch (IOException x) { }
+                if (dos != null) try {
+                    dos.close();
+                } catch (IOException x) {
+                }
             }
         }
-        
         return true;
     }
 
-    public static BDD buildMap(BDDDomain d1, BigInteger startD1, BigInteger endD1,
-                               BDDDomain d2, BigInteger startD2, BigInteger endD2)
-    {
+    public static BDD buildMap(BDDDomain d1, BigInteger startD1,
+        BigInteger endD1, BDDDomain d2, BigInteger startD2, BigInteger endD2) {
         BDD r;
         BigInteger sizeD1 = endD1.subtract(startD1);
         BigInteger sizeD2 = endD2.subtract(startD2);
@@ -180,12 +175,14 @@ public class NumberingRule extends InferenceRule {
         }
         return r;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.InferenceRule#reportStats()
      */
     public void reportStats() {
-        System.out.println("Rule "+this);
-        System.out.println("   Time: "+totalTime+" ms");
+        System.out.println("Rule " + this);
+        System.out.println("   Time: " + totalTime + " ms");
     }
 }

@@ -248,9 +248,9 @@ public class SolverGUI extends JFrame {
                 public void actionPerformed(java.awt.event.ActionEvent e) {
                     // Add Datalog rule.
                     System.out.println("actionPerformed()"); // TODO
-                                                             // Auto-generated
-                                                             // Event stub
-                                                             // actionPerformed()
+                    // Auto-generated
+                    // Event stub
+                    // actionPerformed()
                 }
             });
         }

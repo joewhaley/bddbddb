@@ -14,38 +14,46 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class Load extends Operation {
-    
     Relation r0;
-    
+
     /**
      * @param r0
      */
     public Load(Relation r0) {
+        super();
         this.r0 = r0;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString()+" = load()";
+        return r0.toString() + " = load()";
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
         return r0;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {

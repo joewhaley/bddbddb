@@ -13,18 +13,26 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public abstract class Operation {
-    
+    static int opNumber = 0;
+    public int id;
+
+    public Operation() {
+        id = ++opNumber;
+    }
+
     /**
      * @param i
      * @return
      */
     public abstract Object visit(OperationVisitor i);
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public abstract String toString();
-    
+
     /**
      * @return
      */
@@ -33,6 +41,5 @@ public abstract class Operation {
     /**
      * @return
      */
-    public abstract List/*<Relation>*/ getSrcs();
-    
+    public abstract List/* <Relation> */getSrcs();
 }

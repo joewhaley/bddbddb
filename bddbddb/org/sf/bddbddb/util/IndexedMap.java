@@ -8,19 +8,22 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * Interface for an indexed map.  An indexed map provides a mapping
- * between elements and (integer) indices.
+ * Interface for an indexed map. An indexed map provides a mapping between
+ * elements and (integer) indices.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public interface IndexedMap {
-
     int get(Object o);
+
     Object get(int i);
+
     boolean contains(Object o);
+
     Iterator iterator();
+
     int size();
+
     void dumpStrings(final DataOutput out) throws IOException;
-    
 }

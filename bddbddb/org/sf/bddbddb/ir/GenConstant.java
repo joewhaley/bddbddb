@@ -15,42 +15,52 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class GenConstant extends Operation {
-    
     Relation r0;
     Attribute a;
     long value;
-    
+
     /**
      * @param r0
      * @param a
      * @param value
      */
     public GenConstant(Relation r0, Attribute a, long value) {
+        super();
         this.r0 = r0;
         this.a = a;
         this.value = value;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString()+" = const("+a.toString()+"="+value+")";
+        return r0.toString() + " = const(" + a.toString() + "=" + value + ")";
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
-    public Relation getDest() { return r0; }
+    public Relation getDest() {
+        return r0;
+    }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {

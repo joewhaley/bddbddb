@@ -15,11 +15,10 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class JoinConstant extends Operation {
-    
     Relation r0, r1;
     Attribute a;
     long value;
-    
+
     /**
      * @param r0
      * @param r1
@@ -27,32 +26,44 @@ public class JoinConstant extends Operation {
      * @param value
      */
     public JoinConstant(Relation r0, Relation r1, Attribute a, long value) {
+        super();
         this.r0 = r0;
         this.r1 = r1;
         this.a = a;
         this.value = value;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString()+" = restrict("+r1.toString()+","+a.toString()+"="+value+")";
+        return r0.toString() + " = restrict(" + r1.toString() + ","
+            + a.toString() + "=" + value + ")";
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
-    public Relation getDest() { return r0; }
+    public Relation getDest() {
+        return r0;
+    }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {

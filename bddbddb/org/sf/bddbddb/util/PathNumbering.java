@@ -19,20 +19,23 @@ import java.math.BigInteger;
  * @version $Id$
  */
 public abstract class PathNumbering {
+    public abstract BigInteger countPaths(Collection roots,
+        Navigator navigator, Map initialMap);
 
-    public abstract BigInteger countPaths(Collection roots, Navigator navigator, Map initialMap);
     public abstract Range getRange(Object o);
+
     public abstract Range getEdge(Object from, Object to);
-    
+
     public BigInteger countPaths(Graph graph) {
         return countPaths(graph.getRoots(), graph.getNavigator(), null);
     }
-    
+
     public Range getEdge(Pair edge) {
         return getEdge(edge.left, edge.right);
     }
 
-    public void dotGraph(DataOutput out, Collection roots, Navigator navigator) throws IOException {
+    public void dotGraph(DataOutput out, Collection roots, Navigator navigator)
+        throws IOException {
         out.writeBytes("digraph \"PathNumbering\" {\n");
         out.writeBytes("  concentrate=true; node[fontsize=7];\n");
         LinkedList toVisit = new LinkedList();
@@ -41,43 +44,56 @@ public abstract class PathNumbering {
         while (!toVisit.isEmpty()) {
             Object source = toVisit.removeFirst();
             int j = m.get(source);
-            out.writeBytes("  n"+j+" [label=\""+source+"\"];\n");
-            for (Iterator i = navigator.next(source).iterator(); i.hasNext(); ) {
+            out.writeBytes("  n" + j + " [label=\"" + source + "\"];\n");
+            for (Iterator i = navigator.next(source).iterator(); i.hasNext();) {
                 Object target = i.next();
                 if (!m.contains(target)) {
                     toVisit.add(target);
                 }
                 int k = m.get(target);
                 Range r = getEdge(source, target);
-                out.writeBytes("  n"+j+" -> n"+k+" [label=\""+r+"\"];\n");
+                out.writeBytes("  n" + j + " -> n" + k + " [label=\"" + r
+                    + "\"];\n");
             }
         }
         out.writeBytes("}\n");
     }
-    
     public static class Range {
         public Number low, high;
+
         public Range(int l, int h) {
-            this.low = new Integer(l); this.high = new Integer(h);
+            this.low = new Integer(l);
+            this.high = new Integer(h);
         }
+
         public Range(Number l, Number h) {
-            this.low = l; this.high = h;
+            this.low = l;
+            this.high = h;
         }
+
         public Range(Number l, BigInteger h) {
-            this.low = l; this.high = fromBigInt(h);
+            this.low = l;
+            this.high = fromBigInt(h);
         }
+
         public Range(BigInteger l, Number h) {
-            this.low = fromBigInt(l); this.high = h;
+            this.low = fromBigInt(l);
+            this.high = h;
         }
+
         public Range(BigInteger l, BigInteger h) {
-            this.low = fromBigInt(l); this.high = fromBigInt(h);
+            this.low = fromBigInt(l);
+            this.high = fromBigInt(h);
         }
+
         public String toString() {
-            return "<"+low+','+high+'>';
+            return "<" + low + ',' + high + '>';
         }
+
         public boolean equals(Range r) {
             return low.equals(r.low) && high.equals(r.high);
         }
+
         public boolean equals(Object o) {
             try {
                 return equals((Range) o);
@@ -85,28 +101,32 @@ public abstract class PathNumbering {
                 return false;
             }
         }
+
         public int hashCode() {
             return low.hashCode() ^ high.hashCode();
         }
+
         public static Range read(StringTokenizer st) {
             long lo = Long.parseLong(st.nextToken());
             long hi = Long.parseLong(st.nextToken());
             return new Range(new Long(lo), new Long(hi));
         }
     }
-    
+
     /** Converts the given Number to BigInteger representation. */
     public static BigInteger toBigInt(Number n) {
         if (n instanceof BigInteger) return (BigInteger) n;
         else return BigInteger.valueOf(n.longValue());
     }
 
-    /** Converts the given BigInteger to a potentially smaller Number representation. */
+    /**
+     * Converts the given BigInteger to a potentially smaller Number
+     * representation.
+     */
     public static Number fromBigInt(BigInteger n) {
         int bits = n.bitLength();
         if (bits < 32) return new Integer(n.intValue());
         if (bits < 64) return new Long(n.longValue());
         return n;
     }
-
 }

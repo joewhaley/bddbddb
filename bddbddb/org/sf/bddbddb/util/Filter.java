@@ -4,25 +4,31 @@
 package org.sf.bddbddb.util;
 
 /**
- * Filter.  Default is an identity mapping.
+ * Filter. Default is an identity mapping.
  * 
- * @author  C. Scott Ananian <cananian@alumni.princeton.edu>
+ * @author C. Scott Ananian <cananian@alumni.princeton.edu>
  * @version $Id$
  */
 public class Filter {
-    
-    /** Return <code>true</code> if the specified element should be
-        included in the filtered enumeration. 
-     
-        <BR> Default implementation returns true for all
-        <code>Object</code>s (no filter).   
+    /**
+     * Return <code>true</code> if the specified element should be included in
+     * the filtered enumeration.
+     * 
+     * <BR>
+     * Default implementation returns true for all <code>Object</code> s (no
+     * filter).
      */
-    public boolean isElement(Object o) { return true; }
+    public boolean isElement(Object o) {
+        return true;
+    }
 
-    /** Perform a mapping on elements from the source enumeration. 
-
-        <BR> Default implementation returns <code>o</code>
-        (identity mapping). 
+    /**
+     * Perform a mapping on elements from the source enumeration.
+     * 
+     * <BR>
+     * Default implementation returns <code>o</code> (identity mapping).
      */
-    public Object map(Object o) { return o; }
+    public Object map(Object o) {
+        return o;
+    }
 }

@@ -6,42 +6,40 @@ package org.sf.bddbddb.util;
 /**
  * A <code>Worklist</code> is a unique set.
  * 
- * @author  C. Scott Ananian <cananian@alumni.princeton.edu>
+ * @author C. Scott Ananian <cananian@alumni.princeton.edu>
  * @version $Id$
  */
-public interface Worklist  {
-   
-    /** Pushes an item onto the Worklist if it is not already there. 
-        <BR> <B>modifies:</B> <code>this</code>
-        <BR> <B>effects:</B> If <code>item</code> is not already an
-                             element of <code>this</code>, adds
-                             <code>item</code> to <code>this</code>.
-                             Else does nothing. 
+public interface Worklist {
+    /**
+     * Pushes an item onto the Worklist if it is not already there. <BR>
+     * <B>modifies: </B> <code>this</code><BR>
+     * <B>effects: </B> If <code>item</code> is not already an element of
+     * <code>this</code>, adds <code>item</code> to <code>this</code>.
+     * Else does nothing.
      */
     void push(Object item);
 
-    /** Removes some item from the Worklist and return it. 
-        <BR> <B>modifies:</B> <code>this</code>
-        <BR> <B>effects:</B> If there exists an <code>Object</code>,
-                             <code>item</code>, that is an element of
-                             <code>this</code>, removes
-                             <code>item</code> from <code>this</code>
-                             and returns <code>item</code>. Else does
-                             nothing.
-    */
+    /**
+     * Removes some item from the Worklist and return it. <BR>
+     * <B>modifies: </B> <code>this</code><BR>
+     * <B>effects: </B> If there exists an <code>Object</code>,
+     * <code>item</code>, that is an element of <code>this</code>, removes
+     * <code>item</code> from <code>this</code> and returns
+     * <code>item</code>. Else does nothing.
+     */
     Object pull();
 
-    /** Determines if the Worklist contains an item.
-        <BR> <B>effects:</B> If <code>item</code> is an element of 
-                             <code>this</code>, returns true.
-                             Else returns false.
-    */
+    /**
+     * Determines if the Worklist contains an item. <BR>
+     * <B>effects: </B> If <code>item</code> is an element of
+     * <code>this</code>, returns true. Else returns false.
+     */
     boolean contains(Object item);
 
-    /** Determines if there are any more items left in the Worklist. 
-        <BR> <B>effects:</B> If <code>this</code> has any elements,
-                             returns true.  Else returns false.
-    */
+    /**
+     * Determines if there are any more items left in the Worklist. <BR>
+     * <B>effects: </B> If <code>this</code> has any elements, returns true.
+     * Else returns false.
+     */
     boolean isEmpty();
 }
-

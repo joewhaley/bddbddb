@@ -12,7 +12,6 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class Difference extends BooleanOperation {
-
     /**
      * @param r0
      * @param r1
@@ -21,19 +20,22 @@ public class Difference extends BooleanOperation {
     public Difference(Relation r0, Relation r1, Relation r2) {
         super(r0, r1, r2);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.BooleanOperation#getName()
      */
     public String getName() {
         return "diff";
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
-    
 }

@@ -16,21 +16,23 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class Rename extends Operation {
-    
     Relation r0, r1;
-    Map/*<Pair,Attribute>*/ renames;
-    
+    Map/* <Pair,Attribute> */renames;
+
     /**
      * @param r0
      * @param r1
      */
-    public Rename(Relation r0, Relation r1, Map/*<Pair,Attribute>*/ renames) {
+    public Rename(Relation r0, Relation r1, Map/* <Pair,Attribute> */renames) {
+        super();
         this.r0 = r0;
         this.r1 = r1;
         this.renames = renames;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
@@ -38,7 +40,7 @@ public class Rename extends Operation {
         sb.append(r0.toString());
         sb.append(" = rename(");
         sb.append(r1.toString());
-        for (Iterator i = renames.entrySet().iterator(); i.hasNext(); ) {
+        for (Iterator i = renames.entrySet().iterator(); i.hasNext();) {
             Map.Entry p = (Map.Entry) i.next();
             sb.append(',');
             sb.append(p.getKey().toString());
@@ -48,20 +50,28 @@ public class Rename extends Operation {
         sb.append(")");
         return sb.toString();
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
-    public Relation getDest() { return r0; }
+    public Relation getDest() {
+        return r0;
+    }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {

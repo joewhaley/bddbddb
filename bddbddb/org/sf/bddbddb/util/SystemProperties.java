@@ -1,4 +1,4 @@
-//SystemProperties.java, created Sun Dec  7 14:20:28 PST 2003
+// SystemProperties.java, created Sun Dec 7 14:20:28 PST 2003
 //Copyright (C) 2004 Godmar Back <gback@cs.utah.edu, @stanford.edu>
 //Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.util;
@@ -20,7 +20,6 @@ import java.lang.reflect.Modifier;
  * @author gback
  */
 public class SystemProperties {
-    
     public static void read(String filename) {
         FileInputStream propFile = null;
         try {
@@ -29,44 +28,48 @@ public class SystemProperties {
             p.load(propFile);
             System.setProperties(p);
         } catch (IOException ie) {
-            ;   // silent
+            ; // silent
         } finally {
-            if (propFile != null) try { propFile.close(); } catch (IOException x) { }
+            if (propFile != null) try {
+                propFile.close();
+            } catch (IOException x) {
+            }
         }
     }
-    
     Map flags = new HashMap();
-    
+
     public void registerFlag(String flagName, Field f) {
         flags.put(flagName, f);
     }
-    
+
     public void registerFlag(String flagName, Class c, String fieldName) {
         try {
             Field f = c.getDeclaredField(fieldName);
             flags.put(flagName, f);
         } catch (SecurityException e) {
-            System.err.println("Error, "+c.getName()+"."+fieldName+" is private.");
+            System.err.println("Error, " + c.getName() + "." + fieldName
+                + " is private.");
         } catch (NoSuchFieldException e) {
-            System.err.println("Error, "+c.getName()+"."+fieldName+" not found.");
+            System.err.println("Error, " + c.getName() + "." + fieldName
+                + " not found.");
         }
     }
-    
+
     public void registerFlag(String flagName, String className, String fieldName) {
         try {
             Class c = Class.forName(className);
             registerFlag(flagName, c, fieldName);
         } catch (ClassNotFoundException e) {
-            System.err.println("Error, "+className+" not found.");
+            System.err.println("Error, " + className + " not found.");
         }
     }
-    
+
     public void setDefaultFlags() {
         setDefaultFlags(null);
     }
-    
+
     public void setDefaultFlags(Object base) {
-        for (Iterator i = flags.entrySet().iterator(); i.hasNext(); ) {
+        for (Iterator i = flags.entrySet().iterator(); i.hasNext();) {
             Map.Entry e = (Map.Entry) i.next();
             String flagName = (String) e.getKey();
             Field field = (Field) e.getValue();
@@ -74,10 +77,10 @@ public class SystemProperties {
             if (value != null) setField(base, field, value);
         }
     }
-    
+
     public static void setField(Object base, Field f, String v) {
-        if (base != null && Modifier.isStatic(f.getModifiers()) ||
-            base == null && !Modifier.isStatic(f.getModifiers())) {
+        if (base != null && Modifier.isStatic(f.getModifiers()) || base == null
+            && !Modifier.isStatic(f.getModifiers())) {
             return;
         }
         f.setAccessible(true);
@@ -87,7 +90,8 @@ public class SystemProperties {
                 int val = Integer.parseInt(v);
                 f.setInt(base, val);
             } else if (c == boolean.class) {
-                boolean val = v.equals("") || v.equals("yes") || v.equals("true");
+                boolean val = v.equals("") || v.equals("yes")
+                    || v.equals("true");
                 f.setBoolean(base, val);
             } else if (c == String.class) {
                 f.set(base, v);
@@ -118,17 +122,18 @@ public class SystemProperties {
                 if (split == -1) split = v.indexOf(':');
                 if (split == -1) split = v.indexOf('=');
                 if (split == -1) {
-                    System.err.println("Cannot parse "+f+" map entry \""+v+"\"");
+                    System.err.println("Cannot parse " + f + " map entry \""
+                        + v + "\"");
                 } else {
                     String key = v.substring(0, split);
-                    String val = v.substring(split+1);
+                    String val = v.substring(split + 1);
                     map.put(key, val);
                 }
             } else {
-                System.err.println("Unknown type for "+f+": "+c);
+                System.err.println("Unknown type for " + f + ": " + c);
             }
         } catch (IllegalAccessException _) {
-            System.err.println("Cannot access "+f+".");
+            System.err.println("Cannot access " + f + ".");
         }
     }
 }
