@@ -48,7 +48,6 @@ public abstract class OrderConstraint {
     }
     
     public static OrderConstraint makePrecedenceConstraint(Object a, Object b) {
-        Assert._assert(!a.equals(b));
         if (compare(a, b)) return new BeforeConstraint(a, b);
         else return new AfterConstraint(b, a);
     }

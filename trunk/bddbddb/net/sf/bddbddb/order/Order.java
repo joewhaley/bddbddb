@@ -94,7 +94,7 @@ public class Order implements List, Comparable {
                         }
                         while (y.hasNext()) {
                             Object y1 = y.next();
-                            if (!x1.equals(y1))
+                            //if (!x1.equals(y1))
                                 constraints.add(OrderConstraint.makePrecedenceConstraint(x1, y1));
                         }
                     }

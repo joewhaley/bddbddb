@@ -113,6 +113,18 @@ public class BDDSolver extends Solver {
         if (TRIALFILE != null) fbo.loadTrials(TRIALFILE);
     }
 
+    public String getBaseName() {
+        if (inputFilename == null) return null;
+        String sep = System.getProperty("file.separator");
+        int index1 = inputFilename.lastIndexOf(sep) + 1;
+        if (index1 == 0) index1 = inputFilename.lastIndexOf('/') + 1;
+        int index2 = inputFilename.lastIndexOf('.');
+        if (index1 < index2)
+            return inputFilename.substring(index1, index2);
+        else
+            return null;
+    }
+    
     /**
      * Load the BDD domain info, if it exists.
      * The domain info is the list of domains that are allocated.
