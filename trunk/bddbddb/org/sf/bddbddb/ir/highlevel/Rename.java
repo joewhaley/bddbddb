@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 
 /**
  * Rename
@@ -17,7 +18,6 @@ import org.sf.bddbddb.Relation;
  */
 public class Rename extends HighLevelOperation {
     Relation r0, r1;
-
     Map/* <Pair,Attribute> */renames;
 
     /**
@@ -100,15 +100,29 @@ public class Rename extends HighLevelOperation {
     public Map getRenameMap() {
         return renames;
     }
-    
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#copy()
+     */
+    public Operation copy() {
+        return new Rename(r0, r1, renames);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r1 == r_old) r1 = r_new;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {

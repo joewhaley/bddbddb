@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir.highlevel;
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.util.Assert;
 
 /**
@@ -77,14 +78,23 @@ public class Free extends HighLevelOperation {
         return r;
     }
 
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+    public Operation copy() {
+        return new Free(r);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r == r_old) r = r_new;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {

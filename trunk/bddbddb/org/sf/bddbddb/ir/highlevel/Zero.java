@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir.highlevel;
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 
 /**
  * Zero
@@ -69,13 +70,22 @@ public class Zero extends HighLevelOperation {
         return Collections.EMPTY_LIST;
     }
 
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+    public Operation copy() {
+        return new Zero(r0);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {

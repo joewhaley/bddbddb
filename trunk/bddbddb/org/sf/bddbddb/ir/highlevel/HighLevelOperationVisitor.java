@@ -3,12 +3,12 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir.highlevel;
 
-
 /**
  * HighLevelOperationVisitor
  * 
  * @author John Whaley
- * @version $Id$
+ * @version $Id: HighLevelOperationVisitor.java,v 1.1 2004/07/06 23:36:25 cs343
+ *          Exp $
  */
 public interface HighLevelOperationVisitor {
     /**

@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir.highlevel;
 import java.util.LinkedList;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 import org.sf.javabdd.BDDFactory;
 import org.sf.javabdd.BDDFactory.BDDOp;
 
@@ -16,8 +17,7 @@ import org.sf.javabdd.BDDFactory.BDDOp;
  * @version $Id$
  */
 public class Join extends BooleanOperation {
-
-    List/*<Attribute>*/ attributes;
+    List/* <Attribute> */attributes;
 
     /**
      * @param r0
@@ -31,7 +31,9 @@ public class Join extends BooleanOperation {
         this.attributes.retainAll(r2.getAttributes());
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.BooleanOperation#getName()
      */
     public String getName() {
@@ -47,11 +49,16 @@ public class Join extends BooleanOperation {
         return i.visit(this);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.highlevel.BooleanOperation#getBDDOp()
      */
     public BDDOp getBDDOp() {
         return BDDFactory.and;
     }
-    
+
+    public Operation copy() {
+        return new Join(r0, r1, r2);
+    }
 }

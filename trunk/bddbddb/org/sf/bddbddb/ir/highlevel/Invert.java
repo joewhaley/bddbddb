@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir.highlevel;
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 
 /**
  * Invert
@@ -77,15 +78,24 @@ public class Invert extends HighLevelOperation {
     public Relation getSrc() {
         return r1;
     }
-    
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+
+    public Operation copy() {
+        return new Invert(r0, r1);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r1 == r_old) r1 = r_new;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {

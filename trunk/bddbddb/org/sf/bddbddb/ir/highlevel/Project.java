@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.ir.Operation;
 
 /**
  * Project
@@ -16,8 +17,7 @@ import org.sf.bddbddb.Relation;
  */
 public class Project extends HighLevelOperation {
     Relation r0, r1;
-
-    List/*<Attribute>*/ attributes;
+    List/* <Attribute> */attributes;
 
     /**
      * @param r0
@@ -86,18 +86,27 @@ public class Project extends HighLevelOperation {
     /**
      * @return
      */
-    public List/*<Attribute>*/ getAttributes() {
+    public List/* <Attribute> */getAttributes() {
         return attributes;
     }
 
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+    public Operation copy() {
+        return new Project(r0, r1);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r1 == r_old) r1 = r_new;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
