@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.NumberFormat;
@@ -224,17 +226,53 @@ public class FindBestDomainOrder {
             }
         }
         
+        /**
+         * direction == true means map from ruleterm to relation.
+         * direction == false means map from relation to ruleterm.
+         * 
+         * @param rt  ruleterm
+         * @param direction  true=ruleterm->relation, false=relation->ruleterm
+         */
+        public MapBasedTranslator(RuleTerm rt, boolean direction) {
+            m = new HashMap();
+            Relation r = rt.relation;
+            Assert._assert(r.attributes.size() == rt.variables.size());
+            for (int j = 0; j < r.attributes.size(); ++j) {
+                Attribute a = (Attribute) r.attributes.get(j);
+                Variable v = (Variable) rt.variables.get(j);
+                if (direction)
+                    m.put(v, a);
+                else
+                    m.put(a, v);
+            }
+        }
+        
         /* (non-Javadoc)
          * @see org.sf.bddbddb.FindBestDomainOrder.OrderTranslator#translate(org.sf.bddbddb.FindBestDomainOrder.Order)
          */
         public Order translate(Order o) {
+            if (TRACE > 2) System.out.print("Translating "+o);
             LinkedList result = new LinkedList();
             for (Iterator i = o.iterator(); i.hasNext(); ) {
                 Object a = i.next();
-                Object b = m.get(a);
-                //result.add(b != null ? b : a);
-                if (b != null) result.add(b);
+                if (a instanceof Collection) {
+                    Collection result2 = new LinkedList();
+                    for (Iterator j = ((Collection) a).iterator(); j.hasNext(); ) {
+                        Object a2 = j.next();
+                        Object b2 = m.get(a2);
+                        if (b2 != null) result2.add(b2);
+                    }
+                    if (result2.size() > 1) {
+                        result.add(result2);
+                    } else if (!result2.isEmpty()) {
+                        result.add(result2.iterator().next());
+                    }
+                } else {
+                    Object b = m.get(a);
+                    if (b != null) result.add(b);
+                }
             }
+            if (TRACE > 2) System.out.println(" -> "+result);
             return new Order(result);
         }
     }
@@ -477,7 +515,7 @@ public class FindBestDomainOrder {
         }
         
         public Collection/*<Order>*/ findSimilarities(Order that) {
-            if (true)
+            if (false)
             {
                 Collection f1 = this.getFlattened();
                 Collection f2 = that.getFlattened();
@@ -1213,11 +1251,13 @@ public class FindBestDomainOrder {
                 long min = ti[0].cost;
                 long max = ti[ti.length-1].cost;
                 double range = (double)max - (double)min;
+                Set visitedOrders = new HashSet();
                 for (int i = 0; i < ti.length; ++i) {
                     Order o = t.translate(ti[i].order);
+                    boolean isNew = visitedOrders.add(o);
                     double score = (range < 0.0001) ? 0.5 : ((double)(max - ti[i].cost) / range);
                     double myConf = (range < 0.0001) ? 0. : confidence;
-                    if (ti[i].cost >= UpdatableOrderInfoCollection.MAX_COST) myConf *= HIGH_CONFIDENCE;
+                    if (isNew && ti[i].cost >= UpdatableOrderInfoCollection.MAX_COST) myConf *= HIGH_CONFIDENCE;
                     incorporateInfo(o, score, myConf);
                 }
             }
@@ -1479,8 +1519,10 @@ public class FindBestDomainOrder {
             if (TRACE > 0) out.println(this+": similarities of good set: "+Arrays.toString(sortedGoodSim));
             if (TRACE > 0) out.println(this+": similarities of bad set: "+badSim);
             
-            goodCharacteristics.clear();
-            badCharacteristics.clear();
+            if (goodCharacteristics == null) goodCharacteristics = new LinkedList();
+            else goodCharacteristics.clear();
+            if (badCharacteristics == null) badCharacteristics = new LinkedList();
+            else badCharacteristics.clear();
             // Calculate the dominant (important) characteristics in each of the sets.
             // For now, use the median to differentiate between important/unimportant.
             // In the future, we may want to use a better metric.
@@ -1513,11 +1555,11 @@ public class FindBestDomainOrder {
         public void dump() {
             OrderInfo[] sorted = getSorted();
             System.out.println("Best orders:");
-            for (int j = sorted.length-1; j >= 0 && j >= sorted.length-5; --j) {
+            for (int j = sorted.length-1; j >= 0 && j >= sorted.length-10; --j) {
                 System.out.println(sorted[j]);
             }
             System.out.println("Worst orders:");
-            for (int j = 0; j < 5 && j < sorted.length; ++j) {
+            for (int j = 0; j < 10 && j < sorted.length; ++j) {
                 System.out.println(sorted[j]);
             }
             calculateCharacteristics();
