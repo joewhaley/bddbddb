@@ -55,6 +55,12 @@ public class BDDRelation extends Relation {
      */
     private BDD domainSet;
 
+    static final byte EQ = 1;
+    static final byte LT = 2;
+    static final byte GT = 3;
+    static final byte MAP = 4;
+    protected byte special_type;
+    
     /**
      * Construct a new BDDRelation.
      * This is only to be called internally.
@@ -76,76 +82,77 @@ public class BDDRelation extends Relation {
      * @see org.sf.bddbddb.Relation#initialize()
      */
     public void initialize() {
-        if (isInitialized) return;
-        if (negated != null && name.startsWith("!")) {
-            if (solver.TRACE) solver.out.println("Skipping initialization of negated BDDRelation " + name);
-            if (solver.TRACE) solver.out.println(" because normal " + negated.name + " is/will be initialized.");
-            return;
-        }
-        this.relation = solver.bdd.zero();
-        this.domains = new LinkedList();
-        if (solver.TRACE) solver.out.println("Initializing BDDRelation " + name + " with attributes " + attributes);
-        this.domainSet = solver.bdd.one();
-        for (Iterator i = attributes.iterator(); i.hasNext();) {
-            Attribute a = (Attribute) i.next();
-            Domain fd = a.attributeDomain;
-            Collection doms = solver.getBDDDomains(fd);
-            BDDDomain d = null;
-            String option = a.attributeOptions;
-            if (option != null && option.length() > 0) {
-                // use the given domain.
-                if (!option.startsWith(fd.name)) throw new IllegalArgumentException("Attribute " + a + " has domain " + fd + ", but tried to assign "
-                    + option);
-                //int index =
-                // Integer.parseInt(option.substring(fd.name.length()));
-                for (Iterator j = doms.iterator(); j.hasNext();) {
-                    BDDDomain dom = (BDDDomain) j.next();
-                    if (dom.getName().equals(option)) {
-                        if (domains.contains(dom)) {
-                            System.out.println("Cannot assign " + dom + " to attribute " + a + ": " + dom + " is already assigned");
-                            option = "";
-                            break;
-                        } else {
-                            d = dom;
-                            break;
-                        }
-                    }
-                }
-                if (option.length() > 0) {
-                    while (d == null) {
-                        BDDDomain dom = solver.allocateBDDDomain(fd);
-                        if (dom.getName().equals(option)) {
-                            d = dom;
-                            break;
-                        }
-                    }
-                }
+        if (!isInitialized) {
+            if (negated != null && name.startsWith("!")) {
+                if (solver.TRACE) solver.out.println("Skipping initialization of negated BDDRelation " + name);
+                if (solver.TRACE) solver.out.println(" because normal " + negated.name + " is/will be initialized.");
+                return;
             }
-            if (d == null) {
-                // find an applicable domain.
-                for (Iterator j = doms.iterator(); j.hasNext();) {
-                    BDDDomain dom = (BDDDomain) j.next();
-                    if (!domains.contains(dom)) {
-                        d = dom;
-                        break;
+            this.relation = solver.bdd.zero();
+            this.domains = new LinkedList();
+            if (solver.TRACE) solver.out.println("Initializing BDDRelation " + name + " with attributes " + attributes);
+            this.domainSet = solver.bdd.one();
+            for (Iterator i = attributes.iterator(); i.hasNext();) {
+                Attribute a = (Attribute) i.next();
+                Domain fd = a.attributeDomain;
+                Collection doms = solver.getBDDDomains(fd);
+                BDDDomain d = null;
+                String option = a.attributeOptions;
+                if (option != null && option.length() > 0) {
+                    // use the given domain.
+                    if (!option.startsWith(fd.name)) throw new IllegalArgumentException("Attribute " + a + " has domain " + fd + ", but tried to assign "
+                        + option);
+                    //int index =
+                    // Integer.parseInt(option.substring(fd.name.length()));
+                    for (Iterator j = doms.iterator(); j.hasNext();) {
+                        BDDDomain dom = (BDDDomain) j.next();
+                        if (dom.getName().equals(option)) {
+                            if (domains.contains(dom)) {
+                                System.out.println("Cannot assign " + dom + " to attribute " + a + ": " + dom + " is already assigned");
+                                option = "";
+                                break;
+                            } else {
+                                d = dom;
+                                break;
+                            }
+                        }
+                    }
+                    if (option.length() > 0) {
+                        while (d == null) {
+                            BDDDomain dom = solver.allocateBDDDomain(fd);
+                            if (dom.getName().equals(option)) {
+                                d = dom;
+                                break;
+                            }
+                        }
                     }
                 }
                 if (d == null) {
-                    d = solver.allocateBDDDomain(fd);
+                    // find an applicable domain.
+                    for (Iterator j = doms.iterator(); j.hasNext();) {
+                        BDDDomain dom = (BDDDomain) j.next();
+                        if (!domains.contains(dom)) {
+                            d = dom;
+                            break;
+                        }
+                    }
+                    if (d == null) {
+                        d = solver.allocateBDDDomain(fd);
+                    }
                 }
+                if (solver.TRACE) solver.out.println("Attribute " + a + " (" + a.attributeDomain + ") assigned to BDDDomain " + d);
+                domains.add(d);
+                domainSet.andWith(d.set());
             }
-            if (solver.TRACE) solver.out.println("Attribute " + a + " (" + a.attributeDomain + ") assigned to BDDDomain " + d);
-            domains.add(d);
-            domainSet.andWith(d.set());
+            isInitialized = true;
         }
-        if (negated != null) {
+        if (negated != null && !negated.isInitialized) {
             BDDRelation bddn = (BDDRelation) negated;
             bddn.relation = solver.bdd.one();
             bddn.domains = this.domains;
             bddn.domainSet = this.domainSet;
             bddn.isInitialized = true;
         }
-        isInitialized = true;
     }
 
     /**
@@ -169,20 +176,30 @@ public class BDDRelation extends Relation {
      */
     public void initialize2() {
         Assert._assert(isInitialized);
-        boolean is_equiv = solver.equivalenceRelations.values().contains(this);
-        boolean is_lt = solver.lessThanRelations.values().contains(this);
-        boolean is_gt = solver.greaterThanRelations.values().contains(this);
-        if (is_equiv || is_lt || is_gt) {
+        if (special_type != 0) {
+            if (solver.TRACE) solver.out.println("Initializing value of special relation "+this);
             BDDDomain d1 = (BDDDomain) domains.get(0);
             BDDDomain d2 = (BDDDomain) domains.get(1);
+            Assert._assert(relation.isZero());
             relation.free();
             BDD b;
-            if (is_equiv) {
-                b = d1.buildEquals(d2);
-            } else if (is_lt) {
-                b = buildLessThan(d1, d2);
-            } else {
-                b = buildLessThan(d2, d1);
+            switch (special_type) {
+                case EQ:
+                    b = d1.buildEquals(d2);
+                    break;
+                case LT:
+                    b = buildLessThan(d1, d2);
+                    break;
+                case GT:
+                    b = buildLessThan(d2, d1);
+                    break;
+                case MAP:
+                    Domain a1 = ((Attribute)attributes.get(0)).attributeDomain;
+                    Domain a2 = ((Attribute)attributes.get(1)).attributeDomain;
+                    b = buildMap(a1, d1, a2, d2);
+                    break;
+                default:
+                    throw new InternalError();
             }
             
             relation = b;
@@ -213,6 +230,33 @@ public class BDDRelation extends Relation {
         return result;
     }
 
+    private BDD buildMap(Domain a1, BDDDomain d1, Domain a2, BDDDomain d2) {
+        if (solver.NOISY) solver.out.print("Building "+this+": ");
+        long index, size;
+        index = (a2.map != null) ? a2.map.size() : a2.size;
+        size = (a1.map != null) ? a1.map.size() : a1.size;
+        if (index + size > d2.size()) {
+            throw new IllegalArgumentException("Domain "+a2+" (current size="+index+", max size="+d2.size()+") is not large enough to contain mapping from "+a1+" (size "+size+")");
+        }
+        int bits = Math.min(d1.varNum(), d2.varNum());
+        BDD b = d1.buildAdd(d2, bits, index);
+        b.andWith(d1.varRange(0, size-1));
+        if (a2.map != null) {
+            if (a1.map != null) {
+                a2.map.addAll(a1.map);
+            } else {
+                for (int i = 0; i < size; ++i) {
+                    a2.map.get(a1+"_"+i);
+                }
+            }
+            Assert._assert(a2.map.size() == index + size, a1.map.size()+" != "+(index+size));
+        } else {
+            a2.size += size;
+        }
+        if (solver.NOISY) solver.out.println(a1+" ("+d1+") 0.."+(size-1)+" maps to "+a2+" ("+d2+") "+index+".."+(index+size-1));
+        return b;
+    }
+    
     /**
      * Updated the negated form of this relation.
      */

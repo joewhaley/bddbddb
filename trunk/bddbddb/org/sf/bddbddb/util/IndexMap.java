@@ -87,6 +87,15 @@ public class IndexMap implements IndexedMap {
         return before != size();
     }
 
+    public boolean addAll(IndexedMap that) {
+        for (Iterator i = that.iterator(); i.hasNext();) {
+            Object o = i.next();
+            this.hash.put(o, new Integer(this.list.size()));
+            this.list.add(o);
+        }
+        return that.size() > 0;
+    }
+    
     public void dumpStrings(final BufferedWriter out) throws IOException {
         for (int j = 0; j < size(); ++j) {
             Object o = get(j);
