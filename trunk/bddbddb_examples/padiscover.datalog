@@ -1,0 +1,102 @@
+
+.basedir "pa.joeq"
+
+### Domains
+
+.include "fielddomains.pa"
+
+.bddvarorder N0_F0_I0_M1_M0_V1_V0_T0_Z0_T1_H0_H1
+
+### Relations
+
+m_vP (m:M0, v:V0, h:H0) inputtuples
+m_A (m:M0, dest:V0, src:V1) inputtuples
+m_Iret (method:M0, invoke:I0, v:V0) inputtuples
+m_Ithr (method:M0, invoke:I0, v:V0) inputtuples
+m_L (m:M0, base:V0, field:F0, dest:V1) inputtuples
+m_S (m:M0, base:V0, field:F0, src:V1) inputtuples
+m_actual (method:M0, invoke:I0, num:Z0, actualparam:V1) inputtuples
+m_ret (method:M0, v:V1) inputtuples
+m_thr (method:M0, v:V1) inputtuples
+m_calls (method:M0, invoke:I0, name:N0) inputtuples
+m_sync (method:M0, var:V0) inputtuples
+m_global (method:M0, var:V0) inputtuples
+m_sc (method:M0, invoke:I0, method:M1) inputtuples
+m_formal (method:M0, num:Z0, formalparam:V0) inputtuples
+m_vars (method:M0, var:V0) inputtuples
+vT (var:V0, type:T0) inputtuples
+hT (heap:H0, type:T1) inputtuples
+aT (type:T0, type:T1) inputtuples
+cha (type:T1, name:N0, method:M0) inputtuples
+f_access (field:F0, type:Z0) inputtuples
+m_access (method:M0, type:Z0) inputtuples
+fields (type:T0, field:F0) inputtuples
+methods (type:T0, method:M0) inputtuples
+clinit (type:T0, method:M0) inputtuples
+roots (method:M0) inputtuples
+
+publicFields (field:F0)
+privateFields (field:F0)
+protectedFields (field:F0)
+packageFields (field:F0)
+staticFields (field:F0)
+publicMethods (method:M0)
+privateMethods (method:M0)
+protectedMethods (method:M0)
+packageMethods (method:M0)
+staticMethods (method:M0)
+
+IE (i:I0, m:M0) outputtuples
+reachable (m:M0) outputtuples
+vP (v:V0, h:H0) outputtuples
+A  (d:V0, s:V1)
+L  (b:V0, f:F0, l:V1)
+S  (b:V0, f:F0, s:V1)
+hP (ha:H0, f:F0, hb:H1) outputtuples
+
+### Rules
+
+publicFields(f)    :- f_access(f,0).
+privateFields(f)   :- f_access(f,1).
+protectedFields(f) :- f_access(f,2).
+packageFields(f)   :- f_access(f,3).
+
+publicMethods(m)    :- m_access(m, 0).
+privateMethods(m)   :- m_access(m, 1).
+protectedMethods(m) :- m_access(m, 2).
+packageMethods(m)   :- m_access(m, 3).
+
+staticFields(f) :- L(v,f,_), m_global(_,v).
+staticFields(f) :- S(v,f,_), m_global(_,v).
+staticMethods(m) :- m_formal(m,0,0).
+
+vPfilter (v:V0, h:H0)
+vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
+
+###roots(m) :- staticMethods(m).
+
+clinits (method:M0, clinit:M1)
+clinits(m,m2) :- m_vP(m,_,h), hT(h,t), clinit(t,m2).
+clinits(m,m2) :- m_L(m,_,f,_), staticFields(f), fields(t,f), clinit(t,m).
+clinits(m,m2) :- m_S(m,_,f,_), staticFields(f), fields(t,f), clinit(t,m).
+
+reachable(m) :- roots(m).
+reachable(m) :- IE(_,m).
+reachable(m) :- reachable(m0), clinits(m0,m).
+
+vP(v,h) :- reachable(m), m_vP(m,v,h).
+A(v1,v2) :- reachable(m), m_A(m,v1,v2).
+L(v1,f,v2) :- reachable(m), m_L(m,v1,f,v2).
+S(v1,f,v2) :- reachable(m), m_S(m,v1,f,v2).
+
+vP(v,0) :- reachable(m), m_global(m,v).
+vP(v1,h) :- A(v1,v2), vP(v2,h), vPfilter(v1,h).
+hP(h1,f,h2) :- S(v1,f,v2), vP(v1,h1), vP(v2,h2).
+vP(v2,h2) :- L(v1,f,v2), vP(v1,h1), hP(h1,f,h2), vPfilter(v2,h2). split
+
+IE(i,m2) :- reachable(m), m_sc(m,i,m2).
+IE(i,m2) :- reachable(m), m_calls(m,i,n), m_actual(_,i,0,v), vP(v,h), hT(h,t), cha(t,n,m2). split
+
+A(v1,v2) :- m_formal(m,z,v1), IE(i,m), m_actual(_,i,z,v2).
+A(v2,v1) :- m_ret(m,v1), IE(i,m), m_Iret(_,i,v2).
+A(v2,v1) :- m_thr(m,v1), IE(i,m), m_Ithr(_,i,v2).
