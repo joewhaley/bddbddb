@@ -1,39 +1,35 @@
-// Copy.java, created Jul 2, 2004 12:28:31 PM 2004 by jwhaley
+// Project.java, created Jun 29, 2004 12:25:38 PM 2004 by jwhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package net.sf.bddbddb.ir.highlevel;
+package net.sf.bddbddb.ir.lowlevel;
 
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+
+import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.Relation;
 import net.sf.bddbddb.ir.Operation;
 
 /**
- * Copy
+ * Project
  * 
  * @author jwhaley
  * @version $Id$
  */
-public class Copy extends HighLevelOperation {
-    Relation r0, r1;
-
+public class BDDProject extends LowLevelOperation {
+    BDDRelation r0, r1;
+    List/* <BDDDomains> */ domainProjectSet;
     /**
      * @param r0
      * @param r1
      */
-    public Copy(Relation r0, Relation r1) {
+    public BDDProject(BDDRelation r0, BDDRelation r1) {
         super();
         this.r0 = r0;
         this.r1 = r1;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see net.sf.bddbddb.ir.Operation#visit(net.sf.bddbddb.ir.HighLevelOperationVisitor)
-     */
-    public Object visit(HighLevelOperationVisitor i) {
-        return i.visit(this);
+        this.domainProjectSet = new LinkedList(r1.getBDDDomains());
+        this.domainProjectSet.removeAll(r0.getBDDDomains());
     }
 
     /*
@@ -42,14 +38,25 @@ public class Copy extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return (TRACE_VERBOSE ? r0.verboseToString() : r0.toString()) + " = " + getExpressionString();
+        return r0.toString() + " = " + getExpressionString();
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see net.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
-        return "copy(" + (TRACE_VERBOSE ? r1.verboseToString() : r1.toString()) + ")";
+        return "bddproject(" + r1.toString() + "," + domainProjectSet.toString() + ")";
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see net.sf.bddbddb.ir.Operation#visit(net.sf.bddbddb.ir.HighLevelOperationVisitor)
+     */
+    public Object visit(LowLevelOperationVisitor i) {
+        return i.visit(this);
     }
 
     /*
@@ -77,8 +84,18 @@ public class Copy extends HighLevelOperation {
         return r1;
     }
 
+    /**
+     * @return  list of domains being projected
+     */
+    public List/*<BDDDomains>*/ getDomains() {
+        return domainProjectSet;
+    }
+
+    /* (non-Javadoc)
+     * @see net.sf.bddbddb.ir.Operation#copy()
+     */
     public Operation copy() {
-        return new Copy(r0, r1);
+        return new BDDProject(r0, r1);
     }
 
     /*
@@ -88,7 +105,7 @@ public class Copy extends HighLevelOperation {
      *      net.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
-          if (r1 == r_old) r1 = r_new; 
+        if (r1 == r_old) r1 = (BDDRelation) r_new;
     }
 
     /*
@@ -97,6 +114,6 @@ public class Copy extends HighLevelOperation {
      * @see net.sf.bddbddb.ir.Operation#setRelationDest(net.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
-        this.r0 = r0;
+        this.r0 = (BDDRelation) r0;
     }
 }

@@ -22,4 +22,6 @@ public interface LowLevelOperationVisitor {
      * @return  the result
      */
     public abstract Object visit(Replace op);
+    
+    public abstract Object visit(BDDProject op);
 }

@@ -3,18 +3,20 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.ir;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import jwutil.collections.IndexMap;
+
 import jwutil.collections.MultiMap;
 import jwutil.util.Assert;
+import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.IterationFlowGraph;
 import net.sf.bddbddb.IterationList;
@@ -28,13 +30,11 @@ import net.sf.bddbddb.dataflow.DeadCode;
 import net.sf.bddbddb.dataflow.DefUse;
 import net.sf.bddbddb.dataflow.IRPass;
 import net.sf.bddbddb.dataflow.Liveness;
-import net.sf.bddbddb.dataflow.PartialOrder;
 import net.sf.bddbddb.dataflow.PartialRedundancy;
 import net.sf.bddbddb.dataflow.Problem;
 import net.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import net.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
 import net.sf.bddbddb.dataflow.DefUse.DefUseFact;
-import net.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import net.sf.bddbddb.ir.highlevel.BooleanOperation;
 import net.sf.bddbddb.ir.highlevel.Copy;
 import net.sf.bddbddb.ir.highlevel.Invert;
@@ -43,7 +43,9 @@ import net.sf.bddbddb.ir.highlevel.Project;
 import net.sf.bddbddb.ir.highlevel.Rename;
 import net.sf.bddbddb.ir.highlevel.Save;
 import net.sf.bddbddb.ir.lowlevel.ApplyEx;
+import net.sf.bddbddb.ir.lowlevel.BDDProject;
 import net.sf.bddbddb.ir.lowlevel.Replace;
+import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDPairing;
 import net.sf.javabdd.BDDFactory.BDDOp;
 
@@ -226,6 +228,30 @@ public class IR {
         }
     }
 
+    void verifyRename(Rename r){
+        BDDRelation r0 = (BDDRelation) r.getRelationDest();
+        BDDRelation r1 = (BDDRelation) r.getSrc();
+        Map renameMap = r.getRenameMap();
+        for(Iterator it = r1.getAttributes().iterator(); it.hasNext(); ){
+            Attribute a1 = (Attribute) it.next();
+            Attribute a0 = (Attribute) renameMap.get(a1);
+            if(a0 == null){
+                Assert._assert(r0.getAttributes().contains(a1));
+                a0 = a1;
+            }
+            BDDDomain d1 = ((BDDRelation) r1).getBDDDomain(a1);
+            BDDDomain d0 = ((BDDRelation) r0).getBDDDomain(a0);
+            if( d1 != d0 ){
+                System.out.println(r);
+                System.out.println("src attributes: " + r1.getAttributes()+ " domains: " + ((BDDRelation) r1).getBDDDomains() +
+                        " dest attributes: " + r0.getAttributes() + "domains: " + ((BDDRelation) r0).getBDDDomains() +
+                        Operation.getRenames((BDDRelation) r0, (BDDRelation) r1));
+                System.out.println( "a0: " + a0 + "  d0: " + d0 + "  a1: " + a1 +" d1: " + d1);
+                System.out.println("rename map: " + renameMap);
+                Assert.UNREACHABLE();
+            }
+        }
+    }
     void cleanUpAfterAssignment(IterationList list) {
         for (ListIterator i = list.iterator(); i.hasNext();) {
             Object o = i.next();
@@ -246,6 +272,16 @@ public class IR {
                     Copy op = new Copy(r0, r1);
                     i.add(op);
                 }
+            }else if (o instanceof ApplyEx){
+                ApplyEx a = (ApplyEx) o;
+                a.setProjectSet();
+            }else if(o instanceof Project){
+                Project p = (Project) o;
+                i.remove();
+                BDDRelation r0 = (BDDRelation) p.getRelationDest();
+                BDDRelation r1 = (BDDRelation) p.getSrc();
+                BDDProject b = new BDDProject(r0,r1);
+                i.add(b);
             } else if (o instanceof IterationList) {
                 cleanUpAfterAssignment((IterationList) o);
             }

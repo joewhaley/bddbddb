@@ -32,6 +32,7 @@ import net.sf.bddbddb.ir.highlevel.Union;
 import net.sf.bddbddb.ir.highlevel.Universe;
 import net.sf.bddbddb.ir.highlevel.Zero;
 import net.sf.bddbddb.ir.lowlevel.ApplyEx;
+import net.sf.bddbddb.ir.lowlevel.BDDProject;
 import net.sf.bddbddb.ir.lowlevel.Replace;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
@@ -70,7 +71,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         }
         if (!needsDomainMatch) return b;
         boolean any = false;
-        if (TRACE) System.out.println("R1: " + r1 + " R2: " + r2);
+ 
         BDDPairing pair = factory.makePair();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
@@ -142,7 +143,6 @@ public class BDDOperationInterpreter implements OperationInterpreter {
             return getProjectSet(null, r1, r2, r3);
         }
         boolean any2 = false, any3 = false;
-        if (TRACE) System.out.println("R1: " + r1 + " R2: " + r2 + " R3: " + r3);
         BDDPairing pair2 = factory.makePair();
         BDDPairing pair3 = factory.makePair();
         Map renameMap = new HashMap();
@@ -221,6 +221,9 @@ public class BDDOperationInterpreter implements OperationInterpreter {
      * @see net.sf.bddbddb.ir.HighLevelInterpreter#visit(net.sf.bddbddb.ir.Project)
      */
     public Object visit(Project op) {
+        if(!needsDomainMatch) 
+            Assert.UNREACHABLE(); /* if we ran domain assignment we should only see BDDProjects */
+        
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         List attributes = op.getAttributes();
@@ -240,13 +243,38 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
-
+    
+    public Object visit(BDDProject op) {
+        if(needsDomainMatch)
+            Assert.UNREACHABLE(); /* without domain assignment we can't see these */
+            
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
+        BDDRelation r1 = (BDDRelation) op.getSrc();
+        List domains = op.getDomains();
+        BDD b = factory.one();
+        for (Iterator i = domains.iterator(); i.hasNext();) {
+            BDDDomain d = (BDDDomain) i.next();
+            b.andWith(d.set());
+            if (TRACE) System.out.println("   Projecting " + d);
+        }
+        if (TRACE) System.out.println("   Exist " + r1);
+        BDD r = r1.getBDD().exist(b);
+        b.free();
+        r0.setBDD(r);
+        if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount() + " Domains: " + BDDRelation.activeDomains(r));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
+        return null;
+    }
+    
     /*
      * (non-Javadoc)
      * 
      * @see net.sf.bddbddb.ir.HighLevelInterpreter#visit(net.sf.bddbddb.ir.Rename)
      */
     public Object visit(Rename op) {
+        if(!needsDomainMatch)
+            Assert.UNREACHABLE(); /* all renames should be removed after domains assignment */
+        
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         if (CHECK) {
@@ -492,8 +520,8 @@ public class BDDOperationInterpreter implements OperationInterpreter {
      
         BDD b1 = r1.getBDD().id();
         BDD b2 = r2.getBDD().id();
-        BDD b3 = makeDomainsMatch(b1, b2, r0, r1, r2);
-        if (TRACE) System.out.println("   " + op.toString());
+        BDD b3 = needsDomainMatch ? makeDomainsMatch(b1, b2, r0, r1, r2) : op.getProjectSet();
+        //if (TRACE) System.out.println("   " + op.toString());
         BDD b = b1.applyEx(b2, bddop, b3);
         b1.free();
         b2.free();
@@ -533,7 +561,6 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     public Object visit(Replace op) {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
-        if (TRACE) System.out.println("   " + op.toString());
         BDDPairing pair = op.getPairing();
         BDD r = pair != null ? r1.getBDD().replace(pair) : r1.getBDD().id();
         r0.setBDD(r);

@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.HashWorklist;
 import jwutil.collections.MultiMap;
@@ -47,6 +48,7 @@ import net.sf.bddbddb.ir.highlevel.Union;
 import net.sf.bddbddb.ir.highlevel.Universe;
 import net.sf.bddbddb.ir.highlevel.Zero;
 import net.sf.bddbddb.ir.lowlevel.ApplyEx;
+import net.sf.bddbddb.ir.lowlevel.BDDProject;
 import net.sf.bddbddb.ir.lowlevel.Replace;
 
 /**
@@ -233,6 +235,11 @@ public class PartialOrder extends OperationProblem {
             project(newCons, attrs);
             currFact.setConstraints(op.getRelationDest(), newCons);
             return currFact;
+        }
+        
+        public Object visit(BDDProject op){
+            Assert.UNREACHABLE(); /* TODO won't hande this for now */
+            return null;
         }
 
         /* (non-Javadoc)

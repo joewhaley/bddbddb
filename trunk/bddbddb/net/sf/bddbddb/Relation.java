@@ -245,6 +245,11 @@ public abstract class Relation {
     }
 
     /**
+     * Returns a verbose representation of the relation
+     */
+     public abstract String verboseToString();
+    
+    /**
      * Returns the list of attributes of this relation.
      * 
      * @return  attributes

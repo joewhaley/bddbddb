@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
 import net.sf.bddbddb.IterationList;
 import net.sf.bddbddb.Relation;
 import net.sf.bddbddb.ir.IR;
@@ -31,6 +32,7 @@ import net.sf.bddbddb.ir.highlevel.Union;
 import net.sf.bddbddb.ir.highlevel.Universe;
 import net.sf.bddbddb.ir.highlevel.Zero;
 import net.sf.bddbddb.ir.lowlevel.ApplyEx;
+import net.sf.bddbddb.ir.lowlevel.BDDProject;
 import net.sf.bddbddb.ir.lowlevel.Replace;
 
 /**
@@ -204,6 +206,7 @@ public class CopyProp extends OperationProblem implements IRPass {
                 Relation value = (Relation) e.getValue();
                 if (key.equals(dest) || value.equals(dest)) it.remove();
             }
+            
             if (op instanceof Copy) {
                 Copy cOp = (Copy) op;
                 Relation src = cOp.getSrc();
@@ -325,7 +328,11 @@ public class CopyProp extends OperationProblem implements IRPass {
             Relation src = op.getSrc();
             return visitUnary(op,src);
         }
-
+        
+        public Object visit(BDDProject op){
+            Relation src = op.getSrc();
+            return visitUnary(op,src);
+        }
         /*
          * (non-Javadoc)
          * 

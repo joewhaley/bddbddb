@@ -3,6 +3,12 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,12 +16,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.math.BigInteger;
+
 import jwutil.util.Assert;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
@@ -285,10 +286,13 @@ public class BDDRelation extends Relation {
      * @return  whether the domains match
      */
     public boolean verify(BDD r) {
+        if(r == null) return true; /* trivially true? */
         BDD s = r.support();
         calculateDomainSet();
         BDD t = domainSet.and(s);
         s.free();
+        //System.out.println("Relation domains: " + domains + " BDD domains:" + activeDomains(r));
+        
         boolean result = t.equals(domainSet);
         if (!result) {
             System.out.println("Warning, domains for " + this + " don't match BDD: " + activeDomains(r) + " vs " + domains);
@@ -903,4 +907,22 @@ public class BDDRelation extends Relation {
         }
         this.domains = newdom;
     }
+    
+    public String verboseToString(){
+        StringBuffer sb = new StringBuffer();
+        sb.append(super.toString());
+        sb.append("[");
+        boolean any = false;
+        for(Iterator it = getAttributes().iterator(); it.hasNext(); ){
+            any = true;
+            Attribute a = (Attribute) it.next();
+            sb.append(a + ":" + getBDDDomain(a) + ",");
+        }
+        if(any)
+            sb.deleteCharAt(sb.length() - 1);
+        sb.append("]");
+       
+        return sb.toString();
+    }
 }
+
