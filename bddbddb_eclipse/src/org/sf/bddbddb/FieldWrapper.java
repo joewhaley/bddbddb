@@ -40,4 +40,8 @@ public class FieldWrapper implements Wrapper {
     public ITypeBinding getType() {
         return field.getType();
     }
+    
+    public IVariableBinding getField() {
+        return field;
+    }
 }

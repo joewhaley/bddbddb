@@ -365,6 +365,8 @@ public class PAFromSource {
         Mthr = initBDD("Mthr");
         mI = initBDD("mI");
         IE = initBDD("IE0");
+        File v = new File(loadPath + "visited.bdd");
+        v.delete();
         visited = initBDD("visited");
         cha = initBDD("cha");
         
@@ -2323,7 +2325,7 @@ public class PAFromSource {
     Set dotClass;
     Map/*<ICompilationUnit, CompilationUnit>*/ javaASTs = new HashMap();
     private boolean ran = false;
-    private String dumpPath;
+    String dumpPath;
     private int filesParsed = 0;
     private String loadPath;
     
