@@ -20,11 +20,13 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.math.BigInteger;
+import java.net.URL;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import jwutil.collections.EntryValueComparator;
@@ -33,6 +35,7 @@ import jwutil.math.CombinationGenerator;
 import jwutil.util.Assert;
 import org.jdom.Document;
 import org.jdom.Element;
+import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 import org.sf.javabdd.BDDDomain;
@@ -53,9 +56,15 @@ public class FindBestDomainOrder {
     Map/*<InferenceRule,OrderInfoCollection>*/ orderInfo_rules;
     Map/*<Relation,OrderInfoCollection>*/ orderInfo_relations;
     
-    /** Collection of all TrialCollections that have been done so far. */
+    /**
+     * Collection of all TrialCollections that have been done so far, including
+     * ones that have been loaded from disk.
+     */
     Collection allTrials;
     
+    /**
+     * Link back to the solver.
+     */
     Solver solver;
     
     /**
@@ -67,6 +76,46 @@ public class FindBestDomainOrder {
         orderInfo_relations = new HashMap();
         allTrials = new LinkedList();
         solver = s;
+    }
+    
+    void loadTrials(String filename) {
+        File file = new File(filename);
+        if (file.exists()) {
+            try {
+                URL url = file.toURL();
+                SAXBuilder builder = new SAXBuilder();
+                Document doc = builder.build(url);
+                XMLFactory f = new XMLFactory(solver);
+                Element e = doc.getRootElement();
+                List list = (List) f.fromXML(e);
+                if (TRACE > 0) {
+                    out.println("Loaded "+list.size()+" trial collections from file.");
+                    if (TRACE > 1) {
+                        for (Iterator i = list.iterator(); i.hasNext(); ) {
+                            out.println("Loaded from file: "+i.next());
+                        }
+                    }
+                }
+                allTrials.addAll(list);
+            } catch (Exception e) {
+                System.err.println("Error occurred loading "+filename+": "+e);
+                e.printStackTrace();
+            }
+        }
+        incorporateTrials();
+    }
+    
+    void incorporateTrials() {
+        for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
+            TrialCollection tc = (TrialCollection) i.next();
+            InferenceRule ir = tc.getRule(solver);
+            OrderInfoCollection ruleinfo = getOrderInfo(ir);
+            TrialInfo ti = tc.getMinimum();
+            if (ti != null) {
+                double confidence = (double) ti.cost / 1000.;
+                ruleinfo.incorporateTrials(tc, confidence, true);
+            }
+        }
     }
     
     /**
@@ -120,8 +169,8 @@ public class FindBestDomainOrder {
         for (Iterator i = orderInfo_rules.entrySet().iterator(); i.hasNext(); ) {
             Map.Entry e = (Map.Entry) i.next();
             InferenceRule ir = (InferenceRule)e.getKey();
-            OrderInfoCollection info = (OrderInfoCollection)e.getValue();
             System.out.println("Rule: "+ir);
+            OrderInfoCollection info = (OrderInfoCollection)e.getValue();
             info.dump();
         }
         for (Iterator i = orderInfo_relations.entrySet().iterator(); i.hasNext(); ) {
@@ -989,6 +1038,7 @@ public class FindBestDomainOrder {
                     continue;
                 }
                 if (tok.equals("]")) {
+                    if (!st.hasMoreTokens()) break;
                     if (inner == null)
                         throw new IllegalArgumentException("Unmatched \""+tok+"\" in order \""+s+"\"");
                     o.add(inner);
@@ -1444,7 +1494,7 @@ public class FindBestDomainOrder {
          * @return  XML element
          */
         public Element toXMLElement() {
-            Element dis = new Element("trialInfoCollection");
+            Element dis = new Element("trialCollection");
             dis.setAttribute("name", name);
             dis.setAttribute("timeStamp", Long.toString(timeStamp));
             for (Iterator i = trials.values().iterator(); i.hasNext(); ) {
@@ -1454,8 +1504,20 @@ public class FindBestDomainOrder {
             return dis;
         }
         
-        public static TrialCollection fromXMLElement(Element e, Map nameToVar) {
+        static InferenceRule parseRule(Solver solver, String s) {
+            int ruleNum = Integer.parseInt(s.substring(4));
+            InferenceRule rule = (InferenceRule) solver.rules.get(ruleNum);
+            return rule;
+        }
+        
+        public InferenceRule getRule(Solver solver) {
+            return parseRule(solver, name);
+        }
+        
+        public static TrialCollection fromXMLElement(Element e, Solver solver) {
             String name = e.getAttributeValue("name");
+            InferenceRule rule = parseRule(solver, name);
+            Map nameToVar = rule.getVarNameMap();
             long timeStamp;
             try {
                 timeStamp = Long.parseLong(e.getAttributeValue("timeStamp"));
@@ -2328,9 +2390,7 @@ public class FindBestDomainOrder {
             OrderInfoCollection c = (OrderInfoCollection) e.getValue();
             
             Element ruleInfo = new Element("ruleInfo");
-            Element rule = new Element("rule");
-            rule.setText("rule"+ir.id);
-            ruleInfo.addContent(rule);
+            ruleInfo.setAttribute("rule", "rule"+ir.id);
             
             Element oic = c.toXMLElement();
             ruleInfo.addContent(oic);
@@ -2345,9 +2405,7 @@ public class FindBestDomainOrder {
             OrderInfoCollection c = (OrderInfoCollection) e.getValue();
             
             Element relationInfo = new Element("relationInfo");
-            Element relation = new Element("relation");
-            relation.setText(r.name);
-            relationInfo.addContent(relation);
+            relationInfo.setAttribute("relation", r.name);
             
             Element oic = c.toXMLElement();
             relationInfo.addContent(oic);
@@ -2362,7 +2420,7 @@ public class FindBestDomainOrder {
         return fbo;
     }
     
-    public void dumpXML(String filename, Element e) {
+    public static void dumpXML(String filename, Element e) {
         Writer w = null;
         try {
             w = new BufferedWriter(new FileWriter(filename)); 
@@ -2392,43 +2450,111 @@ public class FindBestDomainOrder {
     public static class XMLFactory {
         
         Solver solver;
-        Map/*<String,Variable>*/ nameToVar;
         
         XMLFactory(Solver s) {
             solver = s;
         }
         
+        public InferenceRule getRule(String s) {
+            return (InferenceRule) solver.rules.get(Integer.parseInt(s.substring(4)));
+        }
+        
+        public Relation getRelation(String s) {
+            return (Relation) solver.nameToRelation.get(s);
+        }
+        
+        public InferenceRule ruleFromXML(Element e) {
+            return (InferenceRule) solver.rules.get(Integer.parseInt(e.getText().substring(4)));
+        }
+        
+        public Relation relationFromXML(Element e) {
+            return (Relation) solver.nameToRelation.get(e.getText());
+        }
+        
         public Object fromXML(Element e) {
             String name = e.getName();
             Object o;
-            if (name.equals("orderInfo")) {
-                o = OrderInfo.fromXMLElement(e, nameToVar);
-            } else if (name.equals("trialInfo")) {
-                o = TrialInfo.fromXMLElement(e, nameToVar);
-            } else if (name.equals("orderInfoCollection")) {
-                o = OrderInfoCollection.fromXMLElement(e, nameToVar);
-            } else if (name.equals("trialInfoCollection")) {
-                o = TrialCollection.fromXMLElement(e, nameToVar);
-            } else if (name.equals("rule")) {
-                o = solver.rules.get(Integer.parseInt(e.getText().substring(4)));
-            } else if (name.equals("relation")) {
-                o = solver.nameToRelation.get(e.getText());
-            } else if (name.equals("ruleInfo") || name.equals("relationInfo")) {
-                o = new Pair(fromXML((Element) e.getContent(0)), fromXML((Element) e.getContent(1)));
-            } else if (name.equals("ruleInfoCollection") || name.equals("relationInfoCollection")) {
-                Map m = new HashMap();
+            if (name.equals("trialCollections")) {
+                String fn = e.getAttributeValue("datalog");
+                List results = new LinkedList();
+                if (fn.equals(solver.inputFilename)) {
+                    for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
+                        Object q = i.next();
+                        if (q instanceof Element) {
+                            Element e2 = (Element) q;
+                            if (e2.getName().equals("trialCollection")) {
+                                results.add(fromXML(e2));
+                            }
+                        }
+                    }
+                }
+                o = results;
+            } else if (name.equals("trialCollection")) {
+                TrialCollection tc = TrialCollection.fromXMLElement(e, solver);
+                o = tc;
+            } else if (name.equals("findBestOrder")) {
+                Map m1 = null;
+                Map m2 = null;
                 for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
                     Object q = i.next();
                     if (q instanceof Element) {
-                        Pair p = (Pair) fromXML((Element) q);
-                        m.put(p.left, p.right);
+                        Element e2 = (Element) q;
+                        if (e2.getName().equals("ruleInfoCollection")) {
+                            m1 = (Map) fromXML(e2);
+                        } else if (e2.getName().equals("relationInfoCollection")) {
+                            m2 = (Map) fromXML(e2);
+                        }
                     }
                 }
-                o = m;
-            } else if (name.equals("findBestOrder")) {
-                Map m1 = (Map) fromXML((Element) e.getContent(0));
-                Map m2 = (Map) fromXML((Element) e.getContent(1));
+                if (m1 == null) m1 = new HashMap();
+                if (m2 == null) m2 = new HashMap();
                 o = new FindBestDomainOrder(m1, m2);
+            } else if (name.equals("rule")) {
+                o = ruleFromXML(e);
+            } else if (name.equals("relation")) {
+                o = relationFromXML(e);
+            } else if (name.equals("ruleInfo")) {
+                Element e0 = (Element) e.getContent(0);
+                Element e1 = (Element) e.getContent(1);
+                InferenceRule ir = ruleFromXML(e0);
+                Map/*<String,Variable>*/ nameToVar = ir.getVarNameMap();
+                OrderInfoCollection oic = OrderInfoCollection.fromXMLElement(e1, nameToVar);
+                o = new Pair(ir, oic);
+            } else if (name.equals("relationInfo")) {
+                Element e0 = (Element) e.getContent(0);
+                Element e1 = (Element) e.getContent(1);
+                Relation r = relationFromXML(e0);
+                Map/*<String,Attribute>*/ nameToVar = r.getAttribNameMap();
+                OrderInfoCollection oic = OrderInfoCollection.fromXMLElement(e1, nameToVar);
+                o = new Pair(r, oic);
+            } else if (name.equals("ruleInfoCollection")) {
+                Map result = new HashMap();
+                for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
+                    Object q = i.next();
+                    if (q instanceof Element) {
+                        Element e2 = (Element) q;
+                        if (e2.getName().equals("ruleInfo")) {
+                            InferenceRule ir = getRule(e2.getAttributeValue("rule"));
+                            OrderInfoCollection oic = OrderInfoCollection.fromXMLElement(e2, ir.getVarNameMap());
+                            result.put(ir, oic);
+                        }
+                    }
+                }
+                o = result;
+            } else if (name.equals("relationInfoCollection")) {
+                Map result = new HashMap();
+                for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
+                    Object q = i.next();
+                    if (q instanceof Element) {
+                        Element e2 = (Element) q;
+                        if (e2.getName().equals("relationInfo")) {
+                            Relation r = getRelation(e2.getAttributeValue("relation"));
+                            OrderInfoCollection oic = OrderInfoCollection.fromXMLElement(e2, r.getAttribNameMap());
+                            result.put(r, oic);
+                        }
+                    }
+                }
+                o = result;
             } else {
                 throw new IllegalArgumentException("Cannot parse XML element "+name);
             }

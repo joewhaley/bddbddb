@@ -1079,8 +1079,8 @@ public class BDDInferenceRule extends InferenceRule {
         // Keep a cache of all the trials we have done, for informational purposes.
         fbdo.allTrials.add(info2.trials);
         
-        fbdo.dumpXML("fbo.xml", fbdo.toXMLElement());
-        fbdo.dumpXML("trials.xml", fbdo.trialsToXMLElement());
+        FindBestDomainOrder.dumpXML("fbo.xml", fbdo.toXMLElement());
+        FindBestDomainOrder.dumpXML("trials.xml", fbdo.trialsToXMLElement());
     }
     
 }
