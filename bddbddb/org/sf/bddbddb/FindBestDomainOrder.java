@@ -33,8 +33,8 @@ public class FindBestDomainOrder {
     public static int TRACE = 2;
     public static PrintStream out = System.out;
     
-    Map/*<InferenceRule,OrderingInfo>*/ orderInfo_rules;
-    Map/*<Relation,OrderingInfo>*/ orderInfo_relations;
+    Map/*<InferenceRule,OrderInfoCollection>*/ orderInfo_rules;
+    Map/*<Relation,OrderInfoCollection>*/ orderInfo_relations;
     
     public static FindBestDomainOrder INSTANCE = new FindBestDomainOrder();
     
@@ -63,6 +63,23 @@ public class FindBestDomainOrder {
             orderInfo_relations.put(r, o = new OrderInfoCollection(r.name));
         }
         return o;
+    }
+    
+    public void dump() {
+        for (Iterator i = orderInfo_rules.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry e = (Map.Entry) i.next();
+            InferenceRule ir = (InferenceRule)e.getKey();
+            OrderInfoCollection info = (OrderInfoCollection)e.getValue();
+            System.out.println("Rule: "+ir);
+            info.dump();
+        }
+        for (Iterator i = orderInfo_relations.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry e = (Map.Entry) i.next();
+            Relation r = (Relation)e.getKey();
+            OrderInfoCollection info = (OrderInfoCollection)e.getValue();
+            System.out.println("Relation: "+r);
+            info.dump();
+        }
     }
     
     public static List/*<Order>*/ generateAllOrders(List vars) {
@@ -1188,6 +1205,21 @@ public class FindBestDomainOrder {
                 badCharacteristics.add(sortedBadSim[i].getKey());
             }
             if (TRACE > 0) out.println(this+": finished update.");
+        }
+        
+        public void dump() {
+            OrderInfo[] sorted = getSorted();
+            System.out.println("Best orders:");
+            for (int j = sorted.length-1; j >= 0 && j >= sorted.length-5; --j) {
+                System.out.println(sorted[j]);
+            }
+            System.out.println("Worst orders:");
+            for (int j = 0; j < 5 && j < sorted.length; ++j) {
+                System.out.println(sorted[j]);
+            }
+            calculateCharacteristics();
+            System.out.println("Good order characteristics: "+goodCharacteristics);
+            System.out.println("Bad order characteristics: "+badCharacteristics);
         }
         
         public String toString() {
