@@ -87,7 +87,6 @@ public class BDDInferenceRule extends InferenceRule {
     
     long FBO_CUTOFF = Long.parseLong(System.getProperty("fbocutoff", "90"));
     boolean learn_best_order = !System.getProperty("learnbestorder", "no").equals("no");  
-    LearnedOrder learnedOrder;
     
     /**
      * Construct a new BDDInferenceRule.
@@ -101,7 +100,6 @@ public class BDDInferenceRule extends InferenceRule {
         super(solver, top, bottom);
         this.solver = solver;
         updateCount = 0;
-        learnedOrder = new LearnedOrder(this);
         //initialize();
     }
 
@@ -206,13 +204,6 @@ public class BDDInferenceRule extends InferenceRule {
             variableSet[i] = currentVariableSet;
             if (TRACE) solver.out.println("Variable set="+variableSet[i]);
             currentVariableSet = new LinkedList(currentVariableSet);
-        }
-        try {
-            //learnedOrder.initialize();
-        } catch (NoClassDefFoundError e) {
-            // weka is not in classpath.
-            learnedOrder = null;
-            //System.out.println("weka.jar is not in classpath, machine learning disabled.");
         }
         isInitialized = true;
     }
@@ -393,12 +384,6 @@ public class BDDInferenceRule extends InferenceRule {
         
         BDD result = evalRelations(solver.bdd, relationValues, canQuantifyAfter, time);
         long thisTime = System.currentTimeMillis() - time;
-        if (learnedOrder != null && thisTime > longestTime){
-            longestTime = thisTime;
-            longestIteration = updateCount;
-            Assert._assert(oldRelationValues != null && canQuantifyAfter != null, Boolean.toString(incrementalize));
-            learnedOrder.saveBddsToLoad(oldRelationValues, canQuantifyAfter);
-        }
         if (result == null) {
             doPostUpdate(null);
             return false;
@@ -682,25 +667,9 @@ public class BDDInferenceRule extends InferenceRule {
         BDDRelation r = (BDDRelation) bottom.relation;
         if (TRACE_FULL) solver.out.println("Current value of relation " + bottom + ": " + r.relation.toStringWithDomains());  
         BDD[] newRelationValuesCopy = new BDD[newRelationValues.length];
-        if(learn_best_order)
-            for(int i = 0; i < newRelationValues.length; ++i)
-                newRelationValuesCopy[i] = (newRelationValues[i] != null) ? newRelationValues[i].id() : null;
         
         BDD[] results = evalRelationsIncremental(solver.bdd, newRelationValues, rallRelationValues, canQuantifyAfter);
         long thisTime = System.currentTimeMillis() - time;
-        if(learn_best_order)
-            if(thisTime > longestTime){
-                longestTime = thisTime;
-                longestIteration = updateCount;
-                Assert._assert(oldRelationValues != null && rallRelationValues != null && canQuantifyAfter != null, Boolean.toString(incrementalize));
-           
-                learnedOrder.saveBddsToLoad(newRelationValuesCopy, rallRelationValues, canQuantifyAfter);
-          
-            }else
-                for(int i = 0; i < newRelationValuesCopy.length; ++i)
-                    if(newRelationValuesCopy[i] != null)
-                        newRelationValuesCopy[i].free();
-        
         if (cache_before_rename) {
             for (int i = 0; i < rallRelationValues.length; ++i) {
                 rallRelationValues[i].free();
@@ -924,14 +893,6 @@ public class BDDInferenceRule extends InferenceRule {
         return sb.toString();
     }
 
-    public void learn(){
-        learnedOrder.learn();
-    }
-
-    public LearnedOrder getLearnedOrder(){ 
-        return learnedOrder;
-    }
-    
     /*
      * (non-Javadoc)
      * 
