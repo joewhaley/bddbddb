@@ -16,6 +16,9 @@ import java.util.Set;
 import java.io.IOException;
 import jwutil.collections.AppendIterator;
 import jwutil.util.Assert;
+import net.sf.bddbddb.order.MapBasedTranslator;
+import net.sf.bddbddb.order.Order;
+import net.sf.bddbddb.order.OrderTranslator;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
@@ -1043,9 +1046,9 @@ public class BDDInferenceRule extends InferenceRule {
         
         // Incorporate relation ordering info into our decisions.
         // Relation ordering info is not nearly as accurate, so use a low confidence level.
-        FindBestDomainOrder.OrderTranslator t1 = new FindBestDomainOrder.MapBasedTranslator(r1, false);
+        OrderTranslator t1 = new MapBasedTranslator(r1, false);
         FindBestDomainOrder.OrderInfoCollection r1info = fbdo.getOrderInfo(r1.relation);
-        FindBestDomainOrder.OrderTranslator t2 = new FindBestDomainOrder.MapBasedTranslator(r2, false);
+        OrderTranslator t2 = new MapBasedTranslator(r2, false);
         FindBestDomainOrder.OrderInfoCollection r2info = fbdo.getOrderInfo(r2.relation);
         info2.incorporateInfoCollection(r1info, t1, 0.1);
         info2.incorporateInfoCollection(r2info, t2, 0.1);
@@ -1053,7 +1056,7 @@ public class BDDInferenceRule extends InferenceRule {
         int count = 8;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
-            FindBestDomainOrder.Order o = info2.tryNewGoodOrder(allVars);
+            Order o = info2.tryNewGoodOrder(allVars);
             if (o == null) break;
             String vOrder = o.toVarOrderString(variableToBDDDomain);
             System.out.println("Trying order "+vOrder);
@@ -1070,8 +1073,8 @@ public class BDDInferenceRule extends InferenceRule {
         double confidence = (double) bestTime / 1000;
         ruleinfo.incorporateTrials(info2.trials, confidence, true);
         // Also incorporate into relation info.
-        FindBestDomainOrder.OrderTranslator u1 = new FindBestDomainOrder.MapBasedTranslator(r1, true);
-        FindBestDomainOrder.OrderTranslator u2 = new FindBestDomainOrder.MapBasedTranslator(r2, true);
+        OrderTranslator u1 = new MapBasedTranslator(r1, true);
+        OrderTranslator u2 = new MapBasedTranslator(r2, true);
         r1info.incorporateTrials(info2.trials, u1, confidence, false);
         r2info.incorporateTrials(info2.trials, u2, confidence, false);
         

@@ -55,7 +55,7 @@ public abstract class InferenceRule implements IterationElement {
      * List of subgoals for the rule (i.e. the terms on the right hand side).
      * May be empty.
      */
-    protected List/*<RuleTerm>*/top;
+    protected List/*<RuleTerm>*/ top;
     
     /**
      * Head of the rule (i.e. the term on the left hand side).
@@ -139,6 +139,25 @@ public abstract class InferenceRule implements IterationElement {
         isInitialized = true;
     }
 
+    /**
+     * Returns the list of subgoals.  Subgoals are the terms to the right
+     * of the ":-".
+     * 
+     * @return  list of subgoals
+     */
+    public List/*<RuleTerm>*/ getSubgoals() {
+        return top;
+    }
+    
+    /**
+     * Returns the head term.  That is the term on the left of the ":-".
+     * 
+     * @return  the head term
+     */
+    public RuleTerm getHead() {
+        return bottom;
+    }
+    
     /**
      * Calculate the set of necessary variables in the given list of terms
      * assuming that the given collection of variables has already been listed once.
