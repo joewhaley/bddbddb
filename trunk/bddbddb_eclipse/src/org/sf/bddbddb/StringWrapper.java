@@ -12,9 +12,9 @@ import org.eclipse.jdt.core.dom.Name;
  */
 public class StringWrapper implements Wrapper {
     public final static StringWrapper GLOBAL_THIS = 
-        new StringWrapper("GlobalThis"); 
+        new StringWrapper("global(null)");
     public final static StringWrapper ARRAY_FIELD = 
-        new StringWrapper("ArrayField");
+        new StringWrapper("null");
     public final static StringWrapper DUMMY_METHOD = 
         new StringWrapper("DummyMethod");
     public final static StringWrapper OUTER_THIS_FIELD = 
