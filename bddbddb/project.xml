@@ -213,6 +213,14 @@
       <url>http://javabdd.sourceforge.net/</url>
     </dependency>
 
+    <dependency>
+      <groupId>weka</groupId>
+      <artifactId>weka</artifactId>
+      <version>3.4.2</version>
+      <jar>weka.jar</jar>
+      <url>http://weka.sourceforge.net/</url>
+    </dependency>
+    
   </dependencies>
 
   <build>
