@@ -2425,7 +2425,7 @@ public class PAFromSource {
         
         out.println("Calling bddbddb to generate callgraph...");
         ran = true;
-        ExternalAppLauncher.computeCallgraph(this);
+        // XXX ExternalAppLauncher.computeCallgraph(this);
        
         out.println("Calling bddbddb to genericize...");
         ExternalAppLauncher.genericize(this);   
