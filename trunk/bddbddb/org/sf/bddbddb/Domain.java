@@ -39,7 +39,7 @@ public class Domain {
     }
 
     public String toString(int val) {
-        if (map == null) return Integer.toString(val);
+        if (map == null || val < 0 || val >= map.size()) return Integer.toString(val);
         else return map.get(val).toString();
     }
 
