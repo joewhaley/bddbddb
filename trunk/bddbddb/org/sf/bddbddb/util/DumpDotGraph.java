@@ -20,78 +20,70 @@ import java.io.PrintStream;
  * @version $Id$
  */
 public class DumpDotGraph {
-    
     static boolean TRACE = false;
     static PrintStream out = System.out;
-    
     // Graph nodes/edges
     Set nodes;
     Navigator navigator;
-    
     // Graph labels
     Filter nodeLabels;
     EdgeLabeler edgeLabels;
-    
     // Graph colors
     Filter nodeColors;
     EdgeLabeler edgeColors;
-    
     // Graph styles
     Filter nodeStyles;
     EdgeLabeler edgeStyles;
-    
     // Graph options
     boolean concentrate;
-    
     // Clusters
     Filter containingCluster;
     Set clusterRoots;
     Navigator clusterNavigator;
-    
+
     public DumpDotGraph() {
-        
     }
-    
+
     public void setNavigator(Navigator navigator) {
         this.navigator = navigator;
     }
-    
+
     public void setNodeLabels(Filter nodeLabels) {
         this.nodeLabels = nodeLabels;
     }
-    
+
     public void setEdgeLabels(EdgeLabeler edgeLabels) {
         this.edgeLabels = edgeLabels;
     }
-    
+
     public void setNodeColors(Filter nodeColors) {
         this.nodeColors = nodeColors;
     }
-    
+
     public void setEdgeColors(EdgeLabeler edgeColors) {
         this.edgeColors = edgeColors;
     }
-    
+
     public void setNodeStyles(Filter nodeStyles) {
         this.nodeStyles = nodeStyles;
     }
-    
+
     public void setEdgeStyles(EdgeLabeler edgeStyles) {
         this.edgeStyles = edgeStyles;
     }
-    
+
     public void setClusters(Filter clusters) {
         this.containingCluster = clusters;
     }
-    
+
     public void setClusterNesting(Navigator nesting) {
         this.clusterNavigator = nesting;
     }
-    
+
     public void setNodeSet(Set nodes) {
         this.nodes = nodes;
     }
-    
+
     public Set computeTransitiveClosure(Collection roots) {
         HashWorklist w = new HashWorklist(true);
         w.addAll(roots);
@@ -102,7 +94,7 @@ public class DumpDotGraph {
         nodes = w.getVisitedSet();
         return nodes;
     }
-    
+
     public Set computeBidirTransitiveClosure(Collection roots) {
         HashWorklist w = new HashWorklist(true);
         w.addAll(roots);
@@ -114,11 +106,11 @@ public class DumpDotGraph {
         nodes = w.getVisitedSet();
         return nodes;
     }
-    
+
     void computeClusters() {
         if (containingCluster == null) return;
         HashWorklist w = new HashWorklist(true);
-        for (Iterator i = nodes.iterator(); i.hasNext(); ) {
+        for (Iterator i = nodes.iterator(); i.hasNext();) {
             Object o = i.next();
             Object c = containingCluster.map(o);
             if (c != null) w.add(c);
@@ -127,22 +119,22 @@ public class DumpDotGraph {
             clusterRoots = new HashSet();
             while (!w.isEmpty()) {
                 Object o = w.pull();
-                if (TRACE) out.println("Cluster: "+o);
+                if (TRACE) out.println("Cluster: " + o);
                 Collection c;
                 c = clusterNavigator.next(o);
-                if (TRACE) out.println("Successors: "+c);
+                if (TRACE) out.println("Successors: " + c);
                 w.addAll(c);
                 c = clusterNavigator.prev(o);
-                if (TRACE) out.println("Predecessors: "+c);
+                if (TRACE) out.println("Predecessors: " + c);
                 w.addAll(c);
                 if (c.isEmpty()) clusterRoots.add(o);
             }
         } else {
             clusterRoots = w.getVisitedSet();
         }
-        if (TRACE) out.println("Cluster roots: "+clusterRoots);
+        if (TRACE) out.println("Cluster roots: " + clusterRoots);
     }
-    
+
     public void dump(String filename) throws IOException {
         DataOutputStream dos = null;
         try {
@@ -152,10 +144,11 @@ public class DumpDotGraph {
             if (dos != null) dos.close();
         }
     }
-    
-    void dumpNodes(DataOutput dos, IndexMap m, Object cluster) throws IOException {
-        if (TRACE) out.println("Dumping nodes for cluster "+cluster);
-        for (Iterator i = nodes.iterator(); i.hasNext(); ) {
+
+    void dumpNodes(DataOutput dos, IndexMap m, Object cluster)
+        throws IOException {
+        if (TRACE) out.println("Dumping nodes for cluster " + cluster);
+        for (Iterator i = nodes.iterator(); i.hasNext();) {
             Object o = i.next();
             if (containingCluster != null) {
                 Object c = containingCluster.map(o);
@@ -163,14 +156,14 @@ public class DumpDotGraph {
                 if (c == null) continue;
                 if (!c.equals(cluster)) continue;
             }
-            Object nodeid = (m != null) ? ("n"+m.get(o)) : "\""+o+"\"";
-            dos.writeBytes("  "+nodeid);
+            Object nodeid = (m != null) ? ("n" + m.get(o)) : "\"" + o + "\"";
+            dos.writeBytes("  " + nodeid);
             boolean open = false;
             if (nodeLabels != null) {
                 Object label = nodeLabels.map(o);
                 if (label != null) {
                     open = true;
-                    dos.writeBytes(" [label=\""+label+"\"");
+                    dos.writeBytes(" [label=\"" + label + "\"");
                 }
             }
             if (nodeStyles != null) {
@@ -179,7 +172,7 @@ public class DumpDotGraph {
                     if (!open) dos.writeBytes(" [");
                     else dos.writeBytes(",");
                     open = true;
-                    dos.writeBytes("style="+label);
+                    dos.writeBytes("style=" + label);
                 }
             }
             if (nodeColors != null) {
@@ -188,72 +181,68 @@ public class DumpDotGraph {
                     if (!open) dos.writeBytes(" [");
                     else dos.writeBytes(",");
                     open = true;
-                    dos.writeBytes("color="+label);
+                    dos.writeBytes("color=" + label);
                 }
             }
             if (open) dos.writeBytes("]");
-            
             dos.writeBytes(";\n");
         }
     }
-    
-    void dumpCluster(DataOutput dos, IndexMap m, Set visitedClusters, Object c) throws IOException {
+
+    void dumpCluster(DataOutput dos, IndexMap m, Set visitedClusters, Object c)
+        throws IOException {
         if (!visitedClusters.add(c)) return;
-        dos.writeBytes("  subgraph cluster"+visitedClusters.size()+" {\n");
+        dos.writeBytes("  subgraph cluster" + visitedClusters.size() + " {\n");
         dumpNodes(dos, m, c);
         if (clusterNavigator != null) {
             Collection subClusters = clusterNavigator.next(c);
-            if (TRACE) out.println("Subclusters: "+subClusters);
-            for (Iterator i = subClusters.iterator(); i.hasNext(); ) {
+            if (TRACE) out.println("Subclusters: " + subClusters);
+            for (Iterator i = subClusters.iterator(); i.hasNext();) {
                 Object subC = i.next();
                 dumpCluster(dos, m, visitedClusters, subC);
             }
         }
         dos.writeBytes("  }\n");
     }
-    
+
     public void dump(DataOutput dos) throws IOException {
         computeClusters();
-        
         dos.writeBytes("digraph {\n");
         dos.writeBytes("  size=\"10,7.5\";\n");
         dos.writeBytes("  rotate=90;\n");
-        if (concentrate)
-            dos.writeBytes("  concentrate=true;\n");
+        if (concentrate) dos.writeBytes("  concentrate=true;\n");
         dos.writeBytes("  ratio=fill;\n");
         dos.writeBytes("\n");
-        
         IndexMap m;
         if (nodeLabels != null) {
             m = new IndexMap("NodeID");
         } else {
             m = null;
         }
-        
         if (clusterRoots != null) {
             Set visitedClusters = new HashSet();
-            for (Iterator i = clusterRoots.iterator(); i.hasNext(); ) {
+            for (Iterator i = clusterRoots.iterator(); i.hasNext();) {
                 Object c = i.next();
                 dumpCluster(dos, m, visitedClusters, c);
             }
         }
         dumpNodes(dos, m, null);
-        
-        for (Iterator i = nodes.iterator(); i.hasNext(); ) {
+        for (Iterator i = nodes.iterator(); i.hasNext();) {
             Object n1 = i.next();
-            Object node1id = (m != null) ? ("n"+m.get(n1)) : "\""+n1+"\"";
+            Object node1id = (m != null) ? ("n" + m.get(n1)) : "\"" + n1 + "\"";
             Collection succ = navigator.next(n1);
-            for (Iterator j = succ.iterator(); j.hasNext(); ) {
+            for (Iterator j = succ.iterator(); j.hasNext();) {
                 Object n2 = j.next();
                 if (!nodes.contains(n2)) continue;
-                Object node2id = (m != null) ? ("n"+m.get(n2)) : "\""+n2+"\"";
-                dos.writeBytes("  "+node1id+" -> "+node2id);
+                Object node2id = (m != null) ? ("n" + m.get(n2)) : "\"" + n2
+                    + "\"";
+                dos.writeBytes("  " + node1id + " -> " + node2id);
                 boolean open = false;
                 if (edgeLabels != null) {
                     Object label = edgeLabels.getLabel(n1, n2);
                     if (label != null) {
                         open = true;
-                        dos.writeBytes(" [label=\""+label+"\"]");
+                        dos.writeBytes(" [label=\"" + label + "\"]");
                     }
                 }
                 if (edgeStyles != null) {
@@ -262,7 +251,7 @@ public class DumpDotGraph {
                         if (!open) dos.writeBytes(" [");
                         else dos.writeBytes(",");
                         open = true;
-                        dos.writeBytes("style="+label);
+                        dos.writeBytes("style=" + label);
                     }
                 }
                 if (edgeColors != null) {
@@ -271,14 +260,12 @@ public class DumpDotGraph {
                         if (!open) dos.writeBytes(" [");
                         else dos.writeBytes(",");
                         open = true;
-                        dos.writeBytes("color="+label);
+                        dos.writeBytes("color=" + label);
                     }
                 }
                 dos.writeBytes(";\n");
             }
         }
-        
         dos.writeBytes("}\n");
     }
-    
 }

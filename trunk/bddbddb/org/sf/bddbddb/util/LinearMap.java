@@ -19,47 +19,54 @@ import java.util.Set;
  * @version $Id$
  */
 public class LinearMap extends AbstractMap {
-
     protected final List keys;
     protected final List values;
-    
+
     public LinearMap(List k, List v) {
         this.keys = k;
         this.values = v;
         Assert._assert(k.size() == v.size());
     }
-    
+
     public LinearMap(int size) {
         this(new ArrayList(size), new ArrayList(size));
     }
-    
+
     public LinearMap() {
         this(16);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#clear()
      */
     public void clear() {
         keys.clear();
         values.clear();
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#containsKey(java.lang.Object)
      */
     public boolean containsKey(Object arg0) {
         return keys.contains(arg0);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#containsValue(java.lang.Object)
      */
     public boolean containsValue(Object arg0) {
         return values.contains(arg0);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#get(java.lang.Object)
      */
     public Object get(Object arg0) {
@@ -67,26 +74,32 @@ public class LinearMap extends AbstractMap {
         if (i == -1) return null;
         return values.get(i);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#keySet()
      */
     public Set keySet() {
         return new LinearSet(ListFactory.arrayListFactory, keys);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#put(java.lang.Object, java.lang.Object)
      */
     public Object put(Object arg0, Object arg1) {
         int i = keys.indexOf(arg0);
-        if (i != -1) return values.set(i, arg1); 
+        if (i != -1) return values.set(i, arg1);
         keys.add(arg0);
         values.add(arg1);
         return null;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#remove(java.lang.Object)
      */
     public Object remove(Object arg0) {
@@ -95,66 +108,76 @@ public class LinearMap extends AbstractMap {
         keys.remove(i);
         return values.remove(i);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Map#values()
      */
     public Collection values() {
         return values;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.AbstractMap#entrySet()
      */
     public Set entrySet() {
         return new EntrySet();
     }
-    
+
     /*
      * (non-Javadoc)
+     * 
      * @see java.util.Map#size()
      */
     public int size() {
         return keys.size();
     }
-    
     class EntrySet extends AbstractSet {
-
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.AbstractCollection#iterator()
          */
         public Iterator iterator() {
             return new EntryIterator();
         }
 
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.AbstractCollection#size()
          */
         public int size() {
             return LinearMap.this.size();
         }
-        
     }
-    
     class EntryIterator implements Iterator {
-
         int k = 0;
-        
-        /* (non-Javadoc)
+
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.Iterator#hasNext()
          */
         public boolean hasNext() {
             return k < size();
         }
 
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.Iterator#next()
          */
         public Object next() {
             return new Entry(k++);
         }
 
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.Iterator#remove()
          */
         public void remove() {
@@ -162,37 +185,39 @@ public class LinearMap extends AbstractMap {
             keys.remove(k);
             values.remove(k);
         }
-        
     }
-    
     class Entry implements Map.Entry {
         int k;
 
         Entry(int k) {
             this.k = k;
         }
-        
-        /* (non-Javadoc)
+
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.Map.Entry#getKey()
          */
         public Object getKey() {
             return keys.get(k);
         }
 
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.Map.Entry#getValue()
          */
         public Object getValue() {
             return values.get(k);
         }
 
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.util.Map.Entry#setValue(java.lang.Object)
          */
         public Object setValue(Object arg0) {
             return values.set(k, arg0);
         }
-        
     }
-    
 }

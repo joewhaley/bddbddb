@@ -14,44 +14,51 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class Invert extends Operation {
-    
     Relation r0, r1;
-    
+
     /**
      * @param r0
      * @param r1
      */
     public Invert(Relation r0, Relation r1) {
+        super();
         this.r0 = r0;
         this.r1 = r1;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#toString()
      */
     public String toString() {
-        return r0.toString()+" = invert("+r1.toString()+")";
+        return r0.toString() + " = invert(" + r1.toString() + ")";
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
         return r0;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {
         return Collections.singletonList(r1);
     }
-    
 }

@@ -1,4 +1,4 @@
-//IterationFlowGraph.java, created Jun 29, 2004
+// IterationFlowGraph.java, created Jun 29, 2004
 //Copyright (C) 2004 Michael Carbin
 //Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
@@ -39,7 +39,7 @@ public class IterationFlowGraph {
     }
 
     private void constructStrataLoops() {
-        for (Iterator it = firstSCCs.iterator(); it.hasNext(); ) {
+        for (Iterator it = firstSCCs.iterator(); it.hasNext();) {
             SCComponent scc = (SCComponent) it.next();
             IterationList loop = buildIterationList(scc, scc.isLoop());
             iterationElements.addElement(loop);
@@ -145,7 +145,7 @@ public class IterationFlowGraph {
             elem.update();
         }
     }
-    
+
     public IterationList expand() {
         if (iterationElements.isLoop()) {
             IterationList unrolled = iterationElements.unroll();

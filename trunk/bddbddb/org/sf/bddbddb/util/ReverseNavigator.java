@@ -6,31 +6,34 @@ package org.sf.bddbddb.util;
 import java.util.Collection;
 
 /**
- * ReverseNavigator uses a supplied navigator and traverses the graph in reverse.
+ * ReverseNavigator uses a supplied navigator and traverses the graph in
+ * reverse.
  * 
  * @author John Whaley
  * @version $Id$
  */
 public class ReverseNavigator implements Navigator {
-
     private final Navigator navigator;
 
     public ReverseNavigator(Navigator navigator) {
         this.navigator = navigator;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see joeq.Util.Graphs.Navigator#next(java.lang.Object)
      */
     public Collection next(Object node) {
         return navigator.prev(node);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see joeq.Util.Graphs.Navigator#prev(java.lang.Object)
      */
     public Collection prev(Object node) {
         return navigator.next(node);
     }
-
 }

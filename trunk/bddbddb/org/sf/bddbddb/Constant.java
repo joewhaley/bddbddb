@@ -10,9 +10,8 @@ package org.sf.bddbddb;
  * @version $Id$
  */
 public class Constant extends Variable {
-
     long value;
-    
+
     /**
      * Create a constant with the given value.
      */

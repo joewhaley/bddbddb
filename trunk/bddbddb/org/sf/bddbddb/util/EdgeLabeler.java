@@ -10,7 +10,5 @@ package org.sf.bddbddb.util;
  * @version $Id$
  */
 public interface EdgeLabeler {
-    
     public Object getLabel(Object from, Object to);
-    
 }

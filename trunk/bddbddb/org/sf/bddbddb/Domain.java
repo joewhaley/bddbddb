@@ -15,11 +15,10 @@ import org.sf.bddbddb.util.IndexedMap;
  * @version $Id$
  */
 public class Domain {
-    
     String name;
     long size;
     IndexedMap map;
-    
+
     /**
      * @param name
      * @param size
@@ -29,24 +28,27 @@ public class Domain {
         this.name = name;
         this.size = size;
     }
-    
+
     public void loadMap(DataInput in) throws IOException {
         //map = IndexMap.load(name, in);
         map = IndexMap.loadStringMap(name, in);
     }
-    
+
     public String toString() {
         return name;
     }
-    
+
     public String toString(int val) {
         if (map == null) return Integer.toString(val);
         else return map.get(val).toString();
     }
-    
+
     public int namedConstant(String constant) {
-        if (map == null) throw new IllegalArgumentException("No constant map for Domain "+name+" in which to look up constant "+constant);
-        if (!map.contains(constant)) throw new IllegalArgumentException("Constant "+constant+" not found in map for relation "+name);
+        if (map == null) throw new IllegalArgumentException(
+            "No constant map for Domain " + name
+                + " in which to look up constant " + constant);
+        if (!map.contains(constant)) throw new IllegalArgumentException(
+            "Constant " + constant + " not found in map for relation " + name);
         return map.get(constant);
     }
 }

@@ -10,11 +10,10 @@ package org.sf.bddbddb;
  * @version $Id$
  */
 public class Attribute {
-    
     String attributeName;
     Domain attributeDomain;
     String attributeOptions;
-    
+
     /**
      * @param name
      * @param domain
@@ -25,12 +24,13 @@ public class Attribute {
         this.attributeDomain = domain;
         this.attributeOptions = options;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
         return attributeName;
     }
-    
 }

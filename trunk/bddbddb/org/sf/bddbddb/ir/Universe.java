@@ -14,38 +14,46 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class Universe extends Operation {
-    
     Relation r;
-    
+
     /**
      * @param r
      */
     public Universe(Relation r) {
+        super();
         this.r = r;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r.toString()+" = universe()";
+        return r.toString() + " = universe()";
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
         return r;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {

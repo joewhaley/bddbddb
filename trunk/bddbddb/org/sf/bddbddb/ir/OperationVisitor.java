@@ -10,19 +10,18 @@ package org.sf.bddbddb.ir;
  * @version $Id$
  */
 public interface OperationVisitor {
-    
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Join op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Project op);
-    
+
     /**
      * @param op
      * @return
@@ -46,19 +45,19 @@ public interface OperationVisitor {
      * @return
      */
     public abstract Object visit(JoinConstant op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(GenConstant op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Free op);
-    
+
     /**
      * @param op
      * @return
@@ -76,23 +75,22 @@ public interface OperationVisitor {
      * @return
      */
     public abstract Object visit(Invert op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Copy op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Load op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Save op);
-    
 }

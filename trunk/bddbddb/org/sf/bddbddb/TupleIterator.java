@@ -12,10 +12,12 @@ import java.util.Iterator;
  * @version $Id$
  */
 public abstract class TupleIterator implements Iterator {
-    
     public abstract long[] nextTuple();
-    
-    public Object next() { return nextTuple(); }
+
+    public Object next() {
+        return nextTuple();
+    }
+
     public void remove() {
         throw new UnsupportedOperationException();
     }

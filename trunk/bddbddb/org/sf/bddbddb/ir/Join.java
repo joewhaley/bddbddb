@@ -15,16 +15,16 @@ import org.sf.bddbddb.util.Pair;
  * @version $Id$
  */
 public class Join extends Operation {
-    
     Relation r0, r1, r2;
-    List/*<Attribute>*/ attributes;
-    
+    List/* <Attribute> */attributes;
+
     /**
      * @param r0
      * @param r1
      * @param r2
      */
     public Join(Relation r0, Relation r1, Relation r2) {
+        super();
         this.r0 = r0;
         this.r1 = r1;
         this.r2 = r2;
@@ -32,27 +32,38 @@ public class Join extends Operation {
         this.attributes.addAll(r1.getAttributes());
         this.attributes.retainAll(r2.getAttributes());
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString()+" = join("+r1.toString()+","+r2.toString()+")";
+        return r0.toString() + " = join(" + r1.toString() + "," + r2.toString()
+            + ")";
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
     public Object visit(OperationVisitor i) {
         return i.visit(this);
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
-    public Relation getDest() { return r0; }
+    public Relation getDest() {
+        return r0;
+    }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {

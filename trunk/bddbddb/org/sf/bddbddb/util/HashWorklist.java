@@ -9,16 +9,17 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A worklist with a backing hash set to determine if an item is/was already on the list.
+ * A worklist with a backing hash set to determine if an item is/was already on
+ * the list.
  * 
- * Careful: Although this implements java.util.Set, it does not obey the hashCode() and
- * equals() contract for Set.  It obeys the contract for java.util.List instead.
+ * Careful: Although this implements java.util.Set, it does not obey the
+ * hashCode() and equals() contract for Set. It obeys the contract for
+ * java.util.List instead.
  * 
  * @author John Whaley <jwhaley@alum.mit.edu>
  * @version $Id$
  */
 public class HashWorklist extends AbstractList implements Worklist, Set {
-
     private final Set set;
     private final List list;
     private final boolean once;
@@ -28,27 +29,35 @@ public class HashWorklist extends AbstractList implements Worklist, Set {
         list = lf.makeList();
         this.once = once;
     }
+
     public HashWorklist(boolean once, ListFactory lf) {
         this(once, SetFactory.hashSetFactory, lf);
     }
+
     public HashWorklist(boolean once, SetFactory sf) {
         this(once, sf, ListFactory.linkedListFactory);
     }
+
     public HashWorklist(boolean once) {
         this(once, SetFactory.hashSetFactory);
     }
+
     public HashWorklist() {
         this(false);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see joeq.Util.Collections.Worklist#push(java.lang.Object)
      */
     public void push(Object item) {
         add(item);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see joeq.Util.Collections.Worklist#pull()
      */
     public Object pull() {
@@ -57,31 +66,37 @@ public class HashWorklist extends AbstractList implements Worklist, Set {
         return o;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.AbstractList#get(int)
      */
     public Object get(int index) {
         return list.get(index);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.AbstractCollection#size()
      */
     public int size() {
         return list.size();
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Collection#add(java.lang.Object)
      */
     public boolean add(Object item) {
-        if (set.add(item))
-            return list.add(item);
-        else
-            return false;
+        if (set.add(item)) return list.add(item);
+        else return false;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.util.Collection#contains(java.lang.Object)
      */
     public boolean contains(Object o) {
@@ -96,5 +111,4 @@ public class HashWorklist extends AbstractList implements Worklist, Set {
             return set;
         }
     }
-
 }

@@ -13,24 +13,25 @@ import org.sf.bddbddb.ir.Operation;
  * @version $Id$
  */
 public abstract class Problem {
-    
     public abstract TransferFunction getTransferFunction(Operation o);
-    
+
     public abstract Fact getBoundary();
-    
+
+    public abstract boolean direction();
+
     public boolean compare(Fact f1, Fact f2) {
         return f1.equals(f2);
     }
-    
-    public abstract static class Fact {
+    public abstract static interface Fact {
         public abstract Fact join(Fact that);
+
         public abstract Fact copy(IterationList loc);
+
         public abstract void setLocation(IterationList loc);
+
         public abstract IterationList getLocation();
     }
-    
     public abstract static class TransferFunction {
         public abstract Fact apply(Fact f);
     }
-    
 }

@@ -12,19 +12,18 @@ import java.io.IOException;
  * @version $Id$
  */
 public abstract class Interpreter implements OperationVisitor {
-
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Join op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Project op);
-    
+
     /**
      * @param op
      * @return
@@ -48,19 +47,19 @@ public abstract class Interpreter implements OperationVisitor {
      * @return
      */
     public abstract Object visit(JoinConstant op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(GenConstant op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Free op);
-    
+
     /**
      * @param op
      * @return
@@ -78,13 +77,13 @@ public abstract class Interpreter implements OperationVisitor {
      * @return
      */
     public abstract Object visit(Invert op);
-    
+
     /**
      * @param op
      * @return
      */
     public abstract Object visit(Copy op);
-    
+
     /**
      * @param op
      * @return
