@@ -76,7 +76,7 @@ public class NumberingRule extends InferenceRule {
      * @param ir
      */
     NumberingRule(Solver s, InferenceRule ir) {
-        super(s, ir.top, ir.bottom);
+        super(s, ir.top, ir.bottom, ir.id);
         Assert._assert(ir.top.size() > 1);
     }
 

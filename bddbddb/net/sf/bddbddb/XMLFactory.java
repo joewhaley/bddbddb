@@ -33,7 +33,7 @@ public class XMLFactory {
     }
     
     public InferenceRule getRule(String s) {
-        return (InferenceRule) solver.rules.get(Integer.parseInt(s.substring(4)));
+        return solver.getRule(Integer.parseInt(s.substring(4)));
     }
     
     public Relation getRelation(String s) {

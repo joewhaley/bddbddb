@@ -20,4 +20,21 @@ public interface OrderTranslator {
      */
     Order translate(Order o);
     
+    public static class Compose implements OrderTranslator {
+
+        OrderTranslator t1, t2;
+        
+        public Compose(OrderTranslator t1, OrderTranslator t2) {
+            this.t1 = t1; this.t2 = t2;
+        }
+        
+        /* (non-Javadoc)
+         * @see net.sf.bddbddb.order.OrderTranslator#translate(net.sf.bddbddb.order.Order)
+         */
+        public Order translate(Order o) {
+            return t2.translate(t1.translate(o));
+        }
+        
+    }
+    
 }

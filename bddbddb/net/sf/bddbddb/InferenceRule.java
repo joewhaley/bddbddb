@@ -124,12 +124,15 @@ public abstract class InferenceRule implements IterationElement {
      * @param bottom  head term
      */
     protected InferenceRule(Solver solver, List/*<RuleTerm>*/ top, RuleTerm bottom) {
+        this(solver, top, bottom, ruleCount++);
+    }
+    protected InferenceRule(Solver solver, List/*<RuleTerm>*/ top, RuleTerm bottom, int id) {
         this.solver = solver;
         this.top = top;
         this.bottom = bottom;
         this.TRACE = solver.TRACE;
         this.TRACE_FULL = solver.TRACE_FULL;
-        this.id = ruleCount++;
+        this.id = id;
     }
 
     /**
@@ -1046,6 +1049,25 @@ public abstract class InferenceRule implements IterationElement {
             if (name.equals(v.getName())) return v;
         }
         return null;
+    }
+    
+    public int numberOfVariables() {
+        return necessaryVariables.size() + unnecessaryVariables.size();
+    }
+    
+    public Set getNecessaryVariables() {
+        return necessaryVariables;
+    }
+    
+    public Set getUnnecessaryVariables() {
+        return unnecessaryVariables;
+    }
+    
+    public Set getVariables() {
+        HashSet s = new HashSet();
+        s.addAll(necessaryVariables);
+        s.addAll(unnecessaryVariables);
+        return s;
     }
     
     /**
