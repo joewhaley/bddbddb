@@ -1812,7 +1812,8 @@ public double constFoldCV( Instances data, String cClassName){
              try {
                  vClass = vClassifier.classifyInstance(vInst);
                  double [] classProbs = vClassifier.distributionForInstance(vInst);
-                 vClassProb = vClass != Double.NaN ? classProbs[(int) vClass] : vClassProb;
+                 //probability of being in the first class
+                 vClassProb = vClass != Double.NaN ? classProbs[0] : vClassProb;
                  ++probCount;
              } catch (Exception x) {
                  out.println("Exception while predicting "+vInst+" "+o_v+":\n"+x);
@@ -1826,7 +1827,7 @@ public double constFoldCV( Instances data, String cClassName){
              try {
                  aClass = aClassifier.classifyInstance(aInst);
                  double [] classProbs = aClassifier.distributionForInstance(aInst);
-                 aClassProb = aClass != Double.NaN ? classProbs[(int) aClass] : aClassProb;
+                 aClassProb = aClass != Double.NaN ? classProbs[0] : aClassProb;
                  ++probCount;
              } catch (Exception x) {
                  out.println("Exception while predicting "+aInst+" "+o_a+":\n"+x);
@@ -1840,7 +1841,7 @@ public double constFoldCV( Instances data, String cClassName){
              try {
                  dClass = dClassifier.classifyInstance(dInst);
                  double [] classProbs = dClassifier.distributionForInstance(dInst);
-                 dClassProb = dClass != Double.NaN ? classProbs[(int) dClass] : dClassProb;
+                 dClassProb = dClass != Double.NaN ? classProbs[0] : dClassProb;
                  ++probCount;
              } catch (Exception x) {
                  out.println("Exception while predicting "+dInst+" "+o_d+":\n"+x);
