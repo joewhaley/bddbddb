@@ -29,32 +29,92 @@ import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Navigator;
 
 /**
- * InferenceRule
+ * An InferenceRule represents a single Datalog rule.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public abstract class InferenceRule implements IterationElement {
     
-    static int ruleCount;
+    /**
+     * Static rule id factory.
+     */
+    private static int ruleCount;
     
-    final Solver solver;
+    /**
+     * Link to solver.
+     */
+    protected final Solver solver;
+    
+    /**
+     * Unique id number for this rule.
+     */
     public final int id;
-    List/* <RuleTerm> */top;
-    RuleTerm bottom;
-    Set/* <Variable> */necessaryVariables;
-    Set/* <Variable> */unnecessaryVariables;
+    
+    /**
+     * List of subgoals for the rule (i.e. the terms on the right hand side).
+     * May be empty.
+     */
+    protected List/*<RuleTerm>*/top;
+    
+    /**
+     * Head of the rule (i.e. the term on the left hand side).
+     */
+    protected RuleTerm bottom;
+    
+    /**
+     * Set of variables that are necessary.  Initialized after calling initialize().
+     */
+    protected Set/*<Variable>*/ necessaryVariables;
+    
+    /**
+     * Set of variables that are unnecessary.  Initialized after calling initialize().
+     */
+    protected Set/*<Variable>*/ unnecessaryVariables;
+    
+    /**
+     * List of IR instructions that implement this rule.  Used for compilation.
+     */
     List ir_full, ir_incremental;
+    
+    /**
+     * Set of old values for each of the subgoals.  Used for incrementalization;
+     */
     Relation[] oldRelationValues;
+    
+    /**
+     * Flag specifying whether or not to split this rule.
+     */
     boolean split;
+
+    /**
+     * Trace flags to control output of trace information about this rule.
+     */
     boolean TRACE, TRACE_FULL;
+    
+    /**
+     * Flag specifying whether or not to incrementalize computation of this rule.
+     */
     boolean incrementalize = !System.getProperty("incremental", "yes").equals("no");
+    
+    /**
+     * Flag specifying whether to cache values before or after renaming.
+     * If we cache before rename, we can sometimes avoid renaming the whole relation.
+     * However, in some cases we might need to rename both the diff and the whole relation.
+     */
     boolean cache_before_rename = true;
+    
+    /**
+     * Flag that shows whether or not this inference rule has been initialized yet.
+     */
     boolean isInitialized;
 
     /**
-     * @param top
-     * @param bottom
+     * Construct a new inference rule.
+     * 
+     * @param solver  solver
+     * @param top  subgoal terms
+     * @param bottom  head term
      */
     protected InferenceRule(Solver solver, List/* <RuleTerm> */top, RuleTerm bottom) {
         this.solver = solver;
@@ -66,7 +126,7 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     *  
+     * Initialize this inference rule, if it hasn't been already.
      */
     void initialize() {
         if (isInitialized) return;
@@ -75,9 +135,12 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @param s
-     * @param terms
-     * @return
+     * Calculate the set of necessary variables in the given list of terms
+     * assuming that the given collection of variables has already been listed once.
+     * 
+     * @param s  initial collection of variables that have been listed
+     * @param terms  terms to check
+     * @return  set of necessary variables
      */
     static Set calculateNecessaryVariables(Collection s, List terms) {
         Set necessaryVariables = new HashSet();
@@ -99,9 +162,12 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @return
+     * Calculate and return the set of necessary variables for this rule.
+     * Sets the necessaryVariables and unnecessaryVariables fields.
+     * 
+     * @return  set of necessary variables.
      */
-    Set calculateNecessaryVariables() {
+    protected Set calculateNecessaryVariables() {
         necessaryVariables = new HashSet();
         unnecessaryVariables = new HashSet();
         for (int i = 0; i < top.size(); ++i) {
@@ -131,17 +197,21 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @return
+     * Update the head relation of this rule based on the subgoal relations.
+     * Returns true if the head relation changed.
+     * 
+     * @return  true if the head relation changed
      */
     public abstract boolean update();
 
     /**
-     *  
+     * Report statistics about this rule.
      */
     public abstract void reportStats();
 
     /**
-     *  
+     * Free the memory associated with this rule.  After calling this, the rule can
+     * no longer be used.
      */
     public void free() {
         if (oldRelationValues != null) {
@@ -152,8 +222,11 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @param rules
-     * @return
+     * Given a collection of rules, returns a multimap that maps relations to
+     * the rules that use that relation.
+     * 
+     * @param rules  collection of rules
+     * @return  multimap from relations to rules that use them
      */
     public static MultiMap getRelationToUsingRule(Collection rules) {
         MultiMap mm = new GenericMultiMap();
@@ -171,8 +244,11 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @param rules
-     * @return
+     * Given a collection of rules, returns a multimap that maps relations to
+     * the rules that define that relation.
+     * 
+     * @param rules  collection of rules
+     * @return  multimap from relations to rules that define them
      */
     public static MultiMap getRelationToDefiningRule(Collection rules) {
         MultiMap mm = new GenericMultiMap();
@@ -187,10 +263,14 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @param myIndex
-     * @return
+     * Splits a rule into a collection of rules, such that each of the new rules
+     * has only two subgoals.  The current rule is simply mutated and not returned
+     * in the collection.
+     * 
+     * @param myIndex  index number used to name the new rules
+     * @return  collection of new inference rules
      */
-    public Collection/* <InferenceRule> */split(int myIndex) {
+    public Collection/*<InferenceRule>*/ split(int myIndex) {
         List newRules = new LinkedList();
         int count = 0;
         while (top.size() > 2) {
@@ -289,8 +369,10 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @param mm
-     * @param c
+     * Utility function to retain in a multimap only the elements in a given collection.
+     * 
+     * @param mm  multimap
+     * @param c  collection
      */
     static void retainAll(MultiMap mm, Collection c) {
         for (Iterator i = mm.keySet().iterator(); i.hasNext();) {
@@ -311,8 +393,10 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
-     * @param mm
-     * @param c
+     * Utility function to remove from a multimap all of the elements in a given collection.
+     * 
+     * @param mm  multimap
+     * @param c  collection
      */
     static void removeAll(MultiMap mm, Collection c) {
         for (Iterator i = mm.keySet().iterator(); i.hasNext();) {
@@ -333,6 +417,8 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
+     * Copy the options from another rule into this one.
+     * 
      * @param that
      */
     public void copyOptions(InferenceRule that) {
@@ -341,24 +427,55 @@ public abstract class InferenceRule implements IterationElement {
         this.incrementalize = that.incrementalize;
         this.cache_before_rename = that.cache_before_rename;
     }
+    
+    /**
+     * A navigator that can navigate over rule dependencies.
+     * next() on a rule returns its head relation, and
+     * next() on a relation returns the rules that use that relation.
+     * Likewise, prev() on a rule returns its subgoal relations,
+     * and prev() on a relation returns the rules that define that relation.
+     * 
+     * This class also allows you to remove edges/nodes from it.
+     */
     public static class DependenceNavigator implements Navigator {
         MultiMap relationToUsingRule;
         MultiMap relationToDefiningRule;
 
+        /**
+         * Construct a new DependenceNavigator using the given collection of rules.
+         * 
+         * @param rules  rules
+         */
         public DependenceNavigator(Collection/*<InferenceRule>*/ rules) {
             this(getRelationToUsingRule(rules), getRelationToDefiningRule(rules));
         }
 
+        /**
+         * Retain only the relations/rules in the given collection.
+         * 
+         * @param c  collection to retain
+         */
         public void retainAll(Collection c) {
             InferenceRule.retainAll(relationToUsingRule, c);
             InferenceRule.retainAll(relationToDefiningRule, c);
         }
 
+        /**
+         * Remove all of the relations/rules in the given collection.
+         * 
+         * @param c  collection to remove
+         */
         public void removeAll(Collection c) {
             InferenceRule.removeAll(relationToUsingRule, c);
             InferenceRule.removeAll(relationToDefiningRule, c);
         }
 
+        /**
+         * Remove a specific edge from this navigator.
+         * 
+         * @param from  source of edge
+         * @param to  target of edge
+         */
         public void removeEdge(Object from, Object to) {
             if (from instanceof InferenceRule) {
                 InferenceRule ir = (InferenceRule) from;
@@ -371,11 +488,19 @@ public abstract class InferenceRule implements IterationElement {
             }
         }
 
+        /**
+         * Construct a new DependenceNavigator that is a copy of another
+         * DependenceNavigator.
+         * 
+         * @param that  the one to copy from
+         */
         public DependenceNavigator(DependenceNavigator that) {
             this(((GenericMultiMap) that.relationToUsingRule).copy(), ((GenericMultiMap) that.relationToDefiningRule).copy());
         }
 
         /**
+         * Not to be called externally.
+         * 
          * @param relationToUsingRule
          * @param relationToDefiningRule
          */
@@ -424,6 +549,14 @@ public abstract class InferenceRule implements IterationElement {
         }
     }
 
+    /**
+     * Helper function for IR generation.
+     * Generate code to project away unnecessary variables and restrict constants.
+     * 
+     * @param ir  list of IR instructions
+     * @param rt  subgoal term
+     * @return  resulting relation after projecting and restricting
+     */
     Relation generate1(List ir, RuleTerm rt) {
         Relation top_r = rt.relation;
         Collection varsToProject = new LinkedList(rt.variables);
@@ -456,7 +589,12 @@ public abstract class InferenceRule implements IterationElement {
         return top_r;
     }
 
-    public List generateIR() {
+    /**
+     * Generate and return the IR that implements this rule.
+     * 
+     * @return  list of IR instructions
+     */
+    public List/*<Operation>*/ generateIR() {
         if (ir_full != null) return ir_full;
         List ir = new LinkedList();
         Relation result = null;
@@ -640,7 +778,12 @@ public abstract class InferenceRule implements IterationElement {
         return ir;
     }
 
-    public List generateIR_incremental() {
+    /**
+     * Generate and return the IR that implements the incrementalized version of this rule.
+     * 
+     * @return  list of IR instructions
+     */
+    public List/*<Operation>*/ generateIR_incremental() {
         if (ir_incremental != null) return ir_incremental;
         LinkedList ir = new LinkedList();
         Map varToAttrib = new HashMap();
@@ -853,7 +996,8 @@ public abstract class InferenceRule implements IterationElement {
         return sb.toString();
     }
     
-    /* (non-Javadoc)
+    /**
+     * The hashCode for rules is deterministic.  (We use the unique id number.)
      * @see java.lang.Object#hashCode()
      */
     public int hashCode() {

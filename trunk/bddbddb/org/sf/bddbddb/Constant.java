@@ -4,16 +4,22 @@
 package org.sf.bddbddb;
 
 /**
- * Constant
+ * A Constant is a special kind of variable that represents a constant value.
  * 
  * @author John Whaley
  * @version $Id$
  */
 public class Constant extends Variable {
-    long value;
+    
+    /**
+     * Value of constant.
+     */
+    protected long value;
 
     /**
      * Create a constant with the given value.
+     * 
+     * @param value  value of constant
      */
     public Constant(long value) {
         super(Long.toString(value));
@@ -21,7 +27,9 @@ public class Constant extends Variable {
     }
 
     /**
-     * @return
+     * Returns the value of this constant.
+     * 
+     * @return value
      */
     public long getValue() {
         return value;

@@ -20,7 +20,7 @@ import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDD.BDDIterator;
 
 /**
- * BDDRelation
+ * An implementation of Relation that uses BDDs.
  * 
  * @author jwhaley
  * @version $Id$

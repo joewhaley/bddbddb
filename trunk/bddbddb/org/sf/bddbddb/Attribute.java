@@ -4,23 +4,30 @@
 package org.sf.bddbddb;
 
 /**
- * Attribute
+ * An Attribute represents a single attribute of a relation.
+ * Every Attribute has a name, a domain, and an optional option string.
+ * 
+ * Attribute objects are globally unique --- there is exactly one Attribute
+ * object for every distinct attribute in the program.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public class Attribute {
-    String attributeName;
-    Domain attributeDomain;
-    String attributeOptions;
-    Relation relation;
+    protected String attributeName;
+    protected Domain attributeDomain;
+    protected String attributeOptions;
+    protected Relation relation;
 
     /**
-     * @param name
-     * @param domain
-     * @param options
+     * Constructs a new Attribute object.
+     * This should only be called internally.
+     * 
+     * @param name  name of attribute
+     * @param domain  domain of attribute
+     * @param options  options for attribute
      */
-    public Attribute(String name, Domain domain, String options) {
+    Attribute(String name, Domain domain, String options) {
         this.attributeName = name;
         this.attributeDomain = domain;
         this.attributeOptions = options;
@@ -36,21 +43,37 @@ public class Attribute {
     }
 
     /**
-     * @return
+     * Returns the domain of this attribute.
+     * 
+     * @return domain
      */
     public Domain getDomain() {
         return attributeDomain;
     }
 
     /**
-     * @return
+     * Returns the options for this attribute.
+     * 
+     * @return options
      */
     public String getOptions() {
         return attributeOptions;
     }
 
     /**
-     * @return
+     * Sets the relation that this attribute is associated with.
+     * This should only be called internally.
+     * 
+     * @param r
+     */
+    void setRelation(Relation r) {
+        this.relation = r;
+    }
+    
+    /**
+     * Returns the relation that this attribute is associated with.
+     * 
+     * @return options
      */
     public Relation getRelation() {
         return relation;
