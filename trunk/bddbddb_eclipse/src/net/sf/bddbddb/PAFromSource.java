@@ -227,7 +227,7 @@ public class PAFromSource {
     //BDD V1cset, V2cset, H1cset, H2cset, V1cV2cset, V1cH1cset, H1cH2cset;
     //BDD V1cdomain, V2cdomain, H1cdomain, H2cdomain;
 
-    static double bddminfree = Integer.parseInt(System.getProperty("bddminfree", ".20"));
+    static double bddminfree = Double.parseDouble(System.getProperty("bddminfree", ".20"));
     static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1_TV1";//System.getProperty("bddordering"); // TODO add TV
     //int MAX_PARAMS = Integer.parseInt(System.getProperty("pas.maxparams", "4"));
     static boolean reverseLocal = System.getProperty("bddreverse", "true").equals("true"); 

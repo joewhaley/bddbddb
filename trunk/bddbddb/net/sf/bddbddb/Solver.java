@@ -756,7 +756,7 @@ public abstract class Solver {
         } else if (s.startsWith(".bddminfree")) {
             if (System.getProperty("bddminfree") == null) {
                 int index = ".bddminfree".length() + 1;
-                int n = Integer.parseInt(s.substring(index).trim());
+                double n = Double.parseDouble(s.substring(index).trim());
                 ((BDDSolver) this).BDDMINFREE = n;
             }
         } else if (s.startsWith(".findbestorder")) {
