@@ -1642,6 +1642,29 @@ public double constFoldCV( Instances data, String cClassName){
 
      return average / numFolds;
  }
+ 
+
+ public void binarize(double classValue, Instances data){
+     for(Enumeration e = data.enumerateInstances(); e.hasMoreElements(); ){
+         Instance instance = (Instance) e.nextElement();
+         if(instance.classValue() <= classValue){
+             instance.setClassValue(0);
+         }else{
+             instance.setClassValue(1);
+         }
+     }
+     weka.core.Attribute newAttr = makeBucketAttribute(2);
+     TrialInstances.setIndex(newAttr, data.classIndex());
+     data.setClass(newAttr);
+ }
+
+  public double RMS(double vProb, double vCent, double aProb, double aCent, double dProb, double dCent){
+      double vDiff = Math.abs(vProb - vCent);
+      double aDiff = Math.abs(aProb - aCent);
+      double dDiff = Math.abs(dProb - dCent);
+      return Math.sqrt(((vDiff * vDiff) + (aDiff * aDiff) + (dDiff * dDiff)) / 3);
+      
+  }
  public static boolean DISCRETIZE1 = true;
  public static boolean DISCRETIZE2 = true;
  public static boolean DISCRETIZE3 = true;
@@ -1656,13 +1679,13 @@ public double constFoldCV( Instances data, String cClassName){
  
  MultiMap neverAgain = new GenericMultiMap();
  
-
  public double varClassWeight = 1;
  public double attrClassWeight = 1;
  public double domClassWeight = 1;
  public static int DOMAIN_THRESHOLD = 1000;
  public static int NO_CLASS = -1;
  public static int NO_CLASS_SCORE = -1;
+ public boolean PROBABILITY = false;
  public TrialGuess tryNewGoodOrder2(TrialCollection tc, List allVars, InferenceRule ir) {
      
      // TODO: improve this code.
@@ -1671,12 +1694,18 @@ public double constFoldCV( Instances data, String cClassName){
      aData = buildAttribInstances(ir, allVars);
      dData = buildDomainInstances(ir, allVars);
      
-     adjustWeights(vData,aData,dData);
+    adjustWeights(vData,aData,dData);
     Discretization vDis = null, aDis = null, dDis = null;
      
      if (DISCRETIZE1) vDis = vData.discretize();
      if (DISCRETIZE2) aDis = aData.discretize();
      if (DISCRETIZE3) dDis = dData.threshold(1000);
+    
+     if(PROBABILITY){
+         binarize(0, vData);
+         binarize(0, aData);
+         binarize(0, dData);
+     }
      
      long vCTime = System.currentTimeMillis();
      double vConstCV = constFoldCV(vData, CLASSIFIER1);
@@ -1775,6 +1804,7 @@ public double constFoldCV( Instances data, String cClassName){
          
          double vScore = NO_CLASS, aScore = NO_CLASS, dScore = NO_CLASS;
          double vClass = NO_CLASS, aClass = NO_CLASS, dClass = NO_CLASS;
+         //quantify the probablity that an order is good?
          double vClassProb = 0, aClassProb = 0, dClassProb = 0;
          int probCount = 0;
          if (vClassifier != null) {
@@ -1822,7 +1852,8 @@ public double constFoldCV( Instances data, String cClassName){
          aScore = aClass == NO_CLASS ? NO_CLASS_SCORE : aBucketMeans[(int) aClass];
          dScore = dClass == NO_CLASS ? NO_CLASS_SCORE : dBucketMeans[(int) dClass];
          // Combine the scores in some fashion.
-         double score = vScore + aScore + dScore;
+         double score = PROBABILITY ? RMS(vClassProb, .5, aClassProb, .5, dClassProb, .5) 
+                                    : vScore + aScore + dScore;
          //combine probabilities somehow
          double prob = probCount == 0 ? 0 : (vClassProb + aClassProb + dClassProb) / probCount;
          
