@@ -1,0 +1,89 @@
+
+.basedir "pa.joeq"
+
+### Domains
+
+.include "fielddomains.pa"
+
+TV 1048576 tv.map
+C 1024
+
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_T0_Z0_T1_H0_H1
+
+### Relations
+
+vP0 (v:V0, h:H0) input
+A (dest:V0, source:V1) input
+S (base:V0, field:F0, src:V1) input
+L (base:V0, field:F0, dest:V1) input
+vT (var:V0, type:T0) input
+hT (heap:H0, type:T1) input
+aT (type:T0, type:T1) input
+cha (type:T1, name:N0, method:M0) input
+actual (invoke:I0, num:Z0, actualparam:V1) input
+formal (method:M0, num:Z0, formalparam:V0) input
+Mret (method:M0, v:V1) input
+Mthr (method:M0, v:V1) input
+Iret (invoke:I0, v:V0) input
+Ithr (invoke:I0, v:V0) input
+mI (method:M0, invoke:I0, name:N0) input
+IE0 (invoke:I0, target:M0) input
+IE (invoke:I0, target:M0) input
+
+castNode (var:V) outputtuples
+generic (var:V) outputtuples
+genericField (field:F) outputtuples
+genericIReturn (method:N) outputtuples
+genericMReturn (method:M) outputtuples
+
+castNode(dest) :- A(dest,src), vT(src,t), !vT(dest,t).
+
+generic(v) :- castNode(v).
+generic(v2) :- A(v,v2), generic(v).
+
+genericField(f) :- generic(v), L(_,f,v).
+genericIReturn(m) :- generic(v), Iret(i,v), mI(_,i,m).
+genericMReturn(m) :- generic(v), Iret(i,v), IE(i,m).
+
+#generic(v) :- genericMReturn(m), Mret(m,v).
+
+
+### Translate to other form of relations.
+assignStatement (dest:V, src:V) output
+loadStatement (dest:V, base:V, field:F) output
+storeStatement (base:V, field:F, src:V) output
+returnStatement (method:M, src:V) output
+invokeMethod (invoke:I, method:M) output
+invokeParameter (invoke:I, param:Z, src:V) output
+invokeReturn (invoke:I, dest:V) output
+newStatement (dest:V, type:TV) output
+castStatement (dest:V, type:TV, src:V) output
+pointsTo (context:C, var:V, object:H) output
+objectType (object:H, type:TV) output
+context2baseobject (context:C, location:V, object:H) output
+override (supermethod:M, submethod:M) output
+
+location2typevar (location:V, typevar:TV) input output
+concreteTypes (typevar:TV, concretetype:T) input output
+methodParameter (method:M, param:Z, type:TV) input output
+field (field:F, type:TV) input output
+returnValue (method:M, type:TV) input output
+
+location2typevar(v,tv) :- v => tv.
+concreteTypes(tv,t) :- t => tv.
+field(f,tv) :- f => tv.
+returnValue(m,tv) :- m => tv.
+
+assignStatement(v1,v2) :- A(v1,v2).
+loadStatement(v2,v1,f) :- L(v1,f,v2).
+storeStatement(v1,f,v2) :- S(v1,f,v2).
+returnStatement(m,v) :- Mret(m,v).
+invokeMethod(i,m) :- mI(m,i,_).
+invokeParameter(i,z,v) :- actual(i,z,v).
+invokeReturn(i,v) :- Iret(i,v).
+newStatement(v,tv) :- vP0(v,h), location2typevar(v,tv).
+castStatement(v1,tv,v2) :- A(v1,v2), vT(v2,t), !vT(v1,t), concreteTypes(tv,t).
+pointsTo(c,v,h) :- vP0(v,h).
+objectType(h,tv) :- hT(h,t), concreteTypes(tv,t).
+#context2baseobject(c,v,h).
+override(super,sub) :- cha(t1,n,super), cha(t2,n,sub), aT(t1,t2).
