@@ -162,14 +162,14 @@ public class BDDInferenceRule extends InferenceRule {
             solver.out.println("Applying inference rule:\n   "+this+" ("+updateCount+")");
         
         long time = 0L;
+        long ttime = 0L;
         if (solver.REPORT_STATS || solver.TRACE) time = System.currentTimeMillis();
         
         BDD[] relationValues = new BDD[top.size()];
         
         // Quantify out unnecessary fields in input relations.
         if (solver.TRACE) solver.out.println("Quantifying out unnecessary domains and restricting constants...");
-        if (solver.TRACE) solver.out.println("Necessary variables: "+necessaryVariables);
-        if (solver.TRACE) solver.out.println("Unnecessary variables: "+unnecessaryVariables);
+        if (solver.TRACE) solver.out.println("Variables: necessary="+necessaryVariables+" unnecessary="+unnecessaryVariables);
         for (int i = 0; i < top.size(); ++i) {
             RuleTerm rt = (RuleTerm) top.get(i);
             BDDRelation r = (BDDRelation) rt.relation;
@@ -178,13 +178,21 @@ public class BDDInferenceRule extends InferenceRule {
                 Variable v = (Variable) rt.variables.get(j);
                 BDDDomain d = (BDDDomain) r.domains.get(j);
                 if (v instanceof Constant) {
-                    if (solver.TRACE) solver.out.println("Constant: restricting "+d+" = "+v);
+                    if (solver.TRACE) {
+                        solver.out.print("Constant: restricting "+d+" = "+v);
+                        ttime = System.currentTimeMillis();
+                    }
                     relationValues[i].restrictWith(d.ithVar(((Constant)v).value));
+                    if (solver.TRACE) solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
                     continue;
                 }
                 if (unnecessaryVariables.contains(v)) {
-                    if (solver.TRACE) solver.out.println(v+" is unnecessary, quantifying out "+d);
+                    if (solver.TRACE) {
+                        solver.out.print(v+" is unnecessary, quantifying out "+d);
+                        ttime = System.currentTimeMillis();
+                    }
                     BDD q = relationValues[i].exist(d.set());
+                    if (solver.TRACE) solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
                     relationValues[i].free();
                     relationValues[i] = q;
                 }
@@ -206,11 +214,15 @@ public class BDDInferenceRule extends InferenceRule {
         // This happens after we have quantified away and restricted constants,
         // but before we do renaming.
         if (incrementalize && cache_before_rename) {
-            if (solver.TRACE) solver.out.println("Caching values of input relations");
+            if (solver.TRACE) {
+                solver.out.print("Caching values of input relations");
+                ttime = System.currentTimeMillis();
+            }
             if (oldRelationValues == null) initializeOldRelationValues();
             for (int i = 0; i < relationValues.length; ++i) {
                 oldRelationValues[i].orWith(relationValues[i].id());
             }
+            if (solver.TRACE) solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
         }
         
         // Replace BDDDomain's in the BDD relations to match variable
@@ -222,11 +234,15 @@ public class BDDInferenceRule extends InferenceRule {
             if (solver.TRACE_FULL) solver.out.println("   current value: "+relationValues[i].toStringWithDomains());
             BDDPairing pairing = renames[i];
             if (pairing != null) {
-                if (solver.TRACE)
-                    System.out.print("Relation "+r+" domains "+domainsOf(relationValues[i])+" -> ");
+                if (solver.TRACE) {
+                    solver.out.print("Relation "+r+" domains "+domainsOf(relationValues[i])+" -> ");
+                    ttime = System.currentTimeMillis();
+                }
                 relationValues[i].replaceWith(pairing);
-                if (solver.TRACE)
-                    System.out.println(domainsOf(relationValues[i]));
+                if (solver.TRACE) {
+                    solver.out.print(domainsOf(relationValues[i]));
+                    solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                }
             }
         }
         BDDRelation r = (BDDRelation) bottom.relation;
@@ -235,10 +251,15 @@ public class BDDInferenceRule extends InferenceRule {
         // If we are incrementalizing, cache copies of the input relations.
         // If the option is set, we do this after the rename.
         if (incrementalize && !cache_before_rename) {
+            if (solver.TRACE) {
+                solver.out.print("Caching values of input relations");
+                ttime = System.currentTimeMillis();
+            }
             if (oldRelationValues == null) initializeOldRelationValues();
             for (int i = 0; i < relationValues.length; ++i) {
                 oldRelationValues[i].orWith(relationValues[i].id());
             }
+            if (solver.TRACE) solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
         }
         
         BDD result = solver.bdd.one();
@@ -252,15 +273,27 @@ public class BDDInferenceRule extends InferenceRule {
                 findBestDomainOrder(solver.bdd, null, varOrder, result, b, canNowQuantify);
             }
             if (!canNowQuantify.isOne()) {
-                if (solver.TRACE) solver.out.print(" (relprod "+b.nodeCount()+"x"+canNowQuantify.nodeCount());
+                if (solver.TRACE) {
+                    solver.out.print(" (relprod "+b.nodeCount()+"x"+canNowQuantify.nodeCount());
+                    ttime = System.currentTimeMillis();
+                }
                 BDD topBdd = result.relprod(b, canNowQuantify);
                 b.free();
-                if (solver.TRACE) solver.out.print("="+topBdd.nodeCount()+")");
+                if (solver.TRACE) {
+                    solver.out.print("="+topBdd.nodeCount()+")");
+                    solver.out.print(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                }
                 result.free(); result = topBdd;
             } else {
-                if (solver.TRACE) solver.out.print(" (and "+b.nodeCount());
+                if (solver.TRACE) {
+                    solver.out.print(" (and "+b.nodeCount());
+                    ttime = System.currentTimeMillis();
+                }
                 result.andWith(b);
-                if (solver.TRACE) solver.out.print("="+result.nodeCount()+")");
+                if (solver.TRACE) {
+                    solver.out.print("="+result.nodeCount()+")");
+                    solver.out.print(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                }
             }
             if (result.isZero()) {
                 if (solver.TRACE) solver.out.println(" Became empty, stopping.");
@@ -278,24 +311,42 @@ public class BDDInferenceRule extends InferenceRule {
         else if (solver.TRACE) solver.out.println(" = "+result.nodeCount());
         
         if (bottomRename != null) {
-            if (solver.TRACE)
-                System.out.print("Result domains "+domainsOf(result)+" -> ");
+            if (solver.TRACE) {
+                solver.out.print("Result domains "+domainsOf(result)+" -> ");
+                ttime = System.currentTimeMillis();
+            }
             result.replaceWith(bottomRename);
-            if (solver.TRACE)
-                System.out.println(domainsOf(result));
+            if (solver.TRACE) {
+                solver.out.print(domainsOf(result));
+                solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+            }
         }
         for (int i = 0; i < bottom.variables.size(); ++i) {
             Variable v = (Variable) bottom.variables.get(i);
             if (v instanceof Constant) {
                 Constant c = (Constant) v;
                 BDDDomain d = (BDDDomain) r.domains.get(i);
+                if (solver.TRACE) {
+                    solver.out.print("Restricting result domain "+d+" to constant "+c);
+                    ttime = System.currentTimeMillis();
+                }
                 result.andWith(d.ithVar(c.value));
+                if (solver.TRACE) {
+                    solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                }
             }
         }
-        if (solver.TRACE_FULL) solver.out.println("Adding to "+bottom+": "+result.toStringWithDomains());
         BDD oldRelation = r.relation.id();
+        if (solver.TRACE_FULL) solver.out.println("Adding to "+bottom+": "+result.toStringWithDomains());
+        if (solver.TRACE) {
+            solver.out.print("Result: "+r.relation.nodeCount()+" nodes -> ");
+            ttime = System.currentTimeMillis();
+        }
         r.relation.orWith(result);
-        if (solver.TRACE) solver.out.println("Relation "+r+" is now "+r.relation.nodeCount()+" nodes, "+r.dsize()+" elements.");
+        if (solver.TRACE) {
+            solver.out.print(r.relation.nodeCount()+" nodes, "+r.dsize()+" elements.");
+            solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+        }
         if (solver.TRACE_FULL) solver.out.println("Relation "+r+" is now: "+r.relation.toStringWithDomains());
         boolean changed = !oldRelation.equals(r.relation);
         oldRelation.free();
@@ -309,19 +360,20 @@ public class BDDInferenceRule extends InferenceRule {
     }
     
     // Incremental version.
-    public boolean updateIncremental() {
+    private boolean updateIncremental() {
         if (solver.NOISY)
             solver.out.println("Applying inference rule:\n   "+this+" (inc) ("+updateCount+")");
         
         long time = 0L;
+        long ttime = 0L;
         if (solver.REPORT_STATS || solver.TRACE) time = System.currentTimeMillis();
         
         BDD[] allRelationValues = new BDD[top.size()];
         BDD[] newRelationValues = new BDD[top.size()];
         
         // Quantify out unnecessary fields in input relations.
-        if (solver.TRACE) solver.out.println("Necessary variables: "+necessaryVariables);
-        if (solver.TRACE) solver.out.println("Unnecessary variables: "+unnecessaryVariables);
+        if (solver.TRACE) solver.out.println("Quantifying out unnecessary domains and restricting constants...");
+        if (solver.TRACE) solver.out.println("Variables: necessary="+necessaryVariables+" unnecessary="+unnecessaryVariables);
         for (int i = 0; i < top.size(); ++i) {
             RuleTerm rt = (RuleTerm) top.get(i);
             BDDRelation r = (BDDRelation) rt.relation;
@@ -330,13 +382,21 @@ public class BDDInferenceRule extends InferenceRule {
                 Variable v = (Variable) rt.variables.get(j);
                 BDDDomain d = (BDDDomain) r.domains.get(j);
                 if (v instanceof Constant) {
-                    if (solver.TRACE) solver.out.println("Constant: restricting "+d+" = "+v);
+                    if (solver.TRACE) {
+                        solver.out.print("Constant: restricting "+d+" = "+v);
+                        ttime = System.currentTimeMillis();
+                    }
                     allRelationValues[i].restrictWith(d.ithVar(((Constant)v).value));
+                    if (solver.TRACE) solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
                     continue;
                 }
                 if (unnecessaryVariables.contains(v)) {
-                    if (solver.TRACE) solver.out.println(v+" is unnecessary, quantifying out "+d);
+                    if (solver.TRACE) {
+                        solver.out.print(v+" is unnecessary, quantifying out "+d);
+                        ttime = System.currentTimeMillis();
+                    }
                     BDD q = allRelationValues[i].exist(d.set());
+                    if (solver.TRACE) solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
                     allRelationValues[i].free();
                     allRelationValues[i] = q;
                 }
@@ -359,9 +419,15 @@ public class BDDInferenceRule extends InferenceRule {
             needWholeRelation = new boolean[allRelationValues.length];
             for (int i = 0; i < allRelationValues.length; ++i) {
                 if (!allRelationValues[i].equals(oldRelationValues[i])) {
-                    if (solver.TRACE) solver.out.print("Diff relation #"+i+": ("+allRelationValues[i].nodeCount()+"x"+oldRelationValues[i].nodeCount()+"=");
+                    if (solver.TRACE) {
+                        solver.out.print("Diff relation #"+i+": ("+allRelationValues[i].nodeCount()+"x"+oldRelationValues[i].nodeCount()+"=");
+                        ttime = System.currentTimeMillis();
+                    }
                     newRelationValues[i] = allRelationValues[i].apply(oldRelationValues[i], BDDFactory.diff);
-                    if (solver.TRACE) solver.out.println(newRelationValues[i].nodeCount()+")");
+                    if (solver.TRACE) {
+                        solver.out.print(newRelationValues[i].nodeCount()+")");
+                        solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                    }
                     if (solver.TRACE_FULL) {
                         solver.out.println("New for relation #"+i+": "+newRelationValues[i].toStringWithDomains());
                     }
@@ -389,18 +455,26 @@ public class BDDInferenceRule extends InferenceRule {
             if (cache_before_rename) {
                 if (pairing != null) {
                     if (newRelationValues[i] != null) {
-                        if (solver.TRACE)
-                            System.out.println("Diff for Relation "+r+" domains "+domainsOf(newRelationValues[i]));
+                        if (solver.TRACE) {
+                            solver.out.print("Diff for Relation "+r+" domains "+domainsOf(newRelationValues[i])+" -> ");
+                            ttime = System.currentTimeMillis();
+                        }
                         newRelationValues[i].replaceWith(pairing);
-                        if (solver.TRACE)
-                            System.out.println("Diff for Relation "+r+" domains now "+domainsOf(newRelationValues[i]));
+                        if (solver.TRACE) {
+                            solver.out.print(domainsOf(newRelationValues[i]));
+                            solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                        }
                     }
                     if (needWholeRelation[i]) {
-                        if (solver.TRACE)
-                            System.out.println("Whole Relation "+r+" is necessary, renaming it...");
+                        if (solver.TRACE) {
+                            solver.out.print("Whole Relation "+r+" domains "+domainsOf(allRelationValues[i])+" -> ");
+                            ttime = System.currentTimeMillis();
+                        }
                         rallRelationValues[i] = allRelationValues[i].replace(pairing);
-                        if (solver.TRACE)
-                            System.out.println("Whole Relation "+r+" domains now "+domainsOf(rallRelationValues[i]));
+                        if (solver.TRACE) {
+                            solver.out.print(domainsOf(rallRelationValues[i]));
+                            solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                        }
                     }
                 }
                 if (rallRelationValues[i] == null) {
@@ -408,16 +482,26 @@ public class BDDInferenceRule extends InferenceRule {
                 }
             } else {
                 if (pairing != null) {
-                    if (solver.TRACE)
-                        System.out.println("Relation "+r+" domains "+domainsOf(allRelationValues[i]));
+                    if (solver.TRACE) {
+                        solver.out.print("Relation "+r+" domains "+domainsOf(allRelationValues[i])+" -> ");
+                        ttime = System.currentTimeMillis();
+                    }
                     allRelationValues[i].replaceWith(pairing);
-                    if (solver.TRACE)
-                        System.out.println("Relation "+r+" domains now "+domainsOf(allRelationValues[i]));
+                    if (solver.TRACE) {
+                        solver.out.print(domainsOf(allRelationValues[i]));
+                        solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                    }
                 }
                 if (!allRelationValues[i].equals(oldRelationValues[i])) {
-                    if (solver.TRACE) solver.out.print("Diff relation #"+i+": ("+allRelationValues[i].nodeCount()+"x"+oldRelationValues[i].nodeCount()+"=");
+                    if (solver.TRACE) {
+                        solver.out.print("Diff relation #"+i+": ("+allRelationValues[i].nodeCount()+"x"+oldRelationValues[i].nodeCount()+"=");
+                        ttime = System.currentTimeMillis();
+                    }
                     newRelationValues[i] = allRelationValues[i].apply(oldRelationValues[i], BDDFactory.diff);
-                    if (solver.TRACE) solver.out.println(newRelationValues[i].nodeCount()+")");
+                    if (solver.TRACE) {
+                        solver.out.print(newRelationValues[i].nodeCount()+")");
+                        solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                    }
                     if (solver.TRACE_FULL) solver.out.println("New for relation "+r+": "+newRelationValues[i].toStringWithDomains());
                 }
                 oldRelationValues[i].free();
@@ -470,15 +554,27 @@ public class BDDInferenceRule extends InferenceRule {
                     findBestDomainOrder(solver.bdd, null, varOrder, results[i], b, canNowQuantify);
                 }
                 if (!canNowQuantify.isOne()) {
-                    if (solver.TRACE) solver.out.print(" (relprod "+b.nodeCount()+"x"+canNowQuantify.nodeCount());
+                    if (solver.TRACE) {
+                        solver.out.print(" (relprod "+b.nodeCount()+"x"+canNowQuantify.nodeCount());
+                        ttime = System.currentTimeMillis();
+                    }
                     BDD topBdd = results[i].relprod(b, canNowQuantify);
-                    if (solver.TRACE) solver.out.print("="+topBdd.nodeCount()+")");
+                    if (solver.TRACE) {
+                        solver.out.print("="+topBdd.nodeCount()+")");
+                        solver.out.print(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                    }
                     b.free();
                     results[i].free(); results[i] = topBdd;
                 } else {
-                    if (solver.TRACE) solver.out.print(" (and "+b.nodeCount());
+                    if (solver.TRACE) {
+                        solver.out.print(" (and "+b.nodeCount());
+                        ttime = System.currentTimeMillis();
+                    }
                     results[i].andWith(b);
-                    if (solver.TRACE) solver.out.print("="+results[i].nodeCount()+")");
+                    if (solver.TRACE) {
+                        solver.out.print("="+results[i].nodeCount()+")");
+                        solver.out.print(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                    }
                 }
                 if (results[i].isZero()) {
                     if (solver.TRACE) solver.out.println(" Became empty, skipping.");
@@ -494,32 +590,58 @@ public class BDDInferenceRule extends InferenceRule {
                 rallRelationValues[i].free();
             }
         }
+        if (solver.TRACE) solver.out.print("Result: ");
         BDD result = solver.bdd.zero();
         for (int i = 0; i < results.length; ++i) {
             if (results[i] != null) {
+                if (solver.TRACE) {
+                    ttime = System.currentTimeMillis();
+                }
                 result.orWith(results[i]);
+                if (solver.TRACE) {
+                    solver.out.print(" -> "+result.nodeCount());
+                    solver.out.print(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                }
             }
         }
-        if (solver.TRACE) solver.out.println("Result: "+result.nodeCount());
+        if (solver.TRACE) solver.out.println(" -> "+result.nodeCount());
         
         if (bottomRename != null) {
-            if (solver.TRACE)
-                System.out.println("Result domains: "+domainsOf(result));
+            if (solver.TRACE) {
+                solver.out.print("Result domains: "+domainsOf(result)+" -> ");
+            }
             result.replaceWith(bottomRename);
-            if (solver.TRACE)
-                System.out.println("Result domains now: "+domainsOf(result));
+            if (solver.TRACE) {
+                solver.out.print(domainsOf(result));
+                solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+            }
         }
         for (int i = 0; i < bottom.variables.size(); ++i) {
             Variable v = (Variable) bottom.variables.get(i);
             if (v instanceof Constant) {
                 Constant c = (Constant) v;
                 BDDDomain d = (BDDDomain) r.domains.get(i);
+                if (solver.TRACE) {
+                    solver.out.print("Restricting result domain "+d+" to constant "+c);
+                    ttime = System.currentTimeMillis();
+                }
                 result.andWith(d.ithVar(c.value));
+                if (solver.TRACE) {
+                    solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+                }
             }
         }
-        if (solver.TRACE_FULL) solver.out.println("Adding to "+bottom+": "+result.toStringWithDomains());
         BDD oldRelation = r.relation.id();
+        if (solver.TRACE_FULL) solver.out.println("Adding to "+bottom+": "+result.toStringWithDomains());
+        if (solver.TRACE) {
+            solver.out.print("Result: "+r.relation.nodeCount()+" nodes -> ");
+            ttime = System.currentTimeMillis();
+        }
         r.relation.orWith(result);
+        if (solver.TRACE) {
+            solver.out.print(r.relation.nodeCount()+" nodes, "+r.dsize()+" elements.");
+            solver.out.println(" ("+(System.currentTimeMillis()-ttime)+" ms)");
+        }
         if (solver.TRACE_FULL) solver.out.println("Relation "+r+" is now: "+r.relation.toStringWithDomains());
         boolean changed = !oldRelation.equals(r.relation);
         oldRelation.free();
@@ -533,9 +655,9 @@ public class BDDInferenceRule extends InferenceRule {
     }
 
     public void reportStats() {
-        System.out.println("Rule "+this);
-        System.out.println("   Updates: "+updateCount);
-        System.out.println("   Time: "+totalTime+" ms");
+        solver.out.println("Rule "+this);
+        solver.out.println("   Updates: "+updateCount);
+        solver.out.println("   Time: "+totalTime+" ms");
     }
     
     /**
@@ -651,11 +773,11 @@ public class BDDInferenceRule extends InferenceRule {
             varOrder2 = varOrder;
         }
         if (ranking.size() <= 1) {
-            if (ranking.size() == 0) System.out.println("Warning: no valid permutations for "+domains);
+            if (ranking.size() == 0) solver.out.println("Warning: no valid permutations for "+domains);
             return varOrder2;
         } else {
             if (ranking.size() > MAX_ORDERS) {
-                System.out.println("Too many orders ("+ranking.size()+"), skipping all but the best "+MAX_ORDERS+".");
+                solver.out.println("Too many orders ("+ranking.size()+"), skipping all but the best "+MAX_ORDERS+".");
             }
             Iterator i = ranking.iterator();
             PermData pd = (PermData) i.next();
@@ -664,7 +786,7 @@ public class BDDInferenceRule extends InferenceRule {
             while (i.hasNext()) {
                 pd = (PermData) i.next();
                 if (j > MAX_ORDERS && pd.time > 50 || pd.time > bestTime + MAX_DIFF) {
-                    System.out.println(pd.order+" too slow ("+pd.time+" ms)");
+                    solver.out.println(pd.order+" too slow ("+pd.time+" ms)");
                     solver.registerOrderConstraint(pd.order, Long.MAX_VALUE);
                     i.remove();
                 }
@@ -672,7 +794,7 @@ public class BDDInferenceRule extends InferenceRule {
             }
         }
         FindBestOrder fbo = null;
-        System.out.println("Trying "+ranking.size()+" permutations of "+domains);
+        solver.out.println("Trying "+ranking.size()+" permutations of "+domains);
         if (true) {
             fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES/2,
                 Long.MAX_VALUE, 5000);
@@ -694,18 +816,18 @@ public class BDDInferenceRule extends InferenceRule {
             String varOrder = pd.varOrder;
             long time;
             if (fbo != null) {
-                System.out.println("Trying "+order);
+                solver.out.println("Trying "+order);
                 time = fbo.tryOrder(true, varOrder);
             } else {
                 int[] varOrdering = bdd.makeVarOrdering(true, varOrder);
-                System.out.print("Setting variable order to "+varOrder+", ");
+                solver.out.print("Setting variable order to "+varOrder+", ");
                 bdd.setVarOrder(varOrdering);
-                System.out.println("done.");
-                System.out.print(b1.nodeCount()+"x"+b2.nodeCount()+" = ");
+                solver.out.println("done.");
+                solver.out.print(b1.nodeCount()+"x"+b2.nodeCount()+" = ");
                 time = System.currentTimeMillis();
                 BDD result = b1.relprod(b2, b3);
                 time = System.currentTimeMillis() - time;
-                System.out.println(result.nodeCount()+" ("+time+" ms)");
+                solver.out.println(result.nodeCount()+" ("+time+" ms)");
                 result.free();
             }
             solver.registerOrderConstraint(order, time);
@@ -713,12 +835,12 @@ public class BDDInferenceRule extends InferenceRule {
                 bestTime = time;
                 bestOrder = order;
                 bestVarOrder = varOrder;
-                System.out.println("New best order: "+bestOrder+" time: "+bestTime+" ms");
+                solver.out.println("New best order: "+bestOrder+" time: "+bestTime+" ms");
             }
         }
         if (fbo != null) fbo.cleanup();
-        System.out.println("Best relative order: "+bestOrder);
-        System.out.println("Best variable ordering: "+bestVarOrder);
+        solver.out.println("Best relative order: "+bestOrder);
+        solver.out.println("Best variable ordering: "+bestVarOrder);
         return bestVarOrder;
     }
     
