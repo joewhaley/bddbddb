@@ -85,11 +85,11 @@ public class BDDInferenceRule extends InferenceRule {
      * Whether we should attempt to find the best order for this rule.
      */
     boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
-  
+    
     long FBO_CUTOFF = Long.parseLong(System.getProperty("fbocutoff", "90"));
     boolean learn_best_order = !System.getProperty("learnbestorder", "no").equals("no");  
     LearnedOrder learnedOrder;
-     
+    
     /**
      * Construct a new BDDInferenceRule.
      * Only to be called internally.
@@ -261,11 +261,11 @@ public class BDDInferenceRule extends InferenceRule {
         return pairing;
     }
 
-    void doPreUpdate() {
+    void doPreUpdate(BDD oldValue) {
         if (preCode != null) {
             for (Iterator i = preCode.iterator(); i.hasNext(); ) {
                 CodeFragment f = (CodeFragment) i.next();
-                f.invoke(this, null);
+                f.invoke(this, oldValue);
             }
         }
     }
@@ -285,7 +285,7 @@ public class BDDInferenceRule extends InferenceRule {
      * @see net.sf.bddbddb.InferenceRule#update()
      */
     public boolean update() {
-        doPreUpdate();
+        doPreUpdate(((BDDRelation) bottom.relation).relation);
         ++updateCount;
         if (incrementalize) {
             if (oldRelationValues != null) return updateIncremental();
@@ -452,6 +452,12 @@ public class BDDInferenceRule extends InferenceRule {
         if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
         if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
         r.updateNegated();
+        r.doUpdate(oldRelation);
+        if (r.negated != null) {
+            BDD old_neg = oldRelation.not(); 
+            ((BDDRelation)r.negated).doUpdate(old_neg);
+            old_neg.free();
+        }
         doPostUpdate(oldRelation);
         oldRelation.free();
         return changed;
@@ -757,6 +763,12 @@ public class BDDInferenceRule extends InferenceRule {
         if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
         if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
         r.updateNegated();
+        r.doUpdate(oldRelation);
+        if (r.negated != null) {
+            BDD old_neg = oldRelation.not(); 
+            ((BDDRelation)r.negated).doUpdate(old_neg);
+            old_neg.free();
+        }
         doPostUpdate(oldRelation);
         oldRelation.free();
         oldRelationValues = allRelationValues;

@@ -636,13 +636,16 @@ public abstract class Solver {
                 }
             }
         }
-        if (s.indexOf(".") > 0) {
+        int dotIndex = s.indexOf('.');
+        int braceIndex = s.indexOf('{');
+        int qIndex = s.indexOf('?');
+        if (dotIndex > 0 && (braceIndex == -1 || dotIndex < braceIndex)) {
             // rule
             InferenceRule ir = parseRule(lineNum, s);
             if (TRACE) out.println("Parsed rule " + ir);
             rules.add(ir);
             return Collections.singletonList(ir);
-        } else if (s.indexOf("?") > 0) {
+        } else if (qIndex > 0 && (braceIndex == -1 || qIndex < braceIndex)) {
             // query
             List/*<InferenceRule>*/ ir = parseQuery(lineNum, s);
             if (ir != null) {
@@ -935,6 +938,20 @@ public abstract class Solver {
                 relationsToPrintTuples.add(r);
             } else if (option.equals("printsize")) {
                 relationsToPrintSize.add(r);
+            } else if (option.equals("{")) {
+                String s2 = nextToken(st);
+                StringBuffer sb = new StringBuffer();
+                while (!s2.equals("}")) {
+                    sb.append(' ');
+                    sb.append(s2);
+                    if (!st.hasMoreTokens()) {
+                        outputError(lineNum, st.getPosition(), s, "Expected \"}\" to terminate code block");
+                        throw new IllegalArgumentException();
+                    }
+                    s2 = nextToken(st);
+                }
+                CodeFragment f = new CodeFragment(sb.toString(), r);
+                r.onUpdate.add(f);
             } else if (constraintMatcher.matches()) {
                 parseAndAddConstraint(r, constraintMatcher);
             } else {
