@@ -15,4 +15,10 @@ public interface LowLevelOperationVisitor {
      * @return
      */
     public abstract Object visit(ApplyEx op);
+    
+    /**
+     * @param op
+     * @return
+     */
+    public abstract Object visit(Replace op);
 }

@@ -26,6 +26,7 @@ import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Free;
 import org.sf.bddbddb.ir.highlevel.Load;
 import org.sf.bddbddb.ir.highlevel.Project;
+import org.sf.bddbddb.ir.highlevel.Rename;
 import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.util.Assert;
@@ -125,9 +126,26 @@ public class IR {
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
             ass.doAssignment();
+            cleanUpAfterAssignment(list);
         }
     }
 
+    void cleanUpAfterAssignment(IterationList list) {
+        for (ListIterator i = list.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (o instanceof Rename) {
+                i.remove();
+                Rename r = (Rename) o;
+                Relation r0 = r.getRelationDest();
+                Relation r1 = r.getSrc();
+                Copy op = new Copy(r0, r1);
+                i.add(op);
+            } else if (o instanceof IterationList) {
+                cleanUpAfterAssignment((IterationList) o);
+            }
+        }
+    }
+    
     void doPeephole(IterationList list) {
         for (ListIterator i = list.iterator(); i.hasNext(); ) {
             Object o = i.next();
@@ -236,7 +254,8 @@ public class IR {
 
     public void interpret() {
         //printIR();
-        Interpreter interpret = solver.getInterpreter();
+        BDDInterpreter interpret = (BDDInterpreter) solver.getInterpreter();
+        if (DOMAIN_ASSIGNMENT) interpret.needsDomainMatch = false;
         IterationList list = graph.getIterationList();
         list.interpret(interpret);
     }
@@ -270,10 +289,23 @@ public class IR {
         for (Iterator it = list.iterator(); it.hasNext();) {
             Object o = it.next();
             if (o instanceof Operation) {
-                System.out.println(space + "  " + o);
+                System.out.println(space + "  " + o + "    " + getRenames((Operation) o));
             } else {
                 printIR((IterationList) o, space + "  ");
             }
         }
     }
+    public String getRenames(Operation op) {
+        BDDRelation r0 = (BDDRelation) op.getRelationDest();
+        if (r0 == null) return "";
+        List srcs = op.getSrcs();
+        StringBuffer sb = new StringBuffer();
+        for (Iterator i = srcs.iterator(); i.hasNext(); ) {
+            BDDRelation r2 = (BDDRelation) i.next();
+            sb.append(Operation.getRenames(r2, r0));
+        }
+        if (sb.length() == 0) return "";
+        return sb.substring(1);
+    }
+    
 }

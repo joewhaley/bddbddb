@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import org.sf.bddbddb.Attribute;
+import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.Domain;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
@@ -29,6 +30,7 @@ import org.sf.bddbddb.ir.highlevel.Union;
 import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
+import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.MultiMap;
 
@@ -155,7 +157,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     
     Relation insertReplaceBefore(Operation op, Relation r1) {
         Relation r1_new = allocNewRelation(r1);
-        Copy move = new Copy(r1_new, r1);
+        Operation move = new Replace((BDDRelation) r1_new, (BDDRelation) r1);
         insertBefore(move);
         op.replaceSrc(r1, r1_new);
         r1 = r1_new;
@@ -164,7 +166,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     
     Relation insertReplaceAfter(Operation op, Relation r0) {
         Relation r0_new = allocNewRelation(r0);
-        Copy move = new Copy(r0, r0_new);
+        Operation move = new Replace((BDDRelation) r0, (BDDRelation) r0_new);
         insertAfter(move);
         op.setRelationDest(r0_new);
         r0 = r0_new;
@@ -354,6 +356,15 @@ public abstract class DomainAssignment implements OperationVisitor {
         return visitUnaryOp(op, r0, r1);
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Replace)
+     */
+    public Object visit(Replace op) {
+        Relation r0 = op.getRelationDest();
+        Relation r1 = op.getSrc();
+        return visitUnaryOp(op, r0, r1);
+    }
+    
     /* (non-Javadoc)
      * @see org.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.highlevel.Load)
      */

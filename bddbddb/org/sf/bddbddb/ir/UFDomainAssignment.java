@@ -15,7 +15,7 @@ import org.sf.bddbddb.BDDSolver;
 import org.sf.bddbddb.Domain;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
-import org.sf.bddbddb.ir.highlevel.Copy;
+import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.LinearMap;
 import org.sf.bddbddb.util.Pair;
@@ -65,7 +65,7 @@ public class UFDomainAssignment extends DomainAssignment {
      */
     public void doAssignment() {
         for (Iterator j = inserted.iterator(); j.hasNext(); ) {
-            Copy op = (Copy) j.next();
+            Replace op = (Replace) j.next();
             if (TRACE) System.out.println("Visiting inserted operation: "+op);
             Relation r0 = op.getRelationDest();
             Relation r1 = op.getSrc();
@@ -266,4 +266,5 @@ public class UFDomainAssignment extends DomainAssignment {
         r.initialize();
         return r;
     }
+
 }

@@ -28,6 +28,7 @@ import org.sf.bddbddb.ir.highlevel.Union;
 import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
+import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDDFactory;
@@ -327,6 +328,15 @@ public class ConstantProp extends RelationProblem {
          */
         public Object visit(If op) {
             return null;
+        }
+
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Replace)
+         */
+        public Object visit(Replace op) {
+            Relation r1 = op.getSrc();
+            ConstantPropFact f1 = getRepresentativeFact(r1, op);
+            return f1;
         }
     }
     public class ConstantPropFact extends RelationFact {
@@ -669,6 +679,13 @@ public class ConstantProp extends RelationProblem {
          * @see org.sf.bddbddb.ir.dynamic.DynamicOperationVisitor#visit(org.sf.bddbddb.ir.dynamic.If)
          */
         public Object visit(If op) {
+            return op;
+        }
+        
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Replace)
+         */
+        public Object visit(Replace op) {
             return op;
         }
     }
