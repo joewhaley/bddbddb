@@ -4,6 +4,7 @@
 package net.sf.bddbddb;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -368,6 +369,10 @@ public abstract class Solver {
         if (NOISY) out.print("Splitting rules: ");
         splitRules();
         if (NOISY) out.println("done.");
+        //out.print("Magic Set Transformation: ");
+        //MagicSetTransformation mst = new MagicSetTransformation(this);
+        //mst.transform(rules);
+        //out.println("done.");
         if (NOISY) out.print("Initializing solver: ");
         initialize();
         if (NOISY) out.println("done.");
@@ -1076,33 +1081,6 @@ public abstract class Solver {
             } else if (option.equals("findbestorder")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.find_best_order = true;
-            } else if (option.equals("learnbestorder")) {
-                BDDInferenceRule r = (BDDInferenceRule) ir;
-                r.learn_best_order = true;
-                LEARN_BEST_ORDER = true;
-            } else if (option.equals("training_set_size")) {
-                nextToken(st);
-                String sizeToken= nextToken(st);
-                try {
-                    System.out.println("size: " + sizeToken);
-                    int size = Integer.parseInt(sizeToken);
-                    BDDInferenceRule r = (BDDInferenceRule) ir;
-                    r.getLearnedOrder().SIZE_OF_TRAINING_SET = size;
-                } catch (NumberFormatException e){
-                    outputError(lineNum, st.getPosition(), s, "Invalid number format for training_set_size \"" + option + "\"");
-                    throw new IllegalArgumentException();
-                }
-            } else if (option.equals("min_confidence")) {
-                nextToken(st);
-                String confToken= nextToken(st);
-                try {
-                    double conf = Double.parseDouble(confToken);
-                    BDDInferenceRule r = (BDDInferenceRule) ir;
-                    r.getLearnedOrder().MIN_CONFIDENCE = conf;
-                } catch (NumberFormatException e) {
-                    outputError(lineNum, st.getPosition(), s, "Invalid number format for min_confidence \"" + option + "\"");
-                    throw new IllegalArgumentException();
-                }
             } else if (option.equals("trace")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.TRACE = true;
@@ -1331,6 +1309,22 @@ public abstract class Solver {
         return var;
     }
 
+    boolean includeRelationInComeFromQuery(Relation r, boolean includeDerivations) {
+        String comeFromIncludes = System.getProperty("comeFromRelations");
+        if (comeFromIncludes == null) return true;
+        String[] names = comeFromIncludes.split(":");
+        boolean include = false;
+        for (int i=0; !include && i<names.length; i++) {
+            if (includeDerivations) {
+                if (r.name.startsWith(names[i])) include = true;
+            }
+            else {
+                if (r.name.equals(names[i])) include = true;
+            }
+        }
+        return include;
+    }
+
     /**
      * Compute a come-from query.  A come-from query includes both :- and ?.
      * 
@@ -1340,6 +1334,9 @@ public abstract class Solver {
     List/*<InferenceRule>*/ comeFromQuery(RuleTerm rt, List extras, boolean single) {
         List newRules = new LinkedList();
         
+        boolean oldTRACE = TRACE;
+        TRACE = TRACE || (System.getProperty("traceComeFromQuery") != null);
+
         Relation r = rt.relation;
         Relation r2 = createRelation(r.name+"_q", r.attributes);
         
@@ -1381,11 +1378,18 @@ public abstract class Solver {
                     Relation r3 = rt3.relation;
                     Relation r4 = (Relation) toQueryRelation.get(r3);
                     if (r4 == null) {
+                        boolean relevantRelation = includeRelationInComeFromQuery(r3,true);
+                        //relevantRelation = true;
+                        if (!relevantRelation) {
+                            if (TRACE) out.println("Skipping contribution relation "+r3);
+                        }
+                        else {
                         // New relation, visit it.
                         worklist.add(r3);
                         r4 = createRelation(r3.name+"_q", r3.attributes);
                         toQueryRelation.put(r3, r4);
                         if (TRACE) out.println("Adding contribution relation "+r3+": "+r4);
+                        }
                     }
                 }
                 List vars = new ArrayList(varMap.keySet());
@@ -1404,6 +1408,32 @@ public abstract class Solver {
                 newRules.add(newrule);
                 
                 // Now bottomr contains assignments to all of the variables.
+
+                // Make a printable relation of bottomr, without the contexts:
+                if(includeRelationInComeFromQuery(r,false)) {
+                    List vars_noC = new ArrayList(varMap.keySet());
+                    List attributes_noC = new ArrayList(vars.size());
+                    for (Iterator k = varMap.entrySet().iterator(); k.hasNext(); ) {
+                        Map.Entry e = (Map.Entry) k.next();
+                        Variable v = (Variable) e.getKey();
+                        String name = (String) e.getValue();
+                        if (!name.startsWith("c")) {
+                            attributes_noC.add(new Attribute(name, v.getDomain(), ""));
+                        }
+                        else {
+                            vars_noC.remove(v);
+                            if (TRACE) out.println("Excluding from non-context version: "+name);
+                        }
+                    }
+                    Relation bottomr_noC = createRelation(r.name+"_q"+ir.id+"_noC", attributes_noC);
+                    RuleTerm bottom_noC = new RuleTerm(bottomr_noC, vars_noC);
+                    InferenceRule newrule_noC = createInferenceRule(Collections.singletonList(bottom), bottom_noC);
+                    newrule_noC.single = single;
+                    if (TRACE) out.println("Adding rule: "+newrule_noC);
+                    newRules.add(newrule_noC);
+                    relationsToPrintTuples.add(bottomr_noC);
+                    relationsToDump.add(bottomr_noC);
+                }
                 
                 // For each subgoal, build a new rule that adds to the contribute relations
                 // for that subgoal.
@@ -1412,12 +1442,14 @@ public abstract class Solver {
                     RuleTerm rt3 = (RuleTerm) j.next();
                     Relation r3 = rt3.relation;
                     Relation r4 = (Relation) toQueryRelation.get(r3);
+                    if (r4 != null) {
                     Assert._assert(r4 != null, "no mapping for "+r3);
                     RuleTerm rt4 = new RuleTerm(r4, rt3.variables);
                     InferenceRule newrule2 = createInferenceRule(terms2, rt4);
                     //newrule2.single = single;
                     if (TRACE) out.println("Adding rule: "+newrule2);
                     newRules.add(newrule2);
+                    }
                 }
             }
         }
@@ -1426,6 +1458,8 @@ public abstract class Solver {
             Relation r4 = (Relation) i.next();
             relationsToPrintTuples.add(r4);
         }
+
+        TRACE = oldTRACE;
         
         return newRules;
     }
@@ -1681,13 +1715,43 @@ public abstract class Solver {
         rules.addAll(newRules);
     }
 
+class RuleSorter implements Comparator {
+        long getRuleTime(Object rule) {
+            if (rule instanceof BDDInferenceRule) {
+                return ((BDDInferenceRule)rule).totalTime;
+            }
+            else if (rule instanceof NumberingRule) {
+                return ((NumberingRule)rule).totalTime;
+            }
+            else {
+                return 0;
+            }
+        }
+
+        public int compare(Object o1, Object o2) {
+            return (int)(getRuleTime(o1) - getRuleTime(o2));
+        }
+    }
+
     /**
      * Report rule statistics.
      */
     void reportStats() {
-        for (Iterator i = rules.iterator(); i.hasNext();) {
+        List sortedRules = new LinkedList(rules);
+        Collections.sort(sortedRules,new RuleSorter());
+        //        List fbsList = new LinkedList();
+        for (Iterator i = sortedRules.iterator(); i.hasNext();) {
             InferenceRule r = (InferenceRule) i.next();
             r.reportStats();
+            /*
+            if (r instanceof BDDInferenceRule) {
+                BDDInferenceRule bddir = (BDDInferenceRule) r;
+                if (bddir.fbs != null) fbsList.add(bddir.fbs);
+            }
+        }
+        for (Iterator i = fbsList.iterator(); i.hasNext();) {
+            ((FindBestSplit)i.next()).reportStats();
+            */
         }
     }
 
