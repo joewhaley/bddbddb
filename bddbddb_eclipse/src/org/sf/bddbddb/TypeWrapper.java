@@ -6,12 +6,11 @@ package org.sf.bddbddb;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 
 /**
- * @author jimz
+ * @author jzhuang
  */
 public class TypeWrapper implements Wrapper {
     // note unlike other wrappers, this one uses binding key only 
-    // for anonymous types
-    // for all other types, qualified name is used
+    // for anonymous types. for all other types, qualified name is used
 
     private ITypeBinding type; // might need to switch to Type in JLS3
     

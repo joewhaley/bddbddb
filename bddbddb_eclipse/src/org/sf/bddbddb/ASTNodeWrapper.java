@@ -11,7 +11,7 @@ import org.eclipse.jdt.core.dom.StringLiteral;
  * Created on Jul 23, 2004
  */
 /**
- * @author jimz
+ * @author jzhuang
  */
 
 public class ASTNodeWrapper implements Wrapper {

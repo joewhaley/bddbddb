@@ -9,7 +9,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ThisExpression;
 
 /**
- * @author jimz
+ * @author jzhuang
  */
 public class ThisWrapper extends ASTNodeWrapper {
     private IMethodBinding enclosingMethod;

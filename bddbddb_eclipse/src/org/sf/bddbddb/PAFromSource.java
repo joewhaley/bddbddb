@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
@@ -1211,41 +1212,19 @@ public class PAFromSource {
             // n in finally?
             if (prev == t.getFinally()) return findThrowParent(t, ex); 
             
+            Set stypes = getSuperTypes(ex);
             List catches = t.catchClauses();
             for (Iterator i = catches.iterator(); i.hasNext();) {
                 Name var = ((CatchClause)i.next()).getException().getName();
 
-                if (getSuperTypes(ex).contains(var.resolveTypeBinding().getKey())) {
+                if (stypes.contains(var.resolveTypeBinding().getKey())) {
                     return var;// exception caught 
                 }
             }
             
             return findThrowParent(t, ex); // exception uncaught
         }
-        
-        /**
-         * Get a set of the keys of all the supertypes of the binding.
-         * Supertype includes itself (reflexive).
-         * @param binding
-         * @return
-         */
-        private Set/*String*/ getSuperTypes(ITypeBinding binding) {
-            HashSet s =  new HashSet();
-            LinkedList/*ITypeBinding*/ todo = new LinkedList();
-            
-            todo.addLast(binding);
-            do {
-                binding = (ITypeBinding)todo.removeFirst();
-                if (s.add(binding.getKey())) {          
-                    todo.addAll(Arrays.asList(binding.getInterfaces()));
-                    ITypeBinding sprclass = binding.getSuperclass(); 
-                    if (sprclass != null) todo.addLast(sprclass);
-                }
-            } while (!todo.isEmpty());
-            
-            return s;
-        }
-        
+
         
 
         private List processStaticInit(Expression qualifier, 
@@ -2089,8 +2068,7 @@ public class PAFromSource {
                     nw = getClinit();  
                 } 
                 else {
-                    addToML(getWrappedConstructors(decl), 
-                        q, f, r);
+                    addToML(getWrappedConstructors(decl), q, f, r);
                     return;
                 }
             }
@@ -2410,11 +2388,14 @@ public class PAFromSource {
     
     static boolean USE_JOEQ_CLASSLIBS = !System.getProperty("pas.usejoeqclasslibs", "no").equals("no");
 
-    //Set/*<CompilationUnit>*/ ast;
-    List/*<CompilationUnit>*/ todo;
+    Set dotJava;
+    Set dotClass;
+    Map/*<ICompilationUnit, CompilationUnit>*/ javaASTs;
     
-    public PAFromSource() {
-        todo = new ArrayList();
+    public PAFromSource(Set j, Set c) {
+        javaASTs = new HashMap();
+        dotJava = j;
+        dotClass = c;
     }
     
     public static void main(String[] args) throws IOException {
@@ -2427,9 +2408,9 @@ public class PAFromSource {
             files.add(args[0]);
         }
         
-        PAFromSource dis = new PAFromSource();
+        PAFromSource dis = new PAFromSource(files, Collections.EMPTY_SET);
      
-        dis.run(files, Collections.EMPTY_SET);
+        dis.run();
     }
 
     
@@ -2456,7 +2437,7 @@ public class PAFromSource {
      * @param dotClass
      * @throws IOException
      */
-    public void run(Set dotJava, Set dotClass) throws IOException {
+    public void run() throws IOException {
         filesParsed = 0;
         System.out.println(dotJava.size() + " .java files to parse.");
         System.out.println(dotClass.size() + " .class files to parse.");
@@ -2475,10 +2456,13 @@ public class PAFromSource {
         //    generateRelations(true, true);
         //}
         for (Iterator i = dotJava.iterator(); i.hasNext(); ) {
-            Object o = i.next();
+            ICompilationUnit o = (ICompilationUnit)i.next();
             out.println("Starting file " + count++);
-            parseAST(o);
-            generateRelations(true, true);
+            CompilationUnit cu = parseAST(o);
+            if (cu != null) {
+                javaASTs.put(o, cu);
+                generateRelations(cu, true, true);
+            }
         }
         
         
@@ -2490,8 +2474,8 @@ public class PAFromSource {
         for (Iterator i = dotClass.iterator(); i.hasNext(); ) {
             Object o = i.next();
             out.println("Starting file " + count++);
-            parseAST(o);
-            generateRelations(true, true);
+            CompilationUnit cu = parseAST(o);
+            if (cu != null) generateRelations(cu, true, true);
         }
                
         if (filesParsed == 0) {
@@ -3043,13 +3027,13 @@ public class PAFromSource {
     }
     
     
-    private void parseAST(Object file) {
+    private CompilationUnit parseAST(Object file) {
         CompilationUnit cu;
         try {
             if (file instanceof String) {
                 cu = readSourceFile((String) file);
             } else {
-                ASTParser c = ASTParser.newParser(AST.JLS2);
+                ASTParser c = ASTParser.newParser(AST.JLS3);
                 if (file instanceof ICompilationUnit)
                     c.setSource((ICompilationUnit) file);
                 else
@@ -3073,8 +3057,7 @@ public class PAFromSource {
             }
             else {
                 System.out.println("Parse success.");
-                
-                todo.add(cu);
+                return cu;
             }                
         }
         catch (IllegalStateException e) {
@@ -3085,15 +3068,13 @@ public class PAFromSource {
                 e.printStackTrace();
             }
         }
+        return null;
     }
 
-    private void generateRelations(boolean libs, boolean root) {
-        if (todo.isEmpty()) return;
-        
+    private void generateRelations(CompilationUnit cu, 
+        boolean libs, boolean root) {
         ++filesParsed;
         
-        CompilationUnit cu = (CompilationUnit)todo.remove(todo.size()-1);
-
         //cu.accept(new ConstructorVisitor());
         cu.accept(new PAASTVisitor(libs, root));  
 
@@ -3119,7 +3100,7 @@ public class PAFromSource {
         char[] source = new char[sb.length()];
         sb.getChars(0, sb.length(), source, 0);
         
-        ASTParser parser = ASTParser.newParser(AST.JLS2); // = ASTParser.newParser(AST.JLS3);
+        ASTParser parser = ASTParser.newParser(AST.JLS3); 
         parser.setResolveBindings(true);
         parser.setUnitName(fname);
         parser.setSource(source); 
@@ -3397,4 +3378,30 @@ public class PAFromSource {
         // TODO need isclass check?
         return binding.isNested() && binding.isClass() && !isStatic(binding);
     }
+    
+    
+    
+    /**
+     * Get a set of the keys of all the supertypes of the binding.
+     * Supertype includes itself (reflexive).
+     * @param binding
+     * @return set of keys of the supertypes
+     */
+    static public Set/*String*/ getSuperTypes(ITypeBinding binding) {
+        HashSet s =  new HashSet();
+        LinkedList/*ITypeBinding*/ todo = new LinkedList();
+        
+        todo.addLast(binding);
+        do {
+            binding = (ITypeBinding)todo.removeFirst();
+            if (s.add(binding.getKey())) {          
+                todo.addAll(Arrays.asList(binding.getInterfaces()));
+                ITypeBinding sprclass = binding.getSuperclass(); 
+                if (sprclass != null) todo.addLast(sprclass);
+            }
+        } while (!todo.isEmpty());
+        
+        return s;
+    }
+    
 }
