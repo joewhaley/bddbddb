@@ -160,6 +160,11 @@ public abstract class DomainAssignment implements OperationVisitor {
             forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
             forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
         }
+        for (Iterator i = s.notequivalenceRelations.values().iterator(); i.hasNext(); ) {
+            BDDRelation r = (BDDRelation) i.next();
+            forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
+            forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
+        }
     }
 
     abstract void forceDifferent(Relation r);
