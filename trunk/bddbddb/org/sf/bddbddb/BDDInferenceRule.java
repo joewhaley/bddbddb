@@ -50,6 +50,8 @@ public class BDDInferenceRule extends InferenceRule {
     boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
     boolean TRACE, TRACE_FULL;
     
+    List ir;
+    
     /**
      * @param solver
      * @param top
@@ -197,7 +199,7 @@ public class BDDInferenceRule extends InferenceRule {
         ++updateCount;
         if (use_ir) {
             solver.out.println(this);
-            List ir = this.generateIR(solver);
+            if (ir == null) ir = this.generateIR(solver);
             Interpreter interpret = new BDDInterpreter();
             boolean anyChange = false;
             for (Iterator i = ir.iterator(); i.hasNext(); ) {
@@ -209,6 +211,8 @@ public class BDDInferenceRule extends InferenceRule {
                 o.perform(interpret);
                 if (!anyChange) {
                     anyChange = !oldValue.equals(dest.getBDD());
+                    if (anyChange)
+                        solver.out.println("Changed!");
                     oldValue.free();
                 }
             }
