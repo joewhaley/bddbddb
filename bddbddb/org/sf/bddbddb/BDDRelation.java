@@ -580,7 +580,7 @@ public class BDDRelation extends Relation {
 
     public void setDomainAssignment(List newdom) {
         Assert._assert(newdom.size() == attributes.size());
-        Assert._assert(new HashSet(newdom).size() == newdom.size());
+        Assert._assert(new HashSet(newdom).size() == newdom.size(), newdom.toString());
         for (int i = 0; i < newdom.size(); ++i) {
             Domain d = ((Attribute) attributes.get(i)).getDomain();
             Assert._assert(solver.getBDDDomains(d).contains(newdom.get(i)));
