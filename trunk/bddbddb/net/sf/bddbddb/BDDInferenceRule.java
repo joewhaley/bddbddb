@@ -1005,6 +1005,7 @@ public class BDDInferenceRule extends InferenceRule {
     }
     
     public static final long LONG_TIME = 10000000;
+    public static int FBO_TRIALS = Integer.parseInt(System.getProperty("fbotrials", "8"));
     
     /**
      * Run the find best domain order on the given inputs.
@@ -1045,7 +1046,7 @@ public class BDDInferenceRule extends InferenceRule {
         }
         System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
         
-        int count = 8;
+        int count = FBO_TRIALS;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
             //Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
