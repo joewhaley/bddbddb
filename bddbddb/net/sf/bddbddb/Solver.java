@@ -388,13 +388,13 @@ public abstract class Solver {
         out.println("done. (" + time + " ms)");
         out.println("Solving: ");
     }
-    
+    public long startTime;
     public void run() {
-        long time = System.currentTimeMillis();
+        startTime = System.currentTimeMillis();
         solve();
-        time = System.currentTimeMillis() - time;
-        out.println("done. (" + time + " ms)");
-        long solveTime = time;
+        long solveTime = System.currentTimeMillis() - startTime;
+        out.println("done. (" + solveTime + " ms)");
+      
         finish();
         if (REPORT_STATS) {
             System.out.println("SOLVE_TIME=" + solveTime);
@@ -1737,6 +1737,7 @@ class RuleSorter implements Comparator {
      * Report rule statistics.
      */
     void reportStats() {
+        if(USE_IR) return;
         List sortedRules = new LinkedList(rules);
         Collections.sort(sortedRules,new RuleSorter());
         //        List fbsList = new LinkedList();
