@@ -14,7 +14,6 @@ package org.sf.bddbddb.ir.dynamic;
  */
 public class IRBoolean {
     boolean bool;
-
     String name;
 
     public IRBoolean(String name, boolean bool) {

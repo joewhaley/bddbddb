@@ -3,7 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir.dynamic;
 
-
 /**
  * LowLevelInterpreter
  * 
@@ -11,5 +10,4 @@ package org.sf.bddbddb.ir.dynamic;
  * @version $Id$
  */
 public interface DynamicInterpreter extends DynamicOperationVisitor {
-    
 }

@@ -9,7 +9,6 @@ package org.sf.bddbddb.ir.dynamic;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
@@ -23,7 +22,6 @@ import org.sf.bddbddb.ir.OperationVisitor;
  */
 public class If extends Operation {
     IRBoolean bool;
-
     IterationList block;
 
     public If(IRBoolean bool, IterationList block) {
@@ -51,12 +49,12 @@ public class If extends Operation {
      */
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        sb.append("If(" + bool.getName() + ")");
+        sb.append("If(" + bool.getName() + ") " + block + ": [ ");
         for (Iterator it = block.iterator(); it.hasNext();) {
             Object elem = (Object) it.next();
-            sb.append('\n');
-            sb.append("  " + elem.toString());
+            sb.append(elem.toString() + "; ");
         }
+        sb.append("]");
         return sb.toString();
     }
 
@@ -75,7 +73,11 @@ public class If extends Operation {
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {
-        return Collections.singletonList(bool);
+        return Collections.EMPTY_LIST;
+    }
+
+    public IRBoolean getBoolSrc() {
+        return bool;
     }
 
     /*
@@ -93,14 +95,28 @@ public class If extends Operation {
     public IterationList getBlock() {
         return block;
     }
-    
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
+     */
+    public Operation copy() {
+        return new If(bool, block);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
