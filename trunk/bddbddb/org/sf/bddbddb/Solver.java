@@ -1045,7 +1045,7 @@ public abstract class Solver {
         
         RuleTerm my_rt = new RuleTerm(rt.variables, r2);
         InferenceRule my_ir = createInferenceRule(Collections.singletonList(rt), my_rt);
-        System.out.println("Adding rule: "+my_ir);
+        if (TRACE) out.println("Adding rule: "+my_ir);
         newRules.add(my_ir);
         
         DependenceNavigator nav = new DependenceNavigator(rules);
@@ -1058,13 +1058,13 @@ public abstract class Solver {
             r = (Relation) worklist.removeFirst();
             // r2: the tuples in the relation that contribute to the answer.
             r2 = (Relation) toQueryRelation.get(r);
-            System.out.println("Finding contributions in relation "+r+": "+r2);
+            if (TRACE) out.println("Finding contributions in relation "+r+": "+r2);
             
             // Visit each rule that can add tuples to "r".
             Collection rules = nav.prev(r);
             for (Iterator i = rules.iterator(); i.hasNext(); ) {
                 InferenceRule ir = (InferenceRule) i.next();
-                System.out.println("This rule can contribute: "+ir);
+                if (TRACE) out.println("This rule can contribute: "+ir);
                 Assert._assert(ir.bottom.relation == r);
                 
                 // Build up a new query that consists of "r2" and all of the subgoals.
@@ -1084,7 +1084,7 @@ public abstract class Solver {
                         worklist.add(r3);
                         r4 = createRelation(r3.name+"_q", r3.attributes);
                         toQueryRelation.put(r3, r4);
-                        System.out.println("Adding contribution relation "+r3+": "+r4);
+                        if (TRACE) out.println("Adding contribution relation "+r3+": "+r4);
                     }
                 }
                 List vars = new ArrayList(varMap.keySet());
@@ -1098,7 +1098,7 @@ public abstract class Solver {
                 Relation bottomr = createRelation(r.name+"_q"+ir.id, attributes);
                 RuleTerm bottom = new RuleTerm(vars, bottomr);
                 InferenceRule newrule = createInferenceRule(terms, bottom);
-                System.out.println("Adding rule: "+newrule);
+                if (TRACE) out.println("Adding rule: "+newrule);
                 newRules.add(newrule);
                 
                 // Now bottomr contains assignments to all of the variables.
@@ -1113,7 +1113,7 @@ public abstract class Solver {
                     Assert._assert(r4 != null, "no mapping for "+r3);
                     RuleTerm rt4 = new RuleTerm(rt3.variables, r4);
                     InferenceRule newrule2 = createInferenceRule(terms2, rt4);
-                    System.out.println("Adding rule: "+newrule2);
+                    if (TRACE) out.println("Adding rule: "+newrule2);
                     newRules.add(newrule2);
                 }
             }
