@@ -15,34 +15,71 @@ import org.sf.bddbddb.util.IndexedMap;
  * @version $Id$
  */
 public class Domain {
-    String name;
-    long size;
-    IndexedMap map;
+    /**
+     * Name of domain.
+     */
+    protected String name;
+    
+    /**
+     * Number of elements in domain.
+     */
+    protected long size;
+    
+    /**
+     * Optional map from element numbers to string representations.
+     */
+    protected IndexedMap map;
 
     /**
-     * @param name
-     * @param size
+     * Construct a new domain.
+     * This is not to be called externally.
+     * 
+     * @param name  name of domain
+     * @param size  size of domain
      */
-    public Domain(String name, long size) {
+    Domain(String name, long size) {
         super();
         this.name = name;
         this.size = size;
     }
 
+    /**
+     * Load the string map for this domain.
+     * 
+     * @param in  input stream of this map
+     * @throws IOException
+     */
     public void loadMap(BufferedReader in) throws IOException {
         //map = IndexMap.load(name, in);
         map = IndexMap.loadStringMap(name, in);
     }
 
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         return name;
     }
 
+    /**
+     * Returns the string representation of the given element in this domain.
+     * 
+     * @param val  element number
+     * @return  string representation
+     */
     public String toString(int val) {
         if (map == null || val < 0 || val >= map.size()) return Integer.toString(val);
         else return map.get(val).toString();
     }
 
+    /**
+     * Returns the index of the given named constant in this domain.
+     * If it doesn't exist, output a warning message and add it to the domain,
+     * giving it a new index.
+     * 
+     * @param constant  named constant to get
+     * @return  index
+     */
     public int namedConstant(String constant) {
         if (map == null) throw new IllegalArgumentException("No constant map for Domain " + name + " in which to look up constant " + constant);
         if (!map.contains(constant)) System.err.println("Warning: Constant " + constant + " not found in map for relation " + name);

@@ -16,22 +16,49 @@ import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
  */
 public abstract class Relation {
     
-    static int relationCounter;
+    /**
+     * Static relation id factory.
+     */
+    private static int relationCounter;
     
-    String name;
-    List/*<Attribute>*/ attributes;
-    Relation negated;
+    /**
+     * Name of this relation.
+     */
+    protected String name;
+    
+    /**
+     * Attributes of this relation.
+     */
+    protected List/*<Attribute>*/ attributes;
+    
+    /**
+     * Negated form of this relation, or null if it doesn't exist.
+     */
+    protected Relation negated;
+    
+    /**
+     * Unique id number for this relation.
+     */
     public final int id;
+    
+    /**
+     * Ordering constraints for this relation.
+     */
     Constraints constraints;
+    
+    /**
+     * Flag saying whether or not this relation is initialized.
+     */
     boolean isInitialized;
 
     /**
      * Create a new Relation.
      * 
-     * @param name
-     * @param attributes
+     * @param solver  solver
+     * @param name  name of relation
+     * @param attributes  attributes for relation
      */
-    public Relation(Solver solver, String name, List attributes) {
+    protected Relation(Solver solver, String name, List attributes) {
         this.name = name;
         this.attributes = attributes;
         this.id = relationCounter++;
@@ -43,25 +70,70 @@ public abstract class Relation {
         constraints = new Constraints(this.attributes);
     }
 
+    /**
+     * Initialize this relation.
+     */
     public abstract void initialize();
 
+    /**
+     * Load this relation from disk.
+     * 
+     * @throws IOException
+     */
     public abstract void load() throws IOException;
 
+    /**
+     * Load the tuple form of this relation from disk.
+     * 
+     * @throws IOException
+     */
     public abstract void loadTuples() throws IOException;
 
+    /**
+     * Save the current value of this relation to disk. 
+     * 
+     * @throws IOException
+     */
     public abstract void save() throws IOException;
 
+    /**
+     * Save the current negated value of this relation to disk. 
+     * 
+     * @throws IOException
+     */
     public abstract void saveNegated() throws IOException;
 
+    /**
+     * Save the current value of this relation to disk in tuple form.
+     * 
+     * @throws IOException
+     */
     public abstract void saveTuples() throws IOException;
 
+    /**
+     * Save the current negated value of this relation to disk in tuple form.
+     * 
+     * @throws IOException
+     */
     public abstract void saveNegatedTuples() throws IOException;
 
+    /**
+     * Make a copy of this relation.  The new relation will have the same attributes
+     * and a derived name.
+     * 
+     * @return  the new relation
+     */
     public abstract Relation copy();
 
+    /**
+     * Free the memory associated with this relation.  After calling this, the relation can
+     * no longer be used.
+     */
     public abstract void free();
 
     /**
+     * Return the number of tuples in this relation.
+     * 
      * @return number of tuples in relation
      */
     public int size() {
@@ -69,6 +141,8 @@ public abstract class Relation {
     }
 
     /**
+     * Return the number of tuples in this relation, in double format.
+     * 
      * @return number of tuples in relation
      */
     public abstract double dsize();
@@ -157,23 +231,29 @@ public abstract class Relation {
     }
 
     /**
-     * @return Returns the attributes.
+     * Returns the list of attributes of this relation.
+     * 
+     * @return  attributes
      */
     public List getAttributes() {
         return attributes;
     }
 
     /**
-     * @param x
-     * @return
+     * Get the attribute at the given index.
+     * 
+     * @param x  index
+     * @return  attribute
      */
     public Attribute getAttribute(int x) {
         return (Attribute) attributes.get(x);
     }
 
     /**
-     * @param x
-     * @return
+     * Get the attribute with the given name.
+     * 
+     * @param x  name
+     * @return  attribute
      */
     public Attribute getAttribute(String x) {
         for (Iterator i = attributes.iterator(); i.hasNext();) {
@@ -184,27 +264,35 @@ public abstract class Relation {
     }
 
     /**
-     * @return
+     * Returns the number of attributes.
+     * 
+     * @return  number of attributes
      */
     public int numberOfAttributes() {
         return attributes.size();
     }
 
     /**
-     * @return Returns the constraints.
+     * Returns the constraints.
+     * 
+     * @return  constraints
      */
     public Constraints getConstraints() {
         return constraints;
     }
 
     /**
-     * @param constraints The constraints to set.
+     * Set the constraints for this relation.
+     * 
+     * @param constraints  The constraints to set.
      */
     public void setConstraints(Constraints constraints) {
         this.constraints = constraints;
     }
     
-    /* (non-Javadoc)
+    /**
+     * The hashCode for relations is deterministic.  (We use the unique id number.)
+     * 
      * @see java.lang.Object#hashCode()
      */
     public int hashCode() {
