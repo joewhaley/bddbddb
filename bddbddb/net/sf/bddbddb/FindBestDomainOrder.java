@@ -3,6 +3,16 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,12 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.io.File;
-import java.io.PrintStream;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
+
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.math.Distributions;
@@ -39,9 +44,11 @@ import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.bddbddb.order.WekaInterface;
 import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
 import net.sf.bddbddb.order.WekaInterface.OrderInstance;
+
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
+
 import weka.classifiers.Classifier;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -85,13 +92,14 @@ public class FindBestDomainOrder {
     
     public static int TRACE = 2;
     public static PrintStream out = System.out;
+    public static PrintStream out_t = null;
     
     static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
     
     /**
      * Link back to the solver.
      */
-    Solver solver;
+    BDDSolver solver;
     
     /**
      * Collection of all TrialCollections that have been done so far, including
@@ -105,6 +113,8 @@ public class FindBestDomainOrder {
      */
     public static boolean PER_RULE_CONSTRAINTS = true;
     
+    public static boolean DUMP_CLASSIFIER_INFO = true;
+    
     /**
      * Info collection for each of the constraints.
      */
@@ -116,7 +126,8 @@ public class FindBestDomainOrder {
     public FindBestDomainOrder(Solver s) {
         constraintInfo = new ConstraintInfoCollection(s);
         allTrials = new LinkedList();
-        solver = s;
+        if (s instanceof BDDSolver)
+            solver = (BDDSolver) s;
     }
     
     /**
@@ -125,7 +136,8 @@ public class FindBestDomainOrder {
     FindBestDomainOrder(ConstraintInfoCollection c) {
         constraintInfo = c;
         allTrials = new LinkedList();
-        solver = c.solver;
+        if (c.solver instanceof BDDSolver)
+            solver = (BDDSolver) c.solver;
     }
     
     /**
@@ -1205,7 +1217,7 @@ public class FindBestDomainOrder {
             this.ti = that.ti;
         }
         
-        public TrialInfo getTrialInfo(){ return ti; }
+        public TrialInfo getTrialInfo() { return ti; }
         
         public double getCost() {
             return value(numAttributes()-1);
@@ -1237,20 +1249,21 @@ public class FindBestDomainOrder {
         long anotherBits = Double.doubleToLongBits(d2);
         
         return (thisBits == anotherBits ?  0 : // Values are equal
-            (thisBits < anotherBits ? -1 : // (-0.0, 0.0) or (!NaN, NaN)
+               (thisBits < anotherBits ? -1 : // (-0.0, 0.0) or (!NaN, NaN)
                 1));                          // (0.0, -0.0) or (NaN, !NaN)
     }
     
     
-    public static class Discretization{
-        double [] cutPoints;
-        TrialInstances [] buckets;
+    public static class Discretization {
+        double[] cutPoints;
+        TrialInstances[] buckets;
         
-        public Discretization(double [] cutPoints, TrialInstances [] buckets){
+        public Discretization(double[] cutPoints, TrialInstances[] buckets){
             this.cutPoints = cutPoints;
             this.buckets = buckets;
         }
     }
+    
     public static class TrialInstances extends Instances {
         
         /**
@@ -1365,7 +1378,7 @@ public class FindBestDomainOrder {
         return new weka.core.Attribute("costBucket", clusterValues);
     }
     
-    void addToInstances(Instances data, TrialCollection tc, OrderTranslator t) {
+    static void addToInstances(Instances data, TrialCollection tc, OrderTranslator t) {
         if (tc.size() == 0) return;
         double best;
         if (tc.getMinimum().isMax()) best = 1;
@@ -1588,8 +1601,10 @@ public class FindBestDomainOrder {
     public static String CLASSIFIER3 = "net.sf.bddbddb.order.MyId3";
     
     public void neverTryAgain(InferenceRule ir, Order o) {
-        if (TRACE > 2) out.println("For rule"+ir.id+", never trying order "+o+" again.");
-        neverAgain.add(ir, o);
+        if (false) {
+            if (TRACE > 2) out.println("For rule"+ir.id+", never trying order "+o+" again.");
+            neverAgain.add(ir, o);
+        }
     }
     
     MultiMap neverAgain = new GenericMultiMap();
@@ -1718,7 +1733,7 @@ public class FindBestDomainOrder {
             
             double vScore = NO_CLASS, aScore = NO_CLASS, dScore = NO_CLASS;
             double vClass = NO_CLASS, aClass = NO_CLASS, dClass = NO_CLASS;
-            //quantify the probablity that an order is good?
+            //quantify the probability that an order is good?
             double vClassProb = 0, aClassProb = 0, dClassProb = 0;
             int probCount = 0;
             if (vClassifier != null) {
@@ -1809,6 +1824,51 @@ public class FindBestDomainOrder {
         return new TrialGuess(best, prediction);
     }
     
+    void dumpClassifierInfo(String name, Classifier c, Instances data) {
+        BufferedWriter w = null;
+        try {
+            w = new BufferedWriter(new FileWriter(name));
+            w.write("Classifier \"name\":\n");
+            w.write("Based on data from "+data.numInstances()+" instances:\n");
+            for (Enumeration e = data.enumerateInstances(); e.hasMoreElements(); ) {
+                Instance i = (Instance) e.nextElement();
+                if (i instanceof TrialInstance) {
+                    TrialInstance ti = (TrialInstance) i;
+                    InferenceRule ir = ti.ti.collection.getRule(solver);
+                    w.write("    "+ti.ti.collection.name+" "+ti.getOrder());
+                    if (!ti.getOrder().equals(ti.ti.order))
+                        w.write(" ("+ti.ti.order+")");
+                    if (ti.isMaxTime()) {
+                        w.write(" MAX TIME\n");
+                    } else {
+                        w.write(" "+format(ti.getCost())+" ("+ti.ti.cost+" ms)\n");
+                    }
+                } else {
+                    w.write("    "+i+"\n");
+                }
+            }
+            w.write(c.toString());
+            w.write("\n");
+        } catch (IOException x) { 
+            System.err.println("IO Exception occurred writing \""+name+"\": "+x);
+        } finally {
+            if (w != null) try { w.close(); } catch (IOException _) { }
+        }
+    }
+    
+    void dumpTrialGuessInfo(String name) {
+        BufferedWriter w = null;
+        try {
+            w = new BufferedWriter(new FileWriter(name, true));
+            w.write("Classifier \"name\":\n");
+            w.write("\n");
+        } catch (IOException x) { 
+            System.err.println("IO Exception occurred writing \""+name+"\": "+x);
+        } finally {
+            if (w != null) try { w.close(); } catch (IOException _) { }
+        }
+    }
+    
     public TrialGuess tryNewGoodOrder(TrialCollection tc, List allVars, InferenceRule ir) {
         
         // Build instances based on the experimental data.
@@ -1884,6 +1944,23 @@ public class FindBestDomainOrder {
             aClassifier = buildClassifier(CLASSIFIER2, aData);
         if (dData.numInstances() > 0)
             dClassifier = buildClassifier(CLASSIFIER3, dData);
+        
+        if (DUMP_CLASSIFIER_INFO) {
+            String baseName = solver.getBaseName()+"_rule"+ir.id;
+            if (vClassifier != null)
+                dumpClassifierInfo(baseName+"_vclassifier", vClassifier, vData);
+            if (aClassifier != null)
+                dumpClassifierInfo(baseName+"_aclassifier", aClassifier, aData);
+            if (dClassifier != null)
+                dumpClassifierInfo(baseName+"_dclassifier", dClassifier, dData);
+            try {
+                out_t = new PrintStream(new FileOutputStream(baseName+"_trials"));
+            } catch (IOException x) {
+                System.err.println("Error while opening file: "+x);
+            }
+        } else {
+            out_t = null;
+        }
         
         if (TRACE > 2) {
             out.println("Var classifier: "+vClassifier);
@@ -1991,20 +2068,20 @@ public class FindBestDomainOrder {
                 double dClass = combos[z][4]; int di = (int) dClass;
                 // If one of them reaches the highest index, we need to break.
                 if (numV < end || numA < end || numD < end) {
-                    if (vi == numV || ai == numA || di == numD) {
+                    if (vi == numV-1 || ai == numA-1 || di == numD-1) {
                         if (TRACE > 1) out.println("reached end ("+vi+","+ai+","+di+"), trying again with a higher cutoff.");
                         break;
                     }
                 }
                 if (done[vi][ai][di]) continue;
                 done[vi][ai][di] = true;
-                if (TRACE > 1) out.println("v="+vClass+" a="+aClass+" d="+dClass+": "+format(bestScore)+" prob "+format(bestProb));
+                if (out_t != null) out_t.println("v="+vClass+" a="+aClass+" d="+dClass+": "+format(bestScore)+" prob "+format(bestProb));
                 OrderConstraintSet ocs = tryConstraints(v, vClass, vData, a, aClass, aData, d, dClass, dData, a2v, d2v);
                 if (ocs == null) {
-                    if (TRACE > 2) out.println("Constraints cannot be combined.");
+                    if (out_t != null) out_t.println("Constraints cannot be combined.");
                     continue;
                 }
-                if (TRACE > 1) out.println("Constraints: "+ocs);
+                if (out_t != null) out_t.println("Constraints: "+ocs);
                 TrialGuess guess = genGuess(ocs, allVars, bestScore, bestProb, vClass, aClass, dClass,
                     vDis, aDis, dDis, tc, never);
                 if (guess != null) {
@@ -2037,13 +2114,16 @@ public class FindBestDomainOrder {
         double vClass, double aClass, double dClass,
         Discretization vDis, Discretization aDis, Discretization dDis,
         TrialCollection tc, Collection never) {
-        if (TRACE > 1) out.println("Generating orders for "+allVars);
+        if (out_t != null) out_t.println("Generating orders for "+allVars);
         List orders = ocs.generateAllOrders(allVars);
         for (Iterator m = orders.iterator(); m.hasNext(); ) {
             Order best = (Order) m.next();
-            if (never.contains(best)) continue;
+            if (never.contains(best)) {
+                if (out_t != null) out_t.println("Skipped order "+best+" because it has blown up before.");
+                continue;
+            }
             if (tc == null || !tc.contains(best)) {
-                if (TRACE > 1) out.println("Using order "+best);
+                if (out_t != null) out_t.println("Using order "+best);
                 double vLowerBound,vUpperBound, aLowerBound,aUpperBound, dLowerBound,dUpperBound;
                 vLowerBound = vUpperBound = aLowerBound = aUpperBound = dLowerBound = dUpperBound = -1;
                 if (vDis != null && !Double.isNaN(vClass) && vClass != NO_CLASS) {
@@ -2060,6 +2140,8 @@ public class FindBestDomainOrder {
                 }
                 TrialPrediction prediction = new TrialPrediction(vLowerBound,vUpperBound,aLowerBound, aUpperBound,dLowerBound, dUpperBound);
                 return new TrialGuess(best, prediction);
+            } else {
+                if (out_t != null) out_t.println("We have already tried order "+best);
             }
         }
         return null;
@@ -2082,6 +2164,7 @@ public class FindBestDomainOrder {
             if (!v_r) {
                 continue;
             }
+            if (out_t != null) out_t.println(" Order constraints (var="+(int)vClass+"): "+ocs);
             
             Collection aBestAttribs;
             if (a != null)
@@ -2098,6 +2181,7 @@ public class FindBestDomainOrder {
                     ocsBackup = ocs.copy();
                     continue;
                 }
+                if (out_t != null) out_t.println("  Order constraints (attrib="+(int)aClass+"): "+ocs);
                 
                 Collection dBestAttribs;
                 if (d != null)
@@ -2110,6 +2194,7 @@ public class FindBestDomainOrder {
                     double[] d_c = (double[]) d_i.next();
                     boolean d_r = constrainOrder(ocs, d_c, dData, d2v);
                     if (d_r) {
+                        if (out_t != null) out_t.println("   Order constraints (domain="+(int)dClass+"): "+ocs);
                         return ocs;
                     }
                     ocs = ocsBackup2;
@@ -2225,9 +2310,8 @@ public class FindBestDomainOrder {
             System.out.println("Variables = "+allVars);
             
             TrialGuess guess = dis.tryNewGoodOrder(null, allVars, ir);
-            Order order = guess.order;
             
-            System.out.println("Resulting order: "+order);
+            System.out.println("Resulting guess: "+guess);
         }
         
      }

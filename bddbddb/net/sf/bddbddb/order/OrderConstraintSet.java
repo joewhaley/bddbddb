@@ -64,7 +64,10 @@ public class OrderConstraintSet {
         if (set.contains(c.getOpposite1())) return false;
         if (set.contains(c.getOpposite2())) return false;
         if (c instanceof InterleaveConstraint) addInterleaveConstraint((InterleaveConstraint) c);
-        else addPrecedenceConstraint(c);
+        else {
+            if (c.a.equals(c.b)) return false;
+            addPrecedenceConstraint(c);
+        }
         return true;
     }
     
