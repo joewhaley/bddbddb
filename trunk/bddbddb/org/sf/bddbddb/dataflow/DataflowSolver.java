@@ -7,11 +7,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Map;
+import org.sf.bddbddb.IterationFlowGraph;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.dataflow.Problem.Fact;
 import org.sf.bddbddb.dataflow.Problem.TransferFunction;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.dynamic.If;
+import org.sf.bddbddb.util.Assert;
 
 /**
  * DataflowSolver
@@ -21,7 +23,7 @@ import org.sf.bddbddb.ir.dynamic.If;
  */
 public class DataflowSolver {
     boolean TRACE = false;
-    boolean WORKLIST = true;
+    boolean WORKLIST = false;
     
     /** Matches blocks to their dataflow information. */
     Map/* <IterationList,Fact> */blockToFact;
@@ -40,8 +42,14 @@ public class DataflowSolver {
         return (Fact) blockToFact.get(block);
     }
 
-    public DataflowIterator getIterator(Problem p, IterationList g) {
-        return new DataflowIterator(p, g);
+    public DataflowIterator getIterator(Problem p, IterationFlowGraph g) {
+        IterationList block = g.getIterationList();
+        Fact f = getFact(block);
+        if (f == null) {
+            f = p.getBoundary();
+            f.setLocation(block);
+        }
+        return new DataflowIterator(p, f, block);
     }
     public class DataflowIterator implements ListIterator {
         Problem p;
@@ -50,9 +58,9 @@ public class DataflowSolver {
         ListIterator ops;
         DataflowIterator nested;
 
-        public DataflowIterator(Problem p, IterationList block) {
-            this(p, DataflowSolver.this.getFact(block), block);
-        }
+        //public DataflowIterator(Problem p, IterationList block) {
+        //    this(p, DataflowSolver.this.getFact(block), block);
+       // }
 
         public DataflowIterator(Problem p, Fact startingFact, IterationList block) {
             this.p = p;
@@ -96,7 +104,8 @@ public class DataflowSolver {
                 fact = tf.apply(fact);
             } else {
                 IterationList list = (IterationList) o;
-                fact = (Fact) blockToFact.get(list);
+                Fact f = (Fact) blockToFact.get(list);
+                if (f != null) fact = f;
             }
             return o;
         }
@@ -117,7 +126,11 @@ public class DataflowSolver {
             if (nested != null) nested.enter(list);
             else {
                 if (TRACE) System.out.println("Entering " + list);
-                nested = new DataflowIterator(p, list);
+                Fact f = (Fact) blockToFact.get(list);
+                if (f == null) {
+                    f = fact.copy(list);
+                }
+                nested = new DataflowIterator(p, f, list);
             }
         }
 
@@ -145,19 +158,42 @@ public class DataflowSolver {
     boolean again;
     
     public void solve(Problem p, IterationList g) {
-        Fact startFact = p.getBoundary();
-        startFact.setLocation(g);
         do {
+            Fact startFact;
+            startFact = (Fact) blockToFact.get(g);
+            if (startFact == null) {
+                startFact = p.getBoundary();
+                startFact.setLocation(g);
+                //blockToFact.put(g, startFact);
+            }
             again = false;
-            solve(startFact, p, g);
+            if (TRACE) System.out.println("Main iteration!  Start fact: "+System.identityHashCode(startFact));
+            solve2(startFact, p, g);
         } while (again);
     }
 
-    Fact solve(Fact currentFact, Problem p, IterationList g) {
-        // Cache current dataflow information at start of block.
-        Fact startFact = currentFact.copy(g);
+    Fact solve2(Fact currentFact, Problem p, IterationList g) {
+        Assert._assert(currentFact.getLocation() == g);
+        if (g.isLoop()) {
+            Fact startFact = (Fact) blockToFact.get(g);
+            if (startFact == null) {
+                if (TRACE) System.out.println("Caching dataflow value at entry " + g);
+                blockToFact.put(g, startFact = currentFact.copy(g));
+            } else {
+                if (TRACE) System.out.println("Joining dataflow value at entry " + g);
+                Assert._assert(startFact.getLocation() == g);
+                Fact joinResult = startFact.join(currentFact);
+                Assert._assert(joinResult.getLocation() == g);
+                blockToFact.put(g, joinResult);
+                currentFact = joinResult.copy(g);
+            }
+            if (TRACE) System.out.println("At start of "+g+", we cached fact " + System.identityHashCode(blockToFact.get(g)));
+        } else {
+            if (TRACE) System.out.println(g+" is not a loop, incoming fact " + System.identityHashCode(currentFact));
+            currentFact = currentFact.copy(g);
+        }
+        if (TRACE) System.out.println("Using fact "+System.identityHashCode(currentFact)+" to iterate through "+g);
         for (;;) {
-            blockToFact.put(g, startFact);
             for (Iterator i = p.direction() ? g.iterator() : g.reverseIterator(); i.hasNext();) {
                 Object o = i.next();
                 if (o instanceof IterationList || o instanceof If) {
@@ -173,11 +209,11 @@ public class DataflowSolver {
                     } else {
                         list = (IterationList) o;
                     }
-                    if (TRACE) System.out.println("Entering " + list);
+                    if (TRACE) System.out.println("Entering " + list + " with fact "+System.identityHashCode(currentFact));
                     currentFact.setLocation(list);
-                    currentFact = solve(currentFact, p, list);
+                    currentFact = solve2(currentFact, p, list);
                     currentFact.setLocation(g);
-                    if (TRACE) System.out.println("Leaving " + list);
+                    if (TRACE) System.out.println("Leaving " + list + ", current fact "+System.identityHashCode(currentFact));
                     if (o instanceof If) {
                         currentFact = preIfFact.join(currentFact);
                         if (!p.direction()) {
@@ -192,25 +228,36 @@ public class DataflowSolver {
                     currentFact = tf.apply(currentFact);
                 }
             }
+            if (TRACE) System.out.println("Finished walking through "+g+", current fact is now "+System.identityHashCode(currentFact));
             if (!g.isLoop()) break;
             Fact blockFact = currentFact;
-            Fact loopEdgeFact = solve(currentFact, p, g.getLoopEdge());
+            currentFact.setLocation(g.getLoopEdge());
+            Fact loopEdgeFact = solve2(currentFact, p, g.getLoopEdge());
+            loopEdgeFact.setLocation(g);
+            currentFact.setLocation(g);
+            if (TRACE) System.out.println("Loop edge fact: "+System.identityHashCode(loopEdgeFact));
+            Fact startFact = (Fact) blockToFact.get(g);
+            if (TRACE) System.out.println("Fact that was cached at start of "+g+": " + System.identityHashCode(startFact));
+            Assert._assert(startFact.getLocation() == g, startFact.getLocation()+" != "+g);
             Fact joinResult = startFact.join(loopEdgeFact);
+            if (TRACE) System.out.println("Result: " + joinResult);
+            Assert._assert(joinResult.getLocation() == g);
             if (joinResult.equals(startFact)) {
-                if (TRACE) System.out.println("No change after join, exiting. join result:" + joinResult);
+                if (TRACE) System.out.println("No change after join, exiting.");
                 currentFact = blockFact;
                 break;
             }
-            if (TRACE) System.out.println("Result: " + joinResult);
             if (TRACE) System.out.println(g + " changed, iterating again...");
-            startFact = joinResult;
-            currentFact = startFact.copy(g);
+            if (TRACE) System.out.println("Caching join result for "+g+": " + System.identityHashCode(joinResult));
+            blockToFact.put(g, joinResult);
+            currentFact = joinResult.copy(g);
+            if (TRACE) System.out.println("Current fact at end of "+g+": " + System.identityHashCode(currentFact));
             if (!WORKLIST) {
-                blockToFact.put(g, startFact);
                 again = true;
                 break;
             }
         }
+        if (TRACE) System.out.println("Returning current fact from "+g+": " + System.identityHashCode(currentFact));
         return currentFact;
     }
 }
