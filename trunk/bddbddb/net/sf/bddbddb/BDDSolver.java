@@ -277,6 +277,7 @@ public class BDDSolver extends Solver {
         } catch (IOException x) {
         }
         fbo.dump();
+        fbo.printTrialsDistro();
     }
 
     /* (non-Javadoc)
