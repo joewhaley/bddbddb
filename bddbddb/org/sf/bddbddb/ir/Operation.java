@@ -3,6 +3,8 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
+import org.sf.bddbddb.Relation;
+
 /**
  * Operation
  * 
@@ -22,4 +24,9 @@ public abstract class Operation {
      */
     public abstract String toString();
     
+    /**
+     * @return
+     */
+    public abstract Relation getDest();
+
 }

@@ -459,16 +459,36 @@ public class BDDRelation extends Relation {
         return result;
     }
     
+    /**
+     * @return
+     */
     public BDD getBDD() {
         return relation;
     }
     
+    /**
+     * @param b
+     */
     public void setBDD(BDD b) {
         if (relation != null) relation.free();
         relation = b;
     }
     
+    /**
+     * @param i
+     * @return
+     */
     public BDDDomain getBDDDomain(int i) {
+        return (BDDDomain) domains.get(i);
+    }
+
+    /**
+     * @param a
+     * @return
+     */
+    public BDDDomain getBDDDomain(Attribute a) {
+        int i = attributes.indexOf(a);
+        if (i == -1) return null;
         return (BDDDomain) domains.get(i);
     }
 
@@ -479,6 +499,18 @@ public class BDDRelation extends Relation {
         List a = new LinkedList(attributes);
         BDDRelation that = new BDDRelation(solver, name+'\'', a);
         return that;
+    }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Relation#free()
+     */
+    public void free() {
+        if (relation != null) {
+            relation.free(); relation = null;
+        }
+        if (domainSet != null) {
+            domainSet.free(); domainSet = null;
+        }
     }
     
 }

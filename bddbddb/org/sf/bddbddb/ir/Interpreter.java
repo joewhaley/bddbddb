@@ -52,4 +52,10 @@ public abstract class Interpreter {
      * @return
      */
     public abstract Object perform(GenConstant op);
+    
+    /**
+     * @param op
+     * @return
+     */
+    public abstract Object perform(Free op);
 }

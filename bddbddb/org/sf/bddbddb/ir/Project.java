@@ -42,4 +42,9 @@ public class Project extends Operation {
     public Object perform(Interpreter i) {
         return i.perform(this);
     }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#getDest()
+     */
+    public Relation getDest() { return r0; }
 }

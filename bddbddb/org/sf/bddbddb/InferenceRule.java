@@ -471,6 +471,8 @@ public abstract class InferenceRule {
                 newAttributes.add(a2);
             }
             if (anyRenames) {
+                //solver.out.println("Old attribute list: "+r.attributes);
+                //solver.out.println("New attribute list: "+newAttributes);
                 Relation new_r = solver.createRelation(r+"_r", newAttributes);
                 new_r.initialize();
                 Rename rename = new Rename(new_r, r);
@@ -497,7 +499,7 @@ public abstract class InferenceRule {
             }
             
             if (solver.TRACE && result != null)
-                System.out.println("Result attributes after join: "+result.attributes);
+                solver.out.println("Result attributes after join: "+result.attributes);
             
             // Project away unnecessary attributes.
             List toProject = new LinkedList();
@@ -550,6 +552,7 @@ public abstract class InferenceRule {
             if (unnecessaryVariables.contains(v)) continue;
             Attribute a = bottom.relation.getAttribute(j);
             Attribute a2 = (Attribute) varToAttrib.get(v);
+            //solver.out.println("Variable "+v+" has attribute "+a2);
             Assert._assert(a2 != null);
             if (!a2.equals(a)) {
                 anyRenames = true;
@@ -557,6 +560,8 @@ public abstract class InferenceRule {
             newAttributes.add(a);
         }
         if (anyRenames) {
+            //solver.out.println("Old attribute list: "+result.attributes);
+            //solver.out.println("New attribute list: "+newAttributes);
             Relation result2 = solver.createRelation(result+"_r2", newAttributes);
             result2.initialize();
             Rename rename = new Rename(result2, result);

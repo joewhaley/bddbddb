@@ -29,6 +29,9 @@ public class GenConstant extends Operation {
         this.value = value;
     }
     
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         return r0.toString()+" = const("+a.toString()+"="+value+")";
     }
@@ -39,4 +42,9 @@ public class GenConstant extends Operation {
     public Object perform(Interpreter i) {
         return i.perform(this);
     }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#getDest()
+     */
+    public Relation getDest() { return r0; }
 }
