@@ -85,13 +85,13 @@ public class Order implements List, Comparable {
                     } else {
                         x = Collections.singleton(o1).iterator();
                     }
-                    if (o2 instanceof Collection) {
-                        y = ((Collection) o2).iterator();
-                    } else {
-                        y = Collections.singleton(o2).iterator();
-                    }
                     while (x.hasNext()) {
                         Object x1 = x.next();
+                        if (o2 instanceof Collection) {
+                            y = ((Collection) o2).iterator();
+                        } else {
+                            y = Collections.singleton(o2).iterator();
+                        }
                         while (y.hasNext()) {
                             Object y1 = y.next();
                             constraints.add(OrderConstraint.makePrecedenceConstraint(x1, y1));

@@ -1064,9 +1064,6 @@ public class BDDInferenceRule extends InferenceRule {
         
         fbdo.incorporateTrial(tc);
         
-        // Keep a cache of all the trials we have done, for informational purposes.
-        fbdo.allTrials.add(tc);
-        
         XMLFactory.dumpXML("fbo.xml", fbdo.toXMLElement());
         XMLFactory.dumpXML("trials.xml", fbdo.trialsToXMLElement());
     }
