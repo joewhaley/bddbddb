@@ -421,17 +421,19 @@ public abstract class Solver {
             lnr.close();
             dotGraphsToDump.add(dot);
         } else if (s.startsWith(".basedir")) {
-            int index = ".basedir".length()+1;
-            String dirName = s.substring(index).trim();
-            if (dirName.startsWith("\"") && dirName.endsWith("\"")) {
-                dirName = dirName.substring(1, dirName.length()-1);
+            if (System.getProperty("basedir") == null) {
+                int index = ".basedir".length()+1;
+                String dirName = s.substring(index).trim();
+                if (dirName.startsWith("\"") && dirName.endsWith("\"")) {
+                    dirName = dirName.substring(1, dirName.length()-1);
+                }
+                basedir += dirName;
+                String sep = System.getProperty("file.separator");
+                if (!basedir.endsWith(sep) && !basedir.endsWith("/")) {
+                    basedir += sep;
+                }
+                if (TRACE) out.println("Base directory is now \""+basedir+"\"");
             }
-            basedir += dirName;
-            String sep = System.getProperty("file.separator");
-            if (!basedir.endsWith(sep) && !basedir.endsWith("/")) {
-                basedir += sep;
-            }
-            if (TRACE) out.println("Base directory is now \""+basedir+"\"");
         } else {
             outputError(lineNum, 0, s, "Unknown directive \""+s+"\"");
             throw new IllegalArgumentException();
@@ -605,6 +607,13 @@ public abstract class Solver {
             } else if (option.equals("findbestorder")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.find_best_order = true;
+            } else if (option.equals("trace")) {
+                BDDInferenceRule r = (BDDInferenceRule) ir;
+                r.TRACE = true;
+            } else if (option.equals("tracefull")) {
+                BDDInferenceRule r = (BDDInferenceRule) ir;
+                r.TRACE = true;
+                r.TRACE_FULL = true;
             } else {
                 // todo: pri=#, maxiter=#
                 outputError(lineNum, st.getPosition(), s, "Unknown rule option \""+option+"\"");
