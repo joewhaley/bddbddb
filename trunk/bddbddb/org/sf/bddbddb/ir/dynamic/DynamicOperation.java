@@ -7,7 +7,6 @@ import org.sf.bddbddb.ir.OperationVisitor;
  * @author Collective
  */
 public abstract class DynamicOperation extends Operation {
-
     /**
      * @param i
      * @return
@@ -21,5 +20,4 @@ public abstract class DynamicOperation extends Operation {
      * @return
      */
     public abstract Object visit(DynamicOperationVisitor i);
-
 }

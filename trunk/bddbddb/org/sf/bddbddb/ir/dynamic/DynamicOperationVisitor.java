@@ -16,4 +16,6 @@ public interface DynamicOperationVisitor {
      * @return
      */
     public abstract Object visit(If op);
+
+    public abstract Object visit(Nop op);
 }
