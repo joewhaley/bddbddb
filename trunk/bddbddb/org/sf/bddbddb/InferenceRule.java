@@ -12,14 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.sf.bddbddb.ir.GenConstant;
-import org.sf.bddbddb.ir.Invert;
-import org.sf.bddbddb.ir.Join;
-import org.sf.bddbddb.ir.JoinConstant;
-import org.sf.bddbddb.ir.Project;
-import org.sf.bddbddb.ir.Rename;
-import org.sf.bddbddb.ir.Union;
-import org.sf.bddbddb.ir.Universe;
+import org.sf.bddbddb.ir.*;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.LinearMap;
@@ -34,20 +27,32 @@ import org.sf.bddbddb.util.Navigator;
  */
 public abstract class InferenceRule implements IterationElement {
     
+    final Solver solver;
+    
     List/*<RuleTerm>*/ top;
     RuleTerm bottom;
     Set/*<Variable>*/ necessaryVariables;
     Set/*<Variable>*/ unnecessaryVariables;
+    
+    List ir_full, ir_incremental;
+    
+    Relation[] oldRelationValues;
+    
     boolean split;
+    boolean TRACE, TRACE_FULL;
+    boolean incrementalize = !System.getProperty("incremental", "yes").equals("no");
+    boolean cache_before_rename = true;
     
     /**
      * @param top
      * @param bottom
      */
-    protected InferenceRule(List/*<RuleTerm>*/ top, RuleTerm bottom) {
-        super();
+    protected InferenceRule(Solver solver, List/*<RuleTerm>*/ top, RuleTerm bottom) {
+        this.solver = solver;
         this.top = top;
         this.bottom = bottom;
+        this.TRACE = solver.TRACE;
+        this.TRACE_FULL = solver.TRACE_FULL;
     }
     
     /**
@@ -128,6 +133,11 @@ public abstract class InferenceRule implements IterationElement {
      * 
      */
     public void free() {
+        if (oldRelationValues != null) {
+            for (int i = 0; i < oldRelationValues.length; ++i) {
+                oldRelationValues[i].free();
+            }
+        }
     }
     
     /**
@@ -167,16 +177,15 @@ public abstract class InferenceRule implements IterationElement {
     
     /**
      * @param myIndex
-     * @param s
      * @return
      */
-    public Collection/*<InferenceRule>*/ split(int myIndex, Solver s) {
+    public Collection/*<InferenceRule>*/ split(int myIndex) {
         List newRules = new LinkedList();
         int count = 0;
         while (top.size() > 2) {
             RuleTerm rt1 = (RuleTerm) top.remove(0);
             RuleTerm rt2 = (RuleTerm) top.remove(0);
-            if (s.TRACE) s.out.println("Combining "+rt1+" and "+rt2+" into a new rule.");
+            if (TRACE) solver.out.println("Combining "+rt1+" and "+rt2+" into a new rule.");
             
             // Calculate our new necessary variables.
             LinkedList ll = new LinkedList();
@@ -245,16 +254,16 @@ public abstract class InferenceRule implements IterationElement {
                 newVariables.add(v);
             }
             String relationName = bottom.relation.name+"_"+myIndex+"_"+count;
-            if (s.TRACE) s.out.println("New attributes: "+attributes);
-            Relation newRelation = s.createRelation(relationName, attributes);
-            if (s.TRACE) s.out.println("New relation: "+newRelation);
-            Object o = s.nameToRelation.put(newRelation.name, newRelation);
+            if (TRACE) solver.out.println("New attributes: "+attributes);
+            Relation newRelation = solver.createRelation(relationName, attributes);
+            if (TRACE) solver.out.println("New relation: "+newRelation);
+            Object o = solver.nameToRelation.put(newRelation.name, newRelation);
             Assert._assert(o == null);
             RuleTerm newBottom = new RuleTerm(newVariables, newRelation);
-            InferenceRule newRule = s.createInferenceRule(newTop, newBottom);
-            if (s.TRACE) s.out.println("New rule: "+newRule);
+            InferenceRule newRule = solver.createInferenceRule(newTop, newBottom);
+            if (TRACE) solver.out.println("New rule: "+newRule);
             newRule.calculateNecessaryVariables();
-            if (s.TRACE) s.out.println("Necessary variables: "+newRule.necessaryVariables);
+            if (TRACE) solver.out.println("Necessary variables: "+newRule.necessaryVariables);
             //s.rules.add(newRule);
             newRules.add(newRule);
             newRule.copyOptions(this);
@@ -262,8 +271,8 @@ public abstract class InferenceRule implements IterationElement {
             top.add(0, newBottom);
             // Reinitialize this rule because the terms have changed.
             this.calculateNecessaryVariables();
-            if (s.TRACE) s.out.println("Current rule is now: "+this);
-            if (s.TRACE) s.out.println("My new necessary variables: "+necessaryVariables);
+            if (TRACE) solver.out.println("Current rule is now: "+this);
+            if (TRACE) solver.out.println("My new necessary variables: "+necessaryVariables);
             Assert._assert(necessaryVariables.equals(myNewNecessaryVariables));
             ++count;
         }
@@ -315,10 +324,13 @@ public abstract class InferenceRule implements IterationElement {
     }
     
     /**
-     * @param r
+     * @param that
      */
-    public void copyOptions(InferenceRule r) {
-        // No options to copy.
+    public void copyOptions(InferenceRule that) {
+        this.TRACE = that.TRACE;
+        this.TRACE_FULL = that.TRACE_FULL;
+        this.incrementalize = that.incrementalize;
+        this.cache_before_rename = that.cache_before_rename;
     }
     
     public static class DependenceNavigator implements Navigator {
@@ -407,7 +419,7 @@ public abstract class InferenceRule implements IterationElement {
         
     }
     
-    Relation generate1(Solver solver, List ir, RuleTerm rt) {
+    Relation generate1(List ir, RuleTerm rt) {
         Relation top_r = rt.relation;
         Collection varsToProject = new LinkedList(rt.variables);
         varsToProject.removeAll(necessaryVariables);
@@ -442,15 +454,31 @@ public abstract class InferenceRule implements IterationElement {
         return top_r;
     }
     
-    public List generateIR(Solver solver) {
+    public List generateIR() {
+        if (ir_full != null) return ir_full;
         List ir = new LinkedList();
         Relation result = null;
         Map varToAttrib = new HashMap();
-        for (Iterator i = top.iterator(); i.hasNext(); ) {
+        int x = 0;
+        for (Iterator i = top.iterator(); i.hasNext(); ++x) {
             RuleTerm rt = (RuleTerm) i.next();
 
             // Step 1: Project away unnecessary variables and restrict constants.
-            Relation r = generate1(solver, ir, rt);
+            Relation r = generate1(ir, rt);
+            
+            // If we are incrementalizing, cache copies of the input relations.
+            // This happens after we have quantified away and restricted constants,
+            // but before we do renaming.
+            if (incrementalize && cache_before_rename) {
+                if (oldRelationValues == null)
+                    oldRelationValues = new Relation[top.size()];
+                oldRelationValues[x] = r.copy();
+                oldRelationValues[x].initialize();
+                Copy c = new Copy(oldRelationValues[x], r);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+c);
+                ir.add(c);
+            }
             
             // Calculate renames.
             List newAttributes = new LinkedList();
@@ -474,8 +502,6 @@ public abstract class InferenceRule implements IterationElement {
                 newAttributes.add(a2);
             }
             if (!renames.isEmpty()) {
-                //solver.out.println("Old attribute list: "+r.attributes);
-                //solver.out.println("New attribute list: "+newAttributes);
                 Relation new_r = solver.createRelation(r+"_r", newAttributes);
                 new_r.initialize();
                 Rename rename = new Rename(new_r, r, renames);
@@ -483,6 +509,19 @@ public abstract class InferenceRule implements IterationElement {
                     solver.out.println("Generated: "+rename);
                 ir.add(rename);
                 r = new_r;
+            }
+            
+            // If we are incrementalizing, cache copies of the input relations.
+            // If the option is set, we do this after the rename.
+            if (incrementalize && !cache_before_rename) {
+                if (oldRelationValues == null)
+                    oldRelationValues = new Relation[top.size()];
+                oldRelationValues[x] = r.copy();
+                oldRelationValues[x].initialize();
+                Copy c = new Copy(oldRelationValues[x], r);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+c);
+                ir.add(c);
             }
             
             if (result != null) {
@@ -498,6 +537,8 @@ public abstract class InferenceRule implements IterationElement {
                 ir.add(join);
                 result = new_r;
             } else {
+                // This is the first loop iteration, so there is no prior result
+                // to join with.
                 result = r;
             }
             
@@ -563,8 +604,6 @@ public abstract class InferenceRule implements IterationElement {
             newAttributes.add(a);
         }
         if (!renames.isEmpty()) {
-            //solver.out.println("Old attribute list: "+result.attributes);
-            //solver.out.println("New attribute list: "+newAttributes);
             Relation result2 = solver.createRelation(result+"_r2", newAttributes);
             result2.initialize();
             Rename rename = new Rename(result2, result, renames);
@@ -619,6 +658,215 @@ public abstract class InferenceRule implements IterationElement {
                 solver.out.println("Generated: "+i);
             ir.add(i);
         }
+        
+        ir_full = ir;
+        
+        return ir;
+    }
+    
+    public List generateIR_incremental() {
+        
+        if (ir_incremental != null) return ir_incremental;
+        
+        LinkedList ir = new LinkedList();
+        Map varToAttrib = new HashMap();
+        
+        Relation[] allRelationValues = new Relation[top.size()];
+        Relation[] newRelationValues = new Relation[top.size()];
+        List[] toProject = new LinkedList[top.size()];
+        
+        List oldAttributes = null;
+        int x = 0;
+        for (Iterator i = top.iterator(); i.hasNext(); ++x) {
+            RuleTerm rt = (RuleTerm) i.next();
+
+            // Step 1: Project away unnecessary variables and restrict constants.
+            Relation r = generate1(ir, rt);
+            allRelationValues[x] = r;
+            
+            if (cache_before_rename) {
+                // TODO: calculate if we need the whole relation.
+                newRelationValues[x] = oldRelationValues[x].copy();
+                newRelationValues[x].initialize();
+                Difference diff = new Difference(newRelationValues[x], allRelationValues[x], oldRelationValues[x]);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+diff);
+                ir.add(diff);
+                Copy copy = new Copy(oldRelationValues[x], allRelationValues[x]);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+copy);
+                ir.add(copy);
+            }
+            
+            // Calculate renames.
+            List newAttributes = new LinkedList();
+            Map renames = new LinearMap();
+            for (int j = 0; j < rt.numberOfVariables(); ++j) {
+                Variable v = rt.getVariable(j);
+                if (unnecessaryVariables.contains(v)) continue;
+                Attribute a = rt.relation.getAttribute(j);
+                Attribute a2 = (Attribute) varToAttrib.get(v);
+                if (a2 == null) {
+                    if (oldAttributes != null && oldAttributes.contains(a)) {
+                        // Attribute is already present in result, use a different attribute.
+                        a2 = new Attribute(a.attributeName+'\'', a.attributeDomain, "");
+                        renames.put(a, a2);
+                        a = a2;
+                    }
+                    varToAttrib.put(v, a2 = a);
+                } else if (!a2.equals(a)) {
+                    renames.put(a, a2);
+                }
+                newAttributes.add(a2);
+            }
+            if (!renames.isEmpty()) {
+                Relation new_r = solver.createRelation(r+"_r", newAttributes);
+                new_r.initialize();
+                Rename rename = new Rename(new_r, r, renames);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+rename);
+                ir.add(rename);
+                r = new_r;
+            }
+            allRelationValues[x] = r;
+            
+            if (!cache_before_rename) {
+                newRelationValues[x] = oldRelationValues[x].copy();
+                newRelationValues[x].initialize();
+                Difference diff = new Difference(newRelationValues[x], allRelationValues[x], oldRelationValues[x]);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+diff);
+                ir.add(diff);
+                Copy copy = new Copy(oldRelationValues[x], allRelationValues[x]);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+copy);
+                ir.add(copy);
+            }
+            
+            oldAttributes = new LinkedList();
+            if (x > 0) oldAttributes.addAll(allRelationValues[x-1].attributes);
+            oldAttributes.removeAll(r.attributes);
+            oldAttributes.addAll(r.attributes);
+            
+            // Project away unnecessary attributes.
+            toProject[x] = new LinkedList();
+        outer:
+            for (int k = 0; k < rt.numberOfVariables(); ++k) {
+                Variable v = rt.getVariable(k);
+                if (unnecessaryVariables.contains(v)) continue;
+                Attribute a = (Attribute) varToAttrib.get(v);
+                Assert._assert(a != null);
+                if (solver.TRACE)
+                    solver.out.print("Variable "+v+" Attribute "+a+": ");
+                Assert._assert(oldAttributes.contains(a));
+                if (bottom.variables.contains(v)) {
+                    if (solver.TRACE)
+                        solver.out.println("variable needed for bottom");
+                    continue;
+                }
+                Iterator j = top.iterator();
+                while (j.next() != rt) ;
+                while (j.hasNext()) {
+                    RuleTerm rt2 = (RuleTerm) j.next();
+                    if (rt2.variables.contains(v)) {
+                        if (solver.TRACE)
+                            solver.out.println("variable needed for future term");
+                        continue outer;
+                    }
+                }
+                if (solver.TRACE)
+                    solver.out.println("Not needed anymore, projecting away");
+                toProject[x].add(a);
+            }
+        }
+        
+        for (x = 0; x < newRelationValues.length; ++x) {
+            Relation result = newRelationValues[x];
+            for (int y = 0; y < allRelationValues.length; ++y) {
+                if (x == y) continue;
+                Relation r = allRelationValues[y];
+                List newAttributes = new LinkedList(result.attributes);
+                newAttributes.removeAll(r.attributes);
+                newAttributes.addAll(r.attributes);
+                Relation new_r = solver.createRelation(result+"_j", newAttributes);
+                new_r.initialize();
+                Join join = new Join(new_r, r, result);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+join);
+                ir.add(join);
+                result = new_r;
+            
+                if (!toProject[y].isEmpty()) {
+                    newAttributes = new LinkedList(result.attributes);
+                    newAttributes.removeAll(toProject[y]);
+                    Relation result2 = solver.createRelation(result+"_p2", newAttributes);
+                    result2.initialize();
+                    Project p = new Project(result2, result);
+                    if (solver.TRACE)
+                        solver.out.println("Generated: "+p);
+                    ir.add(p);
+                    result = result2;
+                }
+            }
+            
+            // Rename result to match head relation.
+            Map renames = new LinearMap();
+            List renamedAttributes = new LinkedList();
+            for (int j = 0; j < bottom.numberOfVariables(); ++j) {
+                Variable v = bottom.getVariable(j);
+                if (unnecessaryVariables.contains(v)) continue;
+                Attribute a = bottom.relation.getAttribute(j);
+                Attribute a2 = (Attribute) varToAttrib.get(v);
+                //solver.out.println("Variable "+v+" has attribute "+a2);
+                Assert._assert(a2 != null);
+                if (!a2.equals(a)) {
+                    renames.put(a2, a);
+                }
+                renamedAttributes.add(a);
+            }
+            
+            if (!renames.isEmpty()) {
+                Relation result2 = solver.createRelation(result+"_r2", renamedAttributes);
+                result2.initialize();
+                Rename rename = new Rename(result2, result, renames);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+rename);
+                ir.add(rename);
+                result = result2;
+            }
+            
+            // Restrict constants.
+            for (int j = 0; j < bottom.numberOfVariables(); ++j) {
+                Variable v = bottom.getVariable(j);
+                if (v instanceof Constant) {
+                    Attribute a = bottom.relation.getAttribute(j);
+                    long value = ((Constant) v).getValue();
+                    Relation result2 = result.copy();
+                    result2.initialize();
+                    JoinConstant jc = new JoinConstant(result2, result, a, value);
+                    if (solver.TRACE)
+                        solver.out.println("Generated: "+jc);
+                    ir.add(jc);
+                    result = result2;
+                }
+            }
+            
+            // Finally, union in the result.
+            Union u = new Union(bottom.relation, bottom.relation, result);
+            if (solver.TRACE)
+                solver.out.println("Generated: "+u);
+            ir.add(u);
+        }
+        
+        if (bottom.relation.negated != null) {
+            // Update negated.
+            Invert i = new Invert(bottom.relation.negated, bottom.relation);
+            if (solver.TRACE)
+                solver.out.println("Generated: "+i);
+            ir.add(i);
+        }
+
+        ir_incremental = ir;
         
         return ir;
     }

@@ -784,7 +784,7 @@ public abstract class Solver {
         for (Iterator i = rules.iterator(); i.hasNext(); ) {
             InferenceRule r = (InferenceRule) i.next();
             if (SPLIT_ALL_RULES || r.split)
-                newRules.addAll(r.split(rules.indexOf(r), this));
+                newRules.addAll(r.split(rules.indexOf(r)));
         }
         rules.addAll(newRules);
     }
@@ -835,7 +835,7 @@ public abstract class Solver {
         for (Iterator i = rules.iterator(); i.hasNext(); ) {
             InferenceRule ir = (InferenceRule) i.next();
             System.out.println(ir);
-            List instr = ir.generateIR(this);
+            List instr = ir.generateIR();
             for (Iterator j = instr.iterator(); j.hasNext(); ) {
                 System.out.println(j.next());
             }

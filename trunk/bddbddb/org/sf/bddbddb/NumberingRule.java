@@ -37,7 +37,7 @@ public class NumberingRule extends InferenceRule {
     static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph", "no").equals("no");
     
     NumberingRule(Solver s, InferenceRule ir) {
-        super(ir.top, ir.bottom);
+        super(s, ir.top, ir.bottom);
         Assert._assert(ir.top.size() > 1);
         this.solver = s;
     }

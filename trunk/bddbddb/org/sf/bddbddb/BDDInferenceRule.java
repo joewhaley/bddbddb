@@ -41,16 +41,11 @@ public class BDDInferenceRule extends InferenceRule {
     Map variableToBDDDomain;
     BDDPairing[] renames;
     BDDPairing bottomRename;
-    boolean incrementalize = !System.getProperty("incremental", "yes").equals("no");
-    boolean cache_before_rename = true;
     boolean use_ir = !System.getProperty("useir", "no").equals("no");
     BDD[] canQuantifyAfter;
     int updateCount;
     long totalTime;
     boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
-    boolean TRACE, TRACE_FULL;
-    
-    List ir;
     
     /**
      * @param solver
@@ -58,11 +53,9 @@ public class BDDInferenceRule extends InferenceRule {
      * @param bottom
      */
     public BDDInferenceRule(BDDSolver solver, List/*<RuleTerm>*/ top, RuleTerm bottom) {
-        super(top, bottom);
-        updateCount = 0;
+        super(solver, top, bottom);
         this.solver = solver;
-        this.TRACE = solver.TRACE;
-        this.TRACE_FULL = solver.TRACE_FULL;
+        updateCount = 0;
         //initialize();
     }
     
@@ -73,10 +66,6 @@ public class BDDInferenceRule extends InferenceRule {
         super.copyOptions(r);
         if (r instanceof BDDInferenceRule) {
             BDDInferenceRule that = (BDDInferenceRule) r;
-            this.TRACE = that.TRACE;
-            this.TRACE_FULL = that.TRACE_FULL;
-            this.incrementalize = that.incrementalize;
-            this.cache_before_rename = that.cache_before_rename;
             this.find_best_order = that.find_best_order;
         }
     }
@@ -199,7 +188,11 @@ public class BDDInferenceRule extends InferenceRule {
         ++updateCount;
         if (use_ir) {
             solver.out.println(this);
-            if (ir == null) ir = this.generateIR(solver);
+            List ir;
+            if (!incrementalize || updateCount == 1)
+                ir = this.generateIR();
+            else
+                ir = this.generateIR/*_incremental*/();
             Interpreter interpret = new BDDInterpreter();
             boolean anyChange = false;
             for (Iterator i = ir.iterator(); i.hasNext(); ) {
@@ -973,6 +966,7 @@ public class BDDInferenceRule extends InferenceRule {
      * @see org.sf.bddbddb.InferenceRule#free()
      */
     public void free() {
+        super.free();
         for (int i = 0; i < oldRelationValues.length; ++i) {
             if (oldRelationValues[i] != null) {
                 oldRelationValues[i].free();
