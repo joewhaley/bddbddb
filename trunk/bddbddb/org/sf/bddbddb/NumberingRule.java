@@ -127,7 +127,7 @@ public class NumberingRule extends InferenceRule {
         else
             Assert.UNREACHABLE("Unknown numbering type "+numberingType);
         BigInteger num = pn.countPaths(rg);
-        if (solver.NOISY) solver.out.println("Done counting paths ("+(System.currentTimeMillis()-time)+" ms)");
+        if (solver.NOISY) solver.out.println("Done counting paths ("+(System.currentTimeMillis()-time)+" ms, number of paths = "+num+" ("+num.bitLength()+" bits)");
         Iterator i = bottom.variables.iterator();
         Variable v1, v2;
         v1 = (Variable) i.next();
@@ -173,7 +173,7 @@ public class NumberingRule extends InferenceRule {
             }
         }
         time = System.currentTimeMillis() - time;
-        if (TRACE) out.println("Time spent: " + time + " ms");
+        if (solver.NOISY) out.println("Time spent: " + time + " ms");
         totalTime += time;
         if (DUMP_DOTGRAPH) {
             BufferedWriter dos = null;
