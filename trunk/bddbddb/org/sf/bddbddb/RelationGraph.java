@@ -212,7 +212,7 @@ public class RelationGraph implements Graph {
             } else {
                 cacheHit++;
             }
-            printCacheRatio();
+            if ((cacheMiss + cacheHit) % 256 == 0) printCacheRatio();
             return result;
         }
 
@@ -229,7 +229,7 @@ public class RelationGraph implements Graph {
             } else {
                 cacheHit++;
             }
-            printCacheRatio();
+            if ((cacheMiss + cacheHit) % 256 == 0) printCacheRatio();
             return result;
         }
     }
