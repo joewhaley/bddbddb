@@ -190,6 +190,7 @@ public class UFDomainAssignment extends DomainAssignment {
             if (crep1 == rep1 && crep2 == rep2 ||
                 crep1 == rep2 && crep2 == rep1) {
                 if (TRACE) System.out.println("Already " + a1 + " != " + a2);
+                neq_constraints.addAll(toAdd);
                 return true;
             }
         }
