@@ -171,7 +171,7 @@ public class Dot {
             String attribute = st.nextToken();
             String value = st.nextToken();
             
-            nodeModifiers.add(new DomainModifier(attribute, value, solver.getFieldDomain(domainName)));
+            nodeModifiers.add(new DomainModifier(attribute, value, solver.getDomain(domainName)));
         }
         else if (s.equals("default")) {
             String attribute = st.nextToken();
@@ -349,7 +349,7 @@ public class Dot {
         }
         
         boolean match(GraphNode n, Map a) {
-            Domain f = n.v.getFieldDomain();
+            Domain f = n.v.getDomain();
             
             if (f.equals(fd)) {
                 a.put(property,value);
@@ -377,7 +377,7 @@ public class Dot {
         boolean match(GraphNode n, Map a) {
             Attribute attr = (Attribute) relation.attributes.iterator().next();
             Domain f = attr.attributeDomain;
-            if (n.v.getFieldDomain().equals(f)) {
+            if (n.v.getDomain().equals(f)) {
                 if (relation.contains(0, n.number)) {
                     a.put(property,value);
                     return true;
@@ -401,7 +401,7 @@ public class Dot {
     
     private void visitNode (GraphNode x) {
         Map attributes = new HashMap();
-        String nodeName = (String) x.v.getFieldDomain().map.get((int)x.number);
+        String nodeName = (String) x.v.getDomain().map.get((int)x.number);
         if (nodeName != null) {
             attributes.put("label", nodeName);
         }

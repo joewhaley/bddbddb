@@ -52,7 +52,7 @@ public abstract class Solver {
     }
     
     public void clear() {
-        nameToFieldDomain = new HashMap();
+        nameToDomain = new HashMap();
         nameToRelation = new HashMap();
         equivalenceRelations = new HashMap();
         notequivalenceRelations = new HashMap();
@@ -88,15 +88,15 @@ public abstract class Solver {
     public abstract void solve();
     public abstract void finish();
         
-    public Domain getFieldDomain(String name) {
-        return (Domain) nameToFieldDomain.get(name);
+    public Domain getDomain(String name) {
+        return (Domain) nameToDomain.get(name);
     }
     
     public Relation getRelation(String name) {
         return (Relation) nameToRelation.get(name);
     }
     
-    Map/*<String,Domain>*/ nameToFieldDomain;
+    Map/*<String,Domain>*/ nameToDomain;
     Map/*<String,Relation>*/ nameToRelation;
     Map/*<Domain,Relation>*/ equivalenceRelations;
     Map/*<Domain,Relation>*/ notequivalenceRelations;
@@ -147,7 +147,7 @@ public abstract class Solver {
         MyReader in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
         dis.readDatalogProgram(in);
         
-        if (dis.NOISY) dis.out.println(dis.nameToFieldDomain.size()+" field domains.");
+        if (dis.NOISY) dis.out.println(dis.nameToDomain.size()+" field domains.");
         if (dis.NOISY) dis.out.println(dis.nameToRelation.size()+" relations.");
         if (dis.NOISY) dis.out.println(dis.rules.size()+" rules.");
         
@@ -291,12 +291,12 @@ public abstract class Solver {
                     }
                     if (isNumber) {
                         // field domain
-                        Domain fd = parseFieldDomain(lineNum, s);
+                        Domain fd = parseDomain(lineNum, s);
                         if (TRACE) out.println("Parsed field domain "+fd+" size "+fd.size);
-                        if (nameToFieldDomain.containsKey(fd.name)) {
+                        if (nameToDomain.containsKey(fd.name)) {
                             System.err.println("Error, field domain "+fd.name+" redefined on line "+in.getLineNumber()+", ignoring.");
                         } else {
-                            nameToFieldDomain.put(fd.name, fd);
+                            nameToDomain.put(fd.name, fd);
                         }
                         continue;
                     }
@@ -437,7 +437,7 @@ public abstract class Solver {
         }
     }
     
-    Domain parseFieldDomain(int lineNum, String s) throws IOException {
+    Domain parseDomain(int lineNum, String s) throws IOException {
         MyStringTokenizer st = new MyStringTokenizer(s);
         String name = nextToken(st);
         String num = nextToken(st);
@@ -506,7 +506,7 @@ public abstract class Solver {
                 }
                 fdName = fdName.substring(0, numIndex);
             }
-            Domain fd = getFieldDomain(fdName);
+            Domain fd = getDomain(fdName);
             if (fd == null) {
                 outputError(lineNum, st.getPosition(), s, "Unknown field domain "+fdName);
                 throw new IllegalArgumentException();
@@ -648,15 +648,15 @@ public abstract class Solver {
                     outputError(lineNum, st.getPosition(), s, "Cannot use \"=\" on two unbound variables.");
                     throw new IllegalArgumentException();
                 }
-                fd = var2.fieldDomain;
+                fd = var2.domain;
                 var1 = parseVariable(fd, nameToVar, varName1);
             } else {
-                fd = var1.fieldDomain;
+                fd = var1.domain;
                 if (var2 == null) {
                     var2 = parseVariable(fd, nameToVar, varName2);
                 }
             }
-            if (var1.fieldDomain != var2.fieldDomain) {
+            if (var1.domain != var2.domain) {
                 outputError(lineNum, st.getPosition(), s, "Variable "+var1+" and "+var2+" have different field domains.");
                 throw new IllegalArgumentException();
             }
@@ -695,9 +695,9 @@ public abstract class Solver {
                 throw new IllegalArgumentException();
             }
             vars.add(var);
-            if (var.fieldDomain == null) var.fieldDomain = fd;
-            else if (var.fieldDomain != fd) {
-                outputError(lineNum, st.getPosition(), s, "Variable "+var+" used as both "+var.fieldDomain+" and "+fd);
+            if (var.domain == null) var.domain = fd;
+            else if (var.domain != fd) {
+                outputError(lineNum, st.getPosition(), s, "Variable "+var+" used as both "+var.domain+" and "+fd);
                 throw new IllegalArgumentException();
             }
             String sep = nextToken(st);
@@ -730,7 +730,7 @@ public abstract class Solver {
         } else {
             var = new Variable();
         }
-        if (var.fieldDomain == null) var.fieldDomain = fd;
+        if (var.domain == null) var.domain = fd;
         return var;
     }
     
