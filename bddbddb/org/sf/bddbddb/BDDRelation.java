@@ -40,7 +40,7 @@ public class BDDRelation extends Relation {
     public BDDRelation(BDDSolver solver, String name, List attributes) {
         super(solver, name, attributes);
         this.solver = solver;
-        if (solver.TRACE) solver.out.println("Created BDDRelation "+this);
+        if (solver.TRACE) solver.out.println("Created BDDRelation " + this);
     }
 
     /*
@@ -219,11 +219,11 @@ public class BDDRelation extends Relation {
         s.free();
         boolean result = t.equals(domainSet);
         if (!result) {
-            System.out.println("Warning, domains for "+this+" don't match BDD: "+activeDomains(relation)+" vs "+domains);
+            System.out.println("Warning, domains for " + this + " don't match BDD: " + activeDomains(relation) + " vs " + domains);
         }
         return result;
     }
-    
+
     /**
      * @param filename
      * @throws IOException
@@ -570,7 +570,7 @@ public class BDDRelation extends Relation {
     public List getBDDDomains() {
         return domains;
     }
-    
+
     /*
      * (non-Javadoc)
      * 

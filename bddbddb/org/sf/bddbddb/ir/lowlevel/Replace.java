@@ -10,6 +10,7 @@ import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
+import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
 import org.sf.javabdd.BDDPairing;
@@ -22,6 +23,8 @@ import org.sf.javabdd.BDDPairing;
  */
 public class Replace extends LowLevelOperation {
     BDDRelation r0, r1;
+    BDDPairing pairing;
+    String pairingString;
 
     /**
      * @param r0
@@ -30,6 +33,15 @@ public class Replace extends LowLevelOperation {
     public Replace(BDDRelation r0, BDDRelation r1) {
         this.r0 = r0;
         this.r1 = r1;
+    }
+
+    /**
+     * 
+     */
+    public BDDPairing setPairing() {
+        this.pairing = makePairing(r0.getBDD().getFactory());
+        this.pairingString = Operation.getRenames(r1, r0);
+        return this.pairing;
     }
 
     /*
@@ -91,7 +103,12 @@ public class Replace extends LowLevelOperation {
      *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
-        if (r1 == r_old) r1 = (BDDRelation) r_new;
+        if (r1 == r_old) {
+            BDDRelation r1_b = (BDDRelation) r1;
+            BDDRelation r_new_b = (BDDRelation) r_new;
+            Assert._assert(r_new_b.getBDDDomains().equals(r1_b.getBDDDomains()));
+            r1 = (BDDRelation) r_new;
+        }
     }
 
     /*
@@ -100,13 +117,18 @@ public class Replace extends LowLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
-        return "replace(" + r1.toString() + Operation.getRenames(r1, r0) + ")";
+        return "replace(" + r1.toString() + pairingString + ")";
     }
 
     /**
      * @return
      */
     public BDDPairing getPairing(BDDFactory factory) {
+        Assert._assert(pairingString != null);
+        return pairing;
+    }
+
+    BDDPairing makePairing(BDDFactory factory) {
         boolean any = false;
         BDDPairing pair = factory.makePair();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
@@ -117,8 +139,8 @@ public class Replace extends LowLevelOperation {
             any = true;
             pair.set(d1, d2);
         }
-        if (any) return pair;
-        else return null;
+        if (any) return pairing = pair;
+        else return pairing = null;
     }
 
     public Operation copy() {

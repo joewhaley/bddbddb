@@ -35,24 +35,23 @@ import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.Assert;
 
 /**
- * @author Administrator
+ * @author mcarbin
  * 
  * TODO To change the template for this generated type comment go to Window -
  * Preferences - Java - Code Style - Code Templates
  */
 public class CopyProp extends OperationProblem implements IRPass {
     /**
-     * @author Administrator
+     * @author mcarbin
      * 
      * TODO To change the template for this generated type comment go to Window -
      * Preferences - Java - Code Style - Code Templates
      */
     IR ir;
     Map opIns;
-    boolean TRACE = true;
+    boolean TRACE = false;
 
     public CopyProp(IR ir) {
         this.ir = ir;
@@ -76,6 +75,7 @@ public class CopyProp extends OperationProblem implements IRPass {
     public class CopyPropFact implements OperationFact {
         Operation op;
         Map copies;
+        IterationList loc;
 
         //MultiMap reverseCopies;
         public CopyPropFact() {
@@ -117,6 +117,7 @@ public class CopyProp extends OperationProblem implements IRPass {
                     if (!thisValue.equals(thatValue)) result.copies.remove(thisKey);
                 }
             }
+            result.loc = this.loc;
             return result;
         }
 
@@ -124,6 +125,7 @@ public class CopyProp extends OperationProblem implements IRPass {
             CopyPropFact result = new CopyPropFact();
             result.copies.putAll(this.copies);
             result.op = this.op;
+            result.loc = this.loc;
             return result;
         }
 
@@ -133,7 +135,9 @@ public class CopyProp extends OperationProblem implements IRPass {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#copy(org.sf.bddbddb.IterationList)
          */
         public Fact copy(IterationList loc) {
-            return copy();
+            CopyPropFact c = copy();
+            c.loc = loc;
+            return c;
         }
 
         /*
@@ -142,6 +146,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#setLocation(org.sf.bddbddb.IterationList)
          */
         public void setLocation(IterationList loc) {
+            this.loc = loc;
         }
 
         /*
@@ -150,8 +155,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#getLocation()
          */
         public IterationList getLocation() {
-            Assert.UNREACHABLE("");
-            return null;
+            return loc;
         }
 
         public boolean equals(Object o) {
@@ -235,7 +239,7 @@ public class CopyProp extends OperationProblem implements IRPass {
      * @see org.sf.bddbddb.dataflow.Problem#getBoundary()
      */
     public Fact getBoundary() {
-       return new CopyPropFact();
+        return new CopyPropFact();
     }
 
     public String toString() {

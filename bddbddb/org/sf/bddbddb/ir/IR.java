@@ -16,10 +16,14 @@ import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.Stratify;
 import org.sf.bddbddb.dataflow.ConstantProp;
+import org.sf.bddbddb.dataflow.CopyProp;
 import org.sf.bddbddb.dataflow.DataflowSolver;
+import org.sf.bddbddb.dataflow.DeadCode;
 import org.sf.bddbddb.dataflow.DefUse;
 import org.sf.bddbddb.dataflow.IRPass;
 import org.sf.bddbddb.dataflow.Liveness;
+import org.sf.bddbddb.dataflow.PartialOrder;
+import org.sf.bddbddb.dataflow.PartialRedundancy;
 import org.sf.bddbddb.dataflow.Problem;
 import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
@@ -32,8 +36,10 @@ import org.sf.bddbddb.ir.highlevel.Project;
 import org.sf.bddbddb.ir.highlevel.Rename;
 import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
+import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.MultiMap;
+import org.sf.javabdd.BDDPairing;
 import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
@@ -132,7 +138,11 @@ public class IR {
         if (DOMAIN_ASSIGNMENT) {
             System.out.print("Running DomainAssignment...");
             long time = System.currentTimeMillis();
-            DomainAssignment ass = new UFDomainAssignment(solver);
+            DataflowSolver solver = new DataflowSolver();
+            PartialOrder p = new PartialOrder(this);
+            solver.solve(p, graph.getIterationList());
+            DomainAssignment ass = new PartialOrderDomainAssignment(this.solver, p.currFact.getConstraintsMap());
+            //DomainAssignment ass = new UFDomainAssignment(this.solver);
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
             ass.doAssignment();
@@ -143,35 +153,45 @@ public class IR {
             } catch (IOException x) {
                 x.printStackTrace(System.err);
             } finally {
-                if (dos != null) try { dos.close(); } catch (IOException x) {}
+                if (dos != null) try {
+                    dos.close();
+                } catch (IOException x) {
+                }
             }
-        
             cleanUpAfterAssignment(list);
             System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
-        /*
-         * while (true) { boolean changed = false; if (PRE) { if(TRACE)
-         * System.out.print("Running Partial Redundancy..."); long time =
-         * System.currentTimeMillis(); IRPass pre = new PartialRedundancy(this);
-         * boolean b = pre.run(); if(TRACE)
-         * System.out.println(((System.currentTimeMillis()-time)/1000.)+"s"); if
-         * (TRACE && b) System.out.println("IR changed after partial
-         * redundancy"); changed |= b; } if (COPYPROP && false) { if(TRACE)
-         * System.out.print("Running Copy Propagation..."); long time =
-         * System.currentTimeMillis(); IRPass copy = new CopyProp(this); boolean
-         * b = copy.run(); if(TRACE)
-         * System.out.println(((System.currentTimeMillis()-time)/1000.)+"s"); if
-         * (TRACE && b) System.out.println("IR changed after copy propagation");
-         * changed |= b; } if (DEAD_CODE) { if(TRACE) System.out.print("Running
-         * Dead Code Elimination..."); long time = System.currentTimeMillis();
-         * IRPass deadCode = new DeadCode(this); boolean b = deadCode.run();
-         * if(TRACE)
-         * System.out.println(((System.currentTimeMillis()-time)/1000.)+"s"); if
-         * (TRACE && b) System.out.println("IR Changed after dead code
-         * elimination"); changed |= b; }
-         * 
-         * if (!changed) break; }
-         */
+        while (true) {
+            boolean changed = false;
+            if (PRE) {
+                if (TRACE) System.out.print("Running Partial Redundancy...");
+                long time = System.currentTimeMillis();
+                IRPass pre = new PartialRedundancy(this);
+                boolean b = pre.run();
+                if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+                if (TRACE && b) System.out.println("IR changed after partial redundancy");
+                changed |= b;
+            }
+            if (COPYPROP) {
+                if (TRACE) System.out.print("Running Copy Propagation...");
+                long time = System.currentTimeMillis();
+                IRPass copy = new CopyProp(this);
+                boolean b = copy.run();
+                if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+                if (TRACE && b) System.out.println("IR changed after copy propagation");
+                changed |= b;
+            }
+            if (DEAD_CODE) {
+                if (TRACE) System.out.print("Running Dead Code Elimination...");
+                long time = System.currentTimeMillis();
+                IRPass deadCode = new DeadCode(this);
+                boolean b = deadCode.run();
+                if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+                if (TRACE && b) System.out.println("IR Changed after dead code elimination");
+                changed |= b;
+            }
+            if (!changed) break;
+        }
         if (FREE_DEAD) {
             if (TRACE) System.out.print("Running Liveness Analysis...");
             long time = System.currentTimeMillis();
@@ -191,6 +211,16 @@ public class IR {
                 Relation r1 = r.getSrc();
                 Copy op = new Copy(r0, r1);
                 i.add(op);
+            } else if (o instanceof Replace) {
+                Replace r = (Replace) o;
+                BDDPairing p = r.setPairing();
+                if (p == null) {
+                    i.remove();
+                    Relation r0 = r.getRelationDest();
+                    Relation r1 = r.getSrc();
+                    Copy op = new Copy(r0, r1);
+                    i.add(op);
+                }
             } else if (o instanceof IterationList) {
                 cleanUpAfterAssignment((IterationList) o);
             }

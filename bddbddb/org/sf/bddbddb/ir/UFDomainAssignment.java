@@ -18,6 +18,7 @@ import org.sf.bddbddb.BDDSolver;
 import org.sf.bddbddb.Domain;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
+import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.LinearMap;
@@ -36,11 +37,17 @@ public class UFDomainAssignment extends DomainAssignment {
     LinkedHashSet neq_constraints;
     Map physicalDomains;
     
+    public UFDomainAssignment(Solver s){
+        super(s);
+        uf = new UnionFind(65536);
+        neq_constraints = new LinkedHashSet();
+        this.initialize();
+    }
     /**
      * @param s
      */
-    public UFDomainAssignment(Solver s) {
-        super(s);
+    protected UFDomainAssignment(Solver s, Constraints[] constraintMap) {
+        super(s, constraintMap);
         uf = new UnionFind(65536);
         neq_constraints = new LinkedHashSet();
         this.initialize();
@@ -246,6 +253,39 @@ public class UFDomainAssignment extends DomainAssignment {
     }
 
     /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.DomainAssignment#forceEqual(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Attribute, int)
+     */
+    boolean forceEqual(Relation r1, Attribute a1, int k) {
+        Domain dom = a1.getDomain();
+        BDDDomain d = ((BDDSolver) solver).getBDDDomain(dom, k);
+        return forceEqual(new Pair(r1, a1), d);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.DomainAssignment#forceEqual(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Attribute, org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Attribute, boolean)
+     */
+    boolean forceEqual(Relation r1, Attribute a1, Relation r2, Attribute a2, boolean equal) {
+        Pair p1 = new Pair(r1, a1);
+        Pair p2 = new Pair(r2, a2);
+        if (equal) {
+            return forceEqual(p1, p2);
+        } else {
+            return forceNotEqual(p1, p2);
+        }
+    }
+    
+    boolean forceBefore(Object o1, Object o2){return true;}
+    boolean forceBefore(Relation r1, Attribute a1, Relation r2, Attribute a2){return true;}
+    boolean forceInterleaved(Object o1, Object o2){ return true; }
+    boolean forceInterleaved(Relation r1, Attribute a1, Relation r2, Attribute a2){ return true; }
+     /*
      * (non-Javadoc)
      * 
      * @see org.sf.bddbddb.ir.DomainAssignment#allocNewRelation(org.sf.bddbddb.Relation)
