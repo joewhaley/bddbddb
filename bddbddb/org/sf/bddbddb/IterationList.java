@@ -1,6 +1,6 @@
 // IterationList.java, created Jun 30, 2004
-//Copyright (C) 2004 Michael Carbin
-//Licensed under the terms of the GNU LGPL; see COPYING for details.
+// Copyright (C) 2004 Michael Carbin
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Collection;
@@ -20,6 +20,9 @@ import org.sf.javabdd.BDD;
  * @version $Id$
  */
 public class IterationList implements IterationElement {
+    
+    boolean TRACE = false;
+    
     List /* IterationElement */elements;
 
     List allNestedElems = null;
@@ -162,7 +165,7 @@ public class IterationList implements IterationElement {
             change = false;
             for (Iterator i = elements.iterator(); i.hasNext();) {
                 Object o = i.next();
-                System.out.println(o);
+                if (TRACE) System.out.println(o);
                 if (o instanceof IterationList) {
                     IterationList list = (IterationList) o;
                     if (list.interpret(interpret)) {
