@@ -1022,36 +1022,7 @@ public class BDDInferenceRule extends InferenceRule {
         while (--count >= 0) {
             FindBestDomainOrder.Order o = info2.tryNewGoodOrder(allVars);
             if (o == null) break;
-            StringBuffer varOrder = new StringBuffer();
-            for (Iterator i = o.iterator(); i.hasNext(); ) {
-                Object p = i.next();
-                if (p instanceof Collection) {
-                    Collection c = (Collection) p;
-                    int num = 0;
-                    for (Iterator j = c.iterator(); j.hasNext(); ) {
-                        Variable v = (Variable) j.next();
-                        BDDDomain d = (BDDDomain) variableToBDDDomain.get(v);
-                        if (d != null) {
-                            if (varOrder.length() > 0) {
-                                if (num == 0) {
-                                    varOrder.append('_');
-                                } else {
-                                    varOrder.append('x');
-                                }
-                            }
-                            varOrder.append(d);
-                            ++num;
-                        }
-                    }
-                } else {
-                    BDDDomain d = (BDDDomain) variableToBDDDomain.get(p);
-                    if (d != null) {
-                        if (varOrder.length() > 0) varOrder.append('_');
-                        varOrder.append(d);
-                    }
-                }
-            }
-            String vOrder = varOrder.toString();
+            String vOrder = o.toVarOrderString(variableToBDDDomain);
             System.out.println("Trying order "+vOrder);
             vOrder = solver.fixVarOrder(vOrder, false);
             System.out.println("Complete order "+vOrder);
@@ -1064,12 +1035,18 @@ public class BDDInferenceRule extends InferenceRule {
         // todo: this should be the relative weight of this rule.
         // this metric (weight = number of seconds) is pretty lame.
         double confidence = (double) bestTime / 1000;
-        ruleinfo.incorporateTrials(info2.trials, confidence);
+        ruleinfo.incorporateTrials(info2.trials, confidence, true);
         // Also incorporate into relation info.
         FindBestDomainOrder.OrderTranslator u1 = new FindBestDomainOrder.MapBasedTranslator(r1, true);
         FindBestDomainOrder.OrderTranslator u2 = new FindBestDomainOrder.MapBasedTranslator(r2, true);
-        r1info.incorporateTrials(info2.trials, u1, confidence);
-        r2info.incorporateTrials(info2.trials, u2, confidence);
+        r1info.incorporateTrials(info2.trials, u1, confidence, false);
+        r2info.incorporateTrials(info2.trials, u2, confidence, false);
+        
+        // Keep a cache of all the trials we have done, for informational purposes.
+        fbdo.allTrials.add(info2.trials);
+        
+        fbdo.dumpXML("fbo.xml", fbdo.toXMLElement());
+        fbdo.dumpXML("trials.xml", fbdo.trialsToXMLElement());
     }
     
 }

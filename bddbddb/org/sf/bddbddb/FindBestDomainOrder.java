@@ -17,13 +17,23 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.StringTokenizer;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Writer;
 import java.math.BigInteger;
 import java.text.NumberFormat;
 import jwutil.collections.EntryValueComparator;
 import jwutil.collections.Pair;
 import jwutil.math.CombinationGenerator;
 import jwutil.util.Assert;
+import org.jdom.Document;
+import org.jdom.Element;
+import org.jdom.output.Format;
+import org.jdom.output.XMLOutputter;
+import org.sf.javabdd.BDDDomain;
 
 /**
  * FindBestDomainOrder
@@ -39,13 +49,30 @@ public class FindBestDomainOrder {
     Map/*<InferenceRule,OrderInfoCollection>*/ orderInfo_rules;
     Map/*<Relation,OrderInfoCollection>*/ orderInfo_relations;
     
+    Collection allTrials;
+    
     /**
-     * 
+     * Construct a new empty FindBestDomainOrder object.
      */
     public FindBestDomainOrder() {
         super();
         orderInfo_rules = new HashMap();
         orderInfo_relations = new HashMap();
+        allTrials = new LinkedList();
+    }
+    
+    /**
+     * Construct a new FindBestDomainOrder object with the given info.
+     * 
+     * @param m1  map from rules to their info
+     * @param m2  map from relations to their info
+     */
+    FindBestDomainOrder(Map/*<InferenceRule,OrderInfoCollection>*/ m1,
+                        Map/*<Relation,OrderInfoCollection>*/ m2) {
+        super();
+        orderInfo_rules = m1;
+        orderInfo_relations = m2;
+        allTrials = new LinkedList();
     }
     
     /**
@@ -390,10 +417,20 @@ public class FindBestDomainOrder {
     public static class Order implements List, Comparable {
         List list;
         
+        /**
+         * Construct a new Order that is a copy of the given Order.
+         * 
+         * @param o  order to copy
+         */
         public Order(Order o) {
             this.list = new LinkedList(o.list);
         }
         
+        /**
+         * Construct a new Order from the given list.
+         * 
+         * @param l  list
+         */
         public Order(List l) {
             this.list = l;
         }
@@ -428,6 +465,11 @@ public class FindBestDomainOrder {
             return m;
         }
         
+        /**
+         * Return the flattened version of this list.
+         * 
+         * @return  flattened version of this list
+         */
         public Collection getFlattened() {
             Collection result = new LinkedList();
             for (Iterator i = list.iterator(); i.hasNext(); ) {
@@ -441,6 +483,13 @@ public class FindBestDomainOrder {
             return result;
         }
         
+        /**
+         * Utility function for intersecting elements and collections.
+         * 
+         * @param a  element or collection
+         * @param b  element or collection
+         * @return  element or collection which is the intersection
+         */
         static Object intersect(Object a, Object b) {
             if (a instanceof Collection) {
                 Collection ca = (Collection) a;
@@ -514,6 +563,13 @@ public class FindBestDomainOrder {
             return c;
         }
         
+        /**
+         * Return the collection of suborders that are similar between this order
+         * and the given order.  Duplicates are eliminated.
+         * 
+         * @param that  other order
+         * @return  collection of suborders that are similar
+         */
         public Collection/*<Order>*/ findSimilarities(Order that) {
             if (false)
             {
@@ -538,6 +594,11 @@ public class FindBestDomainOrder {
             return result;
         }
         
+        /**
+         * Get all interleave constraints of this order as pairs.
+         * 
+         * @return  collection of interleave constraints
+         */
         public Collection/*<Pair>*/ getAllInterleaveConstraints() {
             Collection s = new LinkedList();
             for (Iterator i = list.iterator(); i.hasNext(); ) {
@@ -558,6 +619,11 @@ public class FindBestDomainOrder {
             return s;
         }
         
+        /**
+         * Get the number of interleave constraints in this order.
+         * 
+         * @return  number of interleave constraints
+         */
         int numInterleaveConstraints() {
             int n = 0;
             for (Iterator i = list.iterator(); i.hasNext(); ) {
@@ -570,6 +636,11 @@ public class FindBestDomainOrder {
             return n;
         }
         
+        /**
+         * Get all precedence constraints of this order as pairs.
+         * 
+         * @return  collection of precedence constraints
+         */
         public Collection/*<Pair>*/ getAllPrecedenceConstraints() {
             Collection s = new LinkedList();
             for (Iterator i = list.iterator(); i.hasNext(); ) {
@@ -699,84 +770,254 @@ public class FindBestDomainOrder {
             return equals((Order) obj);
         }
         
+        /* (non-Javadoc)
+         * @see java.util.Collection#add(java.lang.Object)
+         */
         public boolean add(Object o) {
             return list.add(o);
         }
+        /* (non-Javadoc)
+         * @see java.util.List#add(int, java.lang.Object)
+         */
         public void add(int index, Object element) {
             list.add(index, element);
         }
+        /* (non-Javadoc)
+         * @see java.util.List#addAll(int, java.util.Collection)
+         */
         public boolean addAll(int index, Collection c) {
             return list.addAll(index,c);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#addAll(java.util.Collection)
+         */
         public boolean addAll(Collection c) {
             return list.addAll(c);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#clear()
+         */
         public void clear() {
             list.clear();
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#contains(java.lang.Object)
+         */
         public boolean contains(Object o) {
             return list.contains(o);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#containsAll(java.util.Collection)
+         */
         public boolean containsAll(Collection c) {
             return list.containsAll(c);
         }
+        /* (non-Javadoc)
+         * @see java.util.List#get(int)
+         */
         public Object get(int index) {
             return list.get(index);
         }
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
         public int hashCode() {
             return list.hashCode();
         }
+        /* (non-Javadoc)
+         * @see java.util.List#indexOf(java.lang.Object)
+         */
         public int indexOf(Object o) {
             return list.indexOf(o);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#isEmpty()
+         */
         public boolean isEmpty() {
             return list.isEmpty();
         }
+        /* (non-Javadoc)
+         * @see java.lang.Iterable#iterator()
+         */
         public Iterator iterator() {
             return list.iterator();
         }
+        /* (non-Javadoc)
+         * @see java.util.List#lastIndexOf(java.lang.Object)
+         */
         public int lastIndexOf(Object o) {
             return list.lastIndexOf(o);
         }
+        /* (non-Javadoc)
+         * @see java.util.List#listIterator()
+         */
         public ListIterator listIterator() {
             return list.listIterator();
         }
+        /* (non-Javadoc)
+         * @see java.util.List#listIterator(int)
+         */
         public ListIterator listIterator(int index) {
             return list.listIterator(index);
         }
+        /* (non-Javadoc)
+         * @see java.util.List#remove(int)
+         */
         public Object remove(int index) {
             return list.remove(index);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#remove(java.lang.Object)
+         */
         public boolean remove(Object o) {
             return list.remove(o);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#removeAll(java.util.Collection)
+         */
         public boolean removeAll(Collection c) {
             return list.removeAll(c);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#retainAll(java.util.Collection)
+         */
         public boolean retainAll(Collection c) {
             return list.retainAll(c);
         }
+        /* (non-Javadoc)
+         * @see java.util.List#set(int, java.lang.Object)
+         */
         public Object set(int index, Object element) {
             return list.set(index, element);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#size()
+         */
         public int size() {
             return list.size();
         }
+        /* (non-Javadoc)
+         * @see java.util.List#subList(int, int)
+         */
         public List subList(int fromIndex, int toIndex) {
             return list.subList(fromIndex,toIndex);
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#toArray()
+         */
         public Object[] toArray() {
             return list.toArray();
         }
+        /* (non-Javadoc)
+         * @see java.util.Collection#toArray(java.lang.Object[])
+         */
         public Object[] toArray(Object[] a) {
             return list.toArray(a);
         }
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
         public String toString() {
-            return list.toString();
+            StringBuffer varOrder = new StringBuffer();
+            for (Iterator i = iterator(); i.hasNext(); ) {
+                Object p = i.next();
+                if (p instanceof Collection) {
+                    Collection c = (Collection) p;
+                    int num = 0;
+                    for (Iterator j = c.iterator(); j.hasNext(); ) {
+                        Object d = j.next();
+                        if (varOrder.length() > 0) {
+                            if (num == 0) {
+                                varOrder.append('_');
+                            } else {
+                                varOrder.append('x');
+                            }
+                        }
+                        varOrder.append(d);
+                        ++num;
+                    }
+                } else {
+                    if (varOrder.length() > 0) varOrder.append('_');
+                    varOrder.append(p);
+                }
+            }
+            String vOrder = varOrder.toString();
+            return vOrder;
+        }
+
+        public String toVarOrderString(Map/*<Variable,BDDDomain>*/ variableToBDDDomain) {
+            StringBuffer varOrder = new StringBuffer();
+            for (Iterator i = iterator(); i.hasNext(); ) {
+                Object p = i.next();
+                if (p instanceof Collection) {
+                    Collection c = (Collection) p;
+                    int num = 0;
+                    for (Iterator j = c.iterator(); j.hasNext(); ) {
+                        Variable v = (Variable) j.next();
+                        BDDDomain d = (BDDDomain) variableToBDDDomain.get(v);
+                        if (d != null) {
+                            if (varOrder.length() > 0) {
+                                if (num == 0) {
+                                    varOrder.append('_');
+                                } else {
+                                    varOrder.append('x');
+                                }
+                            }
+                            varOrder.append(d);
+                            ++num;
+                        }
+                    }
+                } else {
+                    BDDDomain d = (BDDDomain) variableToBDDDomain.get(p);
+                    if (d != null) {
+                        if (varOrder.length() > 0) varOrder.append('_');
+                        varOrder.append(d);
+                    }
+                }
+            }
+            String vOrder = varOrder.toString();
+            return vOrder;
+        }
+        
+        /**
+         * Parse an order from a string.
+         * 
+         * @param s  string to parse
+         * @param nameToObj  map from name to object (variable, etc.)
+         * @return  order
+         */
+        public static Order parse(String s, Map nameToObj) {
+            StringTokenizer st = new StringTokenizer(s, "_x");
+            List o = new LinkedList();
+            List elem = null;
+            while (st.hasMoreTokens()) {
+                String tok = st.nextToken();
+                Object obj = nameToObj.get(tok);
+                if (obj == null) {
+                    throw new IllegalArgumentException("Unknown \""+tok+"\" in order \""+s+"\"");
+                }
+                String sep;
+                if (!st.hasMoreTokens() || (sep = st.nextToken()).equals("_")) {
+                    if (elem != null) {
+                        elem.add(obj);
+                        obj = elem;
+                        elem = null;
+                    }
+                    o.add(obj);
+                } else if (sep.equals("x")) {
+                    if (elem == null) {
+                        elem = new LinkedList();
+                    }
+                    elem.add(obj);
+                } else {
+                    throw new IllegalArgumentException("Bad separator \""+sep+"\" in order \""+s+"\"");
+                }
+            }
+            return new Order(o);
         }
     }
     
-    static NumberFormat nf;
+    transient static NumberFormat nf;
     /**
      * Format a double as a percentage.
      * 
@@ -900,6 +1141,26 @@ public class FindBestDomainOrder {
             }
             return result;
         }
+        
+        /**
+         * Returns this OrderInfo as an XML element.
+         * 
+         * @return  XML element
+         */
+        public Element toXMLElement() {
+            Element dis = new Element("orderInfo");
+            dis.setAttribute("order", order.toString());
+            dis.setAttribute("score", Double.toString(score));
+            dis.setAttribute("confidence", Double.toString(confidence));
+            return dis;
+        }
+        
+        public static OrderInfo fromXMLElement(Element e, Map nameToVar) {
+            Order o = Order.parse(e.getAttributeValue("order"), nameToVar);
+            double s = Double.parseDouble(e.getAttributeValue("score"));
+            double c = Double.parseDouble(e.getAttributeValue("confidence"));
+            return new OrderInfo(o, s, c);
+        }
     }
     
     // Only present in JDK1.5
@@ -970,6 +1231,24 @@ public class FindBestDomainOrder {
                 result = this.order.compareTo(that.order);
             }
             return result;
+        }
+        
+        /**
+         * Returns this TrialInfo as an XML element.
+         * 
+         * @return  XML element
+         */
+        public Element toXMLElement() {
+            Element dis = new Element("trialInfo");
+            dis.setAttribute("order", order.toString());
+            dis.setAttribute("cost", Long.toString(cost));
+            return dis;
+        }
+        
+        public static TrialInfo fromXMLElement(Element e, Map nameToVar) {
+            Order o = Order.parse(e.getAttributeValue("order"), nameToVar);
+            long c = Long.parseLong(e.getAttributeValue("cost"));
+            return new TrialInfo(o, c);
         }
     }
     
@@ -1161,6 +1440,34 @@ public class FindBestDomainOrder {
         public String toString() {
             return name+"@"+Integer.toHexString(this.hashCode());
         }
+        
+        /**
+         * Returns this TrialCollection as an XML element.
+         * 
+         * @return  XML element
+         */
+        public Element toXMLElement() {
+            Element dis = new Element("trialInfoCollection");
+            dis.setAttribute("name", name);
+            TrialInfo[] s = getSorted();
+            for (int i = 0; i < s.length; ++i) {
+                dis.addContent(s[i].toXMLElement());
+            }
+            return dis;
+        }
+        
+        public static TrialCollection fromXMLElement(Element e, Map nameToVar) {
+            String name = e.getAttributeValue("name");
+            TrialCollection tc = new TrialCollection(name);
+            for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
+                Object e2 = i.next();
+                if (e2 instanceof Element) {
+                    TrialInfo ti = TrialInfo.fromXMLElement((Element) e2, nameToVar);
+                    tc.addTrial(ti);
+                }
+            }
+            return tc;
+        }
     }
     
     /**
@@ -1245,8 +1552,8 @@ public class FindBestDomainOrder {
          * @param c  trial collection to incorporate
          * @param confidence  confidence rating for trials
          */
-        public void incorporateTrials(TrialCollection c, double confidence) {
-            incorporateTrials(c, IdentityTranslator.INSTANCE, confidence);
+        public void incorporateTrials(TrialCollection c, double confidence, boolean boostConfidence) {
+            incorporateTrials(c, IdentityTranslator.INSTANCE, confidence, boostConfidence);
         }
         
         /**
@@ -1256,8 +1563,10 @@ public class FindBestDomainOrder {
          * @param c  trial collection to incorporate
          * @param t  order translator
          * @param confidence  confidence rating for trials
+         * @param boostConfidence  boost confidence for trials with cost greater than MAX_COST
          */
-        public void incorporateTrials(TrialCollection c, OrderTranslator t, double confidence) {
+        public void incorporateTrials(TrialCollection c, OrderTranslator t, double confidence,
+                                      boolean boostConfidence) {
             if (c.size() > 0) {
                 if (TRACE > 0) out.println(this+": incorporating trials "+c+" with confidence "+format(confidence));
                 TrialInfo[] ti = c.getSorted();
@@ -1271,8 +1580,9 @@ public class FindBestDomainOrder {
                     if (TRACE > 1) out.println(this+": trial "+ti[i]+" isNew: "+isNew);
                     double score = (range < 0.0001) ? 0.5 : ((double)(max - ti[i].cost) / range);
                     double myConf = (range < 0.0001) ? 0. : confidence;
-                    if (isNew && ti[i].cost >= UpdatableOrderInfoCollection.MAX_COST) {
+                    if (boostConfidence && isNew && ti[i].cost >= UpdatableOrderInfoCollection.MAX_COST) {
                         myConf *= HIGH_CONFIDENCE;
+                        if (TRACE > 1) out.println(this+": new max_cost trial, boosting confidence to "+myConf);
                     }
                     incorporateInfo(o, score, myConf);
                 }
@@ -1609,6 +1919,35 @@ public class FindBestDomainOrder {
         public String toString() {
             return name + "@" + Integer.toHexString(this.hashCode());
         }
+        
+        /**
+         * Returns this OrderInfoCollection as an XML element.
+         * 
+         * @return  XML element
+         */
+        public Element toXMLElement() {
+            Element dis = new Element("orderInfoCollection");
+            dis.setAttribute("name", name);
+            OrderInfo[] s = getSorted();
+            for (int i = 0; i < s.length; ++i) {
+                Element e = s[i].toXMLElement();
+                dis.addContent(e);
+            }
+            return dis;
+        }
+        
+        public static OrderInfoCollection fromXMLElement(Element e, Map nameToVar) {
+            String name = e.getAttributeValue("name");
+            OrderInfoCollection oc = new OrderInfoCollection(name);
+            for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
+                Object e2 = i.next();
+                if (e2 instanceof Element) {
+                    OrderInfo oi = OrderInfo.fromXMLElement((Element) e2, nameToVar);
+                    oc.infos.put(oi.order, oi);
+                }
+            }
+            return oc;
+        }
     }
     
     /**
@@ -1770,4 +2109,135 @@ public class FindBestDomainOrder {
         Assert._assert(orders.isEmpty());
     }
     
+    /**
+     * Returns this FindBestDomainOrder as an XML element.
+     * 
+     * @return  XML element
+     */
+    public Element toXMLElement() {
+        Element ruleInfoCollection = new Element("ruleInfoCollection");
+        for (Iterator i = orderInfo_rules.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry e = (Map.Entry) i.next();
+            InferenceRule ir = (InferenceRule) e.getKey();
+            OrderInfoCollection c = (OrderInfoCollection) e.getValue();
+            
+            Element ruleInfo = new Element("ruleInfo");
+            Element rule = new Element("rule");
+            rule.setText("rule"+ir.id);
+            ruleInfo.addContent(rule);
+            
+            Element oic = c.toXMLElement();
+            ruleInfo.addContent(oic);
+            
+            ruleInfoCollection.addContent(ruleInfo);
+        }
+        
+        Element relationInfoCollection = new Element("relationInfoCollection");
+        for (Iterator i = orderInfo_relations.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry e = (Map.Entry) i.next();
+            Relation r = (Relation) e.getKey();
+            OrderInfoCollection c = (OrderInfoCollection) e.getValue();
+            
+            Element relationInfo = new Element("relationInfo");
+            Element relation = new Element("relation");
+            relation.setText(r.name);
+            relationInfo.addContent(relation);
+            
+            Element oic = c.toXMLElement();
+            relationInfo.addContent(oic);
+            
+            relationInfoCollection.addContent(relationInfo);
+        }
+        
+        Element fbo = new Element("findBestOrder");
+        fbo.addContent(ruleInfoCollection);
+        fbo.addContent(relationInfoCollection);
+        
+        return fbo;
+    }
+    
+    public void dumpXML(String filename, Element e) {
+        Writer w = null;
+        try {
+            w = new BufferedWriter(new FileWriter(filename)); 
+            dumpXML(w, e);
+            w.close();
+        } catch (IOException x) {
+            System.err.println("Error writing "+filename+": "+x);
+            x.printStackTrace();
+        } finally {
+            try { if (w != null) w.close(); } catch (IOException _) { }
+        }
+    }
+    
+    /**
+     * Dumps the given element as an XML document to the given writer.
+     * 
+     * @param out  output writer
+     * @param e  element to write
+     */
+    public void dumpXML(Writer out, Element e) throws IOException {
+        Document d = new Document(e);
+        XMLOutputter serializer = new XMLOutputter();
+        serializer.setFormat(Format.getPrettyFormat());
+        serializer.output(d, out);
+    }
+    
+    public static class XMLFactory {
+        
+        Solver solver;
+        Map/*<String,Variable>*/ nameToVar;
+        
+        public Object fromXML(Element e) {
+            String name = e.getName();
+            Object o;
+            if (name.equals("orderInfo")) {
+                o = OrderInfo.fromXMLElement(e, nameToVar);
+            } else if (name.equals("trialInfo")) {
+                o = TrialInfo.fromXMLElement(e, nameToVar);
+            } else if (name.equals("orderInfoCollection")) {
+                o = OrderInfoCollection.fromXMLElement(e, nameToVar);
+            } else if (name.equals("trialInfoCollection")) {
+                o = TrialCollection.fromXMLElement(e, nameToVar);
+            } else if (name.equals("rule")) {
+                o = solver.rules.get(Integer.parseInt(e.getText().substring(4)));
+            } else if (name.equals("relation")) {
+                o = solver.nameToRelation.get(e.getText());
+            } else if (name.equals("ruleInfo") || name.equals("relationInfo")) {
+                o = new Pair(fromXML((Element) e.getContent(0)), fromXML((Element) e.getContent(1)));
+            } else if (name.equals("ruleInfoCollection") || name.equals("relationInfoCollection")) {
+                Map m = new HashMap();
+                for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
+                    Object q = i.next();
+                    if (q instanceof Element) {
+                        Pair p = (Pair) fromXML((Element) q);
+                        m.put(p.left, p.right);
+                    }
+                }
+                o = m;
+            } else if (name.equals("findBestOrder")) {
+                Map m1 = (Map) fromXML((Element) e.getContent(0));
+                Map m2 = (Map) fromXML((Element) e.getContent(1));
+                o = new FindBestDomainOrder(m1, m2);
+            } else {
+                throw new IllegalArgumentException("Cannot parse XML element "+name);
+            }
+            return o;
+        }
+        
+    }
+    
+    /**
+     * Returns the set of all trials performed so far as an XML element.
+     * 
+     * @return  XML element
+     */
+    public Element trialsToXMLElement() {
+        Element trialCollections = new Element("trialCollections");
+        for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
+            TrialCollection c = (TrialCollection) i.next();
+            trialCollections.addContent(c.toXMLElement());
+        }
+        return trialCollections;
+    }
 }
