@@ -9,7 +9,7 @@ import java.util.List;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 
 /**
- * Relation
+ * Represents a relation in bddbddb.
  * 
  * @author jwhaley
  * @version $Id$

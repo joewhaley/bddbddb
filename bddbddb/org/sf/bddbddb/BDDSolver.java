@@ -5,7 +5,6 @@ package org.sf.bddbddb;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,35 +21,64 @@ import java.io.IOException;
 import java.math.BigInteger;
 import org.sf.bddbddb.ir.BDDInterpreter;
 import org.sf.bddbddb.ir.IR;
-import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.ListFactory;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Pair;
 import org.sf.bddbddb.util.PermutationGenerator;
-import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
 
 /**
- * BDDSolver
+ * An implementation of Solver that uses BDDs.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public class BDDSolver extends Solver {
+    
+    /**
+     * Filename for BDD domain info file.
+     * The BDD domain info file contains the list of domains that are allocated
+     */
     public static String bddDomainInfoFileName = System.getProperty("bddinfo", "bddinfo");
+    
+    /**
+     * Link to the BDD factory we use.
+     */
     BDDFactory bdd;
+    
+    /**
+     * Map from a field domain to the set of BDD domains we have allocated for that field domain.
+     */
     MultiMap fielddomainsToBDDdomains;
-    Map orderingConstraints;
+    
+    /**
+     * Initial size of BDD node table.
+     * You can set this with "-Dbddnodes=xxx"
+     */
     int BDDNODES = Integer.parseInt(System.getProperty("bddnodes", "1000000"));
+    
+    /**
+     * Initial size of BDD operation cache.
+     * You can set this with "-Dbddcache=xxx"
+     */
     int BDDCACHE = Integer.parseInt(System.getProperty("bddcache", "100000"));
+    
+    /**
+     * BDD minimum free parameter.  This tells the BDD library when to grow the
+     * node table.  You can set this with "-Dbddminfree=xxx"
+     */
     int BDDMINFREE = Integer.parseInt(System.getProperty("bddminfree", "20"));
+    
+    /**
+     * BDD variable ordering.
+     */
     public String VARORDER = System.getProperty("bddvarorder", null);
 
     /**
-     *  
+     * Constructs a new BDD solver.  Also initializes the BDD library.
      */
     public BDDSolver() {
         super();
@@ -79,7 +107,8 @@ public class BDDSolver extends Solver {
     }
 
     /**
-     *  
+     * Load the BDD domain info, if it exists.
+     * The domain info is the list of domains that are allocated.
      */
     void loadBDDDomainInfo() {
         BufferedReader in = null;
@@ -105,7 +134,7 @@ public class BDDSolver extends Solver {
     }
 
     /**
-     *  
+     * Initialize the values of equivalence relations.
      */
     public void initialize2() {
         for (Iterator i = nameToRelation.values().iterator(); i.hasNext();) {
@@ -119,7 +148,7 @@ public class BDDSolver extends Solver {
     }
 
     /**
-     *  
+     * Set the BDD variable ordering based on VARORDER.
      */
     public void setVariableOrdering() {
         if (VARORDER != null) {
@@ -132,7 +161,8 @@ public class BDDSolver extends Solver {
     }
 
     /**
-     *  
+     * Verify that the variable order is sane: Missing BDD domains are added and extra
+     * BDD domains are removed.
      */
     void fixVarOrder() {
         // Verify that variable order is sane.
@@ -223,6 +253,197 @@ public class BDDSolver extends Solver {
     public void cleanup() {
         bdd.done();
     }
+    
+    /**
+     * Save the BDD domain info.
+     * 
+     * @throws IOException
+     */
+    void saveBDDDomainInfo() throws IOException {
+        BufferedWriter dos = null;
+        try {
+            dos = new BufferedWriter(new FileWriter(basedir + "r" + bddDomainInfoFileName));
+            for (int i = 0; i < bdd.numberOfDomains(); ++i) {
+                BDDDomain d = bdd.getDomain(i);
+                for (Iterator j = fielddomainsToBDDdomains.keySet().iterator(); j.hasNext();) {
+                    Domain fd = (Domain) j.next();
+                    if (fielddomainsToBDDdomains.getValues(fd).contains(d)) {
+                        dos.write(fd.toString() + "\n");
+                        break;
+                    }
+                }
+            }
+        } finally {
+            if (dos != null) dos.close();
+        }
+    }
+
+    /**
+     * Make a BDD domain with the given name and number of bits.
+     * 
+     * @param name  name of BDD domain
+     * @param bits  number of bits desired
+     * @return  new BDD domain
+     */
+    BDDDomain makeDomain(String name, int bits) {
+        Assert._assert(bits < 64);
+        BDDDomain d = bdd.extDomain(new long[]{1L << bits})[0];
+        d.setName(name);
+        return d;
+    }
+
+    /**
+     * Allocate a new BDD domain that matches the given domain.
+     * 
+     * @param dom  domain to match
+     * @return  new BDD domain
+     */
+    public BDDDomain allocateBDDDomain(Domain dom) {
+        int version = getBDDDomains(dom).size();
+        int bits = BigInteger.valueOf(dom.size - 1).bitLength();
+        BDDDomain d = makeDomain(dom.name + version, bits);
+        if (TRACE) out.println("Allocated BDD domain " + d + ", size " + dom.size + ", " + bits + " bits.");
+        fielddomainsToBDDdomains.add(dom, d);
+        return d;
+    }
+
+    /**
+     * Get the set of BDD domains allocated for a given domain.
+     * 
+     * @param dom  domain
+     * @return  set of BDD domains
+     */
+    public Collection getBDDDomains(Domain dom) {
+        return fielddomainsToBDDdomains.getValues(dom);
+    }
+
+    /**
+     * Get the k-th BDD domain allocated for a given domain.
+     * 
+     * @param dom  domain
+     * @param k  index
+     * @return  k-th BDD domain allocated for the given domain
+     */
+    public BDDDomain getBDDDomain(Domain dom, int k) {
+        List list = (List) fielddomainsToBDDdomains.getValues(dom);
+        return (BDDDomain) list.get(k);
+    }
+
+    /**
+     * Get the BDD domain with the given name.
+     * 
+     * @param s  name of BDD domain
+     * @return  BDD domain with the given name
+     */
+    public BDDDomain getBDDDomain(String s) {
+        for (int i = 0; i < bdd.numberOfDomains(); ++i) {
+            BDDDomain d = bdd.getDomain(i);
+            if (s.equals(d.getName())) return d;
+        }
+        return null;
+    }
+
+    /**
+     * Return the map of field domains to sets of allocated BDD domains. 
+     * 
+     * @return  map between field domains and sets of allocated BDD domains
+     */
+    public MultiMap getBDDDomains() {
+        return fielddomainsToBDDdomains;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.Solver#createInferenceRule(java.util.List,
+     *      org.sf.bddbddb.RuleTerm)
+     */
+    public InferenceRule createInferenceRule(List top, RuleTerm bottom) {
+        return new BDDInferenceRule(this, top, bottom);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.Solver#createRelation(java.lang.String,
+     *      java.util.List, java.util.List, java.util.List)
+     */
+    public Relation createRelation(String name, List attributes) {
+        while (nameToRelation.containsKey(name)) {
+            name = mungeName(name);
+        }
+        return new BDDRelation(this, name, attributes);
+    }
+
+    /**
+     * Munge the given name to be unique.
+     * 
+     * @param name  name of relation
+     * @return  new unique name
+     */
+    String mungeName(String name) {
+        return name + '#' + relations.size();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.Solver#createEquivalenceRelation(org.sf.bddbddb.Domain)
+     */
+    Relation createEquivalenceRelation(Domain fd) {
+        String name = fd + "_eq";
+        Attribute a1 = new Attribute(fd + "1", fd, "");
+        Attribute a2 = new Attribute(fd + "2", fd, "");
+        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        return r;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.Solver#createNotEquivalenceRelation(org.sf.bddbddb.Domain)
+     */
+    Relation createNotEquivalenceRelation(Domain fd) {
+        String name = fd + "_neq";
+        Attribute a1 = new Attribute(fd + "1", fd, "");
+        Attribute a2 = new Attribute(fd + "2", fd, "");
+        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
+        return r;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.Solver#saveResults()
+     */
+    void saveResults() throws IOException {
+        super.saveResults();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.Solver#reportStats()
+     */
+    public void reportStats() {
+        int final_node_size = bdd.getNodeNum();
+        int final_table_size = bdd.getAllocNum();
+        System.out.println("MAX_NODES=" + final_table_size);
+        System.out.println("FINAL_NODES=" + final_node_size);
+        super.reportStats();
+    }
+
+    /**
+     * Get the BDD factory used by this solver.
+     * 
+     * @return  BDD factory
+     */
+    public BDDFactory getBDDFactory() {
+        return this.bdd;
+    }
+    
+    // FindBestOrder stuff below.
+    Map orderingConstraints;
     
     /**
      *  
@@ -346,307 +567,4 @@ public class BDDSolver extends Solver {
         }
     }
 
-    /**
-     * @throws IOException
-     */
-    void saveBDDDomainInfo() throws IOException {
-        BufferedWriter dos = null;
-        try {
-            dos = new BufferedWriter(new FileWriter(basedir + "r" + bddDomainInfoFileName));
-            for (int i = 0; i < bdd.numberOfDomains(); ++i) {
-                BDDDomain d = bdd.getDomain(i);
-                for (Iterator j = fielddomainsToBDDdomains.keySet().iterator(); j.hasNext();) {
-                    Domain fd = (Domain) j.next();
-                    if (fielddomainsToBDDdomains.getValues(fd).contains(d)) {
-                        dos.write(fd.toString() + "\n");
-                        break;
-                    }
-                }
-            }
-        } finally {
-            if (dos != null) dos.close();
-        }
-    }
-
-    /**
-     * @param name
-     * @param bits
-     * @return
-     */
-    BDDDomain makeDomain(String name, int bits) {
-        Assert._assert(bits < 64);
-        BDDDomain d = bdd.extDomain(new long[]{1L << bits})[0];
-        d.setName(name);
-        return d;
-    }
-
-    /**
-     * @param dom
-     * @return
-     */
-    public BDDDomain allocateBDDDomain(Domain dom) {
-        int version = getBDDDomains(dom).size();
-        int bits = BigInteger.valueOf(dom.size - 1).bitLength();
-        BDDDomain d = makeDomain(dom.name + version, bits);
-        if (TRACE) out.println("Allocated BDD domain " + d + ", size " + dom.size + ", " + bits + " bits.");
-        fielddomainsToBDDdomains.add(dom, d);
-        return d;
-    }
-
-    /**
-     * @param dom
-     * @return
-     */
-    public Collection getBDDDomains(Domain dom) {
-        return fielddomainsToBDDdomains.getValues(dom);
-    }
-
-    /**
-     * @param dom
-     * @param k
-     * @return
-     */
-    public BDDDomain getBDDDomain(Domain dom, int k) {
-        List list = (List) fielddomainsToBDDdomains.getValues(dom);
-        return (BDDDomain) list.get(k);
-    }
-
-    /**
-     * @param s
-     * @return
-     */
-    public BDDDomain getBDDDomain(String s) {
-        for (int i = 0; i < bdd.numberOfDomains(); ++i) {
-            BDDDomain d = bdd.getDomain(i);
-            if (s.equals(d.getName())) return d;
-        }
-        return null;
-    }
-
-    public MultiMap getBDDDomains() {
-        return fielddomainsToBDDdomains;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#createInferenceRule(java.util.List,
-     *      org.sf.bddbddb.RuleTerm)
-     */
-    public InferenceRule createInferenceRule(List top, RuleTerm bottom) {
-        return new BDDInferenceRule(this, top, bottom);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#createRelation(java.lang.String,
-     *      java.util.List, java.util.List, java.util.List)
-     */
-    public Relation createRelation(String name, List attributes) {
-        while (nameToRelation.containsKey(name)) {
-            name = mungeName(name);
-        }
-        return new BDDRelation(this, name, attributes);
-    }
-
-    String mungeName(String name) {
-        return name + '#' + relations.size();
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#createEquivalenceRelation(org.sf.bddbddb.Domain)
-     */
-    Relation createEquivalenceRelation(Domain fd) {
-        String name = fd + "_eq";
-        Attribute a1 = new Attribute(fd + "1", fd, "");
-        Attribute a2 = new Attribute(fd + "2", fd, "");
-        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
-        return r;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#createNotEquivalenceRelation(org.sf.bddbddb.Domain)
-     */
-    Relation createNotEquivalenceRelation(Domain fd) {
-        String name = fd + "_neq";
-        Attribute a1 = new Attribute(fd + "1", fd, "");
-        Attribute a2 = new Attribute(fd + "2", fd, "");
-        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
-        return r;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#saveResults()
-     */
-    void saveResults() throws IOException {
-        super.saveResults();
-    }
-
-    /**
-     *  
-     */
-    void findPhysicalDomainMapping() {
-        BDDFactory my_bdd = BDDFactory.init(100000, 10000);
-        int BITS = BigInteger.valueOf(my_bdd.numberOfDomains()).bitLength();
-        // one BDDDomain for each relation field.
-        Set activeRelations = new HashSet();
-        Map fieldOrVarToDomain = new HashMap();
-        Map fieldOrVarToBDDDomain = new HashMap();
-        for (Iterator i = rules.iterator(); i.hasNext();) {
-            InferenceRule ir = (InferenceRule) i.next();
-            for (Iterator j = new AppendIterator(ir.top.iterator(), Collections.singleton(ir.bottom).iterator()); j.hasNext();) {
-                RuleTerm rt = (RuleTerm) j.next();
-                if (activeRelations.add(rt.relation)) {
-                    int x = 0;
-                    for (Iterator k = rt.relation.attributes.iterator(); k.hasNext(); ++x) {
-                        Attribute a = (Attribute) k.next();
-                        Assert._assert(!fieldOrVarToDomain.containsKey(a));
-                        Assert._assert(!fieldOrVarToBDDDomain.containsKey(a));
-                        Domain fd = a.attributeDomain;
-                        fieldOrVarToDomain.put(a, fd);
-                        BDDDomain dom = makeDomain(my_bdd, a.toString(), BITS);
-                        fieldOrVarToBDDDomain.put(a, dom);
-                    }
-                }
-            }
-        }
-        // one BDDDomain for each necessary variable.
-        for (Iterator i = rules.iterator(); i.hasNext();) {
-            InferenceRule ir = (InferenceRule) i.next();
-            for (Iterator j = new AppendIterator(ir.top.iterator(), Collections.singleton(ir.bottom).iterator()); j.hasNext();) {
-                RuleTerm rt = (RuleTerm) j.next();
-                for (int k = 0; k < rt.variables.size(); ++k) {
-                    Variable v = (Variable) rt.variables.get(k);
-                    if (!ir.necessaryVariables.contains(v)) continue;
-                    Attribute a = (Attribute) rt.relation.attributes.get(k);
-                    Domain fd = a.attributeDomain;
-                    Domain fd2 = (Domain) fieldOrVarToDomain.get(v);
-                    Assert._assert(fd2 == null || fd == fd2);
-                    fieldOrVarToDomain.put(v, fd);
-                    BDDDomain dom = (BDDDomain) fieldOrVarToBDDDomain.get(v);
-                    if (dom == null) {
-                        dom = makeDomain(my_bdd, v.toString(), BITS);
-                        fieldOrVarToBDDDomain.put(v, dom);
-                    }
-                }
-            }
-        }
-        BDD sol = my_bdd.one();
-        // Every field and variable must be assigned to a physical domain
-        // of the appropriate size.
-        for (Iterator i = fieldOrVarToDomain.entrySet().iterator(); i.hasNext();) {
-            Map.Entry e = (Map.Entry) i.next();
-            BDDDomain my_d = (BDDDomain) fieldOrVarToBDDDomain.get(e.getKey());
-            Domain fd = (Domain) e.getValue();
-            Collection s = fielddomainsToBDDdomains.getValues(fd);
-            BDD t = bdd.zero();
-            for (Iterator j = s.iterator(); j.hasNext();) {
-                BDDDomain d = (BDDDomain) j.next();
-                int index = d.getIndex();
-                t.orWith(my_d.ithVar(index));
-            }
-            sol.andWith(t);
-        }
-        // Every field of a particular relation must be assigned to different
-        // physical domains.
-        for (Iterator i = activeRelations.iterator(); i.hasNext();) {
-            Relation r = (Relation) i.next();
-            int x = 0;
-            for (Iterator j = r.attributes.iterator(); j.hasNext(); ++x) {
-                Attribute a = (Attribute) j.next();
-                BDDDomain dom1 = (BDDDomain) fieldOrVarToBDDDomain.get(a);
-                for (Iterator k = r.attributes.iterator(); k.hasNext();) {
-                    Attribute a2 = (Attribute) k.next();
-                    Domain fd2 = a2.attributeDomain;
-                    BDDDomain dom2 = (BDDDomain) fieldOrVarToBDDDomain.get(a2);
-                    BDD not_eq = dom1.buildEquals(dom2).not();
-                    sol.andWith(not_eq);
-                }
-            }
-        }
-        // Every variable of a single rule must be assigned to a different
-        // physical domain.
-        for (Iterator i = rules.iterator(); i.hasNext();) {
-            InferenceRule ir = (InferenceRule) i.next();
-            for (Iterator j = ir.necessaryVariables.iterator(); j.hasNext();) {
-                Variable v1 = (Variable) j.next();
-                BDDDomain dom1 = (BDDDomain) fieldOrVarToBDDDomain.get(v1);
-                for (Iterator k = ir.necessaryVariables.iterator(); k.hasNext();) {
-                    Variable v2 = (Variable) k.next();
-                    BDDDomain dom2 = (BDDDomain) fieldOrVarToBDDDomain.get(v2);
-                    BDD not_eq = dom1.buildEquals(dom2).not();
-                    sol.andWith(not_eq);
-                }
-            }
-        }
-        // Set user-specified domains.
-        for (Iterator i = activeRelations.iterator(); i.hasNext();) {
-            BDDRelation r = (BDDRelation) i.next();
-            for (Iterator k = r.attributes.iterator(); k.hasNext();) {
-                Attribute a = (Attribute) k.next();
-                String name = a.attributeName;
-                Domain fd = a.attributeDomain;
-                String option = a.attributeOptions;
-                if (option.equals("")) continue;
-                if (!option.startsWith(fd.name)) throw new IllegalArgumentException("Field " + name + " has domain " + fd + ", but tried to assign "
-                    + option);
-                Collection doms = getBDDDomains(fd);
-                BDDDomain d = null;
-                for (Iterator j = doms.iterator(); j.hasNext();) {
-                    BDDDomain dom = (BDDDomain) j.next();
-                    if (dom.getName().equals(option)) {
-                        d = dom;
-                        break;
-                    }
-                }
-                if (d == null) throw new IllegalArgumentException("Unknown BDD domain " + option);
-                int index = d.getIndex();
-                BDDDomain my_dom = (BDDDomain) fieldOrVarToBDDDomain.get(a);
-                sol.andWith(my_dom.ithVar(index));
-            }
-        }
-        System.out.println("Solutions to physical domain assignment constraint problem:\n   " + sol.toStringWithDomains());
-        sol.free();
-        my_bdd.done();
-    }
-
-    /**
-     * @param bdd
-     * @param name
-     * @param bits
-     * @return
-     */
-    static BDDDomain makeDomain(BDDFactory bdd, String name, int bits) {
-        Assert._assert(bits < 64);
-        BDDDomain d = bdd.extDomain(new long[]{1L << bits})[0];
-        d.setName(name);
-        return d;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Solver#reportStats()
-     */
-    public void reportStats() {
-        int final_node_size = bdd.getNodeNum();
-        int final_table_size = bdd.getAllocNum();
-        System.out.println("MAX_NODES=" + final_table_size);
-        System.out.println("FINAL_NODES=" + final_node_size);
-        super.reportStats();
-    }
-
-    /**
-     * @return
-     */
-    public BDDFactory getBDDFactory() {
-        return this.bdd;
-    }
 }

@@ -19,26 +19,67 @@ import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 
 /**
- * NumberingRule
+ * This class represents a special kind of rule used for numbering paths.
+ * 
+ * The form of the rule is as follows:
+ * 
+ * pathNum(a,b,x,y) :- A(a,b),B(b,c),C(c,d),D(d,e). number
+ * 
+ * The subgoal relations (A, B, C, and D) define the edges of the graph.
+ * The first two variables of the head relation define the edge you want
+ * to number, and the next two variables are filled in with the number
+ * of the source and destination, respectively.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public class NumberingRule extends InferenceRule {
+    
+    /**
+     * Trace flag.
+     */
     boolean TRACE = false;
+    
+    /**
+     * Trace output stream.
+     */
     PrintStream out = System.out;
-    Solver solver;
+    
+    /**
+     * Graph of relation.
+     */
     RelationGraph rg;
+    
+    /**
+     * Path numbering.
+     */
     PathNumbering pn;
+    
+    /**
+     * Time spent on computing this rule.
+     */
     long totalTime;
+    
+    /**
+     * Flag to control the dumping of the numbering of the graph in dot format.
+     */
     static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph", "no").equals("no");
 
+    /**
+     * Construct a new NumberingRule.
+     * Not to be called externally.
+     * 
+     * @param s
+     * @param ir
+     */
     NumberingRule(Solver s, InferenceRule ir) {
         super(s, ir.top, ir.bottom);
         Assert._assert(ir.top.size() > 1);
-        this.solver = s;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.InferenceRule#initialize()
+     */
     void initialize() {
         if (TRACE) out.println("Initializing numbering rule: " + this);
         RuleTerm root = (RuleTerm) top.get(0);
@@ -57,7 +98,10 @@ public class NumberingRule extends InferenceRule {
         rg = new RelationGraph(root, rootVar, edges);
     }
 
-    public Collection/* <InferenceRule> */split(int myIndex, Solver s) {
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.InferenceRule#split(int)
+     */
+    public Collection/*<InferenceRule>*/ split(int myIndex) {
         throw new InternalError("Cannot split a numbering rule!");
     }
 
@@ -139,7 +183,18 @@ public class NumberingRule extends InferenceRule {
         return true;
     }
 
-    public static BDD buildMap(BDDDomain d1, BigInteger startD1, BigInteger endD1, BDDDomain d2, BigInteger startD2, BigInteger endD2) {
+    /**
+     * Utility function to build a map from a range in one BDD domain to a range in another
+     * 
+     * @param d1  first domain
+     * @param startD1  start of range in d1, inclusive
+     * @param endD1    end of range in d1, inclusive
+     * @param d2  second domain
+     * @param startD2  start of range in d2, inclusive
+     * @param endD2    end of range in d2, inclusive
+     * @return  BDD representation of map
+     */
+    static BDD buildMap(BDDDomain d1, BigInteger startD1, BigInteger endD1, BDDDomain d2, BigInteger startD2, BigInteger endD2) {
         BDD r;
         BigInteger sizeD1 = endD1.subtract(startD1);
         BigInteger sizeD2 = endD2.subtract(startD2);

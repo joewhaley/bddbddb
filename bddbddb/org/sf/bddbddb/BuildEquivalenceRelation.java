@@ -9,9 +9,8 @@ import org.sf.bddbddb.util.IndexMap;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 
-
 /**
- * BuildEquivalenceRelation
+ * Utility to build equivalence relations between multiple domains.
  * 
  * @author jwhaley
  * @version $Id$

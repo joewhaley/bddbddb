@@ -348,7 +348,7 @@ public abstract class InferenceRule implements IterationElement {
             if (TRACE) solver.out.println("New attributes: " + attributes);
             Relation newRelation = solver.createRelation(relationName, attributes);
             if (TRACE) solver.out.println("New relation: " + newRelation);
-            RuleTerm newBottom = new RuleTerm(newVariables, newRelation);
+            RuleTerm newBottom = new RuleTerm(newRelation, newVariables);
             InferenceRule newRule = solver.createInferenceRule(newTop, newBottom);
             if (TRACE) solver.out.println("New rule: " + newRule);
             newRule.calculateNecessaryVariables();

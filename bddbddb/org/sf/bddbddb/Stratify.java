@@ -26,7 +26,7 @@ import org.sf.bddbddb.util.SCCTopSortedGraph;
 import org.sf.bddbddb.util.SCComponent;
 
 /**
- * Stratify
+ * Implements stratification and decides iteration order.
  * 
  * @author jwhaley
  * @version $Id$
@@ -46,6 +46,13 @@ public class Stratify {
         this.out = solver.out;
     }
 
+    /**
+     * Stratify the given list of rules with respect to the given inputs and outputs.
+     * 
+     * @param rules  rules to stratify
+     * @param inputs  input rules/relations
+     * @param outputs  output rules/relations
+     */
     public void stratify(List rules, Set inputs, Set outputs) {
         firstSCCs = new LinkedList();
         innerSCCs = new GenericMultiMap();
@@ -415,6 +422,12 @@ public class Stratify {
         }
     }
 
+    /**
+     * Dump the rules, relations and their dependencies in dot format.
+     * 
+     * @param depNav  dependence navigator
+     * @param roots  roots of graph
+     */
     public void dumpDotGraph(InferenceRule.DependenceNavigator depNav, Set roots) {
         final Map node2scc = new HashMap();
         for (Iterator i = firstSCCs.iterator(); i.hasNext();) {

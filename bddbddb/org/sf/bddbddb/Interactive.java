@@ -19,19 +19,41 @@ import java.io.LineNumberReader;
 import org.sf.bddbddb.Solver.MyReader;
 
 /**
- * Interactive
+ * Command-line interactive bddbddb solver.
+ * 
+ * The command line accepts anything that is valid in a Datalog file, plus
+ * a special query syntax that ends with '?'.  Queries cause the solver to
+ * automatically solve the Datalog with respect to the given query.  There
+ * are also some extra commands; type "help" to get a list of them.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public class Interactive {
     
-    Solver solver;
+    /**
+     * Solver we are using.
+     */
+    protected Solver solver;
     
-    Interactive(Solver s) {
+    /**
+     * Construct a new interactive solver.
+     * 
+     * @param s  solver to use
+     */
+    public Interactive(Solver s) {
         this.solver = s;
     }
     
+    /**
+     * The entry point of the application.
+     * 
+     * @param args  command line args
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     * @throws ClassNotFoundException
+     * @throws IOException
+     */
     public static void main(String[] args) throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException {
         String solverName = System.getProperty("solver", "org.sf.bddbddb.BDDSolver");
         Solver dis = (Solver) Class.forName(solverName).newInstance();
@@ -58,6 +80,14 @@ public class Interactive {
         a.interactive();
     }
     
+    /**
+     * Utility function to read a line from the given reader.
+     * Allows line wrapping using backslashes, among other things.
+     * 
+     * @param in  input reader
+     * @return  line
+     * @throws IOException
+     */
     static String readLine(MyReader in) throws IOException {
         String s = in.readLine();
         if (s == null) return null;
@@ -71,10 +101,21 @@ public class Interactive {
         return s;
     }
     
+    /**
+     * Flag to record whether or not we need to call the solver again.
+     */
     boolean changed = false;
     
+    /**
+     * Log of what has been typed so far.
+     */
     List log;
     
+    /**
+     * Dump the log to a file.
+     * 
+     * @throws IOException
+     */
     void dumpLog() throws IOException {
         BufferedWriter w = null;
         try {
@@ -87,6 +128,9 @@ public class Interactive {
         }
     }
     
+    /**
+     * Invoke the interactive solver.
+     */
     public void interactive() {
         log = new LinkedList();
         LineNumberReader lin = new LineNumberReader(new InputStreamReader(System.in));
@@ -171,6 +215,12 @@ public class Interactive {
         }
     }
 
+    /**
+     * Parse a list of relations.
+     * 
+     * @param s  string rep of list of relations
+     * @return  list of relations
+     */
     List parseRelations(String s) {
         List relations = new LinkedList();
         while (s.length() != 0) {
@@ -190,19 +240,12 @@ public class Interactive {
         return relations;
     }
     
-    void listRules() {
-        int k = 0;
-        for (Iterator i = solver.rules.iterator(); i.hasNext(); ) {
-            InferenceRule r = (InferenceRule) i.next();
-            ++k;
-            System.out.println(k+": "+r);
-        }
-    }
-    
-    void listRelations() {
-        System.out.println(solver.nameToRelation.keySet());
-    }
-    
+    /**
+     * Parse a list of rules.
+     * 
+     * @param s  string rep of list of rules
+     * @return  list of relations
+     */
     List parseRules(String s) {
         String ruleNum = null;
         try {
@@ -227,8 +270,36 @@ public class Interactive {
         return null;
     }
     
+    /**
+     * List the relations the solver knows about.
+     */
+    void listRelations() {
+        System.out.println(solver.nameToRelation.keySet());
+    }
+    
+    /**
+     * List the rules the solver knows about.
+     */
+    void listRules() {
+        int k = 0;
+        for (Iterator i = solver.rules.iterator(); i.hasNext(); ) {
+            InferenceRule r = (InferenceRule) i.next();
+            ++k;
+            System.out.println(k+": "+r);
+        }
+    }
+    
+    /**
+     * The set of relations that have been loaded, so we don't load them anymore.
+     */
     Set loadedRelations = new HashSet();
     
+    /**
+     * Invoke the solver if we need to.
+     * Also loads relations that haven't been loaded, and saves results if necessary.
+     * 
+     * @throws IOException
+     */
     void solve() throws IOException {
         if (changed) {
             solver.splitRules();

@@ -14,9 +14,25 @@ package org.sf.bddbddb;
  * @version $Id$
  */
 public class Attribute {
+    
+    /**
+     * Attribute name.
+     */
     protected String attributeName;
+    
+    /**
+     * Attribute domain.
+     */
     protected Domain attributeDomain;
+    
+    /**
+     * Attribute options.
+     */
     protected String attributeOptions;
+    
+    /**
+     * Relation that this attribute is associated with.
+     */
     protected Relation relation;
 
     /**

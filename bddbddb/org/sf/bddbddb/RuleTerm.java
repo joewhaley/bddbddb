@@ -7,22 +7,30 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * RuleTerm
+ * A term in a Datalog rule.
  * 
  * @author jwhaley
  * @version $Id$
  */
 public class RuleTerm {
-    List/* <Variable> */variables;
-    Relation relation;
+    
+    /**
+     * Relation for this rule term.
+     */
+    protected Relation relation;
+    
+    /**
+     * List of variables in this rule term.
+     */
+    protected List/*<Variable>*/ variables;
 
     /**
-     * Create a new RuleTerm.
+     * Create a new RuleTerm with the given relation and list of variables.
      * 
      * @param variables
      * @param relation
      */
-    public RuleTerm(List variables, Relation relation) {
+    public RuleTerm(Relation relation, List variables) {
         super();
         this.variables = variables;
         this.relation = relation;
