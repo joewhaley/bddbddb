@@ -5,9 +5,11 @@ package org.sf.bddbddb;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.io.PrintStream;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.Graph;
@@ -153,6 +155,15 @@ public class RelationGraph implements Graph {
      */
     class Nav implements Navigator {
         
+        Map prevCache;
+        Map nextCache;
+        int cacheHit, cacheMiss;
+        
+        Nav() {
+            prevCache = new HashMap();
+            nextCache = new HashMap();
+        }
+        
         /**
          * Get the edges from a node where the from and to variables match the indices given.
          * 
@@ -181,13 +192,28 @@ public class RelationGraph implements Graph {
             return c;
         }
 
+        void printCacheRatio() {
+            System.out.print("Navigating relation graph: ");
+            System.out.print(cacheHit+"/"+(cacheHit+cacheMiss)+": ");
+            System.out.print(((double)cacheHit/(cacheHit+cacheMiss)));
+            System.out.print("                \r");
+        }
+        
         /*
          * (non-Javadoc)
          * 
          * @see joeq.Util.Graphs.Navigator#next(java.lang.Object)
          */
         public Collection next(Object node) {
-            return getEdges(node, 0, 1);
+            Collection result = (Collection) nextCache.get(node);
+            if (result == null) {
+                cacheMiss++;
+                nextCache.put(node, result = getEdges(node, 0, 1));
+            } else {
+                cacheHit++;
+            }
+            printCacheRatio();
+            return result;
         }
 
         /*
@@ -196,7 +222,15 @@ public class RelationGraph implements Graph {
          * @see joeq.Util.Graphs.Navigator#prev(java.lang.Object)
          */
         public Collection prev(Object node) {
-            return getEdges(node, 1, 0);
+            Collection result = (Collection) prevCache.get(node);
+            if (result == null) {
+                cacheMiss++;
+                prevCache.put(node, result = getEdges(node, 1, 0));
+            } else {
+                cacheHit++;
+            }
+            printCacheRatio();
+            return result;
         }
     }
 
