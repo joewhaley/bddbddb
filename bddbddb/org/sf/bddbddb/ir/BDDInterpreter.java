@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir;
 import java.util.Iterator;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
+import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
@@ -19,7 +20,7 @@ import org.sf.javabdd.BDDPairing;
  */
 public class BDDInterpreter extends Interpreter {
     
-    boolean TRACE = true;
+    boolean TRACE = System.getProperty("traceinterpreter") != null;
     
     protected BDD makeDomainsMatch(BDD b, BDDRelation r1, BDDRelation r2) {
         boolean any = false;
@@ -52,6 +53,7 @@ public class BDDInterpreter extends Interpreter {
         if (TRACE) System.out.println("   And "+r1+","+r2);
         b1.andWith(b2);
         r0.setBDD(b1);
+        if (TRACE) System.out.println("   ---> Nodes: "+b1.nodeCount());
         return null;
     }
 
@@ -68,11 +70,12 @@ public class BDDInterpreter extends Interpreter {
             b.andWith(d.set());
             if (TRACE) System.out.println("   Projecting "+d);
         }
-        BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         if (TRACE) System.out.println("   Exist "+r1);
-        BDD r = b1.exist(b);
-        b.free(); b1.free();
-        r0.setBDD(r);
+        BDD r = r1.getBDD().exist(b);
+        b.free();
+        BDD b1 = makeDomainsMatch(r, r1, r0);
+        r0.setBDD(b1);
+        if (TRACE) System.out.println("   ---> Nodes: "+b1.nodeCount());
         return null;
     }
 
@@ -82,27 +85,28 @@ public class BDDInterpreter extends Interpreter {
     public Object perform(Rename op) {
         BDDRelation r0 = (BDDRelation) op.r0;
         BDDRelation r1 = (BDDRelation) op.r1;
-        BDDPairing p = r0.getBDD().getFactory().makePair();
-        // Attributes must be in the same order.
         boolean any = false;
-        for (int i = 0; i < r0.numberOfAttributes(); ++i) {
-            BDDDomain d0 = r0.getBDDDomain(i);
-            BDDDomain d1 = r1.getBDDDomain(i);
-            if (!d0.equals(d1)) {
-                any = true;
-                p.set(d1, d0);
-                if (TRACE) System.out.println("   Renaming "+d1+" to "+d0);
-            }
+        BDDPairing pair = r0.getBDD().getFactory().makePair();
+        for (Iterator i = r1.getAttributes().iterator(); i.hasNext(); ) {
+            Attribute a1 = (Attribute) i.next();
+            BDDDomain d1 = r1.getBDDDomain(a1);
+            Attribute a0 = (Attribute) op.renames.get(a1);
+            if (a0 == null) a0 = a1;
+            BDDDomain d0 = r0.getBDDDomain(a0);
+            Assert._assert(d0 != null);
+            if (d1.equals(d0)) continue;
+            any = true;
+            pair.set(d1, d0);
+            if (TRACE) System.out.println("   Renaming "+d1+" to "+d0);
         }
-        BDD r;
+        BDD b = r1.getBDD().id();
         if (any) {
             if (TRACE) System.out.println("   Replace "+r1);
-            r = r1.getBDD().replace(p);
-        } else {
-            r = r1.getBDD().id();
+            b.replaceWith(pair);
         }
-        r0.setBDD(r);
-        p.reset();
+        pair.reset();
+        r0.setBDD(b);
+        if (TRACE) System.out.println("   ---> Nodes: "+b.nodeCount());
         return null;
     }
 
@@ -118,6 +122,7 @@ public class BDDInterpreter extends Interpreter {
         if (TRACE) System.out.println("   Or "+r1+","+r2);
         b1.orWith(b2);
         r0.setBDD(b1);
+        if (TRACE) System.out.println("   ---> Nodes: "+b1.nodeCount());
         return null;
     }
 
@@ -133,6 +138,7 @@ public class BDDInterpreter extends Interpreter {
         if (TRACE) System.out.println("   Diff "+r1+","+r2);
         b1.applyWith(b2, BDDFactory.diff);
         r0.setBDD(b1);
+        if (TRACE) System.out.println("   ---> Nodes: "+b1.nodeCount());
         return null;
     }
 
@@ -146,6 +152,7 @@ public class BDDInterpreter extends Interpreter {
         if (TRACE) System.out.println("   And "+r1+","+r0.getBDDDomain(op.a)+":"+op.value);
         r.andWith(r0.getBDDDomain(op.a).ithVar(op.value));
         r0.setBDD(r);
+        if (TRACE) System.out.println("   ---> Nodes: "+r.nodeCount());
         return null;
     }
 
@@ -157,6 +164,7 @@ public class BDDInterpreter extends Interpreter {
         if (TRACE) System.out.println("   Ithvar "+r0.getBDDDomain(op.a)+":"+op.value);
         BDD r = r0.getBDDDomain(op.a).ithVar(op.value);
         r0.setBDD(r);
+        if (TRACE) System.out.println("   ---> Nodes: "+r.nodeCount());
         return null;
     }
 

@@ -4,11 +4,8 @@
 package org.sf.bddbddb.ir;
 
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import org.sf.bddbddb.Attribute;
+import java.util.Map;
 import org.sf.bddbddb.Relation;
-import org.sf.bddbddb.util.Pair;
 
 /**
  * Rename
@@ -19,23 +16,16 @@ import org.sf.bddbddb.util.Pair;
 public class Rename extends Operation {
     
     Relation r0, r1;
-    List/*<Pair<Attribute>>*/ renames;
+    Map/*<Pair,Attribute>*/ renames;
     
     /**
      * @param r0
      * @param r1
      */
-    public Rename(Relation r0, Relation r1) {
+    public Rename(Relation r0, Relation r1, Map/*<Pair,Attribute>*/ renames) {
         this.r0 = r0;
         this.r1 = r1;
-        this.renames = new LinkedList();
-        for (int i = 0; i < r0.numberOfAttributes(); ++i) {
-            Attribute a0 = r0.getAttribute(i);
-            Attribute a1 = r1.getAttribute(i);
-            if (!a1.equals(a0)) {
-                renames.add(new Pair(a1, a0));
-            }
-        }
+        this.renames = renames;
     }
     
     /* (non-Javadoc)
@@ -46,12 +36,12 @@ public class Rename extends Operation {
         sb.append(r0.toString());
         sb.append(" = rename(");
         sb.append(r1.toString());
-        for (Iterator i = renames.iterator(); i.hasNext(); ) {
-            Pair p = (Pair) i.next();
+        for (Iterator i = renames.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry p = (Map.Entry) i.next();
             sb.append(',');
-            sb.append(p.left.toString());
+            sb.append(p.getKey().toString());
             sb.append("->");
-            sb.append(p.right.toString());
+            sb.append(p.getValue().toString());
         }
         sb.append(")");
         return sb.toString();
