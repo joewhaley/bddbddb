@@ -125,9 +125,10 @@ public class Stratify {
             Set s = new HashSet();
             s.addAll(depNav.relationToDefiningRule.keySet());
             s.addAll(depNav.relationToUsingRule.keySet());
-            System.out.println("WARNING: The following relations are necessary, but not present in any strata:");
+            System.out.println("ERROR: The following relations are necessary, but not present in any strata:");
             System.out.println("    " + s);
             System.out.println("You may be using one of these relations without defining it.");
+            throw new IllegalArgumentException();
         }
         if (DUMP_DOTGRAPH) {
             dumpDotGraph(depNav_orig, necessary);
