@@ -1488,7 +1488,10 @@ public abstract class Solver {
         }
         for (Iterator i = relationsToPrintTuples.iterator(); i.hasNext();) {
             Relation r = (Relation) i.next();
-            out.println("Tuples in "+r+":");
+            double size = r.dsize();
+            DecimalFormat myFormatter = new DecimalFormat("0.");
+            String output = myFormatter.format(size);
+            out.println("Tuples in "+r+": ("+output+")");
             final int MAX = 100;
             int num = MAX;
             TupleIterator j = r.iterator();
