@@ -22,6 +22,7 @@ import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
 import org.sf.bddbddb.dataflow.DefUse.DefUseFact;
 import org.sf.bddbddb.dataflow.Liveness.LivenessFact;
 import org.sf.bddbddb.ir.highlevel.BooleanOperation;
+import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Free;
 import org.sf.bddbddb.ir.highlevel.Load;
 import org.sf.bddbddb.ir.highlevel.Project;
@@ -44,7 +45,7 @@ public class IR {
     boolean FREE_DEAD = ALL_OPTS || !System.getProperty("freedead", "no").equals("no");
     boolean CONSTANTPROP = ALL_OPTS || !System.getProperty("constantprop", "no").equals("no");
     boolean DEFUSE = ALL_OPTS || !System.getProperty("defuse", "no").equals("no");
-    boolean DOMAIN_ASSIGNMENT = !System.getProperty("domainassign", "no").equals("no");
+    boolean DOMAIN_ASSIGNMENT = ALL_OPTS || !System.getProperty("domainassign", "no").equals("no");
 
     boolean TRACE = false;
 
@@ -107,64 +108,9 @@ public class IR {
         }
 
         if (DEFUSE) {
-            DataflowSolver df_solver = new DataflowSolver();
-            DefUse problem = new DefUse(this);
-            IterationList list = graph.getIterationList();
-            df_solver.solve(problem, list);
-            DataflowIterator di = df_solver.getIterator(problem, list);
-            List to_remove = new LinkedList();
-        outer:
-            while (di.hasNext()) {
-                Object o = di.next();
-                if (TRACE) System.out.println("Next: " + o);
-                if (o instanceof Operation) {
-                    Operation op = (Operation) o;
-                    DefUseFact f = (DefUseFact) di.getFact();
-                    if (op.getRelationDest() != null) {
-                        Collection uses = problem.getUses(op.getRelationDest());
-                        if (TRACE) System.out.println("Uses: " + uses);
-                        if (uses.size() == 0) {
-                            if (TRACE) System.out.println("Removing: " + op);
-                            di.remove();
-                            continue;
-                        }
-                    }
-                    if (op instanceof Project) {
-                        Project p = (Project) op;
-                        Relation src = p.getSrc();
-                        Set defs = f.getReachingDefs(src);
-                        if (TRACE) System.out.println("Defs: " + defs);
-                        if (defs.size() == 1) {
-                            Operation op2 = (Operation) defs.iterator().next();
-                            if (op2 instanceof BooleanOperation) {
-                                BooleanOperation boolop = (BooleanOperation) op2;
-                                // check if this specific def reaches any other uses.
-                                Set uses = problem.getUses(src);
-                                if (TRACE) System.out.println("Uses of "+src+": " + uses);
-                                for (Iterator i = uses.iterator(); i.hasNext(); ) {
-                                    Operation other = (Operation) i.next();
-                                    if (other == p) continue;
-                                    DefUseFact duf2 = (DefUseFact) problem.getFact(other);
-                                    if (duf2.getReachingDefs(src).contains(boolop)) {
-                                        continue outer;
-                                    }
-                                }
-                                BDDOp bddop = boolop.getBDDOp();
-                                ApplyEx new_op = new ApplyEx((BDDRelation) p.getRelationDest(), (BDDRelation) boolop.getSrc1(), bddop, (BDDRelation) boolop.getSrc2());
-                                if (TRACE) System.out.println("Replacing " + op + " with " + new_op);
-                                di.set(new_op);
-                                if (TRACE) System.out.println("Marking "+boolop+" for deletion.");
-                                to_remove.add(boolop);
-                            }
-                        }
-                    }
-                } else {
-                    IterationList b = (IterationList) o;
-                    di.enter(b);
-                }
-            }
-            if (!to_remove.isEmpty()) list.removeElements(to_remove);
+            while (doDefUse()) ;
         }
+        doPeephole(graph.getIterationList());
         if (FREE_DEAD) {
             DataflowSolver df_solver = new DataflowSolver();
             Liveness problem = new Liveness(this);
@@ -182,6 +128,85 @@ public class IR {
         }
     }
 
+    void doPeephole(IterationList list) {
+        for (ListIterator i = list.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (o instanceof Copy) {
+                Copy op = (Copy) o;
+                if (op.getRelationDest() == op.getSrc())
+                    i.remove();
+            } else if (o instanceof IterationList) {
+                doPeephole((IterationList) o);
+            }
+        }
+    }
+    
+    boolean doDefUse() {
+        boolean change = false;
+        DataflowSolver df_solver = new DataflowSolver();
+        DefUse problem = new DefUse(this);
+        IterationList list = graph.getIterationList();
+        df_solver.solve(problem, list);
+        DataflowIterator di = df_solver.getIterator(problem, list);
+        List to_remove = new LinkedList();
+    outer:
+        while (di.hasNext()) {
+            Object o = di.next();
+            if (TRACE) System.out.println("Next: " + o);
+            if (o instanceof Operation) {
+                Operation op = (Operation) o;
+                DefUseFact f = (DefUseFact) di.getFact();
+                if (op.getRelationDest() != null) {
+                    Collection uses = problem.getUses(op.getRelationDest());
+                    if (TRACE) System.out.println("Uses: " + uses);
+                    if (uses.size() == 0) {
+                        if (TRACE) System.out.println("Removing: " + op);
+                        di.remove();
+                        change = true;
+                        continue;
+                    }
+                }
+                if (op instanceof Project) {
+                    Project p = (Project) op;
+                    Relation src = p.getSrc();
+                    Set defs = f.getReachingDefs(src);
+                    if (TRACE) System.out.println("Defs: " + defs);
+                    if (defs.size() == 1) {
+                        Operation op2 = (Operation) defs.iterator().next();
+                        if (op2 instanceof BooleanOperation) {
+                            BooleanOperation boolop = (BooleanOperation) op2;
+                            // check if this specific def reaches any other uses.
+                            Set uses = problem.getUses(src);
+                            if (TRACE) System.out.println("Uses of "+src+": " + uses);
+                            for (Iterator i = uses.iterator(); i.hasNext(); ) {
+                                Operation other = (Operation) i.next();
+                                if (other == p) continue;
+                                DefUseFact duf2 = (DefUseFact) problem.getFact(other);
+                                if (duf2.getReachingDefs(src).contains(boolop)) {
+                                    continue outer;
+                                }
+                            }
+                            BDDOp bddop = boolop.getBDDOp();
+                            ApplyEx new_op = new ApplyEx((BDDRelation) p.getRelationDest(), (BDDRelation) boolop.getSrc1(), bddop, (BDDRelation) boolop.getSrc2());
+                            if (TRACE) System.out.println("Replacing " + op + " with " + new_op);
+                            di.set(new_op);
+                            if (TRACE) System.out.println("Marking "+boolop+" for deletion.");
+                            to_remove.add(boolop);
+                        }
+                    }
+                }
+            } else {
+                IterationList b = (IterationList) o;
+                di.enter(b);
+            }
+        }
+        if (!to_remove.isEmpty()) {
+            list.removeElements(to_remove);
+            change = true;
+        }
+        return change;
+    }
+    
     void doLiveness(IterationList list, List srcs, Liveness p) {
         ListIterator it = list.iterator();
         while (it.hasNext()) {
@@ -210,6 +235,7 @@ public class IR {
     }
 
     public void interpret() {
+        //printIR();
         Interpreter interpret = solver.getInterpreter();
         IterationList list = graph.getIterationList();
         list.interpret(interpret);
