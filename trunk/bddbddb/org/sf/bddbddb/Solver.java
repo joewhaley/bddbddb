@@ -252,7 +252,7 @@ public abstract class Solver {
         String s;
         do {
             s = st.nextToken();
-        } while (s.equals(" "));
+        } while (s.equals(" ") || s.equals("\t"));
         return s;
     }
     
@@ -467,7 +467,7 @@ public abstract class Solver {
     }
     
     Relation parseRelation(int lineNum, String s) {
-        MyStringTokenizer st = new MyStringTokenizer(s, " (:,)", true);
+        MyStringTokenizer st = new MyStringTokenizer(s, " \t(:,)", true);
         String name = nextToken(st);
         if (name.indexOf('!') >= 0) {
             outputError(lineNum, st.getPosition(), s, "Relation name cannot contain '!'");
@@ -564,7 +564,7 @@ public abstract class Solver {
     }
     
     InferenceRule parseRule(int lineNum, String s) {
-        MyStringTokenizer st = new MyStringTokenizer(s, " (,/).=!", true);
+        MyStringTokenizer st = new MyStringTokenizer(s, " \t(,/).=!", true);
         Map/*<String,Variable>*/ nameToVar = new HashMap();
         RuleTerm bottom = parseRuleTerm(lineNum, s, nameToVar, st);
         String sep = nextToken(st);
