@@ -38,7 +38,6 @@ import org.sf.bddbddb.util.SystemProperties;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
-import com.sun.rsasign.e;
 
 /**
  * Derive input relations directly from source using the Eclipse AST package.
@@ -461,13 +460,23 @@ public class PAFromSource {
             
             String s;
             if (n.getNodeType() == ASTNode.SIMPLE_NAME) {
-                s = ((SimpleName)n).resolveBinding().getKey();
+                s = ((Name)n).resolveBinding().getKey();
+                return s;
             }
             else s = n.toString();
             return "NODE: " + n.getNodeType() + ", " + s;
         }
         public boolean equals(Object o) {
-            if (o instanceof ASTNodeWrapper) {
+            if (o instanceof StringWrapper) {
+                switch (n.getNodeType()) {
+                    case ASTNode.SIMPLE_NAME:
+                        String nName = ((Name) n).resolveBinding().getKey();
+                        return nName.equals(((StringWrapper)o).getString());
+                    default:
+                }
+                return false;
+            }
+            else if (o instanceof ASTNodeWrapper) {
                 ASTNodeWrapper rhs = (ASTNodeWrapper) o;
                 ASTNode m = rhs.n;
                 if (m == n) return true;
@@ -551,7 +560,7 @@ public class PAFromSource {
     
     
     class ThisWrapper extends ASTNodeWrapper {
-        IMethodBinding enclosingMethod;
+        private IMethodBinding enclosingMethod;
                 
         ThisWrapper(IMethodBinding binding, ThisExpression n) {
             super(n);
@@ -597,7 +606,7 @@ public class PAFromSource {
         }
         
         public String toString() {
-            return "TYPE: " + getTypeName();
+            return /*"TYPE: " +*/ getTypeName();
         }
         
         public boolean equals(Object o) {
@@ -628,7 +637,7 @@ public class PAFromSource {
     
     // Note: The type of the exception is not the type of the encapsulated ASTNode.
     class ExceptionWrapper extends ASTNodeWrapper {
-        ITypeBinding type; // might need to switch to Type in JLS3
+        private ITypeBinding type; // might need to switch to Type in JLS3
         ExceptionWrapper(ASTNode exception, ITypeBinding binding) {
             super(exception);
             type = binding;
@@ -658,7 +667,7 @@ public class PAFromSource {
     }
     
     class MethodWrapper extends ASTNodeWrapper {
-        IMethodBinding method; 
+        private IMethodBinding method; 
         MethodWrapper(IMethodBinding binding) {
             super(null);
             method = binding;
@@ -670,12 +679,16 @@ public class PAFromSource {
         }
         
         public String toString() {
-            return "METHOD: " + method.getKey();
+            return /*"METHOD: " +*/ method.getKey();
         }
         
         public boolean equals(Object o) {
             if (o instanceof MethodWrapper) {
                 return ((MethodWrapper)o).method.getKey().equals(method.getKey());
+            }
+            else if (o instanceof StringWrapper) {
+                StringWrapper sw = (StringWrapper)o;
+                return sw.getString().equals(method.getKey());
             }
             return false;
         }
@@ -696,14 +709,14 @@ public class PAFromSource {
     
     
     class StringWrapper extends ASTNodeWrapper {
-        String name;
+        private String name;
         StringWrapper(String s) {
             super(null);
             name = s;
         }
         
         public String toString() {
-            return "STRING: " + name;
+            return /*"STRING: " +*/ name;
         }
         
         public boolean equals(Object o) {
@@ -712,6 +725,21 @@ public class PAFromSource {
             }
             else if (o instanceof TypeWrapper) {
                 return ((TypeWrapper)o).getTypeName().equals(name);
+            }
+            else if (o instanceof MethodWrapper) {
+                return ((MethodWrapper)o).getBinding().getKey().equals(name);
+            }
+            else if (o instanceof ThisWrapper 
+                || o instanceof ExceptionWrapper) {
+                return false;
+            }
+            else if (o instanceof ASTNodeWrapper) {
+                ASTNodeWrapper aw = (ASTNodeWrapper)o;
+                ASTNode astnode = aw.getNode();
+                if (astnode == null) return false;
+                if (astnode.getNodeType() == ASTNode.SIMPLE_NAME) {
+                    return ((Name)astnode).resolveBinding().getKey().equals(name);
+                }
             }
             return false;
         }
