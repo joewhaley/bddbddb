@@ -353,6 +353,7 @@ public class BDDRelation extends Relation {
                 return;
             }
             
+            calculateDomainSet();
             int lines = 0;
             BDDIterator i = relation.iterator(domainSet);
             while (i.hasNext()) {
