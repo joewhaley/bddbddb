@@ -30,10 +30,10 @@ public class Difference extends BooleanOperation {
     }
     
     /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#perform(org.sf.bddbddb.ir.Interpreter)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
-    public Object perform(Interpreter i) {
-        return i.perform(this);
+    public Object visit(OperationVisitor i) {
+        return i.visit(this);
     }
     
 }

@@ -1,4 +1,4 @@
-// Zero.java, created Jul 1, 2004 11:10:38 PM by joewhaley
+// Load.java, created Jul 4, 2004 3:47:13 AM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
@@ -8,20 +8,20 @@ import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
- * Zero
+ * Load
  * 
  * @author John Whaley
  * @version $Id$
  */
-public class Zero extends Operation {
+public class Load extends Operation {
     
-    Relation r;
+    Relation r0;
     
     /**
-     * @param r
+     * @param r0
      */
-    public Zero(Relation r) {
-        this.r = r;
+    public Load(Relation r0) {
+        this.r0 = r0;
     }
     
     /* (non-Javadoc)
@@ -35,14 +35,14 @@ public class Zero extends Operation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r.toString()+" = zero()";
+        return r0.toString()+" = load()";
     }
 
     /* (non-Javadoc)
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
-        return r;
+        return r0;
     }
 
     /* (non-Javadoc)

@@ -685,6 +685,12 @@ public abstract class InferenceRule implements IterationElement {
             allRelationValues[x] = r;
             
             if (cache_before_rename) {
+                if (oldRelationValues == null)
+                    oldRelationValues = new Relation[top.size()];
+                if (oldRelationValues[x] == null) {
+                    oldRelationValues[x] = r.copy();
+                    oldRelationValues[x].initialize();
+                }
                 // TODO: calculate if we need the whole relation.
                 newRelationValues[x] = oldRelationValues[x].copy();
                 newRelationValues[x].initialize();
@@ -741,6 +747,12 @@ public abstract class InferenceRule implements IterationElement {
             allRelationValues[x] = r;
             
             if (!cache_before_rename) {
+                if (oldRelationValues == null)
+                    oldRelationValues = new Relation[top.size()];
+                if (oldRelationValues[x] == null) {
+                    oldRelationValues[x] = r.copy();
+                    oldRelationValues[x].initialize();
+                }
                 newRelationValues[x] = oldRelationValues[x].copy();
                 newRelationValues[x].initialize();
                 Difference diff = new Difference(newRelationValues[x], allRelationValues[x], oldRelationValues[x]);

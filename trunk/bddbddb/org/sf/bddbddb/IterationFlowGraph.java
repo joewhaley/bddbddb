@@ -1,9 +1,6 @@
-/*
- * Created on Jun 29, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
+//IterationFlowGraph.java, created Jun 29, 2004
+//Copyright (C) 2004 Michael Carbin
+//Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Collection;
@@ -17,10 +14,10 @@ import org.sf.bddbddb.util.HashWorklist;
 import org.sf.bddbddb.util.Pair;
 
 /**
- * @author mcarbin
+ * IterationFlowGraph
  * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @author mcarbin
+ * @version $Id$
  */
 public class IterationFlowGraph {
     IterationList iterationElements;
@@ -42,7 +39,7 @@ public class IterationFlowGraph {
     }
 
     private void constructStrataLoops() {
-        for (Iterator it = firstSCCs.iterator(); it.hasNext();) {
+        for (Iterator it = firstSCCs.iterator(); it.hasNext(); ) {
             SCComponent scc = (SCComponent) it.next();
             IterationList loop = buildIterationList(scc, scc.isLoop());
             iterationElements.addElement(loop);
@@ -138,10 +135,26 @@ public class IterationFlowGraph {
         return dependencies.getValues(e1).contains(e2);
     }
 
+    public IterationList getIterationList() {
+        return iterationElements;
+    }
+
     public void iterate() {
         for (Iterator it = iterationElements.iterator(); it.hasNext();) {
             IterationElement elem = (IterationElement) it.next();
             elem.update();
         }
+    }
+    
+    public IterationList expand() {
+        if (iterationElements.isLoop()) {
+            IterationList unrolled = iterationElements.unroll();
+            iterationElements.expandInLoop();
+            unrolled.elements.add(iterationElements);
+            iterationElements = unrolled;
+        } else {
+            iterationElements.expand(true);
+        }
+        return iterationElements;
     }
 }

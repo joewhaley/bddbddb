@@ -3,7 +3,9 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
+import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.util.Pair;
 
 /**
  * BooleanOperation
@@ -43,4 +45,10 @@ public abstract class BooleanOperation extends Operation {
      */
     public Relation getDest() { return r0; }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#getSrcs()
+     */
+    public List getSrcs() {
+        return new Pair(r1, r2);
+    }
 }

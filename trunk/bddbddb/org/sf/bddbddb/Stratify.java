@@ -15,6 +15,14 @@ import java.util.Map;
 import java.util.Set;
 import java.io.IOException;
 import java.io.PrintStream;
+import org.sf.bddbddb.dataflow.ConstantProp;
+import org.sf.bddbddb.dataflow.DataflowSolver;
+import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
+import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
+import org.sf.bddbddb.ir.BDDInterpreter;
+import org.sf.bddbddb.ir.Load;
+import org.sf.bddbddb.ir.Operation;
+import org.sf.bddbddb.ir.Save;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.DumpDotGraph;
 import org.sf.bddbddb.util.Filter;
@@ -36,6 +44,7 @@ public class Stratify {
     boolean USE_NESTED_SCCS = true;
     boolean TRACE;
     boolean TRACE_FULL = System.getProperty("tracestratify") != null;
+    boolean USE_IR = !System.getProperty("useir", "no").equals("no");
     PrintStream out;
     
     Solver solver;
@@ -413,13 +422,62 @@ public class Stratify {
         
         stratify(solver.rules, inputs, outputs);
         
-        i = firstSCCs.iterator();
-        for (int a = 1; i.hasNext(); ++a) {
-            SCComponent first = (SCComponent) i.next();
-            if (solver.NOISY) out.println("Solving stratum #"+a+"...");
-            for (;;) {
-                iterate(first, false);
-                if (!again) break;
+        if (USE_IR) {
+            IterationFlowGraph ifg = new IterationFlowGraph(solver.rules, firstSCCs, innerSCCs);
+            IterationList list = ifg.expand();
+            // Add load operations.
+            if (!solver.relationsToLoad.isEmpty()) {
+                Assert._assert(!list.isLoop());
+                IterationList loadList = new IterationList(false);
+                for (Iterator j = solver.relationsToLoad.iterator(); j.hasNext(); ) {
+                    Relation r = (Relation) j.next();
+                    loadList.elements.add(new Load(r));
+                }
+                list.elements.add(0, loadList);
+            }
+            // Add save operations.
+            if (!solver.relationsToDump.isEmpty()) {
+                Assert._assert(!list.isLoop());
+                IterationList saveList = new IterationList(false);
+                for (Iterator j = solver.relationsToDump.iterator(); j.hasNext(); ) {
+                    Relation r = (Relation) j.next();
+                    saveList.elements.add(new Save(r));
+                }
+                list.elements.add(saveList);
+            }
+            
+            DataflowSolver df_solver = new DataflowSolver();
+            ConstantProp problem = new ConstantProp();
+            df_solver.solve(problem, list);
+            DataflowIterator di = df_solver.getIterator(problem, list);
+            while (di.hasNext()) {
+                Object o = di.next();
+                if (TRACE) System.out.println("Next: "+o);
+                if (o instanceof Operation) {
+                    Operation op = (Operation) o;
+                    ConstantPropFacts f = (ConstantPropFacts) di.getFact();
+                    Operation op2 = problem.simplify(op, f);
+                    if (op != op2) {
+                        if (TRACE) System.out.println("Replacing "+op+" with "+op2);
+                        di.set(op2);
+                    }
+                } else {
+                    IterationList b = (IterationList) o;
+                    di.enter(b);
+                }
+            }
+            
+            BDDInterpreter interpret = new BDDInterpreter();
+            list.interpret(interpret);
+        } else {
+            i = firstSCCs.iterator();
+            for (int a = 1; i.hasNext(); ++a) {
+                SCComponent first = (SCComponent) i.next();
+                if (solver.NOISY) out.println("Solving stratum #"+a+"...");
+                for (;;) {
+                    iterate(first, false);
+                    if (!again) break;
+                }
             }
         }
         

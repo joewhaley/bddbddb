@@ -1,16 +1,13 @@
-/*
- * Created on Jun 29, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
+//IterationElement.java, created Jun 29, 2004
+//Copyright (C) 2004 Michael Carbin
+//Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 /**
- * @author mcarbin
+ * IterationElement
  * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @author mcarbin
+ * @version $Id$
  */
 public interface IterationElement {
     public boolean update();
