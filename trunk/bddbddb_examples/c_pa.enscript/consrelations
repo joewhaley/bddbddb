@@ -1,19 +1,19 @@
-pointsTo (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) input output
+pointsTo (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) input printsize
 pointsToAbstract (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) input
-assign (v1:V0 , v1fd:FD0 , v2:V1 , v2fd:FD1) input output
-stores (o_ptr:V1 , p_ptr:FD1 , o_src:V0 , p_src:FD0, p_store:FD3) input output
-loads  (o_dst:V0 , p_dst:FD0 , o_ptr:V1 , p_ptr:FD1, p_load:FD3) input output
-fieldAddress (o_dst:V0 , p_dst:FD0 , o_ptr:V1 , p_ptr:FD1, p_sub:FD3) input output
-copySrc(o_cpy:V0 , o_src:V1 , p_src:FD1) input output
-copyDst(o_cpy:V0 , o_dst:V1 , p_dst:FD1) input output
-ptrIncr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input output
-ptrDecr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input output
-intIncr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input output
-intDecr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input output
-modPtrs(proc:V0, o_ptr:V1, p_ptr:FD1, p_mod:FD3) input output
-refPtrs(proc:V0, o_ptr:V1, p_ptr:FD1, p_mod:FD3) input output
-unhandledBinaryOp(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1) input output
-unhandledAddOp(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1) input output
+assign (v1:V0 , v1fd:FD0 , v2:V1 , v2fd:FD1) input printsize
+stores (o_ptr:V1 , p_ptr:FD1 , o_src:V0 , p_src:FD0, p_store:FD3) input printsize
+loads  (o_dst:V0 , p_dst:FD0 , o_ptr:V1 , p_ptr:FD1, p_load:FD3) input printsize
+fieldAddress (o_dst:V0 , p_dst:FD0 , o_ptr:V1 , p_ptr:FD1, p_sub:FD3) input printsize
+copySrc(o_cpy:V0 , o_src:V1 , p_src:FD1) input printsize
+copyDst(o_cpy:V0 , o_dst:V1 , p_dst:FD1) input printsize
+ptrIncr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input printsize
+ptrDecr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input printsize
+intIncr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input printsize
+intDecr(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3) input printsize
+modPtrs(proc:V0, o_ptr:V1, p_ptr:FD1, p_mod:FD3) input printsize
+refPtrs(proc:V0, o_ptr:V1, p_ptr:FD1, p_mod:FD3) input printsize
+unhandledBinaryOp(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1) input printsize
+unhandledAddOp(o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1) input printsize
 
 subPath(p1:FD2, p_sub:FD3, p2:FD4) input
 sizeMult(size1:FD3, size2:FD4) input
@@ -22,7 +22,7 @@ canonicalPath(p_legal:FD2, p_canonical:FD4) input
 remainingFields(p_prev:FD2, p_next:FD4) input
 
 procCallsites(proc:V0, fp:V1) input
-callsiteTargets(fp:V1, proc:V2) output
+callsiteTargets(fp:V1, proc:V2) printsize
 
 callTargets(fp:V1) input
 callerProc(fp:V1 , caller:V0) input
@@ -59,16 +59,16 @@ entryProc(proc:V0) input
 ##############
 
 callsProc(fp:V1, proc:V2)
-calledFromEntry(proc:V0) output
+calledFromEntry(proc:V0) printsize
 callsModel(fp:V1, proc:V0)
 callsStrToNumeric(fp:V1)
 
-usedPointers(o:V1, p:FD1) output
+usedPointers(o:V1, p:FD1) printsize
 
-mergePointsTo (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) output
-distinctSubPath(p1:FD2, p_sub:FD3, p2:FD4) output
+mergePointsTo (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) printsize
+distinctSubPath(p1:FD2, p_sub:FD3, p2:FD4) printsize
 fieldsFollowingPath(p:FD2, p_follow:FD4)
-CONS_subPath(p1:FD2, p_sub:FD3, p2:FD4) output
+CONS_subPath(p1:FD2, p_sub:FD3, p2:FD4) printsize
 
 assignParam (v1:V0 , v2:V1 , v1ORv2fd:FD)
 
