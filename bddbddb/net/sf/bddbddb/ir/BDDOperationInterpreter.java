@@ -453,6 +453,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
      * @see net.sf.bddbddb.ir.HighLevelInterpreter#visit(net.sf.bddbddb.ir.Save)
      */
     public Object visit(Save op) {
+        long time = System.currentTimeMillis();
         BDDRelation r = (BDDRelation) op.getSrc();
         try {
             if (op.isTuples()) {
@@ -462,6 +463,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
             }
         } catch (IOException x) {
         }
+        solver.startTime += (System.currentTimeMillis() - time);
         return null;
     }
 

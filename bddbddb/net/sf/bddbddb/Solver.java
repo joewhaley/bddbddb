@@ -1762,7 +1762,7 @@ class RuleSorter implements Comparator {
      * @throws IOException
      */
     void saveResults() throws IOException {
-        if (USE_IR) return;
+       if (USE_IR) return;
         for (Iterator i = relationsToPrintSize.iterator(); i.hasNext();) {
             Relation r = (Relation) i.next();
             double size = r.dsize();
