@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jardesc>
-<jar path="C:/joeqvm/bddbddb/bddbddb.jar"/>
+<jar path="bddbddb/bddbddb.jar"/>
 <options buildIfNeeded="true" compress="true" descriptionLocation="/bddbddb/bddbddb.jardesc" exportErrors="true" exportWarnings="true" overwrite="true" saveDescription="true" useSourceFolders="false"/>
 <manifest generateManifest="false" mainClassHandleIdentifier="=bddbddb/&lt;org.sf.bddbddb{Solver.java[Solver" manifestLocation="/bddbddb/bddbddbManifest" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
 <sealing sealJar="false">
