@@ -1466,9 +1466,9 @@ public class FindBestDomainOrder {
         public Element toXMLElement() {
             Element dis = new Element("trialInfoCollection");
             dis.setAttribute("name", name);
-            TrialInfo[] s = getSorted();
-            for (int i = 0; i < s.length; ++i) {
-                dis.addContent(s[i].toXMLElement());
+            for (Iterator i = trials.values().iterator(); i.hasNext(); ) {
+                TrialInfo info = (TrialInfo) i.next();
+                dis.addContent(info.toXMLElement());
             }
             return dis;
         }
