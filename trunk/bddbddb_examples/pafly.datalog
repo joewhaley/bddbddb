@@ -20,10 +20,10 @@ hP (ha:H0, field:F0, hb:H1) output
 S (base:V0, field:F0, src:V1) input
 L (base:V0, field:F0, dest:V1) input
 vT (var:V0, type:T0) input
-hT (heap:H0, type:T1) input
-aT (type:T0, type:T1) input
+hT (heap:H0, type:T1) input output
+aT (type:T0, type:T1) input output
 vPfilter (v:V0, h:H0)
-cha (type:T1, name:N0, method:M0) input
+cha (type:T1, name:N0, method:M0) input output
 actual (invoke:I0, num:Z0, actualparam:V1) input
 formal (method:M0, num:Z0, formalparam:V0) input
 Mret (method:M0, v:V1) input
@@ -54,8 +54,8 @@ roots (method:M0) input
 stringToType (heap:H0,type:T0) input output
 stringToField (heap:H0,field:F0) input output
 stringToMethod (heap:H0,method:M0) input output
-defaultConstructor (type:T0, method:M0) output
-allConstructors (type:T0, method:M0) output
+defaultConstructor (type:T0, method:M0) input output
+allConstructors (type:T0, method:M0) input output
 
 reachable(m) :- roots(m). modifies (vP0,A,L,S,actual,formal,Mret,Mthr,Iret,Ithr,IE0,vT,hT,aT,mI,cha,roots,stringToType,stringToField,stringToMethod,reachable,defaultConstructor,allConstructors)
 reachable(m) :- IE(_,m). modifies (vP0,A,L,S,actual,formal,Mret,Mthr,Iret,Ithr,IE0,vT,hT,aT,mI,cha,roots,stringToType,stringToField,stringToMethod,reachable,defaultConstructor,allConstructors)
