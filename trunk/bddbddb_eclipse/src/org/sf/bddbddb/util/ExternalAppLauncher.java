@@ -9,7 +9,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
+import org.eclipse.core.runtime.Platform;
 import org.sf.bddbddb.PAFromSource;
+import org.sf.bddbddb.eclipse.EclipsePlugin;
 
 /**
  * ExternalAppLauncher
@@ -18,16 +21,36 @@ import org.sf.bddbddb.PAFromSource;
  * @version $Id$
  */
 public class ExternalAppLauncher {
+    static String installPath;
+    
+    
+    static {
+        // this code should work only on windows.
+        try {
+            URL install = EclipsePlugin.getDefault().getBundle().getEntry("/");
+            URL dir = Platform.resolve(install);
+            
+            installPath = dir.getPath().substring(1);
+            installPath = installPath.replace('/','\\');
+            System.out.println("install path: " + installPath);
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+    }
     
     public static int launch(String[] cmd) {
         int r = -1;
         try {
             Process p = Runtime.getRuntime().exec(cmd);
-            StreamGobbler output = new StreamGobbler(p.getInputStream(), "OUT");
-            StreamGobbler error = new StreamGobbler(p.getErrorStream(), "ERR", System.err);
+            InputStreamGobbler output = new InputStreamGobbler(p.getInputStream(), "OUT");
+            InputStreamGobbler error = new InputStreamGobbler(p.getErrorStream(), "ERR", System.err);
+            OutputStreamGobbler input = new OutputStreamGobbler(p.getOutputStream());
 
             output.start();
             error.start();
+            input.start();
             
             r = p.waitFor(); 
             
@@ -47,11 +70,12 @@ public class ExternalAppLauncher {
         }
         
         String curDir = System.getProperty("user.dir");
-        String joeqDir = loadPath + "joeq_core.jar";
-        String javabddDir = loadPath + "javabdd.jar";
+        String joeqDir = installPath + "joeq_core.jar";
+        String javabddDir = installPath + "javabdd.jar";
         String appDir = System.getProperty("pas.apppath", "");
         String pathsep = System.getProperty("path.separator");
-        String classpath = joeqDir+pathsep+javabddDir+pathsep+appDir;
+        String classpath = joeqDir+pathsep+javabddDir
+                            +pathsep+appDir;
         String mainClassName = "joeq.Main.GenRelations";
         
         try {
@@ -94,11 +118,12 @@ public class ExternalAppLauncher {
                 dumpPath += sep;
         }
         //File f = new File("c:\\runtime-workspace\\joeq_test\\");
-        String path = dumpPath + "pafly.datalog";
-        String bddbddb = dumpPath + "bddbddb.jar";
+        String path = installPath + "pafly.datalog";
+        String bddbddb = installPath + "bddbddb.jar";
         
         String[] cmd = new String[] {"java", 
             "-jar", "-mx512m",
+            "-Dbasedir="+dumpPath,
             bddbddb, path }; 
 
         int r = launch(cmd);
@@ -126,11 +151,12 @@ public class ExternalAppLauncher {
                 dumpPath += sep;
         }
         
-        String path = dumpPath + "genericize.datalog";
-        String bddbddb = dumpPath + "bddbddb.jar";
+        String path = installPath + "genericize.datalog";
+        String bddbddb = installPath + "bddbddb.jar";
         
         String[] cmd = new String[] {"java", 
-            "-jar", "-mx512m",
+            "-jar", "-mx640m",
+            "-Dbasedir="+dumpPath,
             bddbddb, path }; 
 
         int r = launch(cmd);

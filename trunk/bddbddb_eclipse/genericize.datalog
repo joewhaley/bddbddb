@@ -1,7 +1,7 @@
 
 #.basedir "pa.joeq"
 .include "fielddomains.pa"
-.bddvarorder N0_F0_I0_M1_M0_V1xV0_T0_Z0_T1_H0_H1_TV0xTV1
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_TV1xTV0_T0_Z0_T1_H0_H1
 
 TV0 262144
 C 262144
@@ -63,6 +63,9 @@ ret2typevar (method:M0, type:TV0) input
 
 # Some type variables correspond to concrete types.
 concreteTypes (typevar:TV0, concretetype:T0) input
+concreteTypes2 (typevar:TV0, concretetype:T0) 
+
+concreteTypes2(tv, t) :- concreteTypes(tv, t).
 
 assignStatement(v1,v2) :- A(v1,v2).
 loadStatement(v2,v1,f) :- L(v1,f,v2).
@@ -140,11 +143,11 @@ subType(t1,t2) :- castStatement(v1,t2,v3), location2typevar(v1,t1).
 ### Rules for computing the set of concrete types for each type variable.
 
 # Transitive closure over the subType relation.
-concreteTypes(t1,t) :- subType(t1,t2), concreteTypes(t2,t).
+concreteTypes2(t1,t) :- subType(t1,t2), concreteTypes2(t2,t).
 
-multiType(t) :- concreteTypes(t,ta), concreteTypes(t,tb), ta != tb.
+multiType(t) :- concreteTypes2(t,ta), concreteTypes2(t,tb), ta != tb.
 
-singleType(t) :- !multiType(t), concreteTypes(t,_).
+singleType(t) :- !multiType(t), concreteTypes2(t,_).
 
 #######
 # Stuff about generics
