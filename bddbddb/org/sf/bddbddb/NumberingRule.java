@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import org.sf.bddbddb.util.Assert;
+import org.sf.bddbddb.util.GlobalPathNumbering;
 import org.sf.bddbddb.util.PathNumbering;
 import org.sf.bddbddb.util.SCCPathNumbering;
 import org.sf.javabdd.BDD;
@@ -65,6 +66,8 @@ public class NumberingRule extends InferenceRule {
      */
     static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph", "no").equals("no");
 
+    String numberingType = System.getProperty("numberingtype", "scc");
+    
     /**
      * Construct a new NumberingRule.
      * Not to be called externally.
@@ -116,7 +119,12 @@ public class NumberingRule extends InferenceRule {
             return false;
         }
         long time = System.currentTimeMillis();
-        pn = new SCCPathNumbering();
+        if (numberingType.equals("scc"))
+            pn = new SCCPathNumbering();
+        else if (numberingType.equals("global"))
+            pn = new GlobalPathNumbering();
+        else
+            Assert.UNREACHABLE("Unknown numbering type "+numberingType);
         BigInteger num = pn.countPaths(rg);
         Iterator i = bottom.variables.iterator();
         Variable v1, v2;

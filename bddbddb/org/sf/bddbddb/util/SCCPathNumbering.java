@@ -54,12 +54,19 @@ public class SCCPathNumbering extends PathNumbering {
     Map sccEdges = new HashMap();
     /** Map from edges to ranges. */
     Map edgeNumbering = new HashMap();
+    
     public interface Selector {
         /**
          * Return true if the edge scc1->scc2 is important.
          */
         boolean isImportant(SCComponent scc1, SCComponent scc2, BigInteger num);
+        
+        /**
+         * Return true if the edge a->b is important.
+         */
+        boolean isImportant(Object a, Object b, BigInteger num);
     }
+    
     /** Select important edges. */
     Selector selector;
     /** Counts the number of paths in the given graph. */
@@ -293,8 +300,7 @@ public class SCCPathNumbering extends PathNumbering {
         public PostOrderComparator(Map nodeToScc, SCCTopSortedGraph g) {
             this.nodeToScc = nodeToScc;
             List list = g.list();
-            postOrderNumberingOfSccs = new IndexMap("PostOrderNumbering", list
-                .size());
+            postOrderNumberingOfSccs = new IndexMap("PostOrderNumbering", list.size());
             postOrderNumberingOfSccs.addAll(list);
         }
 
@@ -408,8 +414,7 @@ public class SCCPathNumbering extends PathNumbering {
         }
         Path result = new Path(callee);
         // visit SCCs in post order.
-        PostOrderComparator po_comparator = new PostOrderComparator(nodeToScc,
-            graph);
+        PostOrderComparator po_comparator = new PostOrderComparator(nodeToScc, graph);
         SortedSet worklist = new TreeSet(po_comparator);
         Map contexts = new HashMap();
         Map results = new HashMap();
@@ -421,8 +426,7 @@ public class SCCPathNumbering extends PathNumbering {
             worklist.remove(callee);
             c = (BigInteger) contexts.get(callee);
             result = (Path) results.get(callee);
-            if (TRACE_PATH) System.out.println("Getting context " + c + " at "
-                + callee);
+            if (TRACE_PATH) System.out.println("Getting context " + c + " at " + callee);
             for (Iterator i = navigator.prev(callee).iterator(); i.hasNext();) {
                 Object caller = i.next();
                 Range r = getEdge(caller, callee);

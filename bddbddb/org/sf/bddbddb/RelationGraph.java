@@ -26,7 +26,7 @@ public class RelationGraph implements Graph {
     /**
      * Trace flag.
      */
-    protected boolean TRACE = true;
+    protected boolean TRACE = false;
     
     /**
      * Trace output stream.
