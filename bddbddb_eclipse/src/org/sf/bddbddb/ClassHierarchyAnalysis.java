@@ -70,9 +70,13 @@ public class ClassHierarchyAnalysis {
     void calculateCHA(IMethodBinding name) {
         for (Iterator i = Tmap.iterator(); i.hasNext(); ) {
             Object o = i.next();
-            if (!(o instanceof TypeWrapper)) continue;
-            TypeWrapper tw = (TypeWrapper) o;
-            ITypeBinding type = tw.getType();
+            ITypeBinding type;
+            if (o instanceof TypeWrapper) {
+                TypeWrapper tw = (TypeWrapper) o;
+                type = tw.getType();
+            } else {
+                type = OBJECT;
+            }
             //System.out.println(type.getBinaryName());
             IMethodBinding target = calculateVirtualTarget(type, name);
             if (target != null) {
