@@ -73,7 +73,7 @@ public class IR {
             IterationList loadList = new IterationList(false);
             for (Iterator j = solver.getRelationsToLoad().iterator(); j.hasNext();) {
                 Relation r = (Relation) j.next();
-                loadList.addElement(new Load(r, solver.basedir + r + ".bdd", false));
+                loadList.addElement(new Load(r, solver.getBaseDir() + r + ".bdd", false));
                 if (r.getNegated() != null) {
                     loadList.addElement(new Invert(r.getNegated(), r));
                 }
@@ -86,7 +86,7 @@ public class IR {
             IterationList saveList = new IterationList(false);
             for (Iterator j = solver.getRelationsToSave().iterator(); j.hasNext();) {
                 Relation r = (Relation) j.next();
-                saveList.addElement(new Save(r, solver.basedir + r + ".bdd", false));
+                saveList.addElement(new Save(r, solver.getBaseDir() + r + ".bdd", false));
             }
             list.addElement(saveList);
         }

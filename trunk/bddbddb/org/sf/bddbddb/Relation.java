@@ -15,10 +15,13 @@ import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
  * @version $Id$
  */
 public abstract class Relation {
+    
+    static int relationCounter;
+    
     String name;
-    List/* <Attribute> */attributes;
+    List/*<Attribute>*/ attributes;
     Relation negated;
-    public int id;
+    public final int id;
     Constraints constraints;
 
     /**
@@ -28,10 +31,10 @@ public abstract class Relation {
      * @param attributes
      */
     public Relation(Solver solver, String name, List attributes) {
-        super();
         this.name = name;
         this.attributes = attributes;
-        this.id = solver.registerRelation(this);
+        this.id = relationCounter++;
+        solver.registerRelation(this);
         for (Iterator i = attributes.iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
             if (a.relation == null) a.relation = this;
@@ -198,5 +201,12 @@ public abstract class Relation {
      */
     public void setConstraints(Constraints constraints) {
         this.constraints = constraints;
+    }
+    
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        return id;
     }
 }

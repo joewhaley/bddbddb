@@ -36,47 +36,96 @@ public abstract class Solver {
     static {
         SystemProperties.read("solver.properties");
     }
+    
+    /** Print rules as they are triggered. */
     boolean NOISY = !System.getProperty("noisy", "yes").equals("no");
+    /** Split all rules. */
     boolean SPLIT_ALL_RULES = !System.getProperty("split_all_rules", "no").equals("no");
+    /** Split no rules, even if they have a "split" keyword. */
     boolean SPLIT_NO_RULES = !System.getProperty("split_no_rules", "no").equals("no");
+    /** Report the stats for each rule at the end. */
     boolean REPORT_STATS = true;
+    /** Trace the solver. */
     boolean TRACE = System.getProperty("tracesolve") != null;
+    /** Do a full trace, even dumping the contents of relations. */
     boolean TRACE_FULL = System.getProperty("fulltracesolve") != null;
+    /** Use the IR rather than the rules. */
     boolean USE_IR = !System.getProperty("useir", "no").equals("no");
+    /** Print the IR before interpreting it. */
     boolean PRINT_IR = System.getProperty("printir") != null;
+    
+    /** Trace output stream. */
     PrintStream out = System.out;
-    public String basedir = System.getProperty("basedir");
-    IndexMap/* <Relation> */relations;
-    Map/* <String,Domain> */nameToDomain;
-    Map/* <String,Relation> */nameToRelation;
-    public Map/* <Domain,Relation> */equivalenceRelations;
-    public Map/* <Domain,Relation> */notequivalenceRelations;
-    List/* <InferenceRule> */rules;
-    Collection/* <Relation> */relationsToLoad;
-    Collection/* <Relation> */relationsToLoadTuples;
-    Collection/* <Relation> */relationsToDump;
-    Collection/* <Relation> */relationsToDumpNegated;
-    Collection/* <Relation> */relationsToDumpTuples;
-    Collection/* <Relation> */relationsToDumpNegatedTuples;
-    Collection/* <Relation> */relationsToPrintSize;
-    Collection/* <Dot> */dotGraphsToDump;
+    
+    /** Base directory where to load/save files. */
+    String basedir = System.getProperty("basedir");
+    /** List of paths to search when loading files. */
+    List/*<String>*/ includePaths;
+    /** Map between id numbers and relations. */
+    IndexMap/*<Relation>*/ relations;
+    /** Map between names and domains. */
+    Map/*<String,Domain>*/ nameToDomain;
+    /** Map between names and relations. */
+    Map/*<String,Relation>*/ nameToRelation;
+    /** Map between domains and equivalence relations. */
+    Map/*<Domain,Relation>*/ equivalenceRelations;
+    /** List of inference rules. */
+    List/*<InferenceRule>*/ rules;
+    
+    Collection/*<Relation>*/ relationsToLoad;
+    Collection/*<Relation>*/ relationsToLoadTuples;
+    Collection/*<Relation>*/ relationsToDump;
+    Collection/*<Relation>*/ relationsToDumpNegated;
+    Collection/*<Relation>*/ relationsToDumpTuples;
+    Collection/*<Relation>*/ relationsToDumpNegatedTuples;
+    Collection/*<Relation>*/ relationsToPrintSize;
+    Collection/*<Dot>*/ dotGraphsToDump;
 
-    abstract InferenceRule createInferenceRule(List/* <RuleTerm> */top, RuleTerm bottom);
+    /**
+     * Create a new inference rule.
+     * 
+     * @param top
+     * @param bottom
+     * @return
+     */
+    abstract InferenceRule createInferenceRule(List/*<RuleTerm>*/ top, RuleTerm bottom);
 
+    /**
+     * Create a new equivalence relation.
+     * 
+     * @param fd
+     * @return
+     */
     abstract Relation createEquivalenceRelation(Domain fd);
 
-    abstract Relation createNotEquivalenceRelation(Domain fd);
+    /**
+     * Create a new relation.
+     * 
+     * @param name
+     * @param attributes
+     * @return
+     */
+    public abstract Relation createRelation(String name, List/*<Attribute>*/ attributes);
 
-    public abstract Relation createRelation(String name, List/* <Attribute> */attributes);
-
-    int registerRelation(Relation r) {
+    /**
+     * Register the given relation with this solver.
+     * 
+     * @param r
+     */
+    void registerRelation(Relation r) {
         int i = relations.get(r);
         Assert._assert(i == relations.size() - 1);
+        Assert._assert(i == r.id);
         Object old = nameToRelation.put(r.name, r);
         Assert._assert(old == null);
-        return i;
     }
 
+    /**
+     * Create a numbering rule from the given rule template.
+     * 
+     * @param ir
+     * @return
+     */
     NumberingRule createNumberingRule(InferenceRule ir) {
         return new NumberingRule(this, ir);
     }
@@ -90,7 +139,6 @@ public abstract class Solver {
         nameToDomain = new HashMap();
         nameToRelation = new HashMap();
         equivalenceRelations = new HashMap();
-        notequivalenceRelations = new HashMap();
         rules = new LinkedList();
         relationsToLoad = new LinkedList();
         relationsToLoadTuples = new LinkedList();
@@ -107,36 +155,67 @@ public abstract class Solver {
             Relation r = (Relation) i.next();
             r.initialize();
         }
-        for (Iterator i = equivalenceRelations.values().iterator(); i.hasNext();) {
-            Relation r = (Relation) i.next();
-            r.initialize();
-        }
-        for (Iterator i = notequivalenceRelations.values().iterator(); i.hasNext();) {
-            Relation r = (Relation) i.next();
-            r.initialize();
-        }
         for (Iterator i = rules.iterator(); i.hasNext();) {
             InferenceRule r = (InferenceRule) i.next();
             r.initialize();
         }
     }
 
+    /**
+     * Solve the rules.
+     */
     public abstract void solve();
 
     public abstract void finish();
 
+    /**
+     * Get the named domain.
+     * 
+     * @param name
+     * @return
+     */
     public Domain getDomain(String name) {
         return (Domain) nameToDomain.get(name);
     }
 
+    /**
+     * Get the named relation.
+     * 
+     * @param name
+     * @return
+     */
     public Relation getRelation(String name) {
         return (Relation) nameToRelation.get(name);
     }
 
+    /**
+     * Get the relation with the given index.
+     * 
+     * @param index
+     * @return
+     */
     public Relation getRelation(int index) {
         return (Relation) relations.get(index);
     }
 
+    /**
+     * Get all the equivalence relations.
+     * 
+     * @return
+     */
+    public Collection getEquivalenceRelations() {
+        return equivalenceRelations.values();
+    }
+    
+    /**
+     * Get the base directory used for output.
+     * 
+     * @return
+     */
+    public String getBaseDir() {
+        return basedir;
+    }
+    
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         String inputFilename = System.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
@@ -217,7 +296,16 @@ public abstract class Solver {
         System.out.println("  -Dfindbestorder   Find best BDD domain order.");
         System.out.println("  -Ddumpnumberinggraph  Dump the context numbering in dot graph format.");
         System.out.println("  -Ddumprulegraph   Dump the graph of rules in dot format.");
+        System.out.println("  -Duseir           Compile rules using intermediate representation.");
+        System.out.println("  -Dprintir         Print intermediate representation before interpreting.");
     }
+    
+    /**
+     * A LineNumberReader that can nest through multiple included files.
+     * 
+     * @author John Whaley
+     * @version $Id$
+     */
     public static class MyReader {
         List readerStack = new LinkedList();
         LineNumberReader current;
@@ -254,6 +342,12 @@ public abstract class Solver {
         }
     }
 
+    /**
+     * Get the next token, skipping over spaces.
+     * 
+     * @param st
+     * @return
+     */
     static String nextToken(MyStringTokenizer st) {
         String s;
         do {
@@ -262,6 +356,13 @@ public abstract class Solver {
         return s;
     }
 
+    /**
+     * Read a line from the input.
+     * 
+     * @param in
+     * @return
+     * @throws IOException
+     */
     static String readLine(MyReader in) throws IOException {
         String s = in.readLine();
         if (s == null) return null;
@@ -275,6 +376,12 @@ public abstract class Solver {
         return s;
     }
 
+    /**
+     * Read and parse a Datalog program.
+     * 
+     * @param in
+     * @throws IOException
+     */
     void readDatalogProgram(MyReader in) throws IOException {
         for (;;) {
             String s = readLine(in);
@@ -327,6 +434,14 @@ public abstract class Solver {
         }
     }
 
+    /**
+     * Output a parse error at the given location.
+     * 
+     * @param linenum
+     * @param colnum
+     * @param line
+     * @param msg
+     */
     void outputError(int linenum, int colnum, String line, String msg) {
         System.err.println("Error on line " + linenum + ":");
         System.err.println(line);
@@ -336,6 +451,14 @@ public abstract class Solver {
         System.err.println(msg);
     }
 
+    /**
+     * Parse a directive.
+     * 
+     * @param in
+     * @param lineNum
+     * @param s
+     * @throws IOException
+     */
     void parseDirective(MyReader in, int lineNum, String s) throws IOException {
         if (s.startsWith(".include")) {
             int index = ".include".length() + 1;
@@ -437,6 +560,14 @@ public abstract class Solver {
         }
     }
 
+    /**
+     * Parse a domain declaration.
+     * 
+     * @param lineNum
+     * @param s
+     * @return
+     * @throws IOException
+     */
     Domain parseDomain(int lineNum, String s) throws IOException {
         MyStringTokenizer st = new MyStringTokenizer(s);
         String name = nextToken(st);
@@ -464,6 +595,13 @@ public abstract class Solver {
         return fd;
     }
 
+    /**
+     * Parse a relation declaration.
+     * 
+     * @param lineNum
+     * @param s
+     * @return
+     */
     Relation parseRelation(int lineNum, String s) {
         MyStringTokenizer st = new MyStringTokenizer(s, " \t(:,)", true);
         String name = nextToken(st);
@@ -557,6 +695,12 @@ public abstract class Solver {
         return r;
     }
 
+    /**
+     * Parse and add an attribute constraint.
+     * 
+     * @param r
+     * @param m
+     */
     public void parseAndAddConstraint(Relation r, Matcher m) {
         if (m.matches()) {
             String leftAttr = m.group(1);
@@ -585,6 +729,11 @@ public abstract class Solver {
         }
     }
 
+    /**
+     * Delete the given relation.
+     * 
+     * @param r
+     */
     void deleteRelation(Relation r) {
         relationsToDump.remove(r);
         relationsToDumpNegated.remove(r);
@@ -595,6 +744,13 @@ public abstract class Solver {
         relationsToPrintSize.remove(r);
     }
 
+    /**
+     * Parse an inference rule.
+     * 
+     * @param lineNum
+     * @param s
+     * @return
+     */
     InferenceRule parseRule(int lineNum, String s) {
         MyStringTokenizer st = new MyStringTokenizer(s, " \t(,/).=!", true);
         Map/* <String,Variable> */nameToVar = new HashMap();
@@ -623,6 +779,15 @@ public abstract class Solver {
         return ir;
     }
 
+    /**
+     * Parse the options for an inference rule.
+     * 
+     * @param lineNum
+     * @param s
+     * @param ir
+     * @param st
+     * @return
+     */
     InferenceRule parseRuleOptions(int lineNum, String s, InferenceRule ir, MyStringTokenizer st) {
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
@@ -654,6 +819,15 @@ public abstract class Solver {
         return ir;
     }
 
+    /**
+     * Parse a term of an inference rule.
+     * 
+     * @param lineNum
+     * @param s
+     * @param nameToVar
+     * @param st
+     * @return
+     */
     RuleTerm parseRuleTerm(int lineNum, String s, Map/* <String,Variable> */nameToVar, MyStringTokenizer st) {
         boolean negated = false;
         String relationName = nextToken(st);
@@ -749,6 +923,14 @@ public abstract class Solver {
         return rt;
     }
 
+    /**
+     * Parse a variable or a constant.
+     * 
+     * @param fd
+     * @param nameToVar
+     * @param varName
+     * @return
+     */
     Variable parseVariable(Domain fd, Map nameToVar, String varName) {
         char firstChar = varName.charAt(0);
         Variable var;
@@ -767,12 +949,12 @@ public abstract class Solver {
         return var;
     }
 
-    //    public Relation getOrCreateRelation(String name, List/*<Variable>*/ vars)
-    // {
-    //        Relation r = (Relation) nameToRelation.get(name);
-    //        if (r == null) nameToRelation.put(name, r = createRelation(name, vars));
-    //        return r;
-    //    }
+    /**
+     * Get the equivalence relation for the given domain.
+     * 
+     * @param fd
+     * @return
+     */
     Relation getEquivalenceRelation(Domain fd) {
         Relation r = (Relation) equivalenceRelations.get(fd);
         if (r == null) {
@@ -781,14 +963,22 @@ public abstract class Solver {
         return r;
     }
 
+    /**
+     * Get the negated equivalence relation for the given domain.
+     * 
+     * @param fd
+     * @return
+     */
     Relation getNotEquivalenceRelation(Domain fd) {
-        Relation r = (Relation) notequivalenceRelations.get(fd);
-        if (r == null) {
-            notequivalenceRelations.put(fd, r = createNotEquivalenceRelation(fd));
-        }
-        return r;
+        Relation r = getEquivalenceRelation(fd);
+        return r.makeNegated(this);
     }
 
+    /**
+     * Load in the initial relations.
+     * 
+     * @throws IOException
+     */
     void loadInitialRelations() throws IOException {
         if (USE_IR) return;
         for (Iterator i = relationsToLoad.iterator(); i.hasNext();) {
@@ -809,6 +999,9 @@ public abstract class Solver {
         }
     }
 
+    /**
+     * Split inference rules.
+     */
     void splitRules() {
         List newRules = new LinkedList();
         for (Iterator i = rules.iterator(); i.hasNext();) {
@@ -818,6 +1011,9 @@ public abstract class Solver {
         rules.addAll(newRules);
     }
 
+    /**
+     * Report rule statistics.
+     */
     void reportStats() {
         for (Iterator i = rules.iterator(); i.hasNext();) {
             InferenceRule r = (InferenceRule) i.next();
@@ -825,6 +1021,11 @@ public abstract class Solver {
         }
     }
 
+    /**
+     * Save the results and print sizes.
+     * 
+     * @throws IOException
+     */
     void saveResults() throws IOException {
         if (USE_IR) return;
         for (Iterator i = relationsToPrintSize.iterator(); i.hasNext();) {
@@ -862,14 +1063,14 @@ public abstract class Solver {
     }
 
     /**
-     * @return
+     * @return the number of relations
      */
     public int getNumberOfRelations() {
         return relations.size();
     }
 
     /**
-     * @return
+     * @return the list of rules
      */
     public List getRules() {
         return rules;

@@ -135,17 +135,16 @@ public class BDDRelation extends Relation {
     // Called after variable order is set.
     public void initialize2() {
         boolean is_equiv = solver.equivalenceRelations.values().contains(this);
-        boolean is_nequiv = solver.notequivalenceRelations.values().contains(this);
-        if (is_equiv || is_nequiv) {
+        if (is_equiv) {
             BDDDomain d1 = (BDDDomain) domains.get(0);
             BDDDomain d2 = (BDDDomain) domains.get(1);
             relation.free();
             BDD b = d1.buildEquals(d2);
-            if (is_nequiv) {
-                relation = b.not();
-                b.free();
-            } else {
-                relation = b;
+            relation = b;
+            if (negated != null) {
+                BDDRelation bddn = (BDDRelation) negated;
+                bddn.relation.free();
+                bddn.relation = b.not();
             }
         }
     }
