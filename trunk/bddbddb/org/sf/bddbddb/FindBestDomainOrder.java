@@ -611,7 +611,7 @@ public class FindBestDomainOrder {
                         while (y.hasNext() && y.next() != a) ;
                         while (y.hasNext()) {
                             Object b = y.next();
-                            s.add(new Pair(x, y));
+                            s.add(new Pair(a, b));
                         }
                     }
                 }
@@ -756,6 +756,7 @@ public class FindBestDomainOrder {
          * @return  -1, 0, or 1 if this order is less than, equal to, or greater than
          */
         public int compareTo(Order that) {
+            if (this == that) return 0;
             return this.toString().compareTo(that.toString());
         }
         
@@ -1132,6 +1133,7 @@ public class FindBestDomainOrder {
          * @return  -1, 0, or 1 if this OrderInfo is less than, equal to, or greater than the other
          */
         public int compareTo(OrderInfo that) {
+            if (this == that) return 0;
             int result = signum(this.score - that.score);
             if (result == 0) {
                 result = (int) signum(this.confidence - that.confidence);
@@ -1226,6 +1228,7 @@ public class FindBestDomainOrder {
          * @return  -1, 0, or 1 if this TrialInfo is less than, equal to, or greater than the other
          */
         public int compareTo(TrialInfo that) {
+            if (this == that) return 0;
             int result = signum(this.cost - that.cost);
             if (result == 0) {
                 result = this.order.compareTo(that.order);
@@ -1489,6 +1492,8 @@ public class FindBestDomainOrder {
          */
         Map/*<Order,OrderInfo>*/ infos;
         
+        transient OrderClassifier classifier;
+        
         /**
          * Order info sorted by cost.  Updated automatically when necessary.
          */
@@ -1503,6 +1508,7 @@ public class FindBestDomainOrder {
             name = s;
             infos = new LinkedHashMap();
             sorted = null;
+            classifier = null;
         }
         
         /**
@@ -1514,6 +1520,7 @@ public class FindBestDomainOrder {
             this.name = that.name;
             this.infos = new LinkedHashMap(that.infos);
             this.sorted = null;
+            this.classifier = null;
         }
         
         /**
@@ -1616,6 +1623,7 @@ public class FindBestDomainOrder {
                 }
             }
             sorted = null;
+            classifier = null;
         }
         
         /**
@@ -1643,6 +1651,7 @@ public class FindBestDomainOrder {
                 }
             }
             sorted = null;
+            classifier = null;
         }
         
         /**
@@ -1700,6 +1709,7 @@ public class FindBestDomainOrder {
             if (TRACE > 0) out.println(this+": Registering as a known good order: "+o);
             infos.put(o, new OrderInfo(o, 1., HIGH_CONFIDENCE));
             sorted = null;
+            classifier = null;
         }
         
         /**
@@ -1712,6 +1722,7 @@ public class FindBestDomainOrder {
             if (TRACE > 0) out.println(this+": Registering as a known bad order: "+o);
             infos.put(o, new OrderInfo(o, 0., HIGH_CONFIDENCE));
             sorted = null;
+            classifier = null;
         }
         
         /**
@@ -1742,13 +1753,14 @@ public class FindBestDomainOrder {
          * @return  an order that seems good, or null if there aren't any.
          */
         public Order gimmeAGoodOrder(List/*<Variable>*/ variables) {
+            OrderClassifier c = getOrderClassifier();
             Iterator i = generateAllOrders(variables).iterator();
             // Find the order with the highest score.
             // todo: should be also consider the confidence?
             Order bestOrder = null; double bestScore = 0.;
             while (i.hasNext()) {
                 Order o = (Order) i.next();
-                OrderInfo score = orderGoodness(o);
+                OrderInfo score = c.orderGoodness(o);
                 if (TRACE > 1) out.println(this+": "+score);
                 if (score.score > bestScore) {
                     bestScore = score.score;
@@ -1757,51 +1769,6 @@ public class FindBestDomainOrder {
             }
             if (TRACE > 0) out.println(this+": best order "+bestOrder+" score "+format(bestScore));
             return bestOrder;
-        }
-        
-        /**
-         * Return a measure of the probable "goodness" of the given order, and
-         * a confidence of that score.
-         * The score is between 0.0 and 1.0, with higher numbers being better.
-         * If we already have info about a given order, use it.
-         * 
-         * @param o  order
-         * @return  probable goodness and confidence of that rating
-         */
-        public OrderInfo orderGoodness(Order o) {
-            OrderInfo result = (OrderInfo) infos.get(o);
-            if (result != null) return result;
-
-            if (TRACE > 2) out.print(this+": Calculating goodness of "+o);
-            double score = 0.;
-            double max = 0.;
-            for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
-                OrderInfo info = (OrderInfo) i.next();
-                // todo:
-                //   similarity calculation doesn't take into account how important
-                //   each constraint is.
-                double howSimilar = o.similarity(info.order);
-                double howConfident = howSimilar * info.confidence;
-                score += info.score * howConfident;
-                max += howConfident;
-            }
-            double resultScore = (max < 0.0001) ? 0.5 : (score / max); 
-            
-            // todo: this confidence calculation seems bogus.
-            // todo: could also make this more efficient.
-            double resultConfidence = 0.;
-            for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
-                OrderInfo info = (OrderInfo) i.next();
-                double howSimilar = o.similarity(info.order);
-                double howConfident = howSimilar * info.confidence;
-                double diff = (info.score - resultScore);
-                double diffSquared = diff * diff;
-                resultConfidence = (resultConfidence + howConfident) / (diffSquared + 1.);
-            }
-            
-            result = new OrderInfo(o, resultScore, resultConfidence);
-            if (TRACE > 2) out.println(" = score "+format(resultScore)+" confidence "+format(resultConfidence));
-            return result;
         }
         
         /**
@@ -1815,6 +1782,13 @@ public class FindBestDomainOrder {
                 Arrays.sort(sorted);
             }
             return sorted;
+        }
+        
+        public OrderClassifier getOrderClassifier() {
+            if (classifier == null) {
+                classifier = new FastOrderClassifier(this);
+            }
+            return classifier;
         }
         
         Collection/*<OrderInfo>*/ goodCharacteristics;
@@ -2025,6 +1999,7 @@ public class FindBestDomainOrder {
          */
         public Order tryNewGoodOrder(List/*<Variables>*/ variables) {
             if (TRACE > 1) out.println(this+": generating new orders for "+variables);
+            OrderClassifier c = getOrderClassifier();
             // Find the order with the highest score that we haven't tried yet
             // and that is still possibly good.
             // todo: should be also consider the confidence?
@@ -2038,7 +2013,7 @@ public class FindBestDomainOrder {
                 if (score != null && score.score < 0.05 && score.confidence >= 1.) {
                     continue;
                 }
-                score = orderGoodness(o);
+                score = c.orderGoodness(o);
                 if (TRACE > 2) out.println(this+": "+score);
                 if (score.score > bestScore) {
                     bestScore = score.score;
@@ -2050,16 +2025,243 @@ public class FindBestDomainOrder {
             return bestOrder;
         }
         
+        public OrderClassifier getOrderClassifier() {
+            if (!(classifier instanceof UpdatableOrderClassifier)) {
+                classifier = new UpdatableOrderClassifier(this);
+            }
+            return classifier;
+        }
+        
+    }
+    
+    public interface OrderClassifier {
+        
+        /**
+         * Return a measure of the probable "goodness" of the given order, and
+         * a confidence of that score.
+         * The score is between 0.0 and 1.0, with higher numbers being better.
+         * If we already have info about a given order, use it.
+         * 
+         * @param o  order
+         * @return  probable goodness and confidence of that rating
+         */
+        OrderInfo orderGoodness(Order o);
+        
+    }
+    
+    public static class UpdatableOrderClassifier extends FastOrderClassifier {
+        
+        //Map/*<Pair,OrderInfo>*/ precedence2;
+        //Map/*<Pair,OrderInfo>*/ interleave2;
+        
+        /**
+         * 
+         */
+        public UpdatableOrderClassifier(UpdatableOrderInfoCollection c) {
+            super(c);
+        }
+        
         /* (non-Javadoc)
-         * @see org.sf.bddbddb.FindBestDomainOrder.OrderInfoCollection#orderGoodness(org.sf.bddbddb.FindBestDomainOrder.Order)
+         * @see org.sf.bddbddb.FindBestDomainOrder.OrderClassifier#orderGoodness(org.sf.bddbddb.FindBestDomainOrder.Order)
          */
         public OrderInfo orderGoodness(Order o) {
             OrderInfo result = super.orderGoodness(o);
-            OrderInfo predicted = trials.predict(o);
-            if (TRACE > 1) out.print(this+": "+result+", trial score "+format(predicted.score)+" conf "+format(predicted.confidence));
+            OrderInfo predicted = ((UpdatableOrderInfoCollection) c).trials.predict(o);
+            if (TRACE > 1) out.print(c+": "+result+", trial score "+format(predicted.score)+" conf "+format(predicted.confidence));
             result.update(predicted);
             if (TRACE > 1) out.println(", total score "+format(result.score)+" conf "+format(result.confidence));
             return result;
+        }
+        
+    }
+    
+    public static class FastOrderClassifier implements OrderClassifier {
+        
+        OrderInfoCollection c;
+        Map/*<Pair,OrderInfo>*/ precedence;
+        Map/*<Pair,OrderInfo>*/ interleave;
+        double totalPredConf;
+        double totalInterConf;
+        
+        private void incorporate(Map m, Pair p, OrderInfo new_oi, boolean interleave) {
+            OrderInfo oi = (OrderInfo) m.get(p);
+            if (oi == null) {
+                Order o = new Order(interleave?Collections.singletonList(p):p);
+                m.put(p, oi = new OrderInfo(o, new_oi.score, new_oi.confidence));
+            } else {
+                oi.update(new_oi);
+            }
+        }
+        
+        public FastOrderClassifier(OrderInfoCollection c) {
+            this.c = c;
+            this.precedence = new HashMap();
+            this.interleave = new HashMap();
+            for (Iterator i = c.infos.values().iterator(); i.hasNext(); ) {
+                OrderInfo info = (OrderInfo) i.next();
+                Collection ps = info.order.getAllPrecedenceConstraints();
+                for (Iterator j = ps.iterator(); j.hasNext(); ) {
+                    Pair p = (Pair) j.next();
+                    incorporate(precedence, p, info, false);
+                }
+                Collection is = info.order.getAllInterleaveConstraints();
+                for (Iterator j = is.iterator(); j.hasNext(); ) {
+                    Pair p = (Pair) j.next();
+                    incorporate(interleave, p, info, true);
+                }
+            }
+            totalPredConf = 0.;
+            for (Iterator i = precedence.values().iterator(); i.hasNext(); ) {
+                OrderInfo oi = (OrderInfo) i.next();
+                totalPredConf += oi.confidence;
+            }
+            totalInterConf = 0.;
+            for (Iterator i = interleave.values().iterator(); i.hasNext(); ) {
+                OrderInfo oi = (OrderInfo) i.next();
+                totalInterConf += oi.confidence;
+            }
+            if (TRACE > 1) {
+                dumpInfo();
+            }
+        }
+        
+        public void dumpInfo() {
+            List infos = new ArrayList(precedence.size() + interleave.size());
+            infos.addAll(precedence.values());
+            infos.addAll(interleave.values());
+            OrderInfo[] sorted = (OrderInfo[]) infos.toArray(new OrderInfo[infos.size()]);
+            Arrays.sort(sorted);
+            int num = Math.min(5, sorted.length/2);
+            if (num > 0) {
+                out.println(c+": Best constraints:");
+                for (int i = 0; i < num; ++i) {
+                    out.println(sorted[sorted.length-i-1]);
+                }
+                out.println(c+": Worst constraints:");
+                for (int i = 0; i < num; ++i) {
+                    out.println(sorted[i]);
+                }
+            }
+        }
+        
+        public OrderInfo orderGoodness(Order o) {
+            OrderInfo result = (OrderInfo) c.infos.get(o);
+            if (result != null) return result;
+            
+            if (TRACE > 2) out.print(c+": Calculating goodness of "+o);
+            double score = 0.;
+            double resultScore;
+            double total = Order.PRECEDENCE_WEIGHT*totalPredConf +
+                           Order.INTERLEAVE_WEIGHT*totalInterConf;
+            if (total > 0.0001) {
+                Collection ps = o.getAllPrecedenceConstraints();
+                for (Iterator j = ps.iterator(); j.hasNext(); ) {
+                    Pair p = (Pair) j.next();
+                    OrderInfo oi = (OrderInfo) precedence.get(p);
+                    if (oi != null) {
+                        score += oi.score * oi.confidence * Order.PRECEDENCE_WEIGHT;
+                    }
+                }
+                Collection is = o.getAllInterleaveConstraints();
+                for (Iterator j = is.iterator(); j.hasNext(); ) {
+                    Pair p = (Pair) j.next();
+                    OrderInfo oi = (OrderInfo) interleave.get(p);
+                    if (oi != null) {
+                        score += oi.score * oi.confidence * Order.INTERLEAVE_WEIGHT;
+                    }
+                }
+                resultScore = score / total;
+            } else {
+                resultScore = 0.5;
+            }
+            
+            double resultConfidence = 0.;
+            double scale = Order.INTERLEAVE_WEIGHT / (Order.PRECEDENCE_WEIGHT + Order.INTERLEAVE_WEIGHT);
+            Collection ps = o.getAllPrecedenceConstraints();
+            for (Iterator j = ps.iterator(); j.hasNext(); ) {
+                Pair p = (Pair) j.next();
+                OrderInfo oi = (OrderInfo) precedence.get(p);
+                if (oi != null) {
+                    double howConfident = oi.confidence * scale;
+                    double diff = (oi.score - resultScore);
+                    double diffSquared = diff * diff;
+                    resultConfidence = (resultConfidence + howConfident) / (diffSquared + 1.);
+                }
+            }
+            scale = 1 - scale;
+            Collection is = o.getAllInterleaveConstraints();
+            for (Iterator j = is.iterator(); j.hasNext(); ) {
+                Pair p = (Pair) j.next();
+                OrderInfo oi = (OrderInfo) interleave.get(p);
+                if (oi != null) {
+                    double howConfident = oi.confidence * scale;
+                    double diff = (oi.score - resultScore);
+                    double diffSquared = diff * diff;
+                    resultConfidence = (resultConfidence + howConfident) / (diffSquared + 1.);
+                }
+            }
+            
+            result = new OrderInfo(o, resultScore, resultConfidence);
+            if (TRACE > 2) out.println(" = score "+format(resultScore)+" confidence "+format(resultConfidence));
+            return result;
+        }
+    }
+    
+    public static class SlowOrderClassifier implements OrderClassifier {
+        
+        OrderInfoCollection c;
+        
+        public SlowOrderClassifier(OrderInfoCollection c) {
+            this.c = c;
+        }
+        
+        static OrderInfo orderGoodness(OrderInfoCollection c, Order o) {
+            OrderInfo result = (OrderInfo) c.infos.get(o);
+            if (result != null) return result;
+
+            if (TRACE > 2) out.print(c+": Calculating goodness of "+o);
+            double score = 0.;
+            double max = 0.;
+            for (Iterator i = c.infos.values().iterator(); i.hasNext(); ) {
+                OrderInfo info = (OrderInfo) i.next();
+                // todo:
+                //   similarity calculation doesn't take into account how important
+                //   each constraint is.
+                double howSimilar = o.similarity(info.order);
+                double howConfident = howSimilar * info.confidence;
+                score += info.score * howConfident;
+                max += howConfident;
+            }
+            double resultScore = (max < 0.0001) ? 0.5 : (score / max); 
+            
+            // todo: this confidence calculation seems bogus.
+            // todo: could also make this more efficient.
+            double resultConfidence = 0.;
+            for (Iterator i = c.infos.values().iterator(); i.hasNext(); ) {
+                OrderInfo info = (OrderInfo) i.next();
+                double howSimilar = o.similarity(info.order);
+                double howConfident = howSimilar * info.confidence;
+                double diff = (info.score - resultScore);
+                double diffSquared = diff * diff;
+                resultConfidence = (resultConfidence + howConfident) / (diffSquared + 1.);
+            }
+            
+            result = new OrderInfo(o, resultScore, resultConfidence);
+            if (TRACE > 2) out.println(" = score "+format(resultScore)+" confidence "+format(resultConfidence));
+            return result;
+        }
+        
+        /**
+         * Return a measure of the probable "goodness" of the given order, and
+         * a confidence of that score.
+         * The score is between 0.0 and 1.0, with higher numbers being better.
+         * If we already have info about a given order, use it.
+         * 
+         * @param o  order
+         * @return  probable goodness and confidence of that rating
+         */
+        public OrderInfo orderGoodness(Order o) {
+            return orderGoodness(c, o);
         }
         
     }
