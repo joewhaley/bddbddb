@@ -329,8 +329,16 @@ public class BDDRelation extends Relation {
                 dos.writeBytes(" " + d.toString() + ":" + d.varNum());
             }
             dos.writeBytes("\n");
-            System.out.println(" ) = " + relation.nodeCount() + " nodes, "
+            System.out.println(" } = " + relation.nodeCount() + " nodes, "
                 + dsize() + " elements");
+            if (relation.isOne()) {
+                for (Iterator j = domains.iterator(); j.hasNext();) {
+                    BDDDomain d = (BDDDomain) j.next();
+                    dos.writeBytes("* ");
+                }
+                dos.writeBytes("\n");
+                return;
+            }
             for (int i = 0; i < a.length; ++i) {
                 BDDDomain d = solver.bdd.getDomain(a[i]);
                 allDomains.andWith(d.set());
