@@ -23,6 +23,7 @@ import jwutil.collections.Pair;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Learner.IndividualRuleLearner;
 import net.sf.bddbddb.ir.BDDInterpreter;
+import net.sf.bddbddb.ir.IR;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraintSet;
 import net.sf.javabdd.BDDDomain;
@@ -269,6 +270,7 @@ public class BDDSolver extends Solver {
      */
     public void solve() {
         if (USE_IR) {
+            ir = IR.create(stratify);
             BDDInterpreter interpreter = new BDDInterpreter(ir);
             interpreter.interpret();
             //stratify.solve();
