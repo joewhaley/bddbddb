@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
-import org.sf.bddbddb.dataflow.Problem.Fact;
 import org.sf.bddbddb.ir.IR;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.util.BitString;
