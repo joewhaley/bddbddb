@@ -63,7 +63,7 @@ public class Project extends HighLevelOperation {
      * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
-    public Relation getDest() {
+    public Relation getRelationDest() {
         return r0;
     }
 

@@ -38,7 +38,7 @@ public abstract class Operation implements IterationElement {
     /**
      * @return
      */
-    public abstract Relation getDest();
+    public abstract Relation getRelationDest();
 
     /**
      * @return
