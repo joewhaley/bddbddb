@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src/"/>
-	<classpathentry exported="true" kind="lib" path="bddbddb.jar"/>
-	<classpathentry exported="true" kind="lib" path="javabdd.jar"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry exported="true" sourcepath="/bddbddb" kind="lib" path="bddbddb.jar"/>
+	<classpathentry exported="true" sourcepath="/JavaBDD" kind="lib" path="javabdd.jar"/>
 	<classpathentry exported="true" kind="lib" path="joeq_core.jar"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="/jwutil"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
