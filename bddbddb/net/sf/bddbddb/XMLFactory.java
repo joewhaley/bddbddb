@@ -12,10 +12,7 @@ import java.io.IOException;
 import java.io.Writer;
 import net.sf.bddbddb.FindBestDomainOrder.ConstraintInfoCollection;
 import net.sf.bddbddb.FindBestDomainOrder.TrialCollection;
-import net.sf.bddbddb.order.InterleaveConstraint;
-import net.sf.bddbddb.order.NotInterleaveConstraint;
 import net.sf.bddbddb.order.OrderConstraint;
-import net.sf.bddbddb.order.BeforeConstraint;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.output.Format;
@@ -41,22 +38,6 @@ public class XMLFactory {
     
     public Relation getRelation(String s) {
         return (Relation) solver.nameToRelation.get(s);
-    }
-    
-    public OrderConstraint constraintFromXML(Element e) {
-        Element e1 = (Element) e.getContent(0);
-        Element e2 = (Element) e.getContent(1);
-        OrderConstraint oc1 = (OrderConstraint) fromXML(e1);
-        OrderConstraint oc2 = (OrderConstraint) fromXML(e2);
-        if (e.getName().equals("precedenceConstraint")) {
-            return new BeforeConstraint(oc1, oc2);
-        } else if (e.getName().equals("interleaveConstraint")) {
-            return new InterleaveConstraint(oc1, oc2);
-        } else if (e.getName().equals("notInterleaveConstraint")) {
-            return new NotInterleaveConstraint(oc1, oc2);
-        } else {
-            return null;
-        }
     }
     
     public Object fromXML(Element e) {
@@ -101,12 +82,8 @@ public class XMLFactory {
             o = Attribute.fromXMLElement(e, this);
         } else if (name.equals("variable")) {
             o = Variable.fromXMLElement(e, this);
-        } else if (name.equals("precedenceConstraint")) {
-            o = BeforeConstraint.fromXMLElement(e, this);
-        } else if (name.equals("interleaveConstraint")) {
-            o = InterleaveConstraint.fromXMLElement(e, this);
-        } else if (name.equals("notInterleaveConstraint")) {
-            o = NotInterleaveConstraint.fromXMLElement(e, this);
+        } else if (name.endsWith("Constraint")) {
+            o = OrderConstraint.fromXMLElement(e, this);
         } else {
             throw new IllegalArgumentException("Cannot parse XML element "+name);
         }
