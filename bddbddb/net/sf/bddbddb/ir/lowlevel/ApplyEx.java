@@ -6,7 +6,9 @@ package net.sf.bddbddb.ir.lowlevel;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import jwutil.collections.Pair;
+import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.Relation;
@@ -25,6 +27,7 @@ import net.sf.javabdd.BDDFactory.BDDOp;
 public class ApplyEx extends LowLevelOperation {
     BDDRelation r0, r1, r2;
     BDDOp op;
+    List domainProjectSet;
     List/* <Attribute> */attributes;
 
     /**
@@ -58,7 +61,7 @@ public class ApplyEx extends LowLevelOperation {
      * @see net.sf.bddbddb.ir.Operation#toString()
      */
     public String toString() {
-        return r0.toString() + " = " + getExpressionString();
+        return (TRACE_VERBOSE ? r0.verboseToString() : r0.toString()) + " = " + getExpressionString();
     }
 
     /*
@@ -70,7 +73,7 @@ public class ApplyEx extends LowLevelOperation {
         String opName;
         if (op == BDDFactory.and) opName = "relprod";
         else opName = op.toString() + "Ex";
-        return opName + "(" + r1.toString() + "," + r2.toString() + "," + attributes + ")";
+        return opName + "(" + (TRACE_VERBOSE ? r1.verboseToString() : r1.toString()) + "," + (TRACE_VERBOSE ? r2.verboseToString() : r2.toString()) + "," + attributes + ")";
     }
 
     /*
@@ -109,19 +112,28 @@ public class ApplyEx extends LowLevelOperation {
      * @return  the set to project
      */
     public BDD getProjectSet() {
+        Assert._assert(domainProjectSet != null);
         BDD b = r1.getBDD().getFactory().one();
-        for (Iterator i = attributes.iterator(); i.hasNext();) {
-            Attribute a = (Attribute) i.next();
-            BDDDomain d = r1.getBDDDomain(a);
-            if (d == null) d = r2.getBDDDomain(a);
-            if (d == null) {
-                System.out.println("Trying to project attribute "+a+" which is neither in "+r1+" "+r1.getAttributes()+" "+r1.getBDDDomains()+" nor "+r2+" "+r2.getAttributes()+" "+r2.getBDDDomains());
-            }
+        for (Iterator i = domainProjectSet.iterator(); i.hasNext();) {
+            BDDDomain d = (BDDDomain) i.next();
             if (d != null) b.andWith(d.set());
         }
         return b;
     }
 
+    public void setProjectSet(){
+        domainProjectSet = new LinkedList();
+        for (Iterator i = attributes.iterator(); i.hasNext();) {
+            Attribute a = (Attribute) i.next();
+            BDDDomain d = r1.getBDDDomain(a);
+            if (d == null) d = r2.getBDDDomain(a);
+            if (d == null) {
+                System.out.println("Warning: Trying to project attribute "+a+" which is neither in "+r1+" "+r1.getAttributes()+" "+r1.getBDDDomains()+" nor "+r2+" "+r2.getAttributes()+" "+r2.getBDDDomains());
+                continue;
+            }
+            domainProjectSet.add(d);
+        }
+    }
     /**
      * @return Returns the attributes.
      */
@@ -145,6 +157,7 @@ public class ApplyEx extends LowLevelOperation {
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r1 == r_old) r1 = (BDDRelation) r_new;
         if (r2 == r_old) r2 = (BDDRelation) r_new;
+        
     }
 
     /*

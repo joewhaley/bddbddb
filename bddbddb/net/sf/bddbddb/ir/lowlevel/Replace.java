@@ -59,7 +59,7 @@ public class Replace extends LowLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = " + getExpressionString();
+        return (TRACE_VERBOSE ? r0.verboseToString() : r0.toString()) + " = " + getExpressionString();
     }
 
     /*
@@ -72,8 +72,8 @@ public class Replace extends LowLevelOperation {
     }
 
     /*
-     * (non-Javadoc)
      * 
+     * (non-Javadoc)
      * @see net.sf.bddbddb.ir.Operation#setRelationDest(net.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
@@ -122,7 +122,7 @@ public class Replace extends LowLevelOperation {
      * @see net.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
-        return "replace(" + r1.toString() + pairingString + ")";
+        return "replace(" + (TRACE_VERBOSE ? r1.verboseToString() : r1.toString()) + pairingString + ")";
     }
 
     /**

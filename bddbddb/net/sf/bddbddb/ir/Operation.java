@@ -28,6 +28,10 @@ public abstract class Operation implements IterationElement {
     }
     
     /**
+     * Boolean for verbose tracing of operations
+     */
+    public static boolean TRACE_VERBOSE = System.getProperty("traceinterpreter", "no").equals("verbose");
+    /**
      * Unique ID number for this operation.
      */
     public final int id;

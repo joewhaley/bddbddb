@@ -13,7 +13,7 @@ import java.util.Map;
  * @version $Id$
  */
 public abstract class Interpreter {
-    boolean TRACE = false;
+    boolean TRACE = System.getProperty("traceinterpreter") != null;
     IR ir;
     OperationInterpreter opInterpreter;
     Map/*<Relation,RelationStats>*/ relationStats;

@@ -30,6 +30,7 @@ public class Project extends HighLevelOperation {
         this.attributes = new LinkedList(r1.getAttributes());
         this.attributes.removeAll(r0.getAttributes());
     }
+    
 
     /*
      * (non-Javadoc)

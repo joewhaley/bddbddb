@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import jwutil.collections.Pair;
 import jwutil.util.Assert;
 import net.sf.bddbddb.IterationList;
@@ -31,6 +32,7 @@ import net.sf.bddbddb.ir.highlevel.Union;
 import net.sf.bddbddb.ir.highlevel.Universe;
 import net.sf.bddbddb.ir.highlevel.Zero;
 import net.sf.bddbddb.ir.lowlevel.ApplyEx;
+import net.sf.bddbddb.ir.lowlevel.BDDProject;
 import net.sf.bddbddb.ir.lowlevel.Replace;
 import net.sf.javabdd.BDDFactory;
 
@@ -160,6 +162,14 @@ public class ConstantProp extends RelationProblem {
          * @see net.sf.bddbddb.ir.HighLevelOperationVisitor#visit(net.sf.bddbddb.ir.Project)
          */
         public Object visit(Project op) {
+            List srcs = op.getSrcs();
+            Relation r1 = (Relation) srcs.get(0);
+            ConstantPropFact f1 = getRepresentativeFact(r1, op);
+            if (f1 == ZERO) return ZERO;
+            return allocNewRelation(op.getRelationDest(), op);
+        }
+        
+        public Object visit(BDDProject op) {
             List srcs = op.getSrcs();
             Relation r1 = (Relation) srcs.get(0);
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
@@ -551,6 +561,15 @@ public class ConstantProp extends RelationProblem {
         }
 
         public Object visit(Project op) {
+            Relation r1 = op.getSrc();
+            ConstantPropFact f1 = getRepresentativeFact(r1, op);
+            if (f1 == ZERO) {
+                return new Zero(op.getRelationDest());
+            }
+            return op;
+        }
+        
+        public Object visit(BDDProject op) {
             Relation r1 = op.getSrc();
             ConstantPropFact f1 = getRepresentativeFact(r1, op);
             if (f1 == ZERO) {

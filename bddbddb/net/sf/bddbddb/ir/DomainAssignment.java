@@ -3,6 +3,10 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.ir;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,13 +15,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.IOException;
+
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
+import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.BDDSolver;
@@ -45,6 +47,7 @@ import net.sf.bddbddb.ir.highlevel.Union;
 import net.sf.bddbddb.ir.highlevel.Universe;
 import net.sf.bddbddb.ir.highlevel.Zero;
 import net.sf.bddbddb.ir.lowlevel.ApplyEx;
+import net.sf.bddbddb.ir.lowlevel.BDDProject;
 import net.sf.bddbddb.ir.lowlevel.Replace;
 import net.sf.javabdd.BDDDomain;
 
@@ -382,6 +385,10 @@ public abstract class DomainAssignment implements OperationVisitor {
         Relation r1 = op.getSrc();
         return visitUnaryOp(op, r0, r1);
     }
+    public Object visit(BDDProject op) {
+       Assert.UNREACHABLE(); /* shouldn't see these before domain assignment */
+        return null;
+    }
 
     /*
      * (non-Javadoc)
@@ -395,7 +402,9 @@ public abstract class DomainAssignment implements OperationVisitor {
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
             Attribute a1 = (Attribute) i.next();
             Attribute a0 = (Attribute) op.getRenameMap().get(a1);
-            if (a0 == null) a0 = a1;
+            if (a0 == null){
+                a0 = a1;                
+            }   
             if (!forceEqual(r1, a1, r0, a0, true)) {
                 // Assignment failed, rename required.
                 // TODO: we have a choice whether to rename r0 or r1.
@@ -588,6 +597,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     public void loadDomainAssignment(BufferedReader in) throws IOException {
         BDDSolver bs = (BDDSolver) solver;
         int count = 0;
+        System.out.println("Loading domain assignment from file...");
         for (;;) {
             String s = in.readLine();
             if (s == null) break;
@@ -640,7 +650,7 @@ public abstract class DomainAssignment implements OperationVisitor {
                     }
                 }
                 if (!success) {
-                    System.out.println("Cannot add constraint: " + s);
+                    if(TRACE) System.out.println("Cannot add constraint: " + s);
                 } else {
                     ++count;
                 }
