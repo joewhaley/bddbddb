@@ -360,7 +360,7 @@ public class BDDRelation extends Relation {
                 BDD sat = (BDD) i.next();
                 long[] v = sat.scanAllVar();
                 for (k = 0; k < domIndices.length; ++k) {
-                    long val = v[k];
+                    long val = v[domIndices[k]];
                     if (val == 0L) {
                         // Check if this is the universal set.
                         BDDDomain d = solver.bdd.getDomain(domIndices[k]);
