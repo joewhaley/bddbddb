@@ -1063,6 +1063,7 @@ public class BDDInferenceRule extends InferenceRule {
             time = Math.min(time, LONG_TIME);
             bestTime = Math.min(time, bestTime);
             tc.addTrial(o,guess.prediction, time);
+   
             if (time >= LONG_TIME)
                 fbdo.neverTryAgain(this, o);
         }
