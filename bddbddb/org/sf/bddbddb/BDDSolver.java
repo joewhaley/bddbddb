@@ -152,7 +152,7 @@ public class BDDSolver extends Solver {
      */
     public void setVariableOrdering() {
         if (VARORDER != null) {
-            VARORDER = fixVarOrder(VARORDER);
+            VARORDER = fixVarOrder(VARORDER, true);
             System.out.print("Setting variable ordering to " + VARORDER + ", ");
             int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
             bdd.setVarOrder(varOrder);
@@ -164,7 +164,7 @@ public class BDDSolver extends Solver {
      * Verify that the variable order is sane: Missing BDD domains are added and extra
      * BDD domains are removed.
      */
-    String fixVarOrder(String varOrder) {
+    String fixVarOrder(String varOrder, boolean trace) {
         // Verify that variable order is sane.
         StringTokenizer st = new StringTokenizer(varOrder, "x_");
         List domains = new LinkedList();
@@ -177,7 +177,7 @@ public class BDDSolver extends Solver {
                 domains.remove(dName);
                 continue;
             }
-            System.out.println("Adding missing domain \"" + dName + "\" to bddvarorder.");
+            if (trace) System.out.println("Adding missing domain \"" + dName + "\" to bddvarorder.");
             String baseName = dName;
             for (;;) {
                 char c = baseName.charAt(baseName.length() - 1);
@@ -194,7 +194,7 @@ public class BDDSolver extends Solver {
         }
         for (Iterator i = domains.iterator(); i.hasNext();) {
             String dName = (String) i.next();
-            System.out.println("Eliminating unused domain \"" + dName + "\" from bddvarorder.");
+            if (trace) System.out.println("Eliminating unused domain \"" + dName + "\" from bddvarorder.");
             int index = varOrder.indexOf(dName);
             if (index == 0) {
                 if (varOrder.length() <= dName.length() + 1) {
