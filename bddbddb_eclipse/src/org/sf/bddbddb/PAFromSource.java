@@ -166,7 +166,7 @@ public class PAFromSource {
     static int bddcache = Integer.parseInt(System.getProperty("bddcache", "10000"));
     static BDDFactory bdd = BDDFactory.init(bddnodes, bddcache);
     
-    static BDDDomain V1, V2, I, H1, Z, F, T1, T2, M, N, M2; // H2
+    static BDDDomain V1 = null, V2, I, H1, Z, F, T1, T2, M, N, M2; // H2
     //BDDDomain V1c[], V2c[], H1c[], H2c[];
     
     static int V_BITS=19, I_BITS=19, H_BITS=16, Z_BITS=6, F_BITS=14, T_BITS=13, N_BITS=14, M_BITS=15;
@@ -221,12 +221,35 @@ public class PAFromSource {
     //BDD V1cdomain, V2cdomain, H1cdomain, H2cdomain;
 
     static int bddminfree = Integer.parseInt(System.getProperty("bddminfree", "20"));
-    static String varorder = System.getProperty("bddordering");
+    static String varorder = "N_F_I_M2_M_Z_V2xV1_T1_T2_H1";//System.getProperty("bddordering");
     //int MAX_PARAMS = Integer.parseInt(System.getProperty("pas.maxparams", "4"));
     static boolean reverseLocal = System.getProperty("bddreverse", "true").equals("true"); 
     
     static {
-        initBDDFactory();
+//        if (varorder == null) {
+//            // default variable orderings.
+//            /*
+//            if (CONTEXT_SENSITIVE || THREAD_SENSITIVE || OBJECT_SENSITIVE) {
+//                if (HC_BITS > 0) {
+//                    varorder = "N_F_Z_I_M2_M_T1_V2xV1_V2cxV1c_H2xH2c_T2_H1xH1c";
+//                } else {
+//                    //varorder = "N_F_Z_I_M2_M_T1_V2xV1_V2cxV1c_H2_T2_H1";
+//                    varorder = "N_F_I_M2_M_Z_V2xV1_V2cxV1c_T1_H2_T2_H1";
+//                }
+//            } else if (CARTESIAN_PRODUCT && false) {
+//                varorder = "N_F_Z_I_M2_M_T1_V2xV1_T2_H2xH1";
+//                for (int i = 0; i < V1c.length; ++i) {
+//                    varorder += "xV1c"+i+"xV2c"+i;
+//                }
+//            } else {
+//                //varorder = "N_F_Z_I_M2_M_T1_V2xV1_H2_T2_H1";
+//                varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1";
+//            } */
+//            varorder = "N_F_I_M2_M_Z_V2xV1_T1_T2_H1";
+//        }
+//        
+        
+        //initBDDFactory();
     }
         
     //MultiMap constructors /*<String(class key), Name(constructor)>*/ 
@@ -255,61 +278,6 @@ public class PAFromSource {
         M = makeDomain("M", M_BITS);
         M2 = makeDomain("M2", M_BITS);
 
-        /*
-        if (CONTEXT_SENSITIVE || OBJECT_SENSITIVE || THREAD_SENSITIVE) {
-            V1c = new BDDDomain[1];
-            V2c = new BDDDomain[1];
-            V1c[0] = makeDomain("V1c", VC_BITS);
-            V2c[0] = makeDomain("V2c", VC_BITS);
-        } else if (CARTESIAN_PRODUCT && false) {
-            V1c = new BDDDomain[MAX_PARAMS];
-            V2c = new BDDDomain[MAX_PARAMS];
-            for (int i = 0; i < V1c.length; ++i) {
-                V1c[i] = makeDomain("V1c"+i, H_BITS + HC_BITS);
-            }
-            for (int i = 0; i < V2c.length; ++i) {
-                V2c[i] = makeDomain("V2c"+i, H_BITS + HC_BITS);
-            }
-        } else {
-            V1c = V2c = new BDDDomain[0];
-        }
-        if (USE_HCONTEXT) {
-            H1c = new BDDDomain[] { makeDomain("H1c", HC_BITS) };
-            H2c = new BDDDomain[] { makeDomain("H2c", HC_BITS) };
-        } else {
-            H1c = H2c = new BDDDomain[0];
-        }
-        */
-        
-        //if (TRACE) out.println("Variable context domains: "+V1c.length);
-        //if (TRACE) out.println("Heap context domains: "+H1c.length);
-        
-        if (varorder == null) {
-            // default variable orderings.
-            /*
-            if (CONTEXT_SENSITIVE || THREAD_SENSITIVE || OBJECT_SENSITIVE) {
-                if (HC_BITS > 0) {
-                    varorder = "N_F_Z_I_M2_M_T1_V2xV1_V2cxV1c_H2xH2c_T2_H1xH1c";
-                } else {
-                    //varorder = "N_F_Z_I_M2_M_T1_V2xV1_V2cxV1c_H2_T2_H1";
-                    varorder = "N_F_I_M2_M_Z_V2xV1_V2cxV1c_T1_H2_T2_H1";
-                }
-            } else if (CARTESIAN_PRODUCT && false) {
-                varorder = "N_F_Z_I_M2_M_T1_V2xV1_T2_H2xH1";
-                for (int i = 0; i < V1c.length; ++i) {
-                    varorder += "xV1c"+i+"xV2c"+i;
-                }
-            } else {
-                //varorder = "N_F_Z_I_M2_M_T1_V2xV1_H2_T2_H1";
-                varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1";
-            } */
-            varorder = "N_F_I_M2_M_Z_V2xV1_T1_T2_H1";
-        }
-        
-        System.out.println("Using variable ordering "+varorder);
-        int[] ordering = bdd.makeVarOrdering(reverseLocal, varorder);
-        bdd.setVarOrder(ordering);
-        
         V1set = V1.set();
 
         V2set = V2.set();
@@ -340,6 +308,11 @@ public class PAFromSource {
         //H1FH2set = H1Fset.and(H2set);
         T2Nset = T2set.and(Nset);
         MZset = Mset.and(Zset);
+        
+
+        System.out.println("Using variable ordering "+varorder);
+        int[] ordering = bdd.makeVarOrdering(reverseLocal, varorder);
+        bdd.setVarOrder(ordering);
     }
 
     private static BDDDomain makeDomain(String name, int bits) {
@@ -350,17 +323,11 @@ public class PAFromSource {
     }
     
     public BDD initBDD(String name) {
-        String dumpPath = System.getProperty("pas.dumppath", "");
-        if (dumpPath.length() > 0) {
-            File f = new File(dumpPath);
-            if (!f.exists()) f.mkdirs();
-            String sep = System.getProperty("file.separator", "/");
-            if (!dumpPath.endsWith(sep))
-                dumpPath += sep;
-        }
+
         try {
-            String fn = dumpPath+name+".bdd";
+            String fn = loadPath+name+".bdd";
             if (new File(fn).exists()) {
+                out.println("loading existing bdd");
                 return bdd.load(fn);
             }
         } catch (IOException x) {
@@ -2337,7 +2304,9 @@ public class PAFromSource {
     Set dotClass;
     Map/*<ICompilationUnit, CompilationUnit>*/ javaASTs = new HashMap();
     private boolean ran = false;
+    private String dumpPath;
     private int filesParsed = 0;
+    private String loadPath;
     
     public PAFromSource(Set j, Set c) {
         this();
@@ -2345,12 +2314,31 @@ public class PAFromSource {
     }
     
     public PAFromSource() {
+        setPath();
+        
         dotJava = new HashSet();
         dotClass = new HashSet();
         
         // TODO clear files?
-        resetBDDs();
-        initializeMaps();
+        //resetBDDs();
+        //initializeMaps();
+    }
+
+    private void setPath() {
+        dumpPath = System.getProperty("pas.dumppath", "");
+        loadPath = System.getProperty("pas.loadpath", "");
+        String sep = System.getProperty("file.separator", "/");
+        if (dumpPath.length() > 0) {
+            File f = new File(dumpPath);
+            if (!f.exists()) f.mkdirs();
+            if (!dumpPath.endsWith(sep))
+                dumpPath += sep;
+        }
+        if (loadPath.length() > 0) {
+            File f = new File(loadPath);
+            if (!loadPath.endsWith(sep))
+                loadPath += sep;
+        }
     }
 
     public SourceTransformation getTransformation() {
@@ -2396,6 +2384,8 @@ public class PAFromSource {
      * @throws IOException
      */
     public void run() throws IOException {
+        setPath();
+        if (V1== null) return;
         if (filesParsed == 0) {
             out.println("nothing to generate relations for");
             return;
@@ -2438,8 +2428,40 @@ public class PAFromSource {
 
         // TODO transitive closure on aT
     }
+    
+    public void loadClasses(Set libs) {
+        setPath();
+        
+        libs.removeAll(dotClass);
+        System.out.println(libs.size() + " .class files to parse.");
+        
+        // make sure libs havn't been loaded first
+        if (V1 == null) {
+            if (!libs.isEmpty()) {
+                Collection classes = new LinkedList();
+                for (Iterator i = libs.iterator(); i.hasNext(); ) {
+                    IClassFile f = (IClassFile) i.next();
+                    String s = EclipseUtil.getFullyQualifiedClassName(f);
+                    classes.add(s);
+                }
+                             
+                ExternalAppLauncher.callJoeqGenRelations(classes, varorder);
+                dotClass.addAll(libs);
+            }
+            
+            loadFieldDomains();
+            initBDDFactory();
+            // load stuff back in
+            resetBDDs();
+            initializeMaps();
+        }
+        else {
+            out.println("libs have already been loaded");
+        }
+    }
 
     public void parse(Set sources, Set libs) {
+        setPath();
         // dont repeat work
         sources.removeAll(dotJava);
         libs.removeAll(dotClass);
@@ -2447,22 +2469,15 @@ public class PAFromSource {
         System.out.println(sources.size() + " .java files to parse.");
         System.out.println(libs.size() + " .class files to parse.");
         
-        if (!libs.isEmpty()) {
-            Collection classes = new LinkedList();
-            for (Iterator i = libs.iterator(); i.hasNext(); ) {
-                IClassFile f = (IClassFile) i.next();
-                String s = EclipseUtil.getFullyQualifiedClassName(f);
-                classes.add(s);
-            }
-         
-            ExternalAppLauncher.callJoeqGenRelations(classes, varorder);
-            dotClass.addAll(libs);
-            
+        // make sure libs havn't been loaded first
+        if (V1 == null) {
+            initBDDFactory();
             // load stuff back in
             resetBDDs();
             initializeMaps();
         }
-
+        
+        
         // Start timing.
         long time = System.currentTimeMillis();
         
@@ -2478,19 +2493,18 @@ public class PAFromSource {
                 generateRelations(cu, true, true);
             }
         }
-        
-        if (false) {
-            out.println("Processing .class files");
-            for (Iterator i = libs.iterator(); i.hasNext(); ) {
-                Object o = i.next();
-                out.println("Starting file " + count++);
-                CompilationUnit cu = parseAST(o);
-                if (cu != null) {
-                    dotClass.add(o);
-                    generateRelations(cu, true, true);
-                }
+    
+        out.println("Processing .class files");
+        for (Iterator i = libs.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            out.println("Starting file " + count++);
+            CompilationUnit cu = parseAST(o);
+            if (cu != null) {
+                dotClass.add(o);
+                generateRelations(cu, true, true);
             }
         }
+
 
         System.out.println("Time spent : "+(System.currentTimeMillis()-time)/1000.);
     }
@@ -2759,15 +2773,7 @@ public class PAFromSource {
         BDD L0 = L;//.exist(V1cV2cset);
         BDD IE0 = IE;//.exist(V1cV2cset);
         BDD vP0 = vP;//vP.exist(V1cH1cset);
-        
-        String dumpPath = System.getProperty("pas.dumppath", "");
-        if (dumpPath.length() > 0) {
-            File f = new File(dumpPath);
-            if (!f.exists()) f.mkdirs();
-            String sep = System.getProperty("file.separator", "/");
-            if (!dumpPath.endsWith(sep))
-                dumpPath += sep;
-        }
+
         System.out.println("Dumping to path "+dumpPath);
         
         BufferedWriter dos = null;
@@ -2937,17 +2943,11 @@ public class PAFromSource {
     }
     
     private IndexedMap makeMap(String name, int bits) {
-        String dumpPath = System.getProperty("pas.dumppath", "");
-        if (dumpPath.length() > 0) {
-            File f = new File(dumpPath);
-            if (!f.exists()) f.mkdirs();
-            String sep = System.getProperty("file.separator", "/");
-            if (!dumpPath.endsWith(sep))
-                dumpPath += sep;
-        }
         BufferedReader in = null;
         try {
-            in = new BufferedReader(new FileReader(dumpPath+name+".map"));
+            in = new BufferedReader(new FileReader(loadPath+name+".map"));
+            out.println("loading existing map");
+            
             return NodeWrapperIndexMap.loadStringWrapperMap(name, in);
         } catch (IOException x) {
         }
@@ -2962,6 +2962,7 @@ public class PAFromSource {
         Tmap = makeMap("type", T_BITS);
         Nmap = makeMap("name", N_BITS);
         Mmap = makeMap("method", M_BITS);
+        out.println("loadpath " + loadPath);
         
         Vmap.get(StringWrapper.GLOBAL_THIS);
         Hmap.get(StringWrapper.GLOBAL_THIS);
@@ -3365,4 +3366,57 @@ public class PAFromSource {
         return s;
     }
     
+    
+    
+    private void loadFieldDomains() {
+        String fname = loadPath + "fielddomains.pa";
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new FileReader(fname));
+            String line;
+
+            while ((line = in.readLine()) != null) {
+                if (line.startsWith("#")) continue;
+                    
+                String[] tuple = line.split("\\s"); // (V, bits, mapname)
+                line = tuple[0];
+                long size = Long.parseLong(tuple[1]);
+                int bits = 1;
+                while ((size >> bits) != 0) {
+                    bits ++;
+                }
+                bits -= 1;
+                
+                if (line.equals("V")) {
+                    V_BITS = bits;
+                }
+                else if (line.equals("I")) {
+                    I_BITS = bits;
+                }
+                else if (line.equals("H")) {
+                    H_BITS = bits;   
+                }
+                else if (line.equals("Z")) {
+                    Z_BITS = bits;
+                }
+                else if (line.equals("F")) {
+                    F_BITS = bits;
+                }
+                else if (line.equals("T")) {
+                    T_BITS = bits;
+                }
+                else if (line.equals("N")) {
+                    N_BITS = bits;
+                }
+                else if (line.equals("M")) {
+                    M_BITS = bits;
+                }
+            }
+        } catch (IOException e1) {
+        }
+        try {
+            if (in != null) in.close();
+        } catch (IOException e) {
+        }
+    }
 }
