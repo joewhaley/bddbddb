@@ -41,8 +41,7 @@ import org.sf.javabdd.BDDFactory;
  * @version $Id$
  */
 public class BDDSolver extends Solver {
-    public static String bddDomainInfoFileName = System.getProperty("bddinfo",
-        "bddinfo");
+    public static String bddDomainInfoFileName = System.getProperty("bddinfo", "bddinfo");
     BDDFactory bdd;
     MultiMap fielddomainsToBDDdomains;
     Map orderingConstraints;
@@ -209,6 +208,8 @@ public class BDDSolver extends Solver {
         if (USE_IR) {
             IR ir = IR.create(s);
             ir.optimize();
+            if (PRINT_IR)
+                ir.printIR();
             ir.interpret();
         } else {
             s.solve();
