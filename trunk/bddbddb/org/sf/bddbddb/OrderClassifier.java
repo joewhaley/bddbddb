@@ -203,7 +203,8 @@ public class OrderClassifier {
                 BDDDomain d2 = ((BDDRelation) p2.left).getBDDDomain((org.sf.bddbddb.Attribute) p2.right);
                 if(d1.equals(d2)) continue;
                 Pair p = new Pair(p1, p2);
-                constraints.addElement(new MyAttribute(p,attrOptions, constraints.size()));
+                constraints.addElement(new MyAttribute(p,attrOptions));
+                //constraints.addElement(new MyAttribute(p,attrOptions, constraints.size()));
             }
         }      
         return constraints;
@@ -264,8 +265,8 @@ public class OrderClassifier {
         for(int i = 0; i < numClusters; ++i)
             clusterValues.addElement(Integer.toString(i));
         
-        attributes.addElement(new Attribute("class", clusterValues, attributes.size()));
-        
+        //attributes.addElement(new Attribute("class", clusterValues, attributes.size()));
+        attributes.addElement(new Attribute("class", clusterValues));
     }
     
     public Instances makeInstances(){
@@ -522,10 +523,12 @@ public class OrderClassifier {
     }
     class MyAttribute extends weka.core.Attribute{
         Pair pair;
+        /*
         public MyAttribute(Pair pair, FastVector options, int index){
             super(pair.toString(),options, index);
             this.pair = pair;
         }
+        */
         
         public MyAttribute(Pair pair, FastVector options){
             super(pair.toString(),options);
