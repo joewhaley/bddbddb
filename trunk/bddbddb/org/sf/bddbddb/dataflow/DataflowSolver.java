@@ -21,6 +21,8 @@ import org.sf.bddbddb.ir.dynamic.If;
  */
 public class DataflowSolver {
     boolean TRACE = false;
+    boolean WORKLIST = false;
+    
     /** Matches blocks to their dataflow information. */
     Map/* <IterationList,Fact> */blockToFact;
 
@@ -140,10 +142,15 @@ public class DataflowSolver {
         }
     }
 
+    boolean again;
+    
     public void solve(Problem p, IterationList g) {
         Fact startFact = p.getBoundary();
         startFact.setLocation(g);
-        solve(startFact, p, g);
+        do {
+            again = false;
+            solve(startFact, p, g);
+        } while (again);
     }
 
     Fact solve(Fact currentFact, Problem p, IterationList g) {
@@ -198,6 +205,10 @@ public class DataflowSolver {
             if (TRACE) System.out.println(g + " changed, iterating again...");
             startFact = joinResult;
             currentFact = startFact.copy(g);
+            if (!WORKLIST) {
+                again = true;
+                break;
+            }
         }
         return currentFact;
     }
