@@ -37,7 +37,8 @@ public class ExternalAppLauncher {
         return r;
     }
     
-    public static void callJoeqGenRelations(Collection classNames) {
+    public static void callJoeqGenRelations(Collection classNames, 
+        String varorder) {
         String dumpPath = System.getProperty("pas.dumppath", "");
         if (dumpPath.length() > 0) {
             String sep = System.getProperty("file.separator", "/");
@@ -66,6 +67,7 @@ public class ExternalAppLauncher {
                 "-Dpa.dumppath="+dumpPath,
                 "-Dpa.dumpfly",
                 "-Dpa.autodiscover=no",
+                "-Dbddordering="+varorder,
                 mainClassName, "@"+tempFile.getAbsolutePath() };
             
             int r = launch(cmd);
@@ -83,7 +85,7 @@ public class ExternalAppLauncher {
         
     }
     
-    public static void callBddBddb(PAFromSource pa) {
+    public static int callBddBddb(PAFromSource pa) {
         String dumpPath = System.getProperty("pas.dumppath", "");
         if (dumpPath.length() > 0) {
             String sep = System.getProperty("file.separator", "/");
@@ -99,7 +101,7 @@ public class ExternalAppLauncher {
         int r = launch(cmd);
         if (r != 0) {
             pa.out.println("bddbddb failed: " + r);
-            return;
+            return r;
         }
         
         pa.out.println("dumping callgraph...");
@@ -110,5 +112,6 @@ public class ExternalAppLauncher {
         } catch (IOException x) {
             x.printStackTrace();
         }
+        return r;
     }
 }
