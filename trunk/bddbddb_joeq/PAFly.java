@@ -239,6 +239,7 @@ public class PAFly {
             String s = (String) MethodSummary.stringNodes2Values.get(h);
             if (s != null) {
                 stringNodes.add(h);
+                if (TRACE) out.println("String Node: "+h+" = \""+s+"\"");
                 jq_Class t = tryLoadingClass(s);
                 if (t != null) {
                     int T_i = Tmap.get(t.toString());
@@ -922,10 +923,12 @@ public class PAFly {
     
     static jq_Class tryLoadingClass(String stringConst) {
         if(!isWellFormed(stringConst)) {
+            if (TRACE) System.out.println("Not well formed.");
             return null;
         }
         try {
             jq_Type clazz = jq_Type.parseType(stringConst);
+            if (TRACE) System.out.println("parseType returned: "+clazz);
             if (clazz instanceof jq_Class) {
                 jq_Class c = (jq_Class) clazz;
                 c.load();
