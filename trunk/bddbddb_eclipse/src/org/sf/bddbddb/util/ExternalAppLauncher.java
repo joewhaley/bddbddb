@@ -62,7 +62,7 @@ public class ExternalAppLauncher {
             }
             out.close();
             String[] cmd = new String[] {
-                "java", "-mx256m",
+                "java", "-mx640m",
                 "-cp", classpath,
                 "-Dpa.dumppath="+loadPath,
                 "-Dpa.dumpfly",
@@ -83,8 +83,7 @@ public class ExternalAppLauncher {
             
         } catch (IOException x) {
             x.printStackTrace();
-        }
-        
+        }        
     }
     
     public static int callBddBddb(PAFromSource pa) {
@@ -98,7 +97,9 @@ public class ExternalAppLauncher {
         String path = dumpPath + "pafly.datalog";
         String bddbddb = dumpPath + "bddbddb.jar";
         
-        String[] cmd = new String[] {"java", "-jar", bddbddb, path }; 
+        String[] cmd = new String[] {"java", 
+            "-jar", "-mx512m",
+            bddbddb, path }; 
 
         int r = launch(cmd);
         if (r != 0) {

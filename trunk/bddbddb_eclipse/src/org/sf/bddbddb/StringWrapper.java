@@ -48,6 +48,9 @@ public class StringWrapper implements Wrapper {
         else if (o instanceof ExceptionWrapper) {
             return false;
         }
+        else if (o instanceof FieldWrapper) {
+            return ((FieldWrapper)o).field.getKey().equals(name);
+        }
         else if (o instanceof ASTNodeWrapper) {
             ASTNodeWrapper aw = (ASTNodeWrapper)o;
             ASTNode astnode = aw.getNode();
@@ -56,6 +59,7 @@ public class StringWrapper implements Wrapper {
                 return ((Name)astnode).resolveBinding().getKey().equals(name);
             }
         }
+        
         return false;
     }
     
