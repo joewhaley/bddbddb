@@ -45,6 +45,15 @@ public class Load extends HighLevelOperation {
     /*
      * (non-Javadoc)
      * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return "load(" + r0.toString() + ")";
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
@@ -59,5 +68,5 @@ public class Load extends HighLevelOperation {
     public List getSrcs() {
         return Collections.EMPTY_LIST;
     }
-    
+
 }

@@ -45,6 +45,15 @@ public class Universe extends HighLevelOperation {
     /*
      * (non-Javadoc)
      * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return "universe()";
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {

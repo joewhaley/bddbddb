@@ -45,6 +45,15 @@ public class Zero extends HighLevelOperation {
     /*
      * (non-Javadoc)
      * 
+     * @see org.sf.bddbddb.ir.Operation#getExpressionString()
+     */
+    public String getExpressionString() {
+        return "zero()";
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {

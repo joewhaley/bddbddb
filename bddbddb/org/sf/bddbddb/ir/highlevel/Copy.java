@@ -41,7 +41,14 @@ public class Copy extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = copy(" + r1.toString() + ")";
+        return r0.toString() + " = " + getExpressionString();
+    }
+
+    /**
+     * @return
+     */
+    public String getExpressionString() {
+        return "copy(" + r1.toString() + ")";
     }
 
     /*
@@ -61,7 +68,7 @@ public class Copy extends HighLevelOperation {
     public List getSrcs() {
         return Collections.singletonList(r1);
     }
-    
+
     /**
      * @return Returns the source relation.
      */
