@@ -774,7 +774,7 @@ public class BDDInferenceRule extends InferenceRule {
         for (Iterator i = t.variables.iterator(); i.hasNext(); ) {
             Variable v = (Variable) i.next();
             sb.append(v);
-            if (variableToBDDDomain == null) {
+            if (variableToBDDDomain != null) {
                 BDDDomain d = (BDDDomain) variableToBDDDomain.get(v);
                 if (d != null) {
                     sb.append(':');
