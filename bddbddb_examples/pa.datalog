@@ -1,4 +1,7 @@
 
+### Java context-insensitive inclusion-based pointer analysis
+### Author: John Whaley
+
 .basedir "pa.joeq"
 
 ### Domains
