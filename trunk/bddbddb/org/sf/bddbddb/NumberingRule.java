@@ -31,8 +31,7 @@ public class NumberingRule extends InferenceRule {
     RelationGraph rg;
     PathNumbering pn;
     long totalTime;
-    static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph",
-        "no").equals("no");
+    static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph", "no").equals("no");
 
     NumberingRule(Solver s, InferenceRule ir) {
         super(s, ir.top, ir.bottom);
@@ -79,8 +78,7 @@ public class NumberingRule extends InferenceRule {
         Variable v1, v2;
         v1 = (Variable) i.next();
         v2 = (Variable) i.next();
-        if (TRACE) out
-            .println("Finding relations with (" + v1 + "," + v2 + ")");
+        if (TRACE) out.println("Finding relations with (" + v1 + "," + v2 + ")");
         // Which relation(s) are we talking about here?
         for (i = rg.edges.iterator(); i.hasNext();) {
             RuleTerm rt = (RuleTerm) i.next();
@@ -95,8 +93,7 @@ public class NumberingRule extends InferenceRule {
                 if (TRACE) out.println("Domains for edge: " + d0 + " -> " + d1);
                 d2 = (BDDDomain) k.next();
                 d3 = (BDDDomain) k.next();
-                if (TRACE) out.println("Domains for numbering: " + d2 + " -> "
-                    + d3);
+                if (TRACE) out.println("Domains for numbering: " + d2 + " -> " + d3);
                 Assert._assert(d0 != d1);
                 Assert._assert(d2 != d3);
                 for (TupleIterator j = rt.relation.iterator(); j.hasNext();) {
@@ -105,8 +102,7 @@ public class NumberingRule extends InferenceRule {
                     Object target = RelationGraph.makeGraphNode(v2, t[1]);
                     PathNumbering.Range r0 = pn.getRange(source);
                     PathNumbering.Range r1 = pn.getEdge(source, target);
-                    if (TRACE) out.println("Edge: " + source + " -> " + target
-                        + "\t" + r0 + " -> " + r1);
+                    if (TRACE) out.println("Edge: " + source + " -> " + target + "\t" + r0 + " -> " + r1);
                     if (r0 == null) {
                         if (TRACE) out.println("Unreachable edge!");
                         Assert._assert(r1 == null);
@@ -114,9 +110,8 @@ public class NumberingRule extends InferenceRule {
                     }
                     Assert._assert(r1 != null);
                     // TODO: generalize this to be not BDD-specific
-                    BDD result = buildMap(d2, PathNumbering.toBigInt(r0.low),
-                        PathNumbering.toBigInt(r0.high), d3, PathNumbering
-                            .toBigInt(r1.low), PathNumbering.toBigInt(r1.high));
+                    BDD result = buildMap(d2, PathNumbering.toBigInt(r0.low), PathNumbering.toBigInt(r0.high), d3, PathNumbering.toBigInt(r1.low),
+                        PathNumbering.toBigInt(r1.high));
                     result.andWith(d0.ithVar(t[0]));
                     result.andWith(d1.ithVar(t[1]));
                     bddr.relation.orWith(result);
@@ -129,8 +124,7 @@ public class NumberingRule extends InferenceRule {
         if (DUMP_DOTGRAPH) {
             DataOutputStream dos = null;
             try {
-                dos = new DataOutputStream(new FileOutputStream(solver.basedir
-                    + bottom.relation.name + ".dot"));
+                dos = new DataOutputStream(new FileOutputStream(solver.basedir + bottom.relation.name + ".dot"));
                 pn.dotGraph(dos, rg.getRoots(), rg.getNavigator());
             } catch (IOException x) {
                 System.err.println("Error while dumping dot graph.");
@@ -145,8 +139,7 @@ public class NumberingRule extends InferenceRule {
         return true;
     }
 
-    public static BDD buildMap(BDDDomain d1, BigInteger startD1,
-        BigInteger endD1, BDDDomain d2, BigInteger startD2, BigInteger endD2) {
+    public static BDD buildMap(BDDDomain d1, BigInteger startD1, BigInteger endD1, BDDDomain d2, BigInteger startD2, BigInteger endD2) {
         BDD r;
         BigInteger sizeD1 = endD1.subtract(startD1);
         BigInteger sizeD2 = endD2.subtract(startD2);

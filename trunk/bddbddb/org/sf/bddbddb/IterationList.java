@@ -20,20 +20,13 @@ import org.sf.javabdd.BDD;
  * @version $Id$
  */
 public class IterationList implements IterationElement {
-    
     boolean TRACE = false;
-    
     List /* IterationElement */elements;
-
     List allNestedElems = null;
-
     //    boolean isLoop = false;
     IRBoolean loopBool;
-
     IterationList loopEdge;
-
     int index;
-
     static int blockNumber;
 
     public IterationList(boolean isLoop) {
@@ -46,12 +39,12 @@ public class IterationList implements IterationElement {
 
     public IterationList(boolean isLoop, List elems) {
         //       this.isLoop = isLoop;
-        if (isLoop) {
-            loopBool = new IRBoolean(toString() + "_bool", false);
-            loopEdge = new IterationList(false);
-        }
         this.elements = elems;
         this.index = ++blockNumber;
+        if (isLoop) {
+            loopBool = new IRBoolean("loop" + Integer.toString(this.index) + "_bool", false);
+            loopEdge = new IterationList(false);
+        }
     }
 
     // Return a list that has the IR for all of the loops.
@@ -121,7 +114,7 @@ public class IterationList implements IterationElement {
     }
 
     public void removeElement(IterationElement elem) {
-        for (Iterator i = elements.iterator(); i.hasNext(); ) {
+        for (Iterator i = elements.iterator(); i.hasNext();) {
             Object o = i.next();
             if (elem.equals(o)) {
                 i.remove();
@@ -134,7 +127,7 @@ public class IterationList implements IterationElement {
     }
 
     public void removeElements(Collection elems) {
-        for (Iterator i = elements.iterator(); i.hasNext(); ) {
+        for (Iterator i = elements.iterator(); i.hasNext();) {
             Object o = i.next();
             if (elems.contains(o)) {
                 i.remove();
@@ -145,7 +138,7 @@ public class IterationList implements IterationElement {
             }
         }
     }
-    
+
     public String toString() {
         return (isLoop() ? "loop" : "list") + index;
     }
@@ -183,7 +176,7 @@ public class IterationList implements IterationElement {
                     op.visit(interpret);
                     if (oldValue != null) {
                         change = !oldValue.equals(dest.getBDD());
-                        if (change) System.out.println(changed + " Changed!");
+                        if (TRACE && change) System.out.println(changed + " Changed!");
                         oldValue.free();
                     }
                 }
@@ -191,6 +184,7 @@ public class IterationList implements IterationElement {
             if (!change) break;
             everChanged = true;
             if (!isLoop()) break;
+            getLoopEdge().interpret(interpret);
         }
         return everChanged;
     }
@@ -206,7 +200,6 @@ public class IterationList implements IterationElement {
     public ListIterator reverseIterator() {
         return new ReverseIterator(elements.listIterator(elements.size()));
     }
-
     class ReverseIterator implements ListIterator {
         ListIterator it;
 
@@ -273,5 +266,13 @@ public class IterationList implements IterationElement {
      */
     public IRBoolean getLoopBool() {
         return loopBool;
+    }
+
+    public int size() {
+        return elements.size();
+    }
+
+    public boolean isEmpty() {
+        return elements.size() == 0;
     }
 }

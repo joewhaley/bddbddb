@@ -51,8 +51,7 @@ public abstract class InferenceRule implements IterationElement {
      * @param top
      * @param bottom
      */
-    protected InferenceRule(Solver solver, List/* <RuleTerm> */top,
-        RuleTerm bottom) {
+    protected InferenceRule(Solver solver, List/* <RuleTerm> */top, RuleTerm bottom) {
         this.solver = solver;
         this.top = top;
         this.bottom = bottom;
@@ -189,8 +188,7 @@ public abstract class InferenceRule implements IterationElement {
         while (top.size() > 2) {
             RuleTerm rt1 = (RuleTerm) top.remove(0);
             RuleTerm rt2 = (RuleTerm) top.remove(0);
-            if (TRACE) solver.out.println("Combining " + rt1 + " and " + rt2
-                + " into a new rule.");
+            if (TRACE) solver.out.println("Combining " + rt1 + " and " + rt2 + " into a new rule.");
             // Calculate our new necessary variables.
             LinkedList ll = new LinkedList();
             ll.addAll(rt1.variables);
@@ -214,16 +212,14 @@ public abstract class InferenceRule implements IterationElement {
                 if (!myNewNecessaryVariables.contains(v)) continue;
                 Domain d2 = (Domain) neededVariables.get(v);
                 if (d2 != null && d != d2) {
-                    throw new IllegalArgumentException(v + ": " + d + " != "
-                        + d2);
+                    throw new IllegalArgumentException(v + ": " + d + " != " + d2);
                 }
                 neededVariables.put(v, d);
                 String o2 = (String) variableOptions.get(v);
                 if (o == null || o.equals("")) o = o2;
                 if (o2 == null || o2.equals("")) o2 = o;
                 if (o != null && o2 != null && !o.equals(o2)) {
-                    throw new IllegalArgumentException(v + ": " + o + " != "
-                        + o2);
+                    throw new IllegalArgumentException(v + ": " + o + " != " + o2);
                 }
                 variableOptions.put(v, o);
             }
@@ -237,16 +233,14 @@ public abstract class InferenceRule implements IterationElement {
                 if (!myNewNecessaryVariables.contains(v)) continue;
                 Domain d2 = (Domain) neededVariables.get(v);
                 if (d2 != null && d != d2) {
-                    throw new IllegalArgumentException(v + ": " + d + " != "
-                        + d2);
+                    throw new IllegalArgumentException(v + ": " + d + " != " + d2);
                 }
                 neededVariables.put(v, d);
                 String o2 = (String) variableOptions.get(v);
                 if (o == null || o.equals("")) o = o2;
                 if (o2 == null || o2.equals("")) o2 = o;
                 if (o != null && o2 != null && !o.equals(o2)) {
-                    throw new IllegalArgumentException(v + ": " + o + " != "
-                        + o2);
+                    throw new IllegalArgumentException(v + ": " + o + " != " + o2);
                 }
                 variableOptions.put(v, o);
             }
@@ -262,19 +256,15 @@ public abstract class InferenceRule implements IterationElement {
                 attributes.add(a);
                 newVariables.add(v);
             }
-            String relationName = bottom.relation.name + "_" + myIndex + "_"
-                + count;
+            String relationName = bottom.relation.name + "_" + myIndex + "_" + count;
             if (TRACE) solver.out.println("New attributes: " + attributes);
-            Relation newRelation = solver.createRelation(relationName,
-                attributes);
+            Relation newRelation = solver.createRelation(relationName, attributes);
             if (TRACE) solver.out.println("New relation: " + newRelation);
             RuleTerm newBottom = new RuleTerm(newVariables, newRelation);
-            InferenceRule newRule = solver.createInferenceRule(newTop,
-                newBottom);
+            InferenceRule newRule = solver.createInferenceRule(newTop, newBottom);
             if (TRACE) solver.out.println("New rule: " + newRule);
             newRule.calculateNecessaryVariables();
-            if (TRACE) solver.out.println("Necessary variables: "
-                + newRule.necessaryVariables);
+            if (TRACE) solver.out.println("Necessary variables: " + newRule.necessaryVariables);
             //s.rules.add(newRule);
             newRules.add(newRule);
             newRule.copyOptions(this);
@@ -283,8 +273,7 @@ public abstract class InferenceRule implements IterationElement {
             // Reinitialize this rule because the terms have changed.
             this.calculateNecessaryVariables();
             if (TRACE) solver.out.println("Current rule is now: " + this);
-            if (TRACE) solver.out.println("My new necessary variables: "
-                + necessaryVariables);
+            if (TRACE) solver.out.println("My new necessary variables: " + necessaryVariables);
             Assert._assert(necessaryVariables.equals(myNewNecessaryVariables));
             ++count;
         }
@@ -349,8 +338,7 @@ public abstract class InferenceRule implements IterationElement {
         MultiMap relationToDefiningRule;
 
         public DependenceNavigator(Collection/* <InferenceRule> */rules) {
-            this(getRelationToUsingRule(rules),
-                getRelationToDefiningRule(rules));
+            this(getRelationToUsingRule(rules), getRelationToDefiningRule(rules));
         }
 
         public void retainAll(Collection c) {
@@ -376,16 +364,14 @@ public abstract class InferenceRule implements IterationElement {
         }
 
         public DependenceNavigator(DependenceNavigator that) {
-            this(((GenericMultiMap) that.relationToUsingRule).copy(),
-                ((GenericMultiMap) that.relationToDefiningRule).copy());
+            this(((GenericMultiMap) that.relationToUsingRule).copy(), ((GenericMultiMap) that.relationToDefiningRule).copy());
         }
 
         /**
          * @param relationToUsingRule
          * @param relationToDefiningRule
          */
-        private DependenceNavigator(MultiMap relationToUsingRule,
-            MultiMap relationToDefiningRule) {
+        private DependenceNavigator(MultiMap relationToUsingRule, MultiMap relationToDefiningRule) {
             super();
             this.relationToUsingRule = relationToUsingRule;
             this.relationToDefiningRule = relationToDefiningRule;
@@ -399,8 +385,7 @@ public abstract class InferenceRule implements IterationElement {
         public Collection next(Object node) {
             if (node instanceof InferenceRule) {
                 InferenceRule ir = (InferenceRule) node;
-                if (relationToDefiningRule.contains(ir.bottom.relation, ir)) return Collections
-                    .singleton(ir.bottom.relation);
+                if (relationToDefiningRule.contains(ir.bottom.relation, ir)) return Collections.singleton(ir.bottom.relation);
                 else return Collections.EMPTY_SET;
             } else {
                 Relation r = (Relation) node;
@@ -420,8 +405,7 @@ public abstract class InferenceRule implements IterationElement {
                 List list = new LinkedList();
                 for (Iterator i = ir.top.iterator(); i.hasNext();) {
                     RuleTerm rt = (RuleTerm) i.next();
-                    if (relationToUsingRule.contains(rt.relation, ir)) list
-                        .add(rt.relation);
+                    if (relationToUsingRule.contains(rt.relation, ir)) list.add(rt.relation);
                 }
                 return list;
             } else {
@@ -437,8 +421,7 @@ public abstract class InferenceRule implements IterationElement {
         Collection varsToProject = new LinkedList(rt.variables);
         varsToProject.removeAll(necessaryVariables);
         if (!varsToProject.isEmpty()) {
-            if (solver.TRACE) solver.out.println("Projecting away variables: "
-                + varsToProject);
+            if (solver.TRACE) solver.out.println("Projecting away variables: " + varsToProject);
             List newAttributes = new LinkedList();
             for (int j = 0; j < rt.numberOfVariables(); ++j) {
                 Variable v = rt.getVariable(j);
@@ -481,8 +464,7 @@ public abstract class InferenceRule implements IterationElement {
             // constants,
             // but before we do renaming.
             if (incrementalize && cache_before_rename) {
-                if (oldRelationValues == null) oldRelationValues = new Relation[top
-                    .size()];
+                if (oldRelationValues == null) oldRelationValues = new Relation[top.size()];
                 oldRelationValues[x] = r.copy();
                 oldRelationValues[x].initialize();
                 Copy c = new Copy(oldRelationValues[x], r);
@@ -501,8 +483,7 @@ public abstract class InferenceRule implements IterationElement {
                     if (result != null && result.attributes.contains(a)) {
                         // Attribute is already present in result, use a
                         // different attribute.
-                        a2 = new Attribute(a.attributeName + '\'',
-                            a.attributeDomain, "");
+                        a2 = new Attribute(a.attributeName + '\'', a.attributeDomain, "");
                         renames.put(a, a2);
                         a = a2;
                     }
@@ -523,8 +504,7 @@ public abstract class InferenceRule implements IterationElement {
             // If we are incrementalizing, cache copies of the input relations.
             // If the option is set, we do this after the rename.
             if (incrementalize && !cache_before_rename) {
-                if (oldRelationValues == null) oldRelationValues = new Relation[top
-                    .size()];
+                if (oldRelationValues == null) oldRelationValues = new Relation[top.size()];
                 oldRelationValues[x] = r.copy();
                 oldRelationValues[x].initialize();
                 Copy c = new Copy(oldRelationValues[x], r);
@@ -547,8 +527,7 @@ public abstract class InferenceRule implements IterationElement {
                 // to join with.
                 result = r;
             }
-            if (solver.TRACE && result != null) solver.out
-                .println("Result attributes after join: " + result.attributes);
+            if (solver.TRACE && result != null) solver.out.println("Result attributes after join: " + result.attributes);
             // Project away unnecessary attributes.
             List toProject = new LinkedList();
             outer : for (int k = 0; k < rt.numberOfVariables(); ++k) {
@@ -556,12 +535,10 @@ public abstract class InferenceRule implements IterationElement {
                 if (unnecessaryVariables.contains(v)) continue;
                 Attribute a = (Attribute) varToAttrib.get(v);
                 Assert._assert(a != null);
-                if (solver.TRACE) solver.out.print("Variable " + v
-                    + " Attribute " + a + ": ");
+                if (solver.TRACE) solver.out.print("Variable " + v + " Attribute " + a + ": ");
                 Assert._assert(result.attributes.contains(a));
                 if (bottom.variables.contains(v)) {
-                    if (solver.TRACE) solver.out
-                        .println("variable needed for bottom");
+                    if (solver.TRACE) solver.out.println("variable needed for bottom");
                     continue;
                 }
                 Iterator j = top.iterator();
@@ -569,20 +546,17 @@ public abstract class InferenceRule implements IterationElement {
                 while (j.hasNext()) {
                     RuleTerm rt2 = (RuleTerm) j.next();
                     if (rt2.variables.contains(v)) {
-                        if (solver.TRACE) solver.out
-                            .println("variable needed for future term");
+                        if (solver.TRACE) solver.out.println("variable needed for future term");
                         continue outer;
                     }
                 }
-                if (solver.TRACE) solver.out
-                    .println("Not needed anymore, projecting away");
+                if (solver.TRACE) solver.out.println("Not needed anymore, projecting away");
                 toProject.add(a);
             }
             if (!toProject.isEmpty()) {
                 newAttributes = new LinkedList(result.attributes);
                 newAttributes.removeAll(toProject);
-                Relation result2 = solver.createRelation(result + "_p2",
-                    newAttributes);
+                Relation result2 = solver.createRelation(result + "_p2", newAttributes);
                 result2.initialize();
                 Project p = new Project(result2, result);
                 if (solver.TRACE) solver.out.println("Generated: " + p);
@@ -606,8 +580,7 @@ public abstract class InferenceRule implements IterationElement {
             newAttributes.add(a);
         }
         if (!renames.isEmpty()) {
-            Relation result2 = solver.createRelation(result + "_r2",
-                newAttributes);
+            Relation result2 = solver.createRelation(result + "_r2", newAttributes);
             result2.initialize();
             Rename rename = new Rename(result2, result, renames);
             if (solver.TRACE) solver.out.println("Generated: " + rename);
@@ -630,8 +603,7 @@ public abstract class InferenceRule implements IterationElement {
                 } else {
                     Relation result2 = result.copy();
                     result2.initialize();
-                    JoinConstant jc = new JoinConstant(result2, result, a,
-                        value);
+                    JoinConstant jc = new JoinConstant(result2, result, a, value);
                     if (solver.TRACE) solver.out.println("Generated: " + jc);
                     ir.add(jc);
                     result = result2;
@@ -675,8 +647,7 @@ public abstract class InferenceRule implements IterationElement {
             Relation r = generate1(ir, rt);
             allRelationValues[x] = r;
             if (cache_before_rename) {
-                if (oldRelationValues == null) oldRelationValues = new Relation[top
-                    .size()];
+                if (oldRelationValues == null) oldRelationValues = new Relation[top.size()];
                 if (oldRelationValues[x] == null) {
                     oldRelationValues[x] = r.copy();
                     oldRelationValues[x].initialize();
@@ -684,8 +655,7 @@ public abstract class InferenceRule implements IterationElement {
                 // TODO: calculate if we need the whole relation.
                 newRelationValues[x] = oldRelationValues[x].copy();
                 newRelationValues[x].initialize();
-                Difference diff = new Difference(newRelationValues[x],
-                    allRelationValues[x], oldRelationValues[x]);
+                Difference diff = new Difference(newRelationValues[x], allRelationValues[x], oldRelationValues[x]);
                 if (solver.TRACE) solver.out.println("Generated: " + diff);
                 ir.add(diff);
                 Copy copy = new Copy(oldRelationValues[x], allRelationValues[x]);
@@ -704,8 +674,7 @@ public abstract class InferenceRule implements IterationElement {
                     if (oldAttributes != null && oldAttributes.contains(a)) {
                         // Attribute is already present in result, use a
                         // different attribute.
-                        a2 = new Attribute(a.attributeName + '\'',
-                            a.attributeDomain, "");
+                        a2 = new Attribute(a.attributeName + '\'', a.attributeDomain, "");
                         renames.put(a, a2);
                         a = a2;
                     }
@@ -717,13 +686,10 @@ public abstract class InferenceRule implements IterationElement {
             }
             if (!renames.isEmpty()) {
                 if (cache_before_rename) {
-                    Relation new_r = solver.createRelation(newRelationValues[x]
-                        + "_r", newAttributes);
+                    Relation new_r = solver.createRelation(newRelationValues[x] + "_r", newAttributes);
                     new_r.initialize();
-                    Rename rename = new Rename(new_r, newRelationValues[x],
-                        renames);
-                    if (solver.TRACE) solver.out
-                        .println("Generated: " + rename);
+                    Rename rename = new Rename(new_r, newRelationValues[x], renames);
+                    if (solver.TRACE) solver.out.println("Generated: " + rename);
                     ir.add(rename);
                     newRelationValues[x] = new_r;
                 }
@@ -737,16 +703,14 @@ public abstract class InferenceRule implements IterationElement {
             }
             allRelationValues[x] = r;
             if (!cache_before_rename) {
-                if (oldRelationValues == null) oldRelationValues = new Relation[top
-                    .size()];
+                if (oldRelationValues == null) oldRelationValues = new Relation[top.size()];
                 if (oldRelationValues[x] == null) {
                     oldRelationValues[x] = r.copy();
                     oldRelationValues[x].initialize();
                 }
                 newRelationValues[x] = oldRelationValues[x].copy();
                 newRelationValues[x].initialize();
-                Difference diff = new Difference(newRelationValues[x],
-                    allRelationValues[x], oldRelationValues[x]);
+                Difference diff = new Difference(newRelationValues[x], allRelationValues[x], oldRelationValues[x]);
                 if (solver.TRACE) solver.out.println("Generated: " + diff);
                 ir.add(diff);
                 Copy copy = new Copy(oldRelationValues[x], allRelationValues[x]);
@@ -754,8 +718,7 @@ public abstract class InferenceRule implements IterationElement {
                 ir.add(copy);
             }
             oldAttributes = new LinkedList();
-            if (x > 0) oldAttributes
-                .addAll(allRelationValues[x - 1].attributes);
+            if (x > 0) oldAttributes.addAll(allRelationValues[x - 1].attributes);
             oldAttributes.removeAll(r.attributes);
             oldAttributes.addAll(r.attributes);
             // Project away unnecessary attributes.
@@ -765,12 +728,10 @@ public abstract class InferenceRule implements IterationElement {
                 if (unnecessaryVariables.contains(v)) continue;
                 Attribute a = (Attribute) varToAttrib.get(v);
                 Assert._assert(a != null);
-                if (solver.TRACE) solver.out.print("Variable " + v
-                    + " Attribute " + a + ": ");
+                if (solver.TRACE) solver.out.print("Variable " + v + " Attribute " + a + ": ");
                 Assert._assert(oldAttributes.contains(a));
                 if (bottom.variables.contains(v)) {
-                    if (solver.TRACE) solver.out
-                        .println("variable needed for bottom");
+                    if (solver.TRACE) solver.out.println("variable needed for bottom");
                     continue;
                 }
                 Iterator j = top.iterator();
@@ -778,13 +739,11 @@ public abstract class InferenceRule implements IterationElement {
                 while (j.hasNext()) {
                     RuleTerm rt2 = (RuleTerm) j.next();
                     if (rt2.variables.contains(v)) {
-                        if (solver.TRACE) solver.out
-                            .println("variable needed for future term");
+                        if (solver.TRACE) solver.out.println("variable needed for future term");
                         continue outer;
                     }
                 }
-                if (solver.TRACE) solver.out
-                    .println("Not needed anymore, projecting away");
+                if (solver.TRACE) solver.out.println("Not needed anymore, projecting away");
                 toProject[x].add(a);
             }
         }
@@ -796,8 +755,7 @@ public abstract class InferenceRule implements IterationElement {
                     List newAttributes = new LinkedList(result.attributes);
                     newAttributes.removeAll(r.attributes);
                     newAttributes.addAll(r.attributes);
-                    Relation new_r = solver.createRelation(result + "_j",
-                        newAttributes);
+                    Relation new_r = solver.createRelation(result + "_j", newAttributes);
                     new_r.initialize();
                     Join join = new Join(new_r, r, result);
                     if (solver.TRACE) solver.out.println("Generated: " + join);
@@ -807,8 +765,7 @@ public abstract class InferenceRule implements IterationElement {
                 if (!toProject[y].isEmpty()) {
                     List newAttributes = new LinkedList(result.attributes);
                     newAttributes.removeAll(toProject[y]);
-                    Relation result2 = solver.createRelation(result + "_p2",
-                        newAttributes);
+                    Relation result2 = solver.createRelation(result + "_p2", newAttributes);
                     result2.initialize();
                     Project p = new Project(result2, result);
                     if (solver.TRACE) solver.out.println("Generated: " + p);
@@ -832,8 +789,7 @@ public abstract class InferenceRule implements IterationElement {
                 renamedAttributes.add(a);
             }
             if (!renames.isEmpty()) {
-                Relation result2 = solver.createRelation(result + "_r2",
-                    renamedAttributes);
+                Relation result2 = solver.createRelation(result + "_r2", renamedAttributes);
                 result2.initialize();
                 Rename rename = new Rename(result2, result, renames);
                 if (solver.TRACE) solver.out.println("Generated: " + rename);
@@ -848,8 +804,7 @@ public abstract class InferenceRule implements IterationElement {
                     long value = ((Constant) v).getValue();
                     Relation result2 = result.copy();
                     result2.initialize();
-                    JoinConstant jc = new JoinConstant(result2, result, a,
-                        value);
+                    JoinConstant jc = new JoinConstant(result2, result, a, value);
                     if (solver.TRACE) solver.out.println("Generated: " + jc);
                     ir.add(jc);
                     result = result2;

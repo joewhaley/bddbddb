@@ -6,7 +6,6 @@ package org.sf.bddbddb;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.HashWorklist;
 import org.sf.bddbddb.util.MultiMap;
@@ -21,13 +20,9 @@ import org.sf.bddbddb.util.SCComponent;
  */
 public class IterationFlowGraph {
     IterationList iterationElements;
-
     MultiMap innerSCCs;
-
     List firstSCCs, rules, loops;
-
     MultiMap containedBy;
-
     MultiMap dependencies;
 
     public IterationFlowGraph(List rules, List firstSCCs, MultiMap innerSCCs) {
@@ -56,8 +51,7 @@ public class IterationFlowGraph {
     }
 
     private void constructRuleDependencies() {
-        InferenceRule.DependenceNavigator depNav = new InferenceRule.DependenceNavigator(
-            rules);
+        InferenceRule.DependenceNavigator depNav = new InferenceRule.DependenceNavigator(rules);
         HashWorklist w = new HashWorklist(true);
         for (Iterator it = rules.iterator(); it.hasNext();) {
             Object rule = it.next();
@@ -116,8 +110,7 @@ public class IterationFlowGraph {
             } else {
                 for (Iterator it = c.iterator(); it.hasNext();) {
                     SCComponent scc2 = (SCComponent) it.next();
-                    IterationList childLoop = buildIterationList(scc2, scc
-                        .isLoop());
+                    IterationList childLoop = buildIterationList(scc2, scc.isLoop());
                     list.addElement(childLoop);
                     Collection childElems = childLoop.getAllNestedElements();
                     for (Iterator it2 = childElems.iterator(); it2.hasNext();) {

@@ -29,7 +29,7 @@ import org.sf.javabdd.BDDFactory;
 public class BDDRelation extends Relation {
     BDDSolver solver;
     BDD relation;
-    List/*<BDDDomain>*/domains;
+    List/* <BDDDomain> */domains;
     private BDD domainSet;
 
     /**
@@ -50,14 +50,13 @@ public class BDDRelation extends Relation {
     // Called before variable order is set.
     public void initialize() {
         if (name.startsWith("!")) {
-            if (solver.TRACE) solver.out.println("Skipping initialization of negated BDDRelation "
-                + name + " because normal " + negated.name + " is/will be initialized.");
+            if (solver.TRACE) solver.out.println("Skipping initialization of negated BDDRelation " + name + " because normal " + negated.name
+                + " is/will be initialized.");
             return;
         }
         this.relation = solver.bdd.zero();
         this.domains = new LinkedList();
-        if (solver.TRACE) solver.out.println("Initializing BDDRelation " + name
-            + " with attributes " + attributes);
+        if (solver.TRACE) solver.out.println("Initializing BDDRelation " + name + " with attributes " + attributes);
         this.domainSet = solver.bdd.one();
         for (Iterator i = attributes.iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
@@ -67,16 +66,15 @@ public class BDDRelation extends Relation {
             String option = a.attributeOptions;
             if (option != null && option.length() > 0) {
                 // use the given domain.
-                if (!option.startsWith(fd.name)) throw new IllegalArgumentException("Attribute "
-                    + a + " has domain " + fd + ", but tried to assign " + option);
+                if (!option.startsWith(fd.name)) throw new IllegalArgumentException("Attribute " + a + " has domain " + fd + ", but tried to assign "
+                    + option);
                 //int index =
                 // Integer.parseInt(option.substring(fd.name.length()));
                 for (Iterator j = doms.iterator(); j.hasNext();) {
                     BDDDomain dom = (BDDDomain) j.next();
                     if (dom.getName().equals(option)) {
                         if (domains.contains(dom)) {
-                            System.out.println("Cannot assign " + dom + " to attribute " + a + ": "
-                                + dom + " is already assigned");
+                            System.out.println("Cannot assign " + dom + " to attribute " + a + ": " + dom + " is already assigned");
                             option = "";
                             break;
                         } else {
@@ -108,8 +106,7 @@ public class BDDRelation extends Relation {
                     d = solver.allocateBDDDomain(fd);
                 }
             }
-            if (solver.TRACE) solver.out.println("Attribute " + a + " (" + a.attributeDomain
-                + ") assigned to BDDDomain " + d);
+            if (solver.TRACE) solver.out.println("Attribute " + a + " (" + a.attributeDomain + ") assigned to BDDDomain " + d);
             domains.add(d);
             domainSet.andWith(d.set());
         }
@@ -159,10 +156,8 @@ public class BDDRelation extends Relation {
      */
     public void load() throws IOException {
         load(solver.basedir + name + ".bdd");
-        if (solver.NOISY) solver.out.println("Loaded BDD from file: " + name + ".bdd "
-            + relation.nodeCount() + " nodes, " + dsize() + " elements.");
-        if (solver.NOISY) solver.out.println("Domains of loaded relation:"
-            + activeDomains(relation));
+        if (solver.NOISY) solver.out.println("Loaded BDD from file: " + name + ".bdd " + relation.nodeCount() + " nodes, " + dsize() + " elements.");
+        if (solver.NOISY) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
     }
 
     /*
@@ -173,8 +168,7 @@ public class BDDRelation extends Relation {
     public void loadTuples() throws IOException {
         loadTuples(solver.basedir + name + ".tuples");
         if (solver.NOISY) solver.out.println("Loaded tuples from file: " + name + ".tuples");
-        if (solver.NOISY) solver.out.println("Domains of loaded relation:"
-            + activeDomains(relation));
+        if (solver.NOISY) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
     }
 
     /**
@@ -207,8 +201,8 @@ public class BDDRelation extends Relation {
                 boolean b = !t.equals(domainSet);
                 t.free();
                 if (b) {
-                    throw new IOException("Expected domains for loaded BDD " + filename + " to be "
-                        + domains + ", but found " + activeDomains(r2) + " instead");
+                    throw new IOException("Expected domains for loaded BDD " + filename + " to be " + domains + ", but found " + activeDomains(r2)
+                        + " instead");
                 }
             }
             relation.free();
@@ -242,14 +236,12 @@ public class BDDRelation extends Relation {
                         if (x < 0) {
                             long l = Long.parseLong(v);
                             b.andWith(d.ithVar(l));
-                            if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l
-                                + ", ");
+                            if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + ", ");
                         } else {
                             long l = Long.parseLong(v.substring(0, x));
                             long m = Long.parseLong(v.substring(x + 1));
                             b.andWith(d.varRange(l, m));
-                            if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l
-                                + "-" + m + ", ");
+                            if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + "-" + m + ", ");
                         }
                     }
                 }
@@ -276,8 +268,7 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void save(String filename) throws IOException {
-        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize()
-            + " elements");
+        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
         solver.bdd.save(filename, relation);
     }
 
@@ -301,8 +292,7 @@ public class BDDRelation extends Relation {
     }
 
     public void saveTuples(String filename) throws IOException {
-        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize()
-            + " elements");
+        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
         saveTuples(solver.basedir + name + ".rtuples", relation);
     }
 

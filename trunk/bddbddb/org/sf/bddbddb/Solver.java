@@ -43,8 +43,7 @@ public abstract class Solver {
     boolean PRINT_IR = System.getProperty("printir") != null;
     PrintStream out = System.out;
     public String basedir = System.getProperty("basedir");
-
-    IndexMap/*<Relation>*/ relations;
+    IndexMap/* <Relation> */relations;
     Map/* <String,Domain> */nameToDomain;
     Map/* <String,Relation> */nameToRelation;
     Map/* <Domain,Relation> */equivalenceRelations;
@@ -59,24 +58,22 @@ public abstract class Solver {
     Collection/* <Relation> */relationsToPrintSize;
     Collection/* <Dot> */dotGraphsToDump;
 
-    abstract InferenceRule createInferenceRule(List/* <RuleTerm> */top,
-        RuleTerm bottom);
+    abstract InferenceRule createInferenceRule(List/* <RuleTerm> */top, RuleTerm bottom);
 
     abstract Relation createEquivalenceRelation(Domain fd);
 
     abstract Relation createNotEquivalenceRelation(Domain fd);
 
-    abstract Relation createRelation(String name,
-        List/* <Attribute> */attributes);
+    public abstract Relation createRelation(String name, List/* <Attribute> */attributes);
 
     int registerRelation(Relation r) {
         int i = relations.get(r);
-        Assert._assert(i == relations.size()-1);
+        Assert._assert(i == relations.size() - 1);
         Object old = nameToRelation.put(r.name, r);
         Assert._assert(old == null);
         return i;
     }
-    
+
     NumberingRule createNumberingRule(InferenceRule ir) {
         return new NumberingRule(this, ir);
     }
@@ -111,8 +108,7 @@ public abstract class Solver {
             Relation r = (Relation) i.next();
             r.initialize();
         }
-        for (Iterator i = notequivalenceRelations.values().iterator(); i
-            .hasNext();) {
+        for (Iterator i = notequivalenceRelations.values().iterator(); i.hasNext();) {
             Relation r = (Relation) i.next();
             r.initialize();
         }
@@ -133,21 +129,19 @@ public abstract class Solver {
     public Relation getRelation(String name) {
         return (Relation) nameToRelation.get(name);
     }
-    
+
     public Relation getRelation(int index) {
         return (Relation) relations.get(index);
     }
-    
-    public static void main(String[] args) throws IOException,
-        InstantiationException, IllegalAccessException, ClassNotFoundException {
+
+    public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         String inputFilename = System.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
         if (inputFilename == null) {
             printUsage();
             return;
         }
-        String solverName = System.getProperty("solver",
-            "org.sf.bddbddb.BDDSolver");
+        String solverName = System.getProperty("solver", "org.sf.bddbddb.BDDSolver");
         Solver dis;
         dis = (Solver) Class.forName(solverName).newInstance();
         String sep = System.getProperty("file.separator");
@@ -164,19 +158,14 @@ public abstract class Solver {
                 }
             }
         }
-        if (dis.basedir.length() > 0 && !dis.basedir.endsWith(sep)
-            && !dis.basedir.endsWith("/")) {
+        if (dis.basedir.length() > 0 && !dis.basedir.endsWith(sep) && !dis.basedir.endsWith("/")) {
             dis.basedir += sep;
         }
-        if (dis.NOISY) dis.out.println("Opening Datalog program \""
-            + inputFilename + "\"");
-        MyReader in = new MyReader(new LineNumberReader(new FileReader(
-            inputFilename)));
+        if (dis.NOISY) dis.out.println("Opening Datalog program \"" + inputFilename + "\"");
+        MyReader in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
         dis.readDatalogProgram(in);
-        if (dis.NOISY) dis.out.println(dis.nameToDomain.size()
-            + " field domains.");
-        if (dis.NOISY) dis.out.println(dis.nameToRelation.size()
-            + " relations.");
+        if (dis.NOISY) dis.out.println(dis.nameToDomain.size() + " field domains.");
+        if (dis.NOISY) dis.out.println(dis.nameToRelation.size() + " relations.");
         if (dis.NOISY) dis.out.println(dis.rules.size() + " rules.");
         in.close();
         if (dis.NOISY) dis.out.print("Splitting rules: ");
@@ -209,29 +198,22 @@ public abstract class Solver {
     }
 
     public static void printUsage() {
-        System.out.println("Usage: java {properties} " + Solver.class.getName()
-            + " <datalog file>");
+        System.out.println("Usage: java {properties} " + Solver.class.getName() + " <datalog file>");
         System.out.println("System properties:");
-        System.out
-            .println("  -Dnoisy           Print rules as they are applied.");
+        System.out.println("  -Dnoisy           Print rules as they are applied.");
         System.out.println("  -Dtracesolve      Turn on trace information.");
-        System.out
-            .println("  -Dfulltracesolve  Also print contents of relations.");
+        System.out.println("  -Dfulltracesolve  Also print contents of relations.");
         System.out.println("  -Dsolver          Solver class name.");
-        System.out
-            .println("  -Ddatalog         Datalog file name, if not specified on command line.");
+        System.out.println("  -Ddatalog         Datalog file name, if not specified on command line.");
         System.out.println("  -Dbddinfo         BDD info file name.");
         System.out.println("  -Dbddvarorder     BDD variable order.");
         System.out.println("  -Dbddnodes        BDD initial node table size.");
         System.out.println("  -Dbddcache        BDD operation cache size.");
         System.out.println("  -Dbddminfree      BDD minimum free parameter.");
-        System.out
-            .println("  -Dincremental     Incrementalize all rules by default.");
+        System.out.println("  -Dincremental     Incrementalize all rules by default.");
         System.out.println("  -Dfindbestorder   Find best BDD domain order.");
-        System.out
-            .println("  -Ddumpnumberinggraph  Dump the context numbering in dot graph format.");
-        System.out
-            .println("  -Ddumprulegraph   Dump the graph of rules in dot format.");
+        System.out.println("  -Ddumpnumberinggraph  Dump the context numbering in dot graph format.");
+        System.out.println("  -Ddumprulegraph   Dump the graph of rules in dot format.");
     }
     public static class MyReader {
         List readerStack = new LinkedList();
@@ -252,8 +234,7 @@ public abstract class Solver {
                 s = current.readLine();
                 if (s != null) return s;
                 if (readerStack.isEmpty()) return null;
-                current = (LineNumberReader) readerStack.remove(readerStack
-                    .size() - 1);
+                current = (LineNumberReader) readerStack.remove(readerStack.size() - 1);
             }
         }
 
@@ -265,8 +246,7 @@ public abstract class Solver {
             for (;;) {
                 current.close();
                 if (readerStack.isEmpty()) return;
-                current = (LineNumberReader) readerStack.remove(readerStack
-                    .size() - 1);
+                current = (LineNumberReader) readerStack.remove(readerStack.size() - 1);
             }
         }
     }
@@ -319,12 +299,9 @@ public abstract class Solver {
                     if (isNumber) {
                         // field domain
                         Domain fd = parseDomain(lineNum, s);
-                        if (TRACE) out.println("Parsed field domain " + fd
-                            + " size " + fd.size);
+                        if (TRACE) out.println("Parsed field domain " + fd + " size " + fd.size);
                         if (nameToDomain.containsKey(fd.name)) {
-                            System.err.println("Error, field domain " + fd.name
-                                + " redefined on line " + in.getLineNumber()
-                                + ", ignoring.");
+                            System.err.println("Error, field domain " + fd.name + " redefined on line " + in.getLineNumber() + ", ignoring.");
                         } else {
                             nameToDomain.put(fd.name, fd);
                         }
@@ -367,8 +344,7 @@ public abstract class Solver {
                 }
                 fileName = fileName.substring(1, fileName.length() - 1);
             }
-            in.registerReader(new LineNumberReader(new FileReader(basedir
-                + fileName)));
+            in.registerReader(new LineNumberReader(new FileReader(basedir + fileName)));
         } else if (s.startsWith(".split_all_rules")) {
             boolean b = true;
             int index = ".split_all_rules".length() + 1;
@@ -432,8 +408,7 @@ public abstract class Solver {
             String dotSpec = "";
             if (s.length() > index) dotSpec = s.substring(index).trim();
             Dot dot = new Dot();
-            LineNumberReader lnr = new LineNumberReader(new FileReader(basedir
-                + dotSpec));
+            LineNumberReader lnr = new LineNumberReader(new FileReader(basedir + dotSpec));
             if (TRACE) out.println("Parsing dot " + dotSpec);
             dot.parseInput(this, lnr);
             if (TRACE) out.println("Done parsing dot " + dotSpec);
@@ -451,8 +426,7 @@ public abstract class Solver {
                 if (!basedir.endsWith(sep) && !basedir.endsWith("/")) {
                     basedir += sep;
                 }
-                if (TRACE) out.println("Base directory is now \"" + basedir
-                    + "\"");
+                if (TRACE) out.println("Base directory is now \"" + basedir + "\"");
             }
         } else {
             outputError(lineNum, 0, s, "Unknown directive \"" + s + "\"");
@@ -468,8 +442,7 @@ public abstract class Solver {
         try {
             size = Long.parseLong(num);
         } catch (NumberFormatException x) {
-            outputError(lineNum, st.getPosition(), s,
-                "Expected a number, got \"" + num + "\"");
+            outputError(lineNum, st.getPosition(), s, "Expected a number, got \"" + num + "\"");
             throw new IllegalArgumentException();
         }
         Domain fd = new Domain(name, size);
@@ -477,8 +450,7 @@ public abstract class Solver {
             String mapName = nextToken(st);
             DataInputStream dis = null;
             try {
-                dis = new DataInputStream(
-                    new FileInputStream(basedir + mapName));
+                dis = new DataInputStream(new FileInputStream(basedir + mapName));
                 fd.loadMap(dis);
             } finally {
                 if (dis != null) dis.close();
@@ -491,14 +463,12 @@ public abstract class Solver {
         MyStringTokenizer st = new MyStringTokenizer(s, " \t(:,)", true);
         String name = nextToken(st);
         if (name.indexOf('!') >= 0) {
-            outputError(lineNum, st.getPosition(), s,
-                "Relation name cannot contain '!'");
+            outputError(lineNum, st.getPosition(), s, "Relation name cannot contain '!'");
             throw new IllegalArgumentException();
         }
         String openParen = nextToken(st);
         if (!openParen.equals("(")) {
-            outputError(lineNum, st.getPosition(), s, "Expected \"(\", got \""
-                + openParen + "\"");
+            outputError(lineNum, st.getPosition(), s, "Expected \"(\", got \"" + openParen + "\"");
             throw new IllegalArgumentException();
         }
         List attributes = new LinkedList();
@@ -506,8 +476,7 @@ public abstract class Solver {
             String fName = nextToken(st);
             String colon = nextToken(st);
             if (!colon.equals(":")) {
-                outputError(lineNum, st.getPosition(), s,
-                    "Expected \":\", got \"" + colon + "\"");
+                outputError(lineNum, st.getPosition(), s, "Expected \":\", got \"" + colon + "\"");
                 throw new IllegalArgumentException();
             }
             String fdName = nextToken(st);
@@ -517,8 +486,7 @@ public abstract class Solver {
                 if (c < '0' || c > '9') break;
                 --numIndex;
                 if (numIndex < 0) {
-                    outputError(lineNum, st.getPosition(), s,
-                        "Expected field domain name, got \"" + fdName + "\"");
+                    outputError(lineNum, st.getPosition(), s, "Expected field domain name, got \"" + fdName + "\"");
                     throw new IllegalArgumentException();
                 }
             }
@@ -529,16 +497,14 @@ public abstract class Solver {
                 try {
                     fdNum = Integer.parseInt(number);
                 } catch (NumberFormatException x) {
-                    outputError(lineNum, st.getPosition(), s,
-                        "Cannot parse field domain number \"" + number + "\"");
+                    outputError(lineNum, st.getPosition(), s, "Cannot parse field domain number \"" + number + "\"");
                     throw new IllegalArgumentException();
                 }
                 fdName = fdName.substring(0, numIndex);
             }
             Domain fd = getDomain(fdName);
             if (fd == null) {
-                outputError(lineNum, st.getPosition(), s,
-                    "Unknown field domain " + fdName);
+                outputError(lineNum, st.getPosition(), s, "Unknown field domain " + fdName);
                 throw new IllegalArgumentException();
             }
             String option;
@@ -548,18 +514,14 @@ public abstract class Solver {
             String comma = nextToken(st);
             if (comma.equals(")")) break;
             if (!comma.equals(",")) {
-                outputError(lineNum, st.getPosition(), s,
-                    "Expected \",\" or \")\", got \"" + comma + "\"");
+                outputError(lineNum, st.getPosition(), s, "Expected \",\" or \")\", got \"" + comma + "\"");
                 throw new IllegalArgumentException();
             }
         }
         if (nameToRelation.containsKey(name)) {
-            System.err.println("Error, relation " + name
-                + " redefined on line " + lineNum
-                + ", ignoring.");
+            System.err.println("Error, relation " + name + " redefined on line " + lineNum + ", ignoring.");
             return null;
         }
-        
         Relation r = createRelation(name, attributes);
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
@@ -578,8 +540,7 @@ public abstract class Solver {
             } else if (option.equals("printsize")) {
                 relationsToPrintSize.add(r);
             } else {
-                outputError(lineNum, st.getPosition(), s, "Unexpected option '"
-                    + option + "'");
+                outputError(lineNum, st.getPosition(), s, "Unexpected option '" + option + "'");
                 throw new IllegalArgumentException();
             }
         }
@@ -604,8 +565,7 @@ public abstract class Solver {
         List/* <RuleTerm> */terms = new LinkedList();
         if (!sep.equals(".")) {
             if (!sep.equals(":-")) {
-                outputError(lineNum, st.getPosition(), s,
-                    "Expected \":-\", got \"" + sep + "\"");
+                outputError(lineNum, st.getPosition(), s, "Expected \":-\", got \"" + sep + "\"");
                 throw new IllegalArgumentException();
             }
             for (;;) {
@@ -615,8 +575,7 @@ public abstract class Solver {
                 sep = nextToken(st);
                 if (sep.equals(".")) break;
                 if (!sep.equals(",")) {
-                    outputError(lineNum, st.getPosition(), s,
-                        "Expected \".\" or \",\", got \"" + sep + "\"");
+                    outputError(lineNum, st.getPosition(), s, "Expected \".\" or \",\", got \"" + sep + "\"");
                     throw new IllegalArgumentException();
                 }
             }
@@ -626,8 +585,7 @@ public abstract class Solver {
         return ir;
     }
 
-    InferenceRule parseRuleOptions(int lineNum, String s, InferenceRule ir,
-        MyStringTokenizer st) {
+    InferenceRule parseRuleOptions(int lineNum, String s, InferenceRule ir, MyStringTokenizer st) {
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
             if (option.equals("split")) {
@@ -651,16 +609,14 @@ public abstract class Solver {
                 r.TRACE_FULL = true;
             } else {
                 // todo: pri=#, maxiter=#
-                outputError(lineNum, st.getPosition(), s,
-                    "Unknown rule option \"" + option + "\"");
+                outputError(lineNum, st.getPosition(), s, "Unknown rule option \"" + option + "\"");
                 throw new IllegalArgumentException();
             }
         }
         return ir;
     }
 
-    RuleTerm parseRuleTerm(int lineNum, String s,
-        Map/* <String,Variable> */nameToVar, MyStringTokenizer st) {
+    RuleTerm parseRuleTerm(int lineNum, String s, Map/* <String,Variable> */nameToVar, MyStringTokenizer st) {
         boolean negated = false;
         String relationName = nextToken(st);
         if (relationName.equals("!")) {
@@ -686,8 +642,7 @@ public abstract class Solver {
             Domain fd;
             if (var1 == null) {
                 if (var2 == null) {
-                    outputError(lineNum, st.getPosition(), s,
-                        "Cannot use \"=\" on two unbound variables.");
+                    outputError(lineNum, st.getPosition(), s, "Cannot use \"=\" on two unbound variables.");
                     throw new IllegalArgumentException();
                 }
                 fd = var2.domain;
@@ -699,19 +654,15 @@ public abstract class Solver {
                 }
             }
             if (var1.domain != var2.domain) {
-                outputError(lineNum, st.getPosition(), s, "Variable " + var1
-                    + " and " + var2 + " have different field domains.");
+                outputError(lineNum, st.getPosition(), s, "Variable " + var1 + " and " + var2 + " have different field domains.");
                 throw new IllegalArgumentException();
             }
-            Relation r = flip
-                ? getNotEquivalenceRelation(fd)
-                : getEquivalenceRelation(fd);
+            Relation r = flip ? getNotEquivalenceRelation(fd) : getEquivalenceRelation(fd);
             List vars = new Pair(var1, var2);
             RuleTerm rt = new RuleTerm(vars, r);
             return rt;
         } else if (!openParen.equals("(")) {
-            outputError(lineNum, st.getPosition(), s,
-                "Expected \"(\" or \"=\", got \"" + openParen + "\"");
+            outputError(lineNum, st.getPosition(), s, "Expected \"(\" or \"=\", got \"" + openParen + "\"");
             throw new IllegalArgumentException();
         }
         if (flip) {
@@ -720,16 +671,14 @@ public abstract class Solver {
         }
         Relation r = getRelation(relationName);
         if (r == null) {
-            outputError(lineNum, st.getPosition(), s, "Unknown relation "
-                + relationName);
+            outputError(lineNum, st.getPosition(), s, "Unknown relation " + relationName);
             throw new IllegalArgumentException();
         }
         if (negated) r = r.makeNegated(this);
         List/* <Variable> */vars = new LinkedList();
         for (;;) {
             if (r.attributes.size() <= vars.size()) {
-                outputError(lineNum, st.getPosition(), s,
-                    "Too many fields for " + r);
+                outputError(lineNum, st.getPosition(), s, "Too many fields for " + r);
                 throw new IllegalArgumentException();
             }
             Attribute a = (Attribute) r.attributes.get(vars.size());
@@ -737,29 +686,25 @@ public abstract class Solver {
             String varName = nextToken(st);
             Variable var = parseVariable(fd, nameToVar, varName);
             if (false && vars.contains(var)) { // temporarily disabled to handle
-                                               // "number" rules.
-                outputError(lineNum, st.getPosition(), s, "Duplicate variable "
-                    + var);
+                // "number" rules.
+                outputError(lineNum, st.getPosition(), s, "Duplicate variable " + var);
                 throw new IllegalArgumentException();
             }
             vars.add(var);
             if (var.domain == null) var.domain = fd;
             else if (var.domain != fd) {
-                outputError(lineNum, st.getPosition(), s, "Variable " + var
-                    + " used as both " + var.domain + " and " + fd);
+                outputError(lineNum, st.getPosition(), s, "Variable " + var + " used as both " + var.domain + " and " + fd);
                 throw new IllegalArgumentException();
             }
             String sep = nextToken(st);
             if (sep.equals(")")) break;
             if (!sep.equals(",")) {
-                outputError(lineNum, st.getPosition(), s,
-                    "Expected ',' or ')', got '" + sep + "'");
+                outputError(lineNum, st.getPosition(), s, "Expected ',' or ')', got '" + sep + "'");
                 throw new IllegalArgumentException();
             }
         }
         if (r.attributes.size() != vars.size()) {
-            outputError(lineNum, st.getPosition(), s,
-                "Wrong number of vars in rule term for " + relationName);
+            outputError(lineNum, st.getPosition(), s, "Wrong number of vars in rule term for " + relationName);
             throw new IllegalArgumentException();
         }
         RuleTerm rt = new RuleTerm(vars, r);
@@ -776,8 +721,7 @@ public abstract class Solver {
             var = new Constant(fd.namedConstant(namedConstant));
         } else if (!varName.equals("_")) {
             var = (Variable) nameToVar.get(varName);
-            if (var == null) nameToVar
-                .put(varName, var = new Variable(varName));
+            if (var == null) nameToVar.put(varName, var = new Variable(varName));
         } else {
             var = new Variable();
         }
@@ -802,8 +746,7 @@ public abstract class Solver {
     Relation getNotEquivalenceRelation(Domain fd) {
         Relation r = (Relation) notequivalenceRelations.get(fd);
         if (r == null) {
-            notequivalenceRelations.put(fd,
-                r = createNotEquivalenceRelation(fd));
+            notequivalenceRelations.put(fd, r = createNotEquivalenceRelation(fd));
         }
         return r;
     }
@@ -815,8 +758,7 @@ public abstract class Solver {
             try {
                 r.load();
             } catch (IOException x) {
-                System.out.println("WARNING: Cannot load bdd " + r + ": "
-                    + x.toString());
+                System.out.println("WARNING: Cannot load bdd " + r + ": " + x.toString());
             }
         }
         for (Iterator i = relationsToLoadTuples.iterator(); i.hasNext();) {
@@ -824,8 +766,7 @@ public abstract class Solver {
             try {
                 r.loadTuples();
             } catch (IOException x) {
-                System.out.println("WARNING: Cannot load tuples " + r + ": "
-                    + x.toString());
+                System.out.println("WARNING: Cannot load tuples " + r + ": " + x.toString());
             }
         }
     }
@@ -834,8 +775,7 @@ public abstract class Solver {
         List newRules = new LinkedList();
         for (Iterator i = rules.iterator(); i.hasNext();) {
             InferenceRule r = (InferenceRule) i.next();
-            if (SPLIT_ALL_RULES || r.split) newRules.addAll(r.split(rules
-                .indexOf(r)));
+            if (SPLIT_ALL_RULES || r.split) newRules.addAll(r.split(rules.indexOf(r)));
         }
         rules.addAll(newRules);
     }
@@ -908,7 +848,7 @@ public abstract class Solver {
     public Collection getRelationsToLoad() {
         return relationsToLoad;
     }
-    
+
     /**
      * @return
      */
