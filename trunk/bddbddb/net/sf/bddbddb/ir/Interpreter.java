@@ -16,8 +16,8 @@ public abstract class Interpreter {
     boolean TRACE = false;
     IR ir;
     OperationInterpreter opInterpreter;
-    Map/* Relation,RelationStats */relationStats;
-    Map/* IterationList,LoopStats */loopStats;
+    Map/*<Relation,RelationStats>*/ relationStats;
+    Map/*<IterationList,LoopStats>*/ loopStats;
 
     public abstract void interpret();
     public static class RelationStats {
