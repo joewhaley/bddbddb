@@ -165,11 +165,11 @@ public class UFDomainAssignment extends DomainAssignment {
                 if (a1 == a2) continue;
                 if (a1.getDomain() != a2.getDomain()) continue;
                 Pair p2 = new Pair(r, a2);
-                if (uf.find(p1) != p1) {
+                if (!p1.equals(uf.find(p1))) {
                     System.out.println("Warning: "+p1+" != "+uf.find(p1));
                     p1 = (Pair) uf.find(p1);
                 }
-                if (uf.find(p2) != p2) {
+                if (!p2.equals(uf.find(p2))) {
                     System.out.println("Warning: "+p2+" != "+uf.find(p2));
                     p2 = (Pair) uf.find(p2);
                 }
@@ -183,7 +183,7 @@ public class UFDomainAssignment extends DomainAssignment {
         if (TRACE) System.out.println("Forcing " + a1 + " != " + a2);
         Object rep1 = uf.find(a1);
         Object rep2 = uf.find(a2);
-        if (rep1 == rep2) {
+        if (rep1.equals(rep2)) {
             if (TRACE) System.out.println("Cannot force, " + a1 + " = " + a2);
             return false;
         }
@@ -192,14 +192,14 @@ public class UFDomainAssignment extends DomainAssignment {
             Pair c = (Pair) i.next();
             Object crep1 = uf.find(c.left);
             Object crep2 = uf.find(c.right);
-            Assert._assert(crep1 != crep2);
-            if (crep1 != c.left || crep2 != c.right) {
+            Assert._assert(!crep1.equals(crep2));
+            if (!crep1.equals(c.left) || !crep2.equals(c.right)) {
                 i.remove();
                 c.left = crep1; c.right = crep2;
                 toAdd.add(c);
             }
-            if (crep1 == rep1 && crep2 == rep2 ||
-                crep1 == rep2 && crep2 == rep1) {
+            if (crep1.equals(rep1) && crep2.equals(rep2) ||
+                crep1.equals(rep2) && crep2.equals(rep1)) {
                 if (TRACE) System.out.println("Already " + a1 + " != " + a2);
                 neq_constraints.addAll(toAdd);
                 return true;
@@ -213,7 +213,7 @@ public class UFDomainAssignment extends DomainAssignment {
     boolean wouldBeLegal(Object a1, Object a2) {
         Object rep_1 = uf.find(a1);
         Object rep_2 = uf.find(a2);
-        if (rep_1 == rep_2) {
+        if (rep_1.equals(rep_2)) {
             // Already match.
             if (TRACE) System.out.println("Already " + a1 + " = " + a2);
             return true;
@@ -222,8 +222,8 @@ public class UFDomainAssignment extends DomainAssignment {
             Pair p = (Pair) i.next();
             Object repa = uf.find(p.left);
             Object repb = uf.find(p.right);
-            Assert._assert(repa != repb);
-            if (repa == rep_1 && repb == rep_2 || repa == rep_2 && repb == rep_1) {
+            Assert._assert(!repa.equals(repb));
+            if (repa.equals(rep_1) && repb.equals(rep_2) || repa.equals(rep_2) && repb.equals(rep_1)) {
                 // Merging will cause these to be merged! Bad!
                 if (TRACE) System.out.println("Cannot, would violate constraint " + p.left + " != " + p.right);
                 return false;
