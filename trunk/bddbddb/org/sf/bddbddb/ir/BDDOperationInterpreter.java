@@ -406,7 +406,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     public Object visit(Replace op) {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
-        if (TRACE) System.out.println("   " + r0 + " = Replace " + r1);
+        if (TRACE) System.out.println("   " + op.toString());
         BDDPairing pair = op.getPairing(factory);
         BDD r = r1.getBDD().replace(pair);
         r0.setBDD(r);
