@@ -55,13 +55,11 @@ public class Liveness extends OperationProblem {
             LivenessFacts that = (LivenessFacts) fact;
             LivenessFacts result = (LivenessFacts) create();
             result.operationFacts.putAll(this.operationFacts);
-            for (Iterator i = that.operationFacts.entrySet().iterator(); i
-                .hasNext();) {
+            for (Iterator i = that.operationFacts.entrySet().iterator(); i.hasNext();) {
                 Map.Entry e = (Map.Entry) i.next();
                 Operation o = (Operation) e.getKey();
                 OperationFact f = (OperationFact) e.getValue();
-                OperationFact old = (OperationFact) result.operationFacts.put(
-                    o, f);
+                OperationFact old = (OperationFact) result.operationFacts.put(o, f);
                 if (old != null) {
                     f = (OperationFact) f.join(old);
                     result.operationFacts.put(o, f);
@@ -72,7 +70,6 @@ public class Liveness extends OperationProblem {
             if (thisLastFact != null) {
                 LivenessFact resultLastFact = (LivenessFact) thisLastFact
                     .join(thatLastFact);
-                ;
                 // resultLastFact.fact.or(thisLastFact.fact);
                 //resultLastFact.fact.or(thatLastFact.fact);
 
