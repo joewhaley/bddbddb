@@ -2,6 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path=""/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="src" path="/JavaBDD"/>
+	<classpathentry exported="true" kind="lib" path="javabdd.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>
