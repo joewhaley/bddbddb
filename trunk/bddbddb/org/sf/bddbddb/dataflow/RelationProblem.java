@@ -20,7 +20,7 @@ public abstract class RelationProblem extends Problem {
         return new RelationFacts();
     }
     public static class RelationFacts implements Fact {
-        Map/* <Relation,RelationFact> */relationFacts;
+        public Map/*<Relation,RelationFact>*/ relationFacts;
         IterationList location;
 
         public RelationFacts create() {
@@ -35,11 +35,8 @@ public abstract class RelationProblem extends Problem {
             relationFacts = new HashMap();
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see org.sf.bddbddb.dataflow.Problem.Fact#join(org.sf.bddbddb.dataflow.Problem.Fact,
-         *      org.sf.bddbddb.dataflow.Problem.Fact)
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.dataflow.Problem.Fact#join(org.sf.bddbddb.dataflow.Problem.Fact)
          */
         public Fact join(Fact fact) {
             RelationFacts result = create();
@@ -59,6 +56,9 @@ public abstract class RelationProblem extends Problem {
             return result;
         }
 
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.dataflow.Problem.Fact#copy(org.sf.bddbddb.IterationList)
+         */
         public Fact copy(IterationList loc) {
             RelationFacts that = new RelationFacts();
             that.relationFacts.putAll(this.relationFacts);
@@ -66,26 +66,46 @@ public abstract class RelationProblem extends Problem {
             return that;
         }
 
+        /**
+         * @param r
+         * @return
+         */
         public RelationFact getFact(Relation r) {
             return (RelationFact) relationFacts.get(r);
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
         public int hashCode() {
             return relationFacts.hashCode();
         }
 
+        /**
+         * @param that
+         * @return
+         */
         public boolean equals(RelationFacts that) {
             return relationFacts.equals(that.relationFacts);
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object o) {
             return equals((RelationFacts) o);
         }
 
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.dataflow.Problem.Fact#setLocation(org.sf.bddbddb.IterationList)
+         */
         public void setLocation(IterationList loc) {
             this.location = loc;
         }
 
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.dataflow.Problem.Fact#getLocation()
+         */
         public IterationList getLocation() {
             return location;
         }

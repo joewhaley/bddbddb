@@ -63,6 +63,7 @@ public class BDDInterpreter implements Interpreter {
             if (TRACE) System.out.println("   Renaming " + d1 + " to " + d2);
         }
         if (any) {
+            if (TRACE) System.out.println("      Rename to make "+r1+" match "+r2);
             b.replaceWith(pair);
         }
         pair.reset();

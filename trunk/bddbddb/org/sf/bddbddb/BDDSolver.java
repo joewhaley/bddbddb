@@ -60,8 +60,7 @@ public class BDDSolver extends Solver {
             + " nodes, cache size " + BDDCACHE + ", min free " + BDDMINFREE
             + "%)");
         bdd = BDDFactory.init(BDDNODES, BDDCACHE);
-        fielddomainsToBDDdomains = new GenericMultiMap(
-            ListFactory.linkedListFactory);
+        fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
         orderingConstraints = new HashMap();
         bdd.setMaxIncrease(BDDNODES / 2);
         bdd.setMinFreeNodes(BDDMINFREE);
@@ -396,7 +395,7 @@ public class BDDSolver extends Solver {
      * @param dom
      * @return
      */
-    BDDDomain allocateBDDDomain(Domain dom) {
+    public BDDDomain allocateBDDDomain(Domain dom) {
         int version = getBDDDomains(dom).size();
         int bits = BigInteger.valueOf(dom.size - 1).bitLength();
         BDDDomain d = makeDomain(dom.name + version, bits);
@@ -410,10 +409,24 @@ public class BDDSolver extends Solver {
      * @param dom
      * @return
      */
-    Collection getBDDDomains(Domain dom) {
+    public Collection getBDDDomains(Domain dom) {
         return fielddomainsToBDDdomains.getValues(dom);
     }
 
+    /**
+     * @param dom
+     * @param k
+     * @return
+     */
+    public BDDDomain getBDDDomain(Domain dom, int k) {
+        List list = (List) fielddomainsToBDDdomains.getValues(dom);
+        return (BDDDomain) list.get(k);
+    }
+    
+    public MultiMap getBDDDomains() {
+        return fielddomainsToBDDdomains;
+    }
+    
     /*
      * (non-Javadoc)
      * 

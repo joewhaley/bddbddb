@@ -40,17 +40,11 @@ import org.sf.javabdd.BDDFactory;
  */
 public class ConstantProp extends RelationProblem {
     boolean TRACE = false;
-
     final ConstantPropFact ZERO;
-
     final ConstantPropFact BOTTOM;
-
     Map factMap;
-
     public ConstantPropFacts currentFacts;
-
     Relation currentRelation;
-
     IterationList currentLocation;
 
     public boolean direction() {
@@ -80,19 +74,16 @@ public class ConstantProp extends RelationProblem {
         if (old_f != null) {
             ConstantPropFact new_f = old_f.getRepresentative();
             if (TRACE) System.out.println("Old value of relation: " + old_f);
-            if (old_f != new_f) if (TRACE) System.out
-                .println("representative: " + new_f);
+            if (old_f != new_f) if (TRACE) System.out.println("representative: " + new_f);
             fact = fact.getRepresentative();
             if (fact != new_f && old_f.backPointers != null) {
-                if (TRACE) System.out
-                    .println("Different fact! Replacing all copies of " + r);
+                if (TRACE) System.out.println("Different fact! Replacing all copies of " + r);
                 for (Iterator i = old_f.backPointers.iterator(); i.hasNext();) {
                     ConstantPropFact f = (ConstantPropFact) i.next();
                     Assert._assert(f.representative == old_f);
                     if (old_f == new_f) {
-                        if (TRACE) System.out
-                            .println("Relation is endpoint, using " + f
-                                + " instead.");
+                        if (TRACE) System.out.println("Relation is endpoint, using " + f
+                            + " instead.");
                         new_f = f;
                     }
                     old_f.backPointers.remove(f);
@@ -109,8 +100,7 @@ public class ConstantProp extends RelationProblem {
         ConstantPropFact f = (ConstantPropFact) factMap.get(key);
         if (f == null) {
             factMap.put(key, f = new ConstantPropFact(r, op));
-            if (TRACE) System.out.println("Allocating fact for " + key + ": "
-                + f);
+            if (TRACE) System.out.println("Allocating fact for " + key + ": " + f);
         }
         return f;
     }
@@ -127,9 +117,7 @@ public class ConstantProp extends RelationProblem {
     boolean isSame(ConstantPropFact f1, ConstantPropFact f2) {
         return f1 != BOTTOM && f1.equals(f2);
     }
-
-    public class ConstantPropTF extends TransferFunction implements
-        OperationVisitor {
+    public class ConstantPropTF extends TransferFunction implements OperationVisitor {
         Operation op;
 
         public ConstantPropTF(Operation op) {
@@ -326,8 +314,7 @@ public class ConstantProp extends RelationProblem {
                 if (f1 == ZERO || f2 == ZERO) return ZERO;
             } else if (op.getOp() == BDDFactory.diff) {
                 if (f1 == ZERO) return ZERO;
-            } else if (op.getOp() == BDDFactory.or
-                || op.getOp() == BDDFactory.xor) {
+            } else if (op.getOp() == BDDFactory.or || op.getOp() == BDDFactory.xor) {
                 if (f1 == ZERO && f2 == ZERO) return ZERO;
             }
             return allocNewRelation(op.getRelationDest(), op);
@@ -342,14 +329,10 @@ public class ConstantProp extends RelationProblem {
             return null;
         }
     }
-
     public class ConstantPropFact extends RelationFact {
         Relation label;
-
         Object op;
-
         ConstantPropFact representative;
-
         List backPointers;
 
         public ConstantPropFact() {
@@ -461,7 +444,6 @@ public class ConstantProp extends RelationProblem {
             return null;
         }
     }
-
     public class ConstantPropFacts extends RelationFacts {
         public RelationFacts create() {
             return new ConstantPropFacts();
@@ -469,21 +451,17 @@ public class ConstantProp extends RelationProblem {
 
         public Fact join(Fact fact) {
             ConstantPropFacts that = (ConstantPropFacts) fact;
-            Assert._assert(this.location == that.location, this.location
-                + " != " + that.location);
+            Assert._assert(this.location == that.location, this.location + " != " + that.location);
             currentLocation = this.location;
             ConstantPropFacts result = (ConstantPropFacts) create();
             result.relationFacts.putAll(this.relationFacts);
-            for (Iterator i = that.relationFacts.entrySet().iterator(); i
-                .hasNext();) {
+            for (Iterator i = that.relationFacts.entrySet().iterator(); i.hasNext();) {
                 Map.Entry e = (Map.Entry) i.next();
                 currentRelation = (Relation) e.getKey();
                 RelationFact f = (RelationFact) e.getValue();
-                RelationFact old = (RelationFact) result.relationFacts.put(
-                    currentRelation, f);
+                RelationFact old = (RelationFact) result.relationFacts.put(currentRelation, f);
                 if (old != null) {
-                    if (TRACE) System.out.println("Joining for relation "
-                        + currentRelation);
+                    if (TRACE) System.out.println("Joining for relation " + currentRelation);
                     f = (RelationFact) f.join(old);
                     result.relationFacts.put(currentRelation, f);
                 }
@@ -512,8 +490,8 @@ public class ConstantProp extends RelationProblem {
                 Object value = e.getValue();
                 Object value2 = that.relationFacts.get(key);
                 if (!value.equals(value2)) {
-                    if (TRACE) System.out.println("Key " + key + " differs: "
-                        + value + " vs " + value2);
+                    if (TRACE) System.out.println("Key " + key + " differs: " + value + " vs "
+                        + value2);
                     return false;
                 }
             }
@@ -536,7 +514,6 @@ public class ConstantProp extends RelationProblem {
             return sb.toString();
         }
     }
-
     public class SimplifyVisitor implements OperationVisitor {
         public Object visit(Join op) {
             Relation r1 = op.getSrc1();
@@ -670,8 +647,7 @@ public class ConstantProp extends RelationProblem {
                     // todo: check if this gets the attributes correct.
                     return new Project(op.getRelationDest(), r1);
                 }
-            } else if (op.getOp() == BDDFactory.or
-                || op.getOp() == BDDFactory.xor) {
+            } else if (op.getOp() == BDDFactory.or || op.getOp() == BDDFactory.xor) {
                 if (f1 == ZERO) {
                     if (f2 == ZERO) {
                         return new Zero(op.getRelationDest());

@@ -134,4 +134,19 @@ public class ApplyEx extends LowLevelOperation {
     public BDDOp getOp() {
         return op;
     }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+     */
+    public void replaceSrc(Relation r_old, Relation r_new) {
+        if (r1 == r_old) r1 = (BDDRelation) r_new;
+        if (r2 == r_old) r2 = (BDDRelation) r_new;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
+     */
+    public void setRelationDest(Relation r0) {
+        this.r0 = (BDDRelation) r0;
+    }
 }

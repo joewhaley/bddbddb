@@ -33,4 +33,18 @@ public class Attribute {
     public String toString() {
         return attributeName;
     }
+    
+    /**
+     * @return
+     */
+    public Domain getDomain() {
+        return attributeDomain;
+    }
+    
+    /**
+     * @return
+     */
+    public String getOptions() {
+        return attributeOptions;
+    }
 }
