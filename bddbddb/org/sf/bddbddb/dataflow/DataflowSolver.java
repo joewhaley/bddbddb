@@ -206,6 +206,7 @@ public class DataflowSolver {
             startFact = joinResult;
             currentFact = startFact.copy(g);
             if (!WORKLIST) {
+                blockToFact.put(g, startFact);
                 again = true;
                 break;
             }
