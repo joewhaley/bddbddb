@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import org.sf.bddbddb.Solver.MyReader;
-import org.sf.bddbddb.util.Assert;
 
 /**
  * Interactive
@@ -155,6 +154,8 @@ public class Interactive {
                         for (Iterator i = queries.iterator(); i.hasNext(); ) {
                             InferenceRule ir = (InferenceRule) i.next();
                             solver.deleteRelation(ir.bottom.relation);
+                            ir.bottom.relation.free();
+                            ir.free();
                         }
                     }
                 }
