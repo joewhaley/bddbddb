@@ -20,6 +20,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
+import org.sf.bddbddb.dataflow.ConstantProp;
+import org.sf.bddbddb.dataflow.DataflowSolver;
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
@@ -187,6 +189,7 @@ public class BDDSolver extends Solver {
      */
     public void solve() {
         Stratify s = new Stratify(this);
+        
         s.solve();
     }
     

@@ -1,18 +1,16 @@
-// Interpreter.java, created Jun 29, 2004 12:50:19 PM 2004 by jwhaley
+// OperationVisitor.java, created Jul 3, 2004 11:50:51 PM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
-import java.io.IOException;
-
 /**
- * Interpreter
+ * OperationVisitor
  * 
- * @author jwhaley
+ * @author John Whaley
  * @version $Id$
  */
-public abstract class Interpreter implements OperationVisitor {
-
+public interface OperationVisitor {
+    
     /**
      * @param op
      * @return
@@ -89,5 +87,12 @@ public abstract class Interpreter implements OperationVisitor {
      * @param op
      * @return
      */
+    public abstract Object visit(Load op);
+    
+    /**
+     * @param op
+     * @return
+     */
     public abstract Object visit(Save op);
+    
 }

@@ -6,6 +6,7 @@ package org.sf.bddbddb.ir;
 import java.util.LinkedList;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.bddbddb.util.Pair;
 
 /**
  * Join
@@ -40,14 +41,21 @@ public class Join extends Operation {
     }
 
     /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#perform(org.sf.bddbddb.ir.Interpreter)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
      */
-    public Object perform(Interpreter i) {
-        return i.perform(this);
+    public Object visit(OperationVisitor i) {
+        return i.visit(this);
     }
     
     /* (non-Javadoc)
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() { return r0; }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#getSrcs()
+     */
+    public List getSrcs() {
+        return new Pair(r1, r2);
+    }
 }

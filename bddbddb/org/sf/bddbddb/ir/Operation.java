@@ -3,6 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
+import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
@@ -17,7 +18,7 @@ public abstract class Operation {
      * @param i
      * @return
      */
-    public abstract Object perform(Interpreter i);
+    public abstract Object visit(OperationVisitor i);
     
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
@@ -29,4 +30,9 @@ public abstract class Operation {
      */
     public abstract Relation getDest();
 
+    /**
+     * @return
+     */
+    public abstract List/*<Relation>*/ getSrcs();
+    
 }

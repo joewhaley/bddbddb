@@ -41,7 +41,6 @@ public class BDDInferenceRule extends InferenceRule {
     Map variableToBDDDomain;
     BDDPairing[] renames;
     BDDPairing bottomRename;
-    boolean use_ir = !System.getProperty("useir", "no").equals("no");
     BDD[] canQuantifyAfter;
     int updateCount;
     long totalTime;
@@ -186,7 +185,7 @@ public class BDDInferenceRule extends InferenceRule {
      */
     public boolean update() {
         ++updateCount;
-        if (use_ir) {
+        if (false) { // use_ir
             solver.out.println(this);
             List ir;
             if (!incrementalize || updateCount == 1)
@@ -201,7 +200,7 @@ public class BDDInferenceRule extends InferenceRule {
                 BDDRelation dest = (BDDRelation) o.getDest();
                 BDD oldValue = null;
                 if (!anyChange) oldValue = dest.getBDD().id();
-                o.perform(interpret);
+                o.visit(interpret);
                 if (!anyChange) {
                     anyChange = !oldValue.equals(dest.getBDD());
                     if (anyChange)
