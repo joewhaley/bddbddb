@@ -3,6 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import net.sf.bddbddb.ir.highlevel.Project;
 import net.sf.bddbddb.ir.highlevel.Rename;
 import net.sf.bddbddb.ir.highlevel.Union;
 import net.sf.bddbddb.ir.highlevel.Universe;
+import org.jdom.Element;
 
 /**
  * An InferenceRule represents a single Datalog rule.
@@ -1029,6 +1031,24 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
+     * Returns the variable with the given name, or null if there is none.
+     * 
+     * @param name  variable name
+     * @return  variable
+     */
+    public Variable getVariable(String name) {
+        for (Iterator i = necessaryVariables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            if (name.equals(v.getName())) return v;
+        }
+        for (Iterator i = unnecessaryVariables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            if (name.equals(v.getName())) return v;
+        }
+        return null;
+    }
+    
+    /**
      * @return  map from names to variables
      */
     public Map getVarNameMap() {
@@ -1044,4 +1064,44 @@ public abstract class InferenceRule implements IterationElement {
         return nameToVar;
     }
     
+    /**
+     * Returns the attribute associated with the given variable.
+     * 
+     * @param v  variable
+     * @return  attribute
+     */
+    public Attribute getAttribute(Variable v) {
+        Attribute a = bottom.getAttribute(v);
+        if (a != null) return a;
+        for (Iterator i = top.iterator(); i.hasNext(); ) {
+            RuleTerm rt = (RuleTerm) i.next();
+            a = rt.getAttribute(v);
+            if (a != null) return a;
+        }
+        return null;
+    }
+    
+    public static InferenceRule fromXMLElement(Element e, Solver s) {
+        Map nameToVar = new HashMap();
+        RuleTerm b = RuleTerm.fromXMLElement((Element) e.getContent(0), s, nameToVar);
+        List t = new ArrayList(e.getContentSize()-1);
+        for (Iterator i = e.getContent().subList(1, e.getContentSize()).iterator(); i.hasNext(); ) {
+            Element e2 = (Element) i.next();
+            t.add(RuleTerm.fromXMLElement(e2, s, nameToVar));
+        }
+        InferenceRule ir = s.createInferenceRule(t, b);
+        Assert._assert(Integer.parseInt(e.getAttributeValue("id")) == ir.id);
+        return ir;
+    }
+    
+    public Element toXMLElement() {
+        Element e = new Element("rule");
+        e.setAttribute("id", Integer.toString(id));
+        e.addContent(bottom.toXMLElement());
+        for (Iterator i = top.iterator(); i.hasNext(); ) {
+            RuleTerm rt = (RuleTerm) i.next();
+            e.addContent(rt.toXMLElement());
+        }
+        return e;
+    }
 }

@@ -3,6 +3,8 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import org.jdom.Element;
+
 /**
  * An Attribute represents a single attribute of a relation.
  * Every Attribute has a name, a domain, and an optional option string.
@@ -93,5 +95,19 @@ public class Attribute {
      */
     public Relation getRelation() {
         return relation;
+    }
+    
+    public static Attribute fromXMLElement(Element e, XMLFactory f) {
+        String relationName = e.getAttributeValue("relation");
+        Relation r = f.getRelation(relationName);
+        String attribName = e.getAttributeValue("name");
+        return r.getAttribute(attribName);
+    }
+    
+    public Element toXMLElement() {
+        Element e = new Element("attribute");
+        e.setAttribute("relation", relation.name);
+        e.setAttribute("name", attributeName);
+        return e;
     }
 }

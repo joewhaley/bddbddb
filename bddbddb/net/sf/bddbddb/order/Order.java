@@ -53,6 +53,16 @@ public class Order implements List, Comparable {
     }
     
     /**
+     * Returns true if this order obeys the given constraint.
+     * 
+     * @param c  constraint
+     * @return  true if this order obeys the constraint, false otherwise
+     */
+    public boolean obeysConstraint(OrderConstraint c) {
+        return c.obeyedBy(this);
+    }
+    
+    /**
      * Return the collection of constraints in this order.
      * 
      * @return  collection of constraints
@@ -109,38 +119,6 @@ public class Order implements List, Comparable {
         return constraints;
     }
     
-    
-    
-    /**
-     * Given a collection of orders, find its similarities and the
-     * number of occurrences of each similarity.
-     * 
-     * @param c  collection of orders
-     * @return  map from order similarities to frequencies
-     */
-    public static Map/*<Order,Integer>*/ calcLongSimilarities(Collection c) {
-        Map m = new HashMap();
-        if (FindBestDomainOrder.TRACE > 1) FindBestDomainOrder.out.println("Calculating similarities in the collection: "+c);
-        for (Iterator i = c.iterator(); i.hasNext(); ) {
-            Order a = (Order) i.next();
-            Iterator j = c.iterator();
-            while (j.hasNext() && j.next() != a) ;
-            while (j.hasNext()) {
-                Order b = (Order) j.next();
-                Collection/*<Order>*/ sim = a.findLongSimilarities(b);
-                // todo: expand sim to also include implied suborders.
-                for (Iterator k = sim.iterator(); k.hasNext(); ) {
-                    Order s = (Order) k.next();
-                    Integer count = (Integer) m.get(s);
-                    int newCount = (count==null) ? 1 : count.intValue()+1;
-                    m.put(s, new Integer(newCount));
-                }
-            }
-        }
-        if (FindBestDomainOrder.TRACE > 1) FindBestDomainOrder.out.println("Similarities: "+m);
-        return m;
-    }
-    
     /**
      * Returns the number of elements in this order.  This includes elements
      * within interleaves.
@@ -165,8 +143,8 @@ public class Order implements List, Comparable {
      * 
      * @return  flattened version of this list
      */
-    public Collection getFlattened() {
-        Collection result = new LinkedList();
+    public List getFlattened() {
+        List result = new LinkedList();
         for (Iterator i = list.iterator(); i.hasNext(); ) {
             Object o = i.next();
             if (o instanceof Collection) {
@@ -174,123 +152,6 @@ public class Order implements List, Comparable {
             } else {
                 result.add(o);
             }
-        }
-        return result;
-    }
-    
-    /**
-     * Utility function for intersecting elements and collections.
-     * 
-     * @param a  element or collection
-     * @param b  element or collection
-     * @return  element or collection which is the intersection
-     */
-    static Object intersect(Object a, Object b) {
-        if (a instanceof Collection) {
-            Collection ca = (Collection) a;
-            if (b instanceof Collection) {
-                Collection result = new LinkedList();
-                result.addAll(ca);
-                result.retainAll((Collection) b);
-                if (result.isEmpty()) return null;
-                else if (result.size() == 1) return result.iterator().next();
-                else return result;
-            }
-            if (ca.contains(b)) return b;
-        } else if (b instanceof Collection) {
-            if (((Collection) b).contains(a)) return a;
-        } else {
-            if (a.equals(b)) return a;
-        }
-        return null;
-    }
-    
-    /**
-     * Utility function for adding new elements from one collection to another.
-     * 
-     * @param c  collection to add to
-     * @param c2  collection to add from
-     */
-    static void addAllNew(Collection c, Collection c2) {
-        outer:
-        for (ListIterator c2i = ((List)c2).listIterator(); c2i.hasNext(); ) {
-            List l2 = (List) c2i.next();
-            for (ListIterator c1i = ((List)c).listIterator(); c1i.hasNext(); ) {
-                List l1 = (List) c1i.next();
-                if (l1.containsAll(l2)) continue outer;
-                else if (l2.containsAll(l1)) {
-                    c1i.set(l2);
-                    continue outer;
-                }
-            }
-            c.add(l2);
-        }
-    }
-    
-    // TODO: this should use a dynamic programming implementation instead
-    // of recursive, because it is solving many repeated subproblems.
-    static Collection findLongSimilarities(List o1, List o2) {
-        if (o1.size() == 0 || o2.size() == 0) {
-            return null;
-        }
-        Object x1 = o1.get(0);
-        List r1 = o1.subList(1, o1.size());
-        Object x2 = o2.get(0);
-        List r2 = o2.subList(1, o2.size());
-        Object x = intersect(x1, x2);
-        Collection c = null;
-        if (x != null) {
-            c = findLongSimilarities(r1, r2);
-            if (c == null) {
-                c = new LinkedList();
-                Collection c2 = new LinkedList();
-                c2.add(x);
-                c.add(c2);
-            } else {
-                for (Iterator i = c.iterator(); i.hasNext(); ) {
-                    List l = (List) i.next();
-                    l.add(0, x);
-                }
-            }
-        }
-        if (x == null || !x1.equals(x2)) {
-            Collection c2 = findLongSimilarities(o1, r2);
-            if (c == null) c = c2;
-            else if (c2 != null) addAllNew(c, c2);
-            Collection c3 = findLongSimilarities(r1, o2);
-            if (c == null) c = c3;
-            else if (c3 != null) addAllNew(c, c3);
-        }
-        return c;
-    }
-    
-    /**
-     * Return the collection of suborders that are similar between this order
-     * and the given order.  Duplicates are eliminated.
-     * 
-     * @param that  other order
-     * @return  collection of suborders that are similar
-     */
-    public Collection/*<Order>*/ findLongSimilarities(Order that) {
-        if (false)
-        {
-            Collection f1 = this.getFlattened();
-            Collection f2 = that.getFlattened();
-            Assert._assert(f1.containsAll(f2));
-            Assert._assert(f2.containsAll(f1));
-        }
-        
-        Collection result = new LinkedList();
-        Collection c = findLongSimilarities(this.list, that.list);
-        for (Iterator i = c.iterator(); i.hasNext(); ) {
-            List l = (List) i.next();
-            if (false && l.size() == 1) {
-                Object elem = l.get(0);
-                if (!(elem instanceof List)) continue;
-                List l2 = (List) elem;
-                if (l2.size() == 1) continue;
-            }
-            result.add(new Order(l));
         }
         return result;
     }
@@ -698,4 +559,155 @@ public class Order implements List, Comparable {
         }
         return new Order(o);
     }
+    
+    
+    //////////////////// OLD CODE BELOW
+    
+    /**
+     * Given a collection of orders, find its similarities and the
+     * number of occurrences of each similarity.
+     * 
+     * @param c  collection of orders
+     * @return  map from order similarities to frequencies
+     */
+    public static Map/*<Order,Integer>*/ calcLongSimilarities(Collection c) {
+        Map m = new HashMap();
+        if (FindBestDomainOrder.TRACE > 1) FindBestDomainOrder.out.println("Calculating similarities in the collection: "+c);
+        for (Iterator i = c.iterator(); i.hasNext(); ) {
+            Order a = (Order) i.next();
+            Iterator j = c.iterator();
+            while (j.hasNext() && j.next() != a) ;
+            while (j.hasNext()) {
+                Order b = (Order) j.next();
+                Collection/*<Order>*/ sim = a.findLongSimilarities(b);
+                // todo: expand sim to also include implied suborders.
+                for (Iterator k = sim.iterator(); k.hasNext(); ) {
+                    Order s = (Order) k.next();
+                    Integer count = (Integer) m.get(s);
+                    int newCount = (count==null) ? 1 : count.intValue()+1;
+                    m.put(s, new Integer(newCount));
+                }
+            }
+        }
+        if (FindBestDomainOrder.TRACE > 1) FindBestDomainOrder.out.println("Similarities: "+m);
+        return m;
+    }
+    
+    /**
+     * Utility function for intersecting elements and collections.
+     * 
+     * @param a  element or collection
+     * @param b  element or collection
+     * @return  element or collection which is the intersection
+     */
+    static Object intersect(Object a, Object b) {
+        if (a instanceof Collection) {
+            Collection ca = (Collection) a;
+            if (b instanceof Collection) {
+                Collection result = new LinkedList();
+                result.addAll(ca);
+                result.retainAll((Collection) b);
+                if (result.isEmpty()) return null;
+                else if (result.size() == 1) return result.iterator().next();
+                else return result;
+            }
+            if (ca.contains(b)) return b;
+        } else if (b instanceof Collection) {
+            if (((Collection) b).contains(a)) return a;
+        } else {
+            if (a.equals(b)) return a;
+        }
+        return null;
+    }
+    
+    /**
+     * Utility function for adding new elements from one collection to another.
+     * 
+     * @param c  collection to add to
+     * @param c2  collection to add from
+     */
+    static void addAllNew(Collection c, Collection c2) {
+        outer:
+        for (ListIterator c2i = ((List)c2).listIterator(); c2i.hasNext(); ) {
+            List l2 = (List) c2i.next();
+            for (ListIterator c1i = ((List)c).listIterator(); c1i.hasNext(); ) {
+                List l1 = (List) c1i.next();
+                if (l1.containsAll(l2)) continue outer;
+                else if (l2.containsAll(l1)) {
+                    c1i.set(l2);
+                    continue outer;
+                }
+            }
+            c.add(l2);
+        }
+    }
+    
+    // TODO: this should use a dynamic programming implementation instead
+    // of recursive, because it is solving many repeated subproblems.
+    static Collection findLongSimilarities(List o1, List o2) {
+        if (o1.size() == 0 || o2.size() == 0) {
+            return null;
+        }
+        Object x1 = o1.get(0);
+        List r1 = o1.subList(1, o1.size());
+        Object x2 = o2.get(0);
+        List r2 = o2.subList(1, o2.size());
+        Object x = intersect(x1, x2);
+        Collection c = null;
+        if (x != null) {
+            c = findLongSimilarities(r1, r2);
+            if (c == null) {
+                c = new LinkedList();
+                Collection c2 = new LinkedList();
+                c2.add(x);
+                c.add(c2);
+            } else {
+                for (Iterator i = c.iterator(); i.hasNext(); ) {
+                    List l = (List) i.next();
+                    l.add(0, x);
+                }
+            }
+        }
+        if (x == null || !x1.equals(x2)) {
+            Collection c2 = findLongSimilarities(o1, r2);
+            if (c == null) c = c2;
+            else if (c2 != null) addAllNew(c, c2);
+            Collection c3 = findLongSimilarities(r1, o2);
+            if (c == null) c = c3;
+            else if (c3 != null) addAllNew(c, c3);
+        }
+        return c;
+    }
+    
+    /**
+     * Return the collection of suborders that are similar between this order
+     * and the given order.  Duplicates are eliminated.
+     * 
+     * @param that  other order
+     * @return  collection of suborders that are similar
+     */
+    public Collection/*<Order>*/ findLongSimilarities(Order that) {
+        if (false)
+        {
+            Collection f1 = this.getFlattened();
+            Collection f2 = that.getFlattened();
+            Assert._assert(f1.containsAll(f2));
+            Assert._assert(f2.containsAll(f1));
+        }
+        
+        Collection result = new LinkedList();
+        Collection c = findLongSimilarities(this.list, that.list);
+        for (Iterator i = c.iterator(); i.hasNext(); ) {
+            List l = (List) i.next();
+            if (false && l.size() == 1) {
+                Object elem = l.get(0);
+                if (!(elem instanceof List)) continue;
+                List l2 = (List) elem;
+                if (l2.size() == 1) continue;
+            }
+            result.add(new Order(l));
+        }
+        return result;
+    }
+    
 }

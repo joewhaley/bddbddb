@@ -3,6 +3,8 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import org.jdom.Element;
+
 /**
  * A Variable is a variable in a rule.
  * 
@@ -92,5 +94,19 @@ public class Variable {
      */
     public String toString() {
         return name;
+    }
+    
+    public static Variable fromXMLElement(Element e, XMLFactory f) {
+        String ruleName = e.getAttributeValue("rule");
+        InferenceRule ir = f.getRule(ruleName);
+        String variableName = e.getAttributeValue("name");
+        return ir.getVariable(variableName);
+    }
+    
+    public Element toXMLElement(InferenceRule ir) {
+        Element e = new Element("variable");
+        e.setAttribute("rule", "rule"+ir.id);
+        e.setAttribute("name", name);
+        return e;
     }
 }
