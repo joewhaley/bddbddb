@@ -18,7 +18,8 @@
   <description>
     <![CDATA[
 
-        <p>bddbddb is an implementation of Datalog, a declarative
+        <p>bddbddb stands for BDD-Based Deductive DataBase.  It is
+        an implementation of Datalog, a declarative
         programming language similar to Prolog for talking about
         relations.  What makes bddbddb unique is that it represents
         the relations using binary decision diagrams (BDDs).  BDDs
@@ -64,7 +65,8 @@
         </p>
 
         <p>bddbddb was written by John Whaley, a Ph.D. student working
-        in the Stanford SUIF Compiler group, as part of his research.
+        in the Stanford SUIF Compiler group, as part of his research
+        with Professor Monica Lam.
         He releases this software as open source with the hope that it
         will take program analysis to a new level by accelerating the
         development of new advanced analyses, enabling non-specialists
