@@ -26,7 +26,7 @@ public class ClassHierarchyAnalysis {
     PAFromSource pa;
     ITypeBinding OBJECT;
     
-    ClassHierarchyAnalysis(PAFromSource pa, AST ast) {
+    ClassHierarchyAnalysis(PAFromSource pa) {
         this.pa = pa;
         this.Tmap = pa.Tmap;
         this.Nmap = pa.Nmap;
@@ -35,7 +35,7 @@ public class ClassHierarchyAnalysis {
         this.N = pa.N;
         this.M = pa.M;
         this.cha = pa.bdd.zero();
-        OBJECT = ast.resolveWellKnownType("java.lang.Object");
+        OBJECT = pa.OBJECT.getBinding();
     }
     
     IndexMap Tmap;
