@@ -158,6 +158,9 @@ public class CopyProp extends OperationProblem implements IRPass {
             return loc;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object o) {
             if (o instanceof CopyPropFact) {
                 return this.copies.equals(((CopyPropFact) o).copies);
@@ -165,6 +168,13 @@ public class CopyProp extends OperationProblem implements IRPass {
             return false;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode() {
+            return this.copies.hashCode();
+        }
+        
         public String toString() {
             return copies.toString();
         }

@@ -46,6 +46,9 @@ public abstract class Interpreter {
             return result;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object o) {
             if (o instanceof RelationStats) {
                 return this.size == ((RelationStats) o).size;
@@ -53,6 +56,13 @@ public abstract class Interpreter {
             return false;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode() {
+            return this.size;
+        }
+        
         public String toString() {
             return "size: " + Double.toString(size);
         }

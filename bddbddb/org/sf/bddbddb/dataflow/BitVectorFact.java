@@ -36,11 +36,21 @@ public abstract class BitVectorFact implements Problem.Fact {
         this.fact = s;
     }
 
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
     public boolean equals(Object o) {
         if (o instanceof BitVectorFact) {
             return this.fact.equals(((BitVectorFact) o).fact);
         }
         return false;
+    }
+    
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        return this.fact.hashCode();
     }
     
     public String toString() {
