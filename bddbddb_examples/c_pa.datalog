@@ -10,36 +10,6 @@
 # Found by findbestorder
 # 4s
 .bddvarorder C0xC1xC2_V0xV1_V2xV3_FD0xFD1xFD2xFD3xFD4
-# 5s
-#.bddvarorder C0xC1xC2_V0xV1_V2xV3_FD0xFD1_FD2xFD3xFD4
-# 7s
-#.bddvarorder C0xC1xC2_V0xV1_V2xV3_FD0xFD1xFD2xFD3_FD4
-# 5s
-#.bddvarorder C0xC1xC2_V0xV1_V2_V3_FD0xFD1xFD2xFD3xFD4
-# 6s
-#.bddvarorder C0xC1xC2_V2xV3_V0xV1_FD0xFD1xFD2xFD3xFD4
-# 8s
-#.bddvarorder C0xC1xC2_V0xV1_V2xV3_FD0xFD1xFD2_FD3xFD4
-# 11s
-#.bddvarorder C0xC1xC2_V0xV1_V2xV3_FD0_FD1xFD2xFD3xFD4
-# 14s
-#.bddvarorder C0xC1xC2_V0_V1_V2xV3_FD0xFD1xFD2_FD3xFD4
-# 15s
-#.bddvarorder C0xC1xC2_V0xV1xV2_FD0xFD1xFD2xFD3xFD4_V3
-# 15s
-#.bddvarorder C0xC1xC2_V3_V0xV1xV2_FD0xFD1xFD2xFD3xFD4
-# 15s
-#.bddvarorder C0xC1xV3_V0xV1xV2_C2xFD0xFD1xFD2xFD3xFD4
-# 15s
-#.bddvarorder C0xC1_V0xV1xV2xV3_C2xFD0xFD1xFD2xFD3xFD4
-# 16s
-#.bddvarorder C0xC1xC2_V0xV1xV2_V3_FD0xFD1xFD2xFD3xFD4
-# 29s
-#.bddvarorder C0xC1xC2_FD0xFD1xFD2xFD3xFD4_V0xV1xV2xV3
-# 29s
-#.bddvarorder C0xC1xC2_V0xV1xV2xV3_FD0xFD1xFD2xFD3xFD4
-# 33s
-#.bddvarorder C0xC1xC2_V0xV1_V2xV3xFD0xFD1xFD2xFD3xFD4
 
 .include "fielddomains"
 .include "consrelations"
