@@ -19,7 +19,6 @@ import jwutil.collections.AppendIterator;
 import jwutil.util.Assert;
 import net.sf.bddbddb.FindBestDomainOrder.TrialGuess;
 import net.sf.bddbddb.order.Order;
-import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
@@ -86,7 +85,7 @@ public class BDDInferenceRule extends InferenceRule {
      */
     boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
   
-    long FBO_CUTOFF = Long.parseLong(System.getProperty("fbocutoff", "100"));
+    long FBO_CUTOFF = Long.parseLong(System.getProperty("fbocutoff", "90"));
     boolean learn_best_order = !System.getProperty("learnbestorder", "no").equals("no");  
     LearnedOrder learnedOrder;
      
@@ -1008,6 +1007,8 @@ public class BDDInferenceRule extends InferenceRule {
     
     public static final long LONG_TIME = 10000000;
     public static int MAX_FBO_TRIALS = Integer.parseInt(System.getProperty("fbotrials", "50"));
+    
+    int lastTrialNum = -1;
     
     /**
      * Run the find best domain order on the given inputs.

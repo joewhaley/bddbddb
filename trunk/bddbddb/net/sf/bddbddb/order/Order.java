@@ -520,8 +520,10 @@ public class Order implements List, Comparable {
                 Collection c = (Collection) p;
                 int num = 0;
                 for (Iterator j = c.iterator(); j.hasNext(); ) {
-                    Variable v = (Variable) j.next();
-                    BDDDomain d = (BDDDomain) variableToBDDDomain.get(v);
+                    Object v = j.next();
+                    Object d;
+                    if (variableToBDDDomain != null) d = variableToBDDDomain.get(v);
+                    else d = v;
                     if (d != null) {
                         if (varOrder.length() > 0) {
                             if (num == 0) {
@@ -535,7 +537,9 @@ public class Order implements List, Comparable {
                     }
                 }
             } else {
-                BDDDomain d = (BDDDomain) variableToBDDDomain.get(p);
+                Object d;
+                if (variableToBDDDomain != null) d = variableToBDDDomain.get(p);
+                else d = p;
                 if (d != null) {
                     if (varOrder.length() > 0) varOrder.append('_');
                     varOrder.append(d);

@@ -178,9 +178,10 @@ public class BDDRelation extends Relation {
     public void initialize2() {
         Assert._assert(isInitialized);
         if (special_type != 0) {
-            if (solver.TRACE) solver.out.println("Initializing value of special relation "+this);
             BDDDomain d1 = (BDDDomain) domains.get(0);
             BDDDomain d2 = (BDDDomain) domains.get(1);
+            if (true) //(solver.TRACE)
+                solver.out.println("Initializing value of special relation "+this+" "+d1+","+d2);
             //Assert._assert(relation.isZero());
             relation.free();
             BDD b;
@@ -299,8 +300,9 @@ public class BDDRelation extends Relation {
      * @see net.sf.bddbddb.Relation#load()
      */
     public void load() throws IOException {
+        if (solver.NOISY) solver.out.print("Loading BDD from file: " + name + ".bdd ");
         load(solver.basedir + name + ".bdd");
-        if (solver.NOISY) solver.out.println("Loaded BDD from file: " + name + ".bdd " + relation.nodeCount() + " nodes, " + dsize() + " elements.");
+        if (solver.NOISY) solver.out.println(relation.nodeCount() + " nodes, " + dsize() + " elements.");
         if (solver.TRACE) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
     }
 
@@ -452,7 +454,7 @@ public class BDDRelation extends Relation {
                 } else if (!domains.contains(d)) {
                     msg = "domain "+dname+" is not in domain set "+domains;
                 }
-                if (msg != null && d.varNum() != dbits) {
+                if (msg == null && d.varNum() != dbits) {
                     msg = "number of bits for domain "+dname+" ("+dbits +") does not match expected ("+d.varNum()+")";
                 }
                 if (d != null) domainList.add(d);

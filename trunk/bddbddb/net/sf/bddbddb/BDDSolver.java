@@ -3,17 +3,19 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringTokenizer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import jwutil.collections.FlattenedCollection;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.ListFactory;
 import jwutil.collections.MultiMap;
@@ -21,6 +23,8 @@ import jwutil.collections.Pair;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Learner.IndividualRuleLearner;
 import net.sf.bddbddb.ir.BDDInterpreter;
+import net.sf.bddbddb.order.Order;
+import net.sf.bddbddb.order.OrderConstraintSet;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
 
@@ -160,6 +164,11 @@ public class BDDSolver extends Solver {
             BDDRelation r = (BDDRelation) i.next();
             r.initialize2();
         }
+        Collection domains = new FlattenedCollection(getBDDDomains().values());
+        System.out.println("BDD Domains: "+domains);
+        OrderConstraintSet ocs = new OrderConstraintSet();
+        Order o = ocs.generateRandomOrder(domains);
+        System.out.println("Random order: "+o.toVarOrderString(null));
     }
 
     /**
@@ -276,8 +285,10 @@ public class BDDSolver extends Solver {
             saveBDDDomainInfo();
         } catch (IOException x) {
         }
-        fbo.dump();
+        //fbo.dump();
         fbo.printTrialsDistro();
+        //fbo.printBestTrials();
+        //fbo.printBestBDDOrders();
     }
 
     /* (non-Javadoc)
