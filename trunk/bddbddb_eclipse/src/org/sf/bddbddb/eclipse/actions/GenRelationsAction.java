@@ -1,13 +1,18 @@
 package org.sf.bddbddb.eclipse.actions;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.io.IOException;
+import org.eclipse.core.internal.resources.File;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.IClasspathContainer;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -51,44 +56,49 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
     public void run(IAction action) {
         if (selection instanceof IStructuredSelection && !selection.isEmpty()) {
             HashSet classes = new HashSet(); // no dups
+            HashSet libs = new HashSet();    // no dups            
             IStructuredSelection is = (IStructuredSelection) selection;
             IPath path = null;
             for (Iterator i = is.iterator(); i.hasNext();) {
                 Object elem = i.next();
+                if (elem instanceof File) continue;
                 try {
                     IJavaElement o = (IJavaElement)elem;
                     System.out.println("Selected: "+o.toString().split("\n", 2)[0]);
-                    if (o instanceof ICompilationUnit || 
-                        o instanceof IClassFile) {
+                    if (o instanceof ICompilationUnit) {
                         classes.add(o);
+                    }
+                    else if (o instanceof IClassFile) {
+                        libs.add(o);
                     }
                     else if (o instanceof IJavaProject){
                         IPackageFragment[] pf = ((IJavaProject) o).getPackageFragments();
                         for (int j = 0; j < pf.length; j++) {
-                            addPackageFragment(classes, pf[j]);
+                            //System.out.println(j + " " + pf[j]);
+                            addPackageFragment(classes, libs, pf[j]);
                         }
                     }
                     else if (o instanceof IMember){
                         classes.add(((IMember) o).getCompilationUnit());
                     }
                     else if (o instanceof IPackageFragment) {
-                        addPackageFragment(classes, (IPackageFragment)o);
+                        addPackageFragment(classes, libs, (IPackageFragment)o);
                     }
                     else {
                         MessageDialog.openInformation(window.getShell(),
-                            "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());                    System.out.println();
-
+                            "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());   
                     }
                     path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
                     path = path.append(o.getJavaProject().getOutputLocation());
                     path = path.makeAbsolute();
+
                 } catch (JavaModelException x) {
                     // todo!
                     System.err.println(x);
                     x.printStackTrace();
                 } catch (ClassCastException x) {
                     MessageDialog.openInformation(window.getShell(),
-                        "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());                    System.out.println();
+                        "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());              
                 }
             }
             System.out.println("Dumping to path: \""+path+"\"");
@@ -96,7 +106,7 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
                 System.setProperty("pas.dumppath", path.toOSString());
             PAFromSource pa = new PAFromSource();
             try {
-                pa.run(classes);
+                pa.run(classes, libs);
             } catch (IOException x) {
                 MessageDialog.openInformation(window.getShell(),
                     "bddbddb Eclipse Plug-in", "IO Exception occurred! "+x.toString());
@@ -107,12 +117,14 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
         }
     }
 
-    private void addPackageFragment(HashSet classes, IPackageFragment pf) 
+    private void addPackageFragment(HashSet classes, HashSet libs, 
+        IPackageFragment pf) 
         throws JavaModelException {
-        ICompilationUnit[] cu = ((IPackageFragment) pf).getCompilationUnits();
-        for (int j = 0; j < cu.length; j++) {
-            classes.add(cu[j]);
-        }
+        ICompilationUnit[] cu = pf.getCompilationUnits();
+        IClassFile[] cf =  pf.getClassFiles();
+        //System.out.println(cu.length + ", " + cf.length);
+        classes.addAll(Arrays.asList(cu));
+        libs.addAll(Arrays.asList(cf));
     }
 
     /**

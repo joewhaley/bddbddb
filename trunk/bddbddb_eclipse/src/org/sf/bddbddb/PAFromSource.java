@@ -13,14 +13,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -30,11 +28,13 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.*;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.MultiMap;
+import org.sf.bddbddb.util.StreamGobbler;
 import org.sf.bddbddb.util.SystemProperties;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
@@ -76,7 +76,7 @@ public class PAFromSource {
     static int bddcache = Integer.parseInt(System.getProperty("bddcache", "10000"));
     static BDDFactory bdd = BDDFactory.init(bddnodes, bddcache);
     
-    static BDDDomain V1, V2, I, H1, Z, F, T1, T2, M, N; // H2, M2
+    static BDDDomain V1, V2, I, H1, Z, F, T1, T2, M, N, M2; // H2
     //BDDDomain V1c[], V2c[], H1c[], H2c[];
     
     static int V_BITS=18, I_BITS=16, H_BITS=15, Z_BITS=5, F_BITS=13, T_BITS=12, N_BITS=13, M_BITS=14;
@@ -99,6 +99,9 @@ public class PAFromSource {
     BDD Ithr;   // IxV1, invocation thrown value        (no context)
     BDD Mthr;   // MxV2, method thrown value            (no context)
     BDD mI;     // MxIxN, method invocations            (no context)
+    BDD mS;     // Mx(V1xF)xV2
+    BDD mL;     // Mx(V1xF)xV2
+    BDD mIE;    // MxIxM2
     //BDD mV;     // MxV, method variables                (no context)
     //BDD sync;   // V, synced locations                  (no context)
 
@@ -118,7 +121,7 @@ public class PAFromSource {
     //BDDPairing T2toT1, T1toT2;
     //BDDPairing H1toV1c[], V1ctoH1[]; 
     //BDD V1csets[], V1cH1equals[];
-    static BDD V1set, V2set, H1set, T1set, T2set, Fset, Mset, Iset, Nset, Zset; //H2set, 
+    static BDD V1set, V2set, H1set, T1set, T2set, Fset, Mset, M2set, Iset, Nset, Zset; //H2set, 
     static BDD V1V2set, V1Fset, V2Fset, V1FV2set, V1H1set, H1Fset; //, H2Fset, H1H2set, H1FH2set
     static BDD IMset, INset, INH1set, INT2set, T2Nset, MZset;
     //BDD V1cset, V2cset, H1cset, H2cset, V1cV2cset, V1cH1cset, H1cH2cset;
@@ -157,7 +160,7 @@ public class PAFromSource {
         T2 = makeDomain("T2", T_BITS);
         N = makeDomain("N", N_BITS);
         M = makeDomain("M", M_BITS);
-        //M2 = makeDomain("M2", M_BITS);
+        M2 = makeDomain("M2", M_BITS);
 
         /*
         if (CONTEXT_SENSITIVE || OBJECT_SENSITIVE || THREAD_SENSITIVE) {
@@ -207,7 +210,7 @@ public class PAFromSource {
                 //varorder = "N_F_Z_I_M2_M_T1_V2xV1_H2_T2_H1";
                 varorder = "N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1";
             } */
-            varorder = "N_F_I_M_Z_V2xV1_T1_T2_H1";
+            varorder = "N_F_I_M2_M_Z_V2xV1_T1_T2_H1";
         }
         
         System.out.println("Using variable ordering "+varorder);
@@ -301,6 +304,7 @@ public class PAFromSource {
         T2set = T2.set();
         Fset = F.set();
         Mset = M.set();
+        M2set = M2.set();
         Nset = N.set();
         Iset = I.set();
         Zset = Z.set();
@@ -344,12 +348,15 @@ public class PAFromSource {
         vT = bdd.zero();
         hT = bdd.zero();
         aT = bdd.zero();
+        mL = bdd.zero();
+        mS = bdd.zero();
+        mIE = bdd.zero();
+        
         /*
         if (FILTER_HP) {
             fT = bdd.zero();
             fC = bdd.zero();
         }
-        
         */
         actual = bdd.zero();
         formal = bdd.zero();
@@ -715,6 +722,9 @@ public class PAFromSource {
      * @author jimz
      */
     class PAASTVisitor extends ASTVisitor {
+        final boolean libs;
+        
+        
         public boolean visit(CompilationUnit arg0) {
             out.println("setting up visitor.");
             AST ast = arg0.getAST();
@@ -738,7 +748,11 @@ public class PAFromSource {
             scope = s;
         }
          */
-        public PAASTVisitor() { super(false); /*this(0,0);*/};
+        public PAASTVisitor(boolean l) { 
+            super(false); 
+            libs = l;
+            /*this(0,0);*/
+        }
         
         // vP
         public boolean visit(ArrayCreation arg0) {
@@ -1064,7 +1078,7 @@ public class PAFromSource {
         }
 
         // formal
-        public boolean visit(MethodDeclaration arg0) { 
+        public boolean visit(MethodDeclaration arg0) {            
             int modifiers = arg0.getModifiers();
 
             int M_i = Mmap.get(new MethodWrapper(arg0));
@@ -1080,7 +1094,40 @@ public class PAFromSource {
             }
             M_bdd.free();
                         
-            if (arg0.getBody() != null) arg0.getBody().accept(this);
+            if (arg0.getBody() != null) {
+                if (arg0.isConstructor()) {  // implicit super()?
+                    List stmts = arg0.getBody().statements();
+                    Statement v = (stmts.size() == 0) ? 
+                                    null : (Statement)stmts.get(0);
+                    if (v == null || 
+                        !(v.getNodeType() == ASTNode.SUPER_CONSTRUCTOR_INVOCATION || 
+                            v.getNodeType() == ASTNode.CONSTRUCTOR_INVOCATION)) {
+                        ITypeBinding supClass = arg0.resolveBinding().getDeclaringClass().getSuperclass();
+                        if (supClass != null) {
+                            ASTNodeWrapper n = new StringWrapper("ImplicitSuper in " + arg0.resolveBinding().getKey());
+                            IMethodBinding[] methods =supClass.getDeclaredMethods(); 
+                            IMethodBinding method = null;
+                            for (int i = 0; i < methods.length; i++) {
+                                if (methods[i].getKey().endsWith("void()")) {
+                                    method = methods[i];
+                                    break;
+                                }
+                            }
+                            
+                            List enclosingMethods = 
+                                Collections.singletonList(new MethodWrapper(arg0));
+                            List thisParams = 
+                                Collections.singletonList(new ThisWrapper(arg0, null));
+                            List args = Collections.EMPTY_LIST;
+                            
+                            addMethodInvocation(thisParams, n, method, args, 
+                                enclosingMethods, new ASTNodeWrapper(null));
+                        }
+                    }
+                }
+                
+                arg0.getBody().accept(this);
+            }
             
             return false; // do not go into the decls
         }
@@ -1520,19 +1567,20 @@ public class PAFromSource {
             int I_i = Imap.get(invocation);
             BDD I_bdd = I.ithVar(I_i);
             ASTNode inv = invocation.getNode();
-            
-            // Mthr, Ithr
-            ITypeBinding[] exs = invocationBinding.getExceptionTypes();
-            for (int i = 0; i < exs.length; i++) {
-                ExceptionWrapper ew = new ExceptionWrapper(inv, exs[i]);
-                addToIthr(I_bdd, ew); 
-                
-                ASTNode parent = findThrowParent(inv, exs[i]);    
-                if (parent instanceof MethodDeclaration) { 
-                    addToMthr((MethodDeclaration)parent, ew); // not caught
-                }
-                else { // caught, match up with var
-                    addToA(new ASTNodeWrapper(parent), ew);
+            if (inv != null) {
+                // Mthr, Ithr
+                ITypeBinding[] exs = invocationBinding.getExceptionTypes();
+                for (int i = 0; i < exs.length; i++) {
+                    ExceptionWrapper ew = new ExceptionWrapper(inv, exs[i]);
+                    addToIthr(I_bdd, ew); 
+                    
+                    ASTNode parent = findThrowParent(inv, exs[i]);    
+                    if (parent instanceof MethodDeclaration) { 
+                        addToMthr((MethodDeclaration)parent, ew); // not caught
+                    }
+                    else { // caught, match up with var
+                        addToA(new ASTNodeWrapper(parent), ew);
+                    }
                 }
             }
             
@@ -1792,7 +1840,7 @@ public class PAFromSource {
         
         PAFromSource dis = new PAFromSource();
      
-        dis.run(files);
+        dis.run(files, Collections.EMPTY_SET);
     }
 
     
@@ -1815,22 +1863,31 @@ public class PAFromSource {
     
     
     /**
-     * @param files
+     * @param dotJava
+     * @param dotClass
      * @throws IOException
      */
-    public void run(Set files) throws IOException {
-        System.out.println(files.size() + " files to parse.");
+    public void run(Set dotJava, Set dotClass) throws IOException {
+        System.out.println(dotJava.size() + " files to parse.");
+        if (dotJava.size() == 0) return;
+        
         resetBDDs();
         initializeMaps();
 
-        generateASTs(files);
-        
         // Start timing.
         long time = System.currentTimeMillis();
         
+        out.println("Processing .java files");
+        generateASTs(dotJava);
         while (!todo.isEmpty()) {
-            generateRelations();
+            generateRelations(false);
         }
+        
+        out.println("Processing .class files");
+        generateASTs(dotClass);
+//        while (!todo.isEmpty()) {
+//            generateRelations(true);
+//        }
         
         // vT, aT
         Iterator it = Vmap.iterator();
@@ -1851,7 +1908,7 @@ public class PAFromSource {
     
         // TODO transitive closure on aT
         
-        System.out.println("Time spent generating relations: "+(System.currentTimeMillis()-time)/1000.);
+        System.out.println("Time spent : "+(System.currentTimeMillis()-time)/1000.);
                
         System.out.println("Writing relations...");
         time = System.currentTimeMillis();
@@ -1880,7 +1937,7 @@ public class PAFromSource {
         try {
             Process p = Runtime.getRuntime().exec(cmd);
             StreamGobbler output = new StreamGobbler(p.getInputStream(), "bddbddb OUT");
-            StreamGobbler error = new StreamGobbler(p.getErrorStream(), "bddbddb ERR");
+            StreamGobbler error = new StreamGobbler(p.getErrorStream(), "bddbddb ERR", System.err);
 
             output.start();
             error.start();
@@ -1913,15 +1970,9 @@ public class PAFromSource {
             writer.write('\n');
             
             // do static initializers
-            Collection inits = initializers.getValues(td);
             ArrayList staticinits = new ArrayList();
             ArrayList notstatic = new ArrayList(); 
-            for (Iterator j = inits.iterator(); j.hasNext(); ) {
-                Initializer in = (Initializer)j.next();
-                
-                if (isStatic(in)) staticinits.add(in);
-                else notstatic.add(in);
-            }
+            partitionInitializers(td, staticinits, notstatic);
             
             if (!staticinits.isEmpty()) {
                 writer.write(" METHOD: <clinit> ()V ROOT\n");
@@ -1936,23 +1987,22 @@ public class PAFromSource {
             for (int i = 0; i < mds.length; i++) {
                 declaredMethods.put(mds[i].resolveBinding(), mds[i]);
             }
-            
-            IMethodBinding[] mb = t.getDeclaredMethods();
-            Arrays.sort(mb, new Comparator() {
-                public int compare(Object o1, Object o2) {
-                    String s1 = getFormattedName((IMethodBinding)o1);
-                    String s2 = getFormattedName((IMethodBinding)o2);
-                    return s1.compareTo(s2);
-                }});
+
+            IMethodBinding[] mb = getSortedMethods(t);
             
             for (int i = 0; i < mb.length; i++) {
-                writer.write(" METHOD: ");
-                writer.write(getFormattedName(mb[i]));
-                writer.write("\n");
+                writeMethod(writer, mb[i]);
                 if (mb[i].isConstructor()) {
                     for (Iterator j = notstatic.iterator(); j.hasNext(); ) {
                         Initializer in = (Initializer)j.next();
                         in.accept(new CallGraphPrinter(writer, mm));
+                    }
+                    
+                    // implicit calls to superconstructor?
+                    String s = "ImplicitSuper in " + mb[i].getKey();
+                    Collection targets = mm.getValues(s);
+                    if (!targets.isEmpty()) {
+                        writeCallsite(writer, targets, new StringWrapper(s));
                     }
                 }
                 
@@ -1967,6 +2017,53 @@ public class PAFromSource {
     }
 
     
+    private IMethodBinding[] getSortedMethods(ITypeBinding t) {
+        IMethodBinding[] mb = t.getDeclaredMethods();
+        Arrays.sort(mb, new Comparator() {
+            public int compare(Object o1, Object o2) {
+                String s1 = getFormattedName((IMethodBinding)o1);
+                String s2 = getFormattedName((IMethodBinding)o2);
+                return s1.compareTo(s2);
+            }});
+        return mb;
+    }
+
+    private void partitionInitializers(TypeDeclaration td, ArrayList staticinits, ArrayList notstatic) {
+        Collection inits = initializers.getValues(td);
+        for (Iterator j = inits.iterator(); j.hasNext(); ) {
+            Initializer in = (Initializer)j.next();
+            
+            if (isStatic(in)) staticinits.add(in);
+            else notstatic.add(in);
+        }
+    }
+
+    private void writeCallsite(BufferedWriter writer, Collection targets, ASTNodeWrapper w) throws IOException {
+        writer.write("  CALLSITE ");
+        writer.write(String.valueOf(Imap.get(w)));
+        writer.write('\n');
+        
+        for (Iterator j = targets.iterator(); j.hasNext(); ) {   
+            writeTarget(writer, (MethodWrapper)j.next());
+        }
+    }
+
+    private void writeMethod(BufferedWriter writer, IMethodBinding mb) throws IOException {
+        writer.write(" METHOD: ");
+        writer.write(getFormattedName(mb));
+        if (isStatic(mb)) writer.write(" ROOT");
+        writer.write("\n");
+    }
+
+    private void writeTarget(BufferedWriter writer, MethodWrapper mw) throws IOException {
+        writer.write("   TARGET ");
+        IMethodBinding binding = mw.getBinding();
+        writer.write(binding.getDeclaringClass().getKey());
+        writer.write('.');
+        writer.write(getFormattedName(binding));
+        writer.write('\n');
+    }
+
     private String getFormattedName(IMethodBinding mb) {
         StringBuffer sb = new StringBuffer(mb.isConstructor()? "<init>": mb.getName());
         sb.append(" (");
@@ -2005,8 +2102,14 @@ public class PAFromSource {
                 
             String[] tuple = line.split("\\s"); // (I, M)
             
-            ASTNode i = 
-                ((ASTNodeWrapper)Imap.get(Integer.parseInt(tuple[0]))).getNode();
+            Object i;
+            ASTNodeWrapper wrapper = (ASTNodeWrapper)Imap.get(Integer.parseInt(tuple[0]));
+            if (wrapper instanceof StringWrapper) {
+                i = ((StringWrapper)wrapper).getString();
+            }
+            else {
+                i = wrapper.getNode();
+            }
             Object m = Mmap.get(Integer.parseInt(tuple[1]));
             
             mm.add(i, m);
@@ -2016,7 +2119,6 @@ public class PAFromSource {
         return mm;
     }
 
-    
     class CallGraphPrinter extends ASTVisitor {
         BufferedWriter writer;
         MultiMap ie;
@@ -2045,30 +2147,13 @@ public class PAFromSource {
         
         private void print(ASTNode n) {
             try {
-                writer.write("  CALLSITE ");
-                writer.write(String.valueOf(Imap.get(new ASTNodeWrapper(n))));
-                writer.write('\n');
-                
-                Collection targets = ie.getValues(n);
-                for (Iterator i = targets.iterator(); i.hasNext(); ) {
-                    // sort this?
-                    MethodWrapper mw = (MethodWrapper)i.next();
-
-                    writer.write("   TARGET ");
-                    IMethodBinding binding = mw.getBinding();
-                    writer.write(binding.getDeclaringClass().getKey());
-                    writer.write('.');
-                    writer.write(getFormattedName(binding));
-                    writer.write('\n');
-                }
+                writeCallsite(writer, ie.getValues(n), new ASTNodeWrapper(n));
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
     }
-    
-    
+  
     public void dumpBDDRelations() throws IOException {     
         cha = new ClassHierarchyAnalysis(this).calculateCHA();
         
@@ -2107,7 +2192,7 @@ public class PAFromSource {
                     dos.writeBytes("Z\n");
                 else if (d == N)
                     dos.writeBytes("N\n");
-                else if (d == M)// || d == M2)
+                else if (d == M || d == M2)
                     dos.writeBytes("M\n");
                 /*else if (Arrays.asList(V1c).contains(d)
                         || Arrays.asList(V2c).contains(d))
@@ -2179,6 +2264,11 @@ public class PAFromSource {
         bdd.save(dumpPath+"Iret.bdd", Iret);
         bdd.save(dumpPath+"Ithr.bdd", Ithr);
         bdd.save(dumpPath+"IE0.bdd", IE0);
+        
+        bdd.save(dumpPath+"mIE.bdd", mIE);
+        bdd.save(dumpPath+"mS.bdd", mS);
+        bdd.save(dumpPath+"mL.bdd", mL);
+        
         //bdd.save(dumpPath+"sync.bdd", sync);
         /*if (threadRuns != null)
             bdd.save(dumpPath+"threadRuns.bdd", threadRuns);
@@ -2280,35 +2370,54 @@ public class PAFromSource {
         for (Iterator i = files.iterator(); i.hasNext(); ) {
             Object o = i.next();
             CompilationUnit cu;
-            if (o instanceof String) {
-                cu = readSourceFile((String) o);
-            } else {
-                ASTParser c = ASTParser.newParser(AST.JLS2);
-                if (o instanceof ICompilationUnit)
-                    c.setSource((ICompilationUnit) o);
-                else
-                    c.setSource((IClassFile) o);
-                c.setResolveBindings(true);
-                cu = (CompilationUnit) c.createAST(null);
+            try {
+                if (o instanceof String) {
+                    cu = readSourceFile((String) o);
+                } else {
+                    ASTParser c = ASTParser.newParser(AST.JLS2);
+                    if (o instanceof ICompilationUnit)
+                        c.setSource((ICompilationUnit) o);
+                    else
+                        c.setSource((IClassFile) o);
+                    c.setResolveBindings(true);
+                    
+                    cu = (CompilationUnit) c.createAST(null);
+                }
+                
+                boolean problems = false; 
+                IProblem[] probs = cu.getProblems();
+                for (int j = 0; j < probs.length; j++) {
+                    if (probs[j].isError()) {
+                        problems = true;
+                        System.out.println(probs[j].getMessage());
+                    }
+                }
+                
+                if (problems) {
+                    System.out.println("Parse error... skipping.");
+                }
+                else {
+                    System.out.println("Parse success.");
+                    
+                    todo.add(cu);
+                }                
             }
-            if (cu.getMessages().length == 0) {
-                todo.add(cu);
+            catch (IllegalStateException e) {
+                if (!(o instanceof IClassFile)) {// otherwise ignore
+                    e.printStackTrace();
+                }
             }
-            else {
-                System.out.println("Parse error. Skipping...");
-            }
-
         }
     
         System.out.println("Time spent parsing: "+(System.currentTimeMillis()-time)/1000.);
     }
     
     
-    private void generateRelations() {
+    private void generateRelations(boolean libs) {
         CompilationUnit cu = (CompilationUnit)todo.remove(todo.size()-1);
 
         //cu.accept(new ConstructorVisitor());
-        cu.accept(new PAASTVisitor());  
+        cu.accept(new PAASTVisitor(libs));  
 
     }
     
@@ -2844,35 +2953,5 @@ public class PAFromSource {
     boolean hasOuterThis(ITypeBinding binding) {
         // TODO need isclass check?
         return binding.isNested() && binding.isClass() && !isStatic(binding);
-    }
-}
-
-class StreamGobbler extends Thread
-{
-    InputStream is;
-    String type;
-    
-    StreamGobbler(InputStream is, String type)
-    {
-        this.is = is;
-        this.type = type;
-    }
-    
-    public void run()
-    {
-        try
-        {
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-            String line=null;
-            while ( (line = br.readLine()) != null) {
-                System.out.println(type + "> " + line);    
-            }
-            br.close();
-            
-        } catch (IOException ioe)
-        {
-            ioe.printStackTrace();  
-        }
     }
 }
