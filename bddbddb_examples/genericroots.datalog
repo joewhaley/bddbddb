@@ -1,0 +1,45 @@
+
+.basedir "pa.joeq"
+
+### Domains
+
+.include "fielddomains.pa"
+
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_T0_Z0_T1_H0_H1
+
+### Relations
+
+vP0 (v:V0, h:H0) input
+A (dest:V0, source:V1) input
+S (base:V0, field:F0, src:V1) input
+L (base:V0, field:F0, dest:V1) input
+vT (var:V0, type:T0) input
+hT (heap:H0, type:T1) input
+aT (type:T0, type:T1) input
+cha (type:T1, name:N0, method:M0) input
+actual (invoke:I0, num:Z0, actualparam:V1) input
+formal (method:M0, num:Z0, formalparam:V0) input
+Mret (method:M0, v:V1) input
+Mthr (method:M0, v:V1) input
+Iret (invoke:I0, v:V0) input
+Ithr (invoke:I0, v:V0) input
+mI (method:M0, invoke:I0, name:N0) input
+IE0 (invoke:I0, target:M0) input
+IE (invoke:I0, target:M0) input
+
+castNode (var:V) outputtuples
+generic (var:V) outputtuples
+genericField (field:F) outputtuples
+genericIReturn (method:N) outputtuples
+genericMReturn (method:M) outputtuples
+
+castNode(dest) :- A(dest,src), vT(src,t), !vT(dest,t).
+
+generic(v) :- castNode(v).
+generic(v2) :- A(v,v2), generic(v).
+
+genericField(f) :- generic(v), L(_,f,v).
+genericIReturn(m) :- generic(v), Iret(i,v), mI(_,i,m).
+genericMReturn(m) :- generic(v), Iret(i,v), IE(i,m).
+
+#generic(v) :- genericMReturn(m), Mret(m,v).
