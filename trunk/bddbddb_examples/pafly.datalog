@@ -78,6 +78,14 @@ getField (m:M0)
 getField("java.lang.Class.getField (Ljava/lang/String;)Ljava/lang/reflect/Field;").
 getField("java.lang.Class.getDeclaredField (Ljava/lang/String;)Ljava/lang/reflect/Field;").
 
+skipMethod (m:M0)
+skipMethod(m) :- forName(m).
+skipMethod(m) :- getClass(m).
+skipMethod(m) :- getConstructor(m).
+skipMethod(m) :- getConstructors(m).
+skipMethod(m) :- getField(m).
+skipMethod(m) :- newInstance(m).
+
 mapIH (i:I0, h:H0)
 
 returnNewObject (i:I0) outputtuples { \
