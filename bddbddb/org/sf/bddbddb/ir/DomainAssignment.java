@@ -129,7 +129,7 @@ public abstract class DomainAssignment implements OperationVisitor {
         // domains.
         for (int i = 0; i < solver.getNumberOfRelations(); ++i) {
             Relation r = solver.getRelation(i);
-            System.out.print("Rel "+i+"/"+solver.getNumberOfRelations()+": "+r+"                      \r");
+            System.out.print("Rel "+i+"/"+solver.getNumberOfRelations()+": "+r+"                     \r");
             forceDifferent(r);
         }
     }

@@ -158,13 +158,16 @@ public class UFDomainAssignment extends DomainAssignment {
         for (Iterator j = r.getAttributes().iterator(); j.hasNext();) {
             Attribute a1 = (Attribute) j.next();
             Pair p1 = new Pair(r, a1);
-            for (Iterator k = r.getAttributes().iterator(); k.hasNext();) {
+            Iterator k = r.getAttributes().iterator();
+            while (k.next() != a1) ;
+            while (k.hasNext()) {
                 Attribute a2 = (Attribute) k.next();
                 if (a1 == a2) continue;
                 if (a1.getDomain() != a2.getDomain()) continue;
                 Pair p2 = new Pair(r, a2);
-                boolean result = forceNotEqual(p1, p2);
-                Assert._assert(result);
+                Assert._assert(uf.find(p1) == p1);
+                Assert._assert(uf.find(p2) == p2);
+                neq_constraints.add(new Pair(p1, p2));
             }
         }
     }
