@@ -1064,8 +1064,18 @@ public class PartialRedundancy implements IRPass {
             return expressions.toString();
         }
         
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
         public boolean equals(Object o) {
             return expressions.equals(((PreFact) o).expressions);
+        }
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode() {
+            return this.expressions.hashCode();
         }
         
         public abstract PreFact create();
@@ -1203,6 +1213,35 @@ public class PartialRedundancy implements IRPass {
             
         }
     }
+
+    static class ExpressionWrapper {
+        Expression e;
+                   
+        /**
+         * @param e
+         */
+        public ExpressionWrapper(Expression e) {
+            super();
+            this.e = e;
+        }
+        /* (non-Javadoc)
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
+        public boolean equals(Object o){
+            ExpressionWrapper that = (ExpressionWrapper) o;
+            return this.e == that.e;
+        }
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode() {
+            return System.identityHashCode(e);
+        }
+        
+        public String toString(){ return e.toString(); }
+    }
+    
     class Expression {
         int number = -1;
         Operation op;
@@ -1237,23 +1276,6 @@ public class PartialRedundancy implements IRPass {
             return equals(that, new HashSet()); 
         }
         
-        class ExpressionWrapper{
-            Expression e;
-                       
-            /**
-             * @param e
-             */
-            public ExpressionWrapper(Expression e) {
-                super();
-                this.e = e;
-            }
-            public boolean equals(Object o){
-                ExpressionWrapper that = (ExpressionWrapper) o;
-                return this.e == that.e;
-            }
-            
-            public String toString(){ return e.toString(); }
-        }
         private boolean equals(Expression that, Collection visited){
 
            
