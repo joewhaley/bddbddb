@@ -3,11 +3,14 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.order;
 
+import java.util.Comparator;
+
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.InferenceRule;
 import net.sf.bddbddb.Variable;
 import net.sf.bddbddb.XMLFactory;
+
 import org.jdom.Element;
 
 /**
@@ -18,8 +21,17 @@ import org.jdom.Element;
  */
 public abstract class OrderConstraint {
     
+    public static final Comparator elementComparator = new Comparator() {
+
+        public int compare(Object o1, Object o2) {
+            if (o1.equals(o2)) return 0;
+            return OrderConstraint.compare(o1, o2)?-1:1;
+        }
+        
+    };
+    
     static final boolean compare(Object a, Object b) {
-        if (a == b) return true;
+        if (a.equals(b)) return true;
         String s1 = a.toString();
         String s2 = b.toString();
         int c = s1.compareTo(s2);
