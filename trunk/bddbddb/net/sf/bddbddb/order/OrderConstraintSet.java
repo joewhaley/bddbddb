@@ -302,6 +302,11 @@ public class OrderConstraintSet {
         // Convert Lists to Orders.
         for (ListIterator i = result.listIterator(); i.hasNext(); ) {
             List a = (List) i.next();
+            for (ListIterator j = a.listIterator(); j.hasNext(); ) {
+                Collection c = (Collection) j.next();
+                if (c.size() == 1)
+                    j.set(c.iterator().next());
+            }
             Order o = new Order(a);
             i.set(o);
         }
