@@ -941,8 +941,8 @@ public class BDDInferenceRule extends InferenceRule {
         FindBestDomainOrder.OrderInfoCollection r1info = fbdo.getOrderInfo(r1.relation);
         FindBestDomainOrder.OrderTranslator t2 = new FindBestDomainOrder.MapBasedTranslator(r2, false);
         FindBestDomainOrder.OrderInfoCollection r2info = fbdo.getOrderInfo(r2.relation);
-        info2.incorporateInfoCollection(r1info, t1, 0.01);
-        info2.incorporateInfoCollection(r2info, t2, 0.01);
+        info2.incorporateInfoCollection(r1info, t1, 0.1);
+        info2.incorporateInfoCollection(r2info, t2, 0.1);
         
         int count = 8;
         long bestTime = Long.MAX_VALUE;

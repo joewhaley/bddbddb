@@ -1255,9 +1255,12 @@ public class FindBestDomainOrder {
                 for (int i = 0; i < ti.length; ++i) {
                     Order o = t.translate(ti[i].order);
                     boolean isNew = visitedOrders.add(o);
+                    if (TRACE > 1) out.println(this+": trial "+ti[i]+" isNew: "+isNew);
                     double score = (range < 0.0001) ? 0.5 : ((double)(max - ti[i].cost) / range);
                     double myConf = (range < 0.0001) ? 0. : confidence;
-                    if (isNew && ti[i].cost >= UpdatableOrderInfoCollection.MAX_COST) myConf *= HIGH_CONFIDENCE;
+                    if (isNew && ti[i].cost >= UpdatableOrderInfoCollection.MAX_COST) {
+                        myConf *= HIGH_CONFIDENCE;
+                    }
                     incorporateInfo(o, score, myConf);
                 }
             }
@@ -1279,6 +1282,16 @@ public class FindBestDomainOrder {
                 if (TRACE > 1) out.println(this+": updating info "+info+" with score="+format(s)+" confidence="+format(c));
                 info.update(o, s, c);
             }
+            if (true) {
+                for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
+                    OrderInfo info2 = (OrderInfo) i.next();
+                    if (info == info2) continue;
+                    if (o.similarity(info2.order) >= 1.0) {
+                        if (TRACE > 1) out.println(this+": updating info "+info2+" with score="+format(s)+" confidence="+format(c));
+                        info2.update(o, s, c);
+                    }
+                }
+            }
             sorted = null;
         }
         
@@ -1295,6 +1308,16 @@ public class FindBestDomainOrder {
             } else {
                 if (TRACE > 1) out.println(this+": updating info "+info+" with score="+format(i.score)+" confidence="+format(i.confidence));
                 info.update(i);
+            }
+            if (true) {
+                for (Iterator j = infos.values().iterator(); j.hasNext(); ) {
+                    OrderInfo info2 = (OrderInfo) j.next();
+                    if (info == info2) continue;
+                    if (i.order.similarity(info2.order) >= 1.0) {
+                        if (TRACE > 1) out.println(this+": updating info "+info2+" with score="+format(i.score)+" confidence="+format(i.confidence));
+                        info2.update(i);
+                    }
+                }
             }
             sorted = null;
         }
