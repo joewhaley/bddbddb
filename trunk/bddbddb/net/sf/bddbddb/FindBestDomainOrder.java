@@ -1794,17 +1794,17 @@ public class FindBestDomainOrder {
         if (TRACE > 1) {
             out.println(" Var data points: " + vData.numInstances());
             out.println(" Var Classifier " + NUM_CV_FOLDS + " fold CV Score: " + vConstCV + " took " + vCTime + " ms");
-            out.println(" Var Classifier leave one out CV Score: " + vLeaveCV + " took " + vLTime + " ms");
+           // out.println(" Var Classifier leave one out CV Score: " + vLeaveCV + " took " + vLTime + " ms");
             out.println(" Var Classifier Weight: " + varClassWeight);
             //out.println(" Var data points: "+vData);
             out.println(" Attrib data points: " + aData.numInstances());
             out.println(" Attrib Classifier " + NUM_CV_FOLDS + " fold CV Score : " + aConstCV + " took " + aCTime + " ms");
-            out.println(" Attrib Classifier leave one out CV Score: " + aLeaveCV + " took " + aLTime + " ms");
+            //out.println(" Attrib Classifier leave one out CV Score: " + aLeaveCV + " took " + aLTime + " ms");
             out.println(" Attrib Classifier Weight: " + attrClassWeight);
             //out.println(" Attrib data points: "+aData);
             out.println(" Domain data points: " + dData.numInstances());
             out.println(" Domain Classifier " + NUM_CV_FOLDS + " fold CV Score: " + dConstCV + " took " + dCTime + " ms");
-            out.println(" Attrib Classifier leave one out CV Score: " + dLeaveCV + " took " + dLTime + " ms");
+            //out.println(" Attrib Classifier leave one out CV Score: " + dLeaveCV + " took " + dLTime + " ms");
             out.println(" Domain Classifier Weight: " + domClassWeight);
             //out.println(" Domain data points: "+dData);
 
@@ -2488,18 +2488,19 @@ public class FindBestDomainOrder {
             return;
         }
         if (!ocs.onlyOneOrder(domains.size())) {
-            BDDInferenceRule ir = (BDDInferenceRule) rules.get(0);
+            InferenceRule ir = (BDDInferenceRule) rules.get(0);
             List rest = rules.subList(1, rules.size());
-            if (rulesToTrials.containsKey(ir)) {
-                OrderTranslator t = new MapBasedTranslator(ir.variableToBDDDomain);
-                TrialCollection tc = new TrialCollection("rule"+ir.id, 0);
+            if (ir instanceof BDDInferenceRule && rulesToTrials.containsKey(ir)) {
+                BDDInferenceRule bddir = (BDDInferenceRule) rules.get(0);
+                OrderTranslator t = new MapBasedTranslator(bddir.variableToBDDDomain);
+                TrialCollection tc = new TrialCollection("rule"+bddir.id, 0);
                 for (int i = 0; i < 5; ++i) {
-                    TrialGuess tg = tryNewGoodOrder(tc, new ArrayList(ir.necessaryVariables), ir, true);
+                    TrialGuess tg = tryNewGoodOrder(tc, new ArrayList(bddir.necessaryVariables), bddir, true);
                     if (tg == null) break;
                     OrderConstraintSet ocs2 = new OrderConstraintSet(ocs);
                     Order bddOrder = t.translate(tg.order);
                     boolean worked = ocs2.constrain(bddOrder);
-                    double score2 = tg.prediction.score * (ir.totalTime+1) / 1000;
+                    double score2 = tg.prediction.score * (bddir.totalTime+1) / 1000;
                     if (worked) {
                         printBestBDDOrders(sb, score + score2, domains, ocs2, rulesToTrials, rest);
                     }
