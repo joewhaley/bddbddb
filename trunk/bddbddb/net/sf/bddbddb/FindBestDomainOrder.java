@@ -27,8 +27,10 @@ import jwutil.util.Assert;
 import net.sf.bddbddb.order.AttribToDomainMap;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
 import net.sf.bddbddb.order.FilterTranslator;
+import net.sf.bddbddb.order.MyId3;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraint;
+import net.sf.bddbddb.order.OrderConstraintSet;
 import net.sf.bddbddb.order.OrderIterator;
 import net.sf.bddbddb.order.OrderTranslator;
 import net.sf.bddbddb.order.VarToAttribMap;
@@ -131,6 +133,7 @@ public class FindBestDomainOrder {
      * @param filename  filename
      */
     void loadTrials(String filename) {
+        out.println("Trials filename="+filename);
         File file = new File(filename);
         if (file.exists()) {
             try {
@@ -1544,7 +1547,42 @@ public class FindBestDomainOrder {
             }
         }
         if (TRACE > 1) out.println("Best = "+best+" score = "+bestScore);
+        
+        if (true) {
+            MyId3 v = (MyId3) vClassifier;
+            MyId3 a = (MyId3) aClassifier;
+            MyId3 d = (MyId3) dClassifier;
+            if (v != null) printGoodOrder(allVars, vData, v);
+            List allAttribs = VarToAttribMap.convert(allVars, ir);
+            if (a != null) printGoodOrder(allAttribs, aData, a);
+        }
         return best;
+    }
+    
+    void printGoodOrder(Collection allVars, Instances inst, MyId3 v) {
+        Collection vBestAttribs = v.getAttribCombos(inst.numAttributes(), 0.);
+        if (vBestAttribs != null) {
+outer:
+            for (Iterator ii = vBestAttribs.iterator(); ii.hasNext(); ) {
+                double[] c = (double[]) ii.next();
+                OrderConstraintSet ocs = new OrderConstraintSet();
+                for (int iii = 0; iii < c.length; ++iii) {
+                    if (Double.isNaN(c[iii])) continue;
+                    int k = (int) c[iii];
+                    OrderAttribute oa = (OrderAttribute) inst.attribute(iii);
+                    out.println(oa);
+                    OrderConstraint oc = oa.getConstraint(k);
+                    out.println(oc);
+                    boolean r = ocs.constrain(oc);
+                    if (!r) {
+                        if (TRACE > 1) out.println("Constraint "+oc+" conflicts with "+ocs);
+                        continue outer;
+                    }
+                }
+                Order o = ocs.generateOrder(allVars);
+                out.println("Good order: "+o);
+            }
+        }
     }
     
     public static void main(String[] args) throws Exception {
