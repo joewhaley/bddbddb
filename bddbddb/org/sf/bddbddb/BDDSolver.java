@@ -84,7 +84,7 @@ public class BDDSolver extends Solver {
         fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
         bdd.setMaxIncrease(BDDNODES / 2);
         bdd.setMinFreeNodes(BDDMINFREE);
-        fbo = new FindBestDomainOrder();
+        fbo = new FindBestDomainOrder(this);
     }
 
     /*

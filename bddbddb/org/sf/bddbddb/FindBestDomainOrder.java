@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import jwutil.collections.EntryValueComparator;
 import jwutil.collections.Pair;
 import jwutil.math.CombinationGenerator;
@@ -46,19 +48,25 @@ public class FindBestDomainOrder {
     public static int TRACE = 2;
     public static PrintStream out = System.out;
     
+    static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
+    
     Map/*<InferenceRule,OrderInfoCollection>*/ orderInfo_rules;
     Map/*<Relation,OrderInfoCollection>*/ orderInfo_relations;
     
+    /** Collection of all TrialCollections that have been done so far. */
     Collection allTrials;
+    
+    Solver solver;
     
     /**
      * Construct a new empty FindBestDomainOrder object.
      */
-    public FindBestDomainOrder() {
+    public FindBestDomainOrder(Solver s) {
         super();
         orderInfo_rules = new HashMap();
         orderInfo_relations = new HashMap();
         allTrials = new LinkedList();
+        solver = s;
     }
     
     /**
@@ -1268,6 +1276,11 @@ public class FindBestDomainOrder {
         String name;
         
         /**
+         * Time of the test.
+         */
+        long timeStamp;
+        
+        /**
          * Map from orders to their trial information.
          */
         Map/*<Order,TrialInfo>*/ trials;
@@ -1282,8 +1295,9 @@ public class FindBestDomainOrder {
          * 
          * @param n  test name
          */
-        public TrialCollection(String n) {
+        public TrialCollection(String n, long ts) {
             name = n;
+            timeStamp = ts;
             trials = new LinkedHashMap();
             sorted = null;
         }
@@ -1441,7 +1455,7 @@ public class FindBestDomainOrder {
          * @see java.lang.Object#toString()
          */
         public String toString() {
-            return name+"@"+Integer.toHexString(this.hashCode());
+            return name+"@"+dateFormat.format(new Date(timeStamp));
         }
         
         /**
@@ -1461,7 +1475,13 @@ public class FindBestDomainOrder {
         
         public static TrialCollection fromXMLElement(Element e, Map nameToVar) {
             String name = e.getAttributeValue("name");
-            TrialCollection tc = new TrialCollection(name);
+            long timeStamp;
+            try {
+                timeStamp = Long.parseLong(e.getAttributeValue("timeStamp"));
+            } catch (NumberFormatException _) {
+                timeStamp = 0L;
+            }
+            TrialCollection tc = new TrialCollection(name, timeStamp);
             for (Iterator i = e.getContent().iterator(); i.hasNext(); ) {
                 Object e2 = i.next();
                 if (e2 instanceof Element) {
@@ -1693,7 +1713,8 @@ public class FindBestDomainOrder {
          * @return  updatable version of this order
          */
         public UpdatableOrderInfoCollection createUpdatable() {
-            UpdatableOrderInfoCollection i = new UpdatableOrderInfoCollection(this);
+            long timeStamp = System.currentTimeMillis();
+            UpdatableOrderInfoCollection i = new UpdatableOrderInfoCollection(this, timeStamp);
             return i;
         }
         
@@ -1947,14 +1968,14 @@ public class FindBestDomainOrder {
          * 
          * @param s  name
          */
-        UpdatableOrderInfoCollection(String s) {
+        UpdatableOrderInfoCollection(String s, long timeStamp) {
             super(s);
-            trials = new TrialCollection(s);
+            trials = new TrialCollection(s, timeStamp);
         }
         
-        UpdatableOrderInfoCollection(OrderInfoCollection that) {
+        UpdatableOrderInfoCollection(OrderInfoCollection that, long timeStamp) {
             super(that);
-            trials = new TrialCollection(that.name);
+            trials = new TrialCollection(that.name, timeStamp);
         }
         
         /**
@@ -2380,7 +2401,7 @@ public class FindBestDomainOrder {
      * @param out  output writer
      * @param e  element to write
      */
-    public void dumpXML(Writer out, Element e) throws IOException {
+    public static void dumpXML(Writer out, Element e) throws IOException {
         Document d = new Document(e);
         XMLOutputter serializer = new XMLOutputter();
         serializer.setFormat(Format.getPrettyFormat());
@@ -2391,6 +2412,10 @@ public class FindBestDomainOrder {
         
         Solver solver;
         Map/*<String,Variable>*/ nameToVar;
+        
+        XMLFactory(Solver s) {
+            solver = s;
+        }
         
         public Object fromXML(Element e) {
             String name = e.getName();
@@ -2438,6 +2463,7 @@ public class FindBestDomainOrder {
      */
     public Element trialsToXMLElement() {
         Element trialCollections = new Element("trialCollections");
+        trialCollections.setAttribute("datalog", solver.inputFilename);
         for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
             TrialCollection c = (TrialCollection) i.next();
             trialCollections.addContent(c.toXMLElement());
