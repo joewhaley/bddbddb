@@ -3,13 +3,23 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.applet.Applet;
+import java.applet.AudioClip;
+import java.awt.BorderLayout;
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.filechooser.FileFilter;
 
 /**
  * SolverGUI
@@ -27,6 +37,11 @@ public class SolverGUI extends JFrame {
     private JTextPane jTextPane = null;
     private JMenuItem jSaveMenuItem = null;
     private JMenuItem jSaveAsMenuItem = null;
+    private JPanel jPanel = null;
+    private JTextField jTextField = null;
+    private JButton jButton = null;
+    private FileFilter jFileFilter = null;
+    private JScrollPane jScrollPane = null;
 
     /**
      * This method initializes jJMenuBar
@@ -53,8 +68,8 @@ public class SolverGUI extends JFrame {
             jFileMenu.add(getJOpenMenuItem());
             jFileMenu.add(getJSaveMenuItem());
             jFileMenu.add(getJSaveAsMenuItem());
-            jFileMenu.add(getJExitMenuItem());
             jFileMenu.addSeparator();
+            jFileMenu.add(getJExitMenuItem());
         }
         return jFileMenu;
     }
@@ -71,14 +86,22 @@ public class SolverGUI extends JFrame {
             jOpenMenuItem
                 .addActionListener(new java.awt.event.ActionListener() {
                     public void actionPerformed(java.awt.event.ActionEvent e) {
+                        // TODO: If buffer modified, query for save.
                         JFileChooser fc = getJFileChooser();
                         int returnVal = fc.showOpenDialog(SolverGUI.this);
                         if (returnVal == JFileChooser.APPROVE_OPTION) {
                             File file = fc.getSelectedFile();
-                            jTextPane.setText("Opening: " + file.getName());
+                            try {
+                                jTextPane.setPage(file.toURL());
+                            } catch (MalformedURLException e1) {
+                                // TODO Auto-generated catch block
+                                e1.printStackTrace();
+                            } catch (IOException e1) {
+                                // TODO Auto-generated catch block
+                                e1.printStackTrace();
+                            }
                         } else {
-                            jTextPane
-                                .setText("Open command cancelled by user.");
+                            // Open command cancelled by user.
                         }
                     }
                 });
@@ -101,8 +124,34 @@ public class SolverGUI extends JFrame {
         if (jExitMenuItem == null) {
             jExitMenuItem = new JMenuItem();
             jExitMenuItem.setText("Exit");
+            jExitMenuItem
+                .addActionListener(new java.awt.event.ActionListener() {
+                    public void actionPerformed(java.awt.event.ActionEvent e) {
+                        System.exit(0);
+                    }
+                });
         }
         return jExitMenuItem;
+    }
+
+    /**
+     * This method initializes jFileFilter
+     * 
+     * @return javax.swing.FileFilter
+     */
+    private FileFilter getJFileFilter() {
+        if (jFileFilter == null) {
+            jFileFilter = new FileFilter() {
+                public boolean accept(File f) {
+                    return f.isDirectory() || f.getName().endsWith(".datalog");
+                }
+
+                public String getDescription() {
+                    return "Datalog files (.datalog)";
+                }
+            };
+        }
+        return jFileFilter;
     }
 
     /**
@@ -113,6 +162,7 @@ public class SolverGUI extends JFrame {
     private JFileChooser getJFileChooser() {
         if (jFileChooser == null) {
             jFileChooser = new JFileChooser();
+            jFileChooser.setFileFilter(getJFileFilter());
         }
         return jFileChooser;
     }
@@ -126,7 +176,7 @@ public class SolverGUI extends JFrame {
         if (jTextPane == null) {
             jTextPane = new JTextPane();
             jTextPane.setFont(new java.awt.Font("Times New Roman",
-                java.awt.Font.ITALIC, 24));
+                java.awt.Font.ITALIC, 16));
         }
         return jTextPane;
     }
@@ -171,6 +221,85 @@ public class SolverGUI extends JFrame {
         return jSaveAsMenuItem;
     }
 
+    /**
+     * This method initializes jPanel
+     * 
+     * @return javax.swing.JPanel
+     */
+    private JPanel getJPanel() {
+        if (jPanel == null) {
+            jPanel = new JPanel();
+            jPanel.setLayout(new BorderLayout());
+            jPanel.add(getJTextField(), java.awt.BorderLayout.CENTER);
+            jPanel.add(getJButton(), java.awt.BorderLayout.EAST);
+        }
+        return jPanel;
+    }
+
+    /**
+     * This method initializes jTextField
+     * 
+     * @return javax.swing.JTextField
+     */
+    private JTextField getJTextField() {
+        if (jTextField == null) {
+            jTextField = new JTextField();
+            jTextField.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    // Add Datalog rule.
+                    System.out.println("actionPerformed()"); // TODO
+                                                             // Auto-generated
+                                                             // Event stub
+                                                             // actionPerformed()
+                }
+            });
+        }
+        return jTextField;
+    }
+
+    /**
+     * This method initializes jButton
+     * 
+     * @return javax.swing.JButton
+     */
+    private JButton getJButton() {
+        if (jButton == null) {
+            jButton = new JButton();
+            jButton.setText("Add");
+            jButton.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    File sound = new File("bddbddb.wav");
+                    try {
+                        AudioClip audioClip = Applet
+                            .newAudioClip(sound.toURL());
+                        audioClip.play();
+                    } catch (MalformedURLException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    }
+                }
+            });
+        }
+        return jButton;
+    }
+
+    /**
+     * 
+     * This method initializes jScrollPane
+     * 
+     * 
+     * 
+     * @return javax.swing.JScrollPane
+     *  
+     */
+    private JScrollPane getJScrollPane() {
+        if (jScrollPane == null) {
+            jScrollPane = new JScrollPane();
+            jScrollPane.setViewportView(getJTextPane());
+        }
+        return jScrollPane;
+    }
+
     public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -206,7 +335,8 @@ public class SolverGUI extends JFrame {
         if (jContentPane == null) {
             jContentPane = new javax.swing.JPanel();
             jContentPane.setLayout(new java.awt.BorderLayout());
-            jContentPane.add(getJTextPane(), java.awt.BorderLayout.WEST);
+            jContentPane.add(getJScrollPane(), java.awt.BorderLayout.CENTER);
+            jContentPane.add(getJPanel(), java.awt.BorderLayout.SOUTH);
         }
         return jContentPane;
     }
