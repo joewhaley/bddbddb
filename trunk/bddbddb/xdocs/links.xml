@@ -8,7 +8,7 @@
 
   <body>
      <section name="Links">
-      <p>Other implementations of Datalog/Prolog:
+      <subsection name="Other implementations of Datalog/Prolog">
       <ul>
        <li><a href="http://www.cs.wisc.edu/coral/">Coral</a>
         <ul>
@@ -35,13 +35,13 @@
         </ul>
        </li>
       </ul>
-      </p>
-      <p>Datalog Development Environment:
+      </subsection>
+      <subsection name="Datalog Development Environments">
       <ul>
        <li><a href="http://members.lycos.co.uk/datalogide/">DIE (Datalog Integrated Environment)</a></li>
       </ul>
-      </p>
-      <p>Books on Datalog:
+      </subsection>
+      <subsection name="Books on Datalog:">
       <ul>
        <li>
         S. Ceri, G. Gottlob and L. Tanca, Logic Programming and Databases, Springer-Verlag, 1990, Surveys in Computer Science, Berlin, Heidelberg, New York.
@@ -53,7 +53,7 @@
         R. Elmasri and S. B. Navathe, Fundamentals of Database Systems, 2nd ed., 1994, Benjamin/Cummings
        </li>
       </ul>
-      </p>
+      </subsection>
     </section>
   </body>
 </document>
