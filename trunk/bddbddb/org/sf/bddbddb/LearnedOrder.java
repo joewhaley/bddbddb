@@ -753,8 +753,8 @@ public class LearnedOrder {
             this.seenOrders = new HashSet();
             roundCounter = 0;
             numPossibleOrders = getNumPosibleOrders(domains.size());
-            System.out.println("Num possible orders of " + domains.size()
-                + " domains: " + numPossibleOrders);
+            //System.out.println("Num possible orders of " + domains.size()
+            //    + " domains: " + numPossibleOrders);
             maxOrders = Math.min(numPossibleOrders.intValue(), numPermutations);
         }
       
@@ -776,7 +776,7 @@ public class LearnedOrder {
         
         public BigInteger modStirling(int n, int k){         
             if(n == k) return PermutationGenerator.getFactorial(n);
-            BigInteger sum = new BigInteger("0");    
+            BigInteger sum = new BigInteger("0");
             for(int i = 0; i < k; i++){
                 long sign = (long) Math.pow(-1, i);
                 BigInteger combo = combination(k, i);
