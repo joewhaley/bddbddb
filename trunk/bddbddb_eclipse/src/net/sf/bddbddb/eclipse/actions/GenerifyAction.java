@@ -55,9 +55,8 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
     /**
      * The action has been activated. The argument of the method represents the
      * 'real' action sitting in the workbench UI.
-     * @throws 
      * 
-     * @see IWorkbenchWindowActionDelegate#run
+     * @see org.eclipse.ui.IActionDelegate#run(org.eclipse.jface.action.IAction)
      */
     public void run(IAction action) {
         String id = action.getId();
@@ -278,7 +277,7 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
      * the 'real' action here if we want, but this can only happen after the
      * delegate has been created.
      * 
-     * @see IWorkbenchWindowActionDelegate#selectionChanged
+     * @see org.eclipse.ui.IActionDelegate#selectionChanged(org.eclipse.jface.action.IAction, org.eclipse.jface.viewers.ISelection)
      */
     public void selectionChanged(IAction action, ISelection selection) {
         this.selection = selection;
