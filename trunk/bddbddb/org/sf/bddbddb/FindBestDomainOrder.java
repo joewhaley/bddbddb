@@ -972,31 +972,35 @@ public class FindBestDomainOrder {
          * @return  order
          */
         public static Order parse(String s, Map nameToObj) {
-            StringTokenizer st = new StringTokenizer(s, "_x");
+            StringTokenizer st = new StringTokenizer(s, "[], ", true);
+            String tok = st.nextToken();
+            if (!tok.equals("[")) {
+                throw new IllegalArgumentException("Unknown \""+tok+"\" in order \""+s+"\"");
+            }
             List o = new LinkedList();
-            List elem = null;
+            List inner = null;
             while (st.hasMoreTokens()) {
-                String tok = st.nextToken();
+                tok = st.nextToken();
+                if (tok.equals(" ") || tok.equals(",")) continue;
+                if (tok.equals("[")) {
+                    if (inner != null)
+                        throw new IllegalArgumentException("Nested \""+tok+"\" in order \""+s+"\"");
+                    inner = new LinkedList();
+                    continue;
+                }
+                if (tok.equals("]")) {
+                    if (inner == null)
+                        throw new IllegalArgumentException("Unmatched \""+tok+"\" in order \""+s+"\"");
+                    o.add(inner);
+                    inner = null;
+                    continue;
+                }
                 Object obj = nameToObj.get(tok);
                 if (obj == null) {
                     throw new IllegalArgumentException("Unknown \""+tok+"\" in order \""+s+"\"");
                 }
-                String sep;
-                if (!st.hasMoreTokens() || (sep = st.nextToken()).equals("_")) {
-                    if (elem != null) {
-                        elem.add(obj);
-                        obj = elem;
-                        elem = null;
-                    }
-                    o.add(obj);
-                } else if (sep.equals("x")) {
-                    if (elem == null) {
-                        elem = new LinkedList();
-                    }
-                    elem.add(obj);
-                } else {
-                    throw new IllegalArgumentException("Bad separator \""+sep+"\" in order \""+s+"\"");
-                }
+                if (inner != null) inner.add(obj);
+                else o.add(obj);
             }
             return new Order(o);
         }
