@@ -39,17 +39,17 @@ public class ExternalAppLauncher {
     
     public static void callJoeqGenRelations(Collection classNames, 
         String varorder) {
-        String dumpPath = System.getProperty("pas.dumppath", "");
-        if (dumpPath.length() > 0) {
+        String loadPath = System.getProperty("pas.loadpath", "");
+        if (loadPath.length() > 0) {
             String sep = System.getProperty("file.separator", "/");
-            if (!dumpPath.endsWith(sep))
-                dumpPath += sep;
+            if (!loadPath.endsWith(sep))
+                loadPath += sep;
         }
         
         String curDir = System.getProperty("user.dir");
-        String joeqDir = "/joeqvm/joeq_core";
-        String javabddDir = "/joeqvm/JavaBDD";
-        String appDir = dumpPath;
+        String joeqDir = loadPath + "joeq_core.jar";
+        String javabddDir = loadPath + "javabdd.jar";
+        String appDir = System.getProperty("pas.apppath", "");
         String pathsep = System.getProperty("path.separator");
         String classpath = joeqDir+pathsep+javabddDir+pathsep+appDir;
         String mainClassName = "joeq.Main.GenRelations";
@@ -64,10 +64,10 @@ public class ExternalAppLauncher {
             String[] cmd = new String[] {
                 "java", "-mx256m",
                 "-cp", classpath,
-                "-Dpa.dumppath="+dumpPath,
+                "-Dpa.dumppath="+loadPath,
                 "-Dpa.dumpfly",
                 "-Dpa.autodiscover=no",
-                "-Dbddordering="+varorder,
+                "-Dbddordering="+"N_F_I_M2_M_Z_V2xV1_T1_H2_T2_H1",
                 mainClassName, "@"+tempFile.getAbsolutePath() };
             
             int r = launch(cmd);

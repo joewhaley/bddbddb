@@ -3,6 +3,7 @@ package org.sf.bddbddb.eclipse.actions;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.io.IOException;
 import org.eclipse.core.internal.resources.File;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -14,6 +15,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -34,13 +36,22 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
     private IWorkbenchWindow window;
     private ISelection selection;
     static private PAFromSource pa = new PAFromSource();
+    //static String dumpPath = ""
+    static String loadPath = "";
+    private Set appPaths = new HashSet();
     
-
     /**
      * The constructor.
      */
     public GenerifyAction() {
         
+
+        
+    }
+
+    private void showDialog(String s) {
+        MessageDialog.openInformation(window.getShell(),
+            "bddbddb Eclipse Plug-in", s);  
     }
 
     /**
@@ -56,6 +67,9 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
         }
         else if (id.equals("Parse")) {
             parse();
+        }
+        else if (id.equals("LoadClasses")) {
+            load();
         }
         else if (id.equals("Reset")) {
             pa = new PAFromSource();
@@ -86,13 +100,11 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
                     IJavaElement o = (IJavaElement)elem;
                     System.out.println("Selected: "+o.toString().split("\n", 2)[0]);
                    
-                    path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
-                    path = path.append(o.getJavaProject().getOutputLocation());
+                    path = o.getJavaProject().getProject().getLocation();
+                    //System.out.println("Project location: "+path);
                     path = path.makeAbsolute();
+                    //System.out.println("absolute: "+path);
                     break;
-                } catch (JavaModelException x) {
-                    System.err.println(x);
-                    x.printStackTrace();
                 } catch (ClassCastException x) {
                     showDialog("Type unsupported: "+ elem.getClass());              
                 }
@@ -110,13 +122,79 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
         }
         else {
             showDialog("Need selection to determine dump path.");
-            
         }
     }
 
-    private void showDialog(String s) {
-        MessageDialog.openInformation(window.getShell(),
-            "bddbddb Eclipse Plug-in", s);  
+    
+    private void setAppPath() {
+        String pathsep = System.getProperty("path.separator");
+        StringBuffer sb = new StringBuffer();
+        for (Iterator i = appPaths.iterator(); i.hasNext(); ) {
+            sb.append(i.next());
+            sb.append(pathsep);
+        }
+        System.setProperty("pas.apppath", sb.toString());
+    }
+    
+    private void load() {
+        if (loadPath.equals("")) {
+            InputDialog id = new InputDialog(window.getShell(),
+                "bddbddb Eclipse Plug-in", "Enter load path", loadPath, null);  
+            id.setBlockOnOpen(true);
+            do {
+                id.open();  
+            } while (id.getReturnCode() == InputDialog.CANCEL);
+            loadPath = id.getValue();
+            System.setProperty("pas.loadpath", loadPath);
+        }
+        
+        if (selection instanceof IStructuredSelection) {          
+            IStructuredSelection is = (IStructuredSelection) selection;
+            
+            HashSet libs = new HashSet();
+            
+            for (Iterator i = is.iterator(); i.hasNext();) {
+                Object elem = i.next();
+                if (elem instanceof File) continue;
+                try {
+                    IJavaElement o = (IJavaElement)elem;
+                    System.out.println("Selected: "+o.toString().split("\n", 2)[0]);
+                    if (o instanceof ICompilationUnit) {
+                       // ignore
+                    }
+                    else if (o instanceof IClassFile) {
+                        libs.add(o);
+                        IClassFile cf = (IClassFile)o;
+                        appPaths.add(cf.getParent().getPath().makeAbsolute().toOSString());
+                    }
+                    else if (o instanceof IJavaProject){
+                        IPackageFragment[] pf = ((IJavaProject) o).getPackageFragments();
+                        for (int j = 0; j < pf.length; j++) {
+                            appPaths.add(pf[j].getParent().getPath().makeAbsolute().toOSString());
+                            addPackageFragment(new HashSet(), libs, pf[j]);
+                        }
+                    }
+                    else if (o instanceof IPackageFragment) {
+                        appPaths.add(o.getParent().getPath().makeAbsolute().toOSString());
+                        addPackageFragment(new HashSet(), libs, (IPackageFragment)o);
+                    }
+                    else {
+                        showDialog("Type unsupported: "+ elem.getClass());
+                    }
+                } catch (JavaModelException x) {
+                    // todo!
+                    System.err.println(x);
+                    x.printStackTrace();
+                } catch (ClassCastException x) {
+                    showDialog("Type unsupported: "+ elem.getClass());
+                }
+            }
+            
+            setAppPath();
+            
+            pa.loadClasses(libs);
+            
+        }
     }
     
     private void parse() {
@@ -136,14 +214,18 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
                     }
                     else if (o instanceof IClassFile) {
                         libs.add(o);
+                        //IClassFile cf = (IClassFile)o;
+                        //appPaths.add(cf.getParent().getPath().makeAbsolute().toOSString());
                     }
                     else if (o instanceof IJavaProject){
                         IPackageFragment[] pf = ((IJavaProject) o).getPackageFragments();
                         for (int j = 0; j < pf.length; j++) {
+                            //appPaths.add(pf[j].getParent().getPath().makeAbsolute().toOSString());
                             addPackageFragment(classes, libs, pf[j]);
                         }
                     }
                     else if (o instanceof IPackageFragment) {
+                        //appPaths.add(o.getParent().getPath().makeAbsolute().toOSString());
                         addPackageFragment(classes, libs, (IPackageFragment)o);
                     }
                     else {
@@ -157,6 +239,10 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
                     showDialog("Type unsupported: "+ elem.getClass());
                 }
             }
+            
+            //setAppPath();
+            
+            
             pa.parse(classes, libs);
             
         } else {
@@ -202,5 +288,7 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
      */
     public void init(IWorkbenchWindow window) {
         this.window = window;
+   
+
     }
 }

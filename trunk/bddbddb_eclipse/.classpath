@@ -6,5 +6,6 @@
 	<classpathentry kind="src" path="/bddbddb"/>
 	<classpathentry kind="lib" path="bddbddb.jar"/>
 	<classpathentry kind="lib" path="javabdd.jar"/>
+	<classpathentry kind="lib" path="joeq_core.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
