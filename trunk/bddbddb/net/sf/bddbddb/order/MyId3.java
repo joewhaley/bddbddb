@@ -32,7 +32,7 @@ public class MyId3 extends Classifier {
     /** The node's successors. */
     private MyId3[] m_Successors;
     /** Attribute used for splitting. */
-    private Attribute m_Attribute;
+    private Attribute m_Attribute; // not set for leaf.
     /** Class value if node is leaf. */
     private double m_ClassValue;
     /** Class distribution if node is leaf. */
@@ -212,9 +212,10 @@ public class MyId3 extends Classifier {
         if (m_Attribute == null) {
             return m_Distribution;
         } else if (instance.isMissing(m_Attribute)) {
-            double[] d = new double[m_ClassAttribute.numValues()];
+            double[] d = new double[0];
             for (int i = 0; i < m_Successors.length; ++i) {
                 double[] dd = m_Successors[i].distributionForInstance(instance);
+                if (d.length == 0 && dd.length > 0) d = new double[dd.length];
                 for (int j = 0; j < d.length; ++j) {
                     d[j] += dd[j];
                 }
