@@ -1237,7 +1237,7 @@ public abstract class Solver {
         newRules.add(my_ir);
         
         DependenceNavigator nav = new DependenceNavigator(rules);
-        Map/*<Relation,Relation>*/ toQueryRelation = new HashMap();
+        Map/*<Relation,Relation>*/ toQueryRelation = new LinkedHashMap();
         LinkedList worklist = new LinkedList();
         toQueryRelation.put(r, r2);
         worklist.add(r);
