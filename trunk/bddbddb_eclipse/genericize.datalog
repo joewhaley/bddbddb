@@ -3,34 +3,61 @@
 .include "fielddomains.pa"
 .bddvarorder N0_F0_I0_M1_M0_V1xV0_TV1xTV0_T0_Z0_T1_H0_H1
 
-TV0 262144
 C 262144
 
-### Input relations
-vP0 (v:V0, h:H0) input 
-A (dest:V0, source:V1) input 
-S (base:V0, field:F0, src:V1) input 
-L (base:V0, field:F0, dest:V1) input 
-vT (var:V0, type:T0) input 
-#hT (heap:H0, type:T1) input 
-aT (type:T0, type:T1) input 
-cha (type:T1, name:N0, method:M0) input 
-actual (invoke:I0, num:Z0, actualparam:V1) input 
-#formal (method:M0, num:Z0, formalparam:V0) input 
-Mret (method:M0, v:V1) input 
-#Mthr (method:M0, v:V1) input 
-Iret (invoke:I0, v:V0) input 
-#Ithr (invoke:I0, v:V0) input 
-mI (method:M0, invoke:I0, name:N0) input 
-visited (method:M0) input output 
-mS (method:M0, base:V0, field:F0, src:V1) input 
-mL (method:M0, base:V0, field:F0, dest:V1) input 
-mvP (method:M0, v:V0, h:H0) input 
+### Input Relations
 
+vP0 (v:V0, h:H0) input outputtuples
+vP (v:V0, h:H0) output 
+A (dest:V0, source:V1) input outputtuples
+# hP0 (ha:H0, field:F0, hb:H1) input
+hP (ha:H0, field:F0, hb:H1) output 
+S (base:V0, field:F0, src:V1) input outputtuples
+L (base:V0, field:F0, dest:V1) input outputtuples
+vT (var:V0, type:T0) input outputtuples
+hT (heap:H0, type:T1) input outputtuples
+aT (type:T0, type:T1) input output outputtuples
+vPfilter (v:V0, h:H0)
+cha (type:T1, name:N0, method:M0) input outputtuples
+actual (invoke:I0, num:Z0, actualparam:V1) input outputtuples
+formal (method:M0, num:Z0, formalparam:V0) input outputtuples
+Mret (method:M0, v:V1) input outputtuples
+Mthr (method:M0, v:V1) input outputtuples
+Iret (invoke:I0, v:V0) input outputtuples
+Ithr (invoke:I0, v:V0) input outputtuples
+IE0 (invoke:I0, method:M0) input outputtuples
+mI (method:M0, invoke:I0, name:N0) input outputtuples
+visited (method:M0) input output outputtuples
+IE (invoke:I0, target:M0) output outputtuples
+mS (method:M0, base:V0, field:F0, src:V1) input outputtuples
+mL (method:M0, base:V0, field:F0, dest:V1) input outputtuples
+mvP (method:M0, v:V0, h:H0) input outputtuples
+mIE (method:M0, invoke:I0, target:M1) input outputtuples
+
+
+### Rules
+
+aT(t1,t3) :- aT(t1,t2), aT(t2,t3).
+
+vP(v,h) :- vP0(v,h).
+vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
+vP(v1,h) :- A(v1,v2), vP(v2,h), vPfilter(v1,h).
+hP(h1,f,h2) :- S(v1,f,v2), vP(v1,h1), vP(v2,h2).
+vP(v2,h2) :- L(v1,f,v2), vP(v1,h1), hP(h1,f,h2), vPfilter(v2,h2). split
+A(v1,v2) :- IE(i,m), formal(m,z,v1), actual(i,z,v2).
+A(v2,v1) :- IE(i,m), Mret(m,v1), Iret(i,v2).
+A(v2,v1) :- IE(i,m), Mthr(m,v1), Ithr(i,v2).
+
+IE(i,m2) :- mI(m1,i,n), actual(i,0,v), vP(v,h), hT(h,t), cha(t,n,m2). split
+IE(i,m) :- IE0(i,m).
+
+visited(m) :- IE(_,m).
 S(v1,f,v2) :- visited(m), mS(m,v1,f,v2).
 L(v1,f,v2) :- visited(m), mL(m,v1,f,v2).
+vP(v,h) :- visited(m), mvP(m,v,h).
+IE(i,m2) :- visited(m), mIE(m,i,m2).
+
 vP0(v,h) :- visited(m), mvP(m,v,h).
-aT(t1,t3) :- aT(t1,t2), aT(t2,t3).
 
 # Statements.
 assignStatement (dest:V0, src:V1) 
@@ -63,7 +90,7 @@ ret2typevar (method:M0, type:TV0) input
 
 # Some type variables correspond to concrete types.
 concreteTypes (typevar:TV0, concretetype:T0) input
-concreteTypes2 (typevar:TV0, concretetype:T0) 
+concreteTypes2 (typevar:TV0, concretetype:T0) output
 
 concreteTypes2(tv, t) :- concreteTypes(tv, t).
 
@@ -141,6 +168,8 @@ subType(t1,t2) :- castStatement(v1,t2,v3), location2typevar(v1,t1).
 
 
 ### Rules for computing the set of concrete types for each type variable.
+
+concreteTypes2(tv,t) :- vP(v,h), location2typevar(v,tv), hT(h,t).
 
 # Transitive closure over the subType relation.
 concreteTypes2(t1,t) :- subType(t1,t2), concreteTypes2(t2,t).
