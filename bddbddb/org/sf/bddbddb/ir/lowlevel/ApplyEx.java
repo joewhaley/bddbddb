@@ -6,11 +6,11 @@ package org.sf.bddbddb.ir.lowlevel;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import jwutil.collections.Pair;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
-import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
@@ -106,7 +106,7 @@ public class ApplyEx extends LowLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the set to project
      */
     public BDD getProjectSet() {
         BDD b = r1.getBDD().getFactory().one();
@@ -130,7 +130,7 @@ public class ApplyEx extends LowLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the BDD operation
      */
     public BDDOp getOp() {
         return op;

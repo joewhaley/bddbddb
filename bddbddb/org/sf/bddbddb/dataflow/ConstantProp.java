@@ -8,6 +8,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import jwutil.collections.Pair;
+import jwutil.util.Assert;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
@@ -30,8 +32,6 @@ import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDDFactory;
 
 /**

@@ -6,11 +6,11 @@ package org.sf.bddbddb.ir.lowlevel;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import jwutil.util.Assert;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
-import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
 import org.sf.javabdd.BDDPairing;
@@ -81,7 +81,7 @@ public class Replace extends LowLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the source relation
      */
     public BDDRelation getSrc() {
         return r1;
@@ -126,7 +126,7 @@ public class Replace extends LowLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the pairing
      */
     public BDDPairing getPairing() {
         Assert._assert(pairingString != null,this.toString());

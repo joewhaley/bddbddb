@@ -1,6 +1,6 @@
 // Dot.java, created May 10, 2004 by cunkel
-//Copyright (C) 2004 cunkel
-//Licensed under the terms of the GNU LGPL; see COPYING for details.
+// Copyright (C) 2004 cunkel
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Collection;
@@ -14,12 +14,12 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import jwutil.collections.HashWorklist;
+import jwutil.collections.Worklist;
+import jwutil.graphs.Graph;
+import jwutil.strings.MyStringTokenizer;
+import jwutil.util.Assert;
 import org.sf.bddbddb.RelationGraph.GraphNode;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.Graph;
-import org.sf.bddbddb.util.HashWorklist;
-import org.sf.bddbddb.util.MyStringTokenizer;
-import org.sf.bddbddb.util.Worklist;
 
 /**
  * Dot
@@ -387,7 +387,7 @@ public class Dot {
     }
 
     /**
-     * @return
+     * @return  the collection of used relations
      */
     public Collection getUsedRelations() {
         return usedRelations;

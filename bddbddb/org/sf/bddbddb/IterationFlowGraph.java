@@ -1,17 +1,17 @@
 // IterationFlowGraph.java, created Jun 29, 2004
-//Copyright (C) 2004 Michael Carbin
-//Licensed under the terms of the GNU LGPL; see COPYING for details.
+// Copyright (C) 2004 Michael Carbin
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.HashWorklist;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.SCComponent;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.HashWorklist;
+import jwutil.collections.MultiMap;
+import jwutil.collections.Pair;
+import jwutil.graphs.SCComponent;
 
 /**
  * IterationFlowGraph

@@ -21,13 +21,14 @@ public abstract class Operation implements IterationElement {
     static int opNumber = 0;
 
     /**
-     * @return
+     * @return the number of operations generated so far
      */
     public static int getNumberOfOperations() {
         return opNumber + 1;
     }
+    
     /**
-     * Comment for <code>id</code>
+     * Unique ID number for this operation.
      */
     public final int id;
 
@@ -40,7 +41,7 @@ public abstract class Operation implements IterationElement {
 
     /**
      * @param i
-     * @return
+     * @return the result of the visit
      */
     public abstract Object visit(OperationVisitor i);
 
@@ -52,7 +53,7 @@ public abstract class Operation implements IterationElement {
     public abstract String toString();
 
     /**
-     * @return
+     * @return the destination relation of this operation, or null
      */
     public abstract Relation getRelationDest();
 
@@ -62,9 +63,9 @@ public abstract class Operation implements IterationElement {
     public abstract void setRelationDest(Relation r0);
 
     /**
-     * @return
+     * @return the source relation of this operation
      */
-    public abstract List/* <Relation> */getSrcs();
+    public abstract List/*<Relation>*/ getSrcs();
 
     /**
      * @param r_old
@@ -73,7 +74,7 @@ public abstract class Operation implements IterationElement {
     public abstract void replaceSrc(Relation r_old, Relation r_new);
 
     /**
-     * @return
+     * @return the expression in string form
      */
     public abstract String getExpressionString();
 

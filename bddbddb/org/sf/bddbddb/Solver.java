@@ -20,18 +20,22 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.net.URL;
 import java.text.DecimalFormat;
+import jwutil.classloader.HijackingClassLoader;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.IndexMap;
+import jwutil.collections.MultiMap;
+import jwutil.collections.Pair;
+import jwutil.io.SystemProperties;
+import jwutil.strings.MyStringTokenizer;
+import jwutil.util.Assert;
 import org.sf.bddbddb.InferenceRule.DependenceNavigator;
 import org.sf.bddbddb.dataflow.PartialOrder.BeforeConstraint;
 import org.sf.bddbddb.dataflow.PartialOrder.InterleavedConstraint;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.MyStringTokenizer;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.SystemProperties;
 
 /**
  * Solver
@@ -329,7 +333,7 @@ public abstract class Solver {
      * @throws IllegalAccessException
      * @throws ClassNotFoundException
      */
-    public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    public static void main2(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         String inputFilename = System.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
         if (inputFilename == null) {
@@ -1657,4 +1661,115 @@ public abstract class Solver {
     public Collection getRelationsToSave() {
         return relationsToDump;
     }
+    
+    /**
+     * Replacement main() function that checks if we have the BDD library in the
+     * classpath.
+     * 
+     * @param args
+     * @throws IOException
+     */
+    public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+        // Make sure we have the BDD library in our classpath.
+        try {
+            Class.forName("org.sf.javabdd.BDD");
+        } catch (ClassNotFoundException x) {
+            ClassLoader cl = addBDDLibraryToClasspath(args);
+            // Reflective invocation under the new class loader.
+            invoke(cl, Solver.class.getName(), "main2", new Class[] {String[].class}, new Object[] {args});
+            return;
+        }
+        // Just call it directly.
+        main2(args);
+    }
+    
+    public static ClassLoader addBDDLibraryToClasspath(String[] args) throws IOException {
+        System.out.print("BDD library is not in classpath!  ");
+        URL url;
+        url = HijackingClassLoader.getFileURL("javabdd.jar");
+        if (url == null) {
+            String sep = System.getProperty("file.separator");
+            url = HijackingClassLoader.getFileURL(".."+sep+"JavaBDD");
+        }
+        if (url == null) {
+            System.err.println("Cannot find JavaBDD library!");
+            System.exit(-1);
+            return null;
+        }
+        System.out.println("Adding "+url+" to classpath.");
+        URL url2 = new File(".").toURL();
+        return new HijackingClassLoader(new URL[] {url, url2});
+    }
+    
+    /**
+     * Helper function for reflective invocation.
+     * 
+     * @param cl  class loader
+     * @param className  class name
+     * @param methodName  method name
+     * @param argTypes  arg types (optional)
+     * @param args  arguments
+     * @return  return value from invoked method
+     */
+    public static Object invoke(ClassLoader cl, String className,
+        String methodName, Class[] argTypes, Object[] args) {
+        Class c;
+        try {
+            c = Class.forName(className, true, cl);
+        } catch (ClassNotFoundException e0) {
+            System.err.println("Cannot load "+className);
+            e0.printStackTrace();
+            return null;
+        }
+        Method m;
+        try {
+            if (argTypes != null) {
+                m = c.getMethod(methodName, argTypes);
+            } else {
+                m = null;
+                Method[] ms = c.getDeclaredMethods();
+                for (int i = 0; i < ms.length; ++i) {
+                    if (ms[i].getName().equals(methodName)) {
+                        m = ms[i];
+                        break;
+                    }
+                }
+                if (m == null) {
+                    System.err.println("Can't find "+className+"."+methodName);
+                    return null;
+                }
+            }
+            m.setAccessible(true);
+        } catch (SecurityException e1) {
+            System.err.println("Cannot access "+className+"."+methodName);
+            e1.printStackTrace();
+            return null;
+        } catch (NoSuchMethodException e1) {
+            System.err.println("Can't find "+className+"."+methodName);
+            e1.printStackTrace();
+            return null;
+        }
+        Object result;
+        try {
+            result = m.invoke(null, args);
+        } catch (IllegalArgumentException e2) {
+            System.err.println("Illegal argument exception: "+e2.getCause());
+            e2.printStackTrace();
+            return null;
+        } catch (IllegalAccessException e2) {
+            System.err.println("Illegal access exception: "+e2.getCause());
+            e2.printStackTrace();
+            return null;
+        } catch (InvocationTargetException e2) {
+            if (e2.getCause() instanceof RuntimeException)
+                throw (RuntimeException) e2.getCause();
+            if (e2.getCause() instanceof Error)
+                throw (Error) e2.getCause();
+            System.err.println("Unexpected exception thrown! "+e2.getCause());
+            e2.getCause().printStackTrace();
+            return null;
+        }
+        return result;
+    }
+    
 }

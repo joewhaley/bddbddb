@@ -20,10 +20,10 @@ import java.util.Set;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.NumberFormat;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.CombinationGenerator;
-import org.sf.bddbddb.util.EntryValueComparator;
-import org.sf.bddbddb.util.Pair;
+import jwutil.collections.EntryValueComparator;
+import jwutil.collections.Pair;
+import jwutil.math.CombinationGenerator;
+import jwutil.util.Assert;
 
 /**
  * FindBestDomainOrder
@@ -672,9 +672,8 @@ public class FindBestDomainOrder {
             return total;
         }
         
-        /**
-         * @param arg0
-         * @return
+        /* (non-Javadoc)
+         * @see java.lang.Comparable#compareTo(java.lang.Object)
          */
         public int compareTo(Object arg0) {
             return compareTo((Order) arg0);

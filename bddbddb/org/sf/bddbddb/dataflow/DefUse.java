@@ -8,12 +8,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import jwutil.math.BitString;
+import jwutil.math.BitString.BitStringIterator;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.IR;
 import org.sf.bddbddb.ir.Operation;
-import org.sf.bddbddb.util.BitString;
-import org.sf.bddbddb.util.BitString.BitStringIterator;
 
 /**
  * DefUse
@@ -201,8 +201,10 @@ public class DefUse extends OperationProblem {
         }
 
         /**
-         * @param r
-         * @return
+         * Get the reaching defs for this relation.
+         * 
+         * @param r  relation
+         * @return  reaching defs for this relation
          */
         public OperationSet getReachingDefs(Relation r) {
             BitString bs = (BitString) fact.clone();
@@ -211,8 +213,10 @@ public class DefUse extends OperationProblem {
         }
 
         /**
-         * @param rs
-         * @return
+         * Get the reaching defs for this collection of relations.
+         * 
+         * @param rs  collection of relations
+         * @return  reaching defs for these relations
          */
         public OperationSet getReachingDefs(Collection rs) {
             BitString bs = new BitString(fact.size());

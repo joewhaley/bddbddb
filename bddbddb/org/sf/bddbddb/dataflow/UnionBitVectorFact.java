@@ -6,10 +6,10 @@
  */
 package org.sf.bddbddb.dataflow;
 
+import jwutil.math.BitString;
+import jwutil.util.Assert;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.dataflow.Problem.Fact;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.BitString;
 
 /**
  * @author Collective

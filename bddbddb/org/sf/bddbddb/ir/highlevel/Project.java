@@ -84,12 +84,15 @@ public class Project extends HighLevelOperation {
     }
 
     /**
-     * @return
+     * @return  list of attributes being projected
      */
-    public List/* <Attribute> */getAttributes() {
+    public List/*<Attribute>*/ getAttributes() {
         return attributes;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#copy()
+     */
     public Operation copy() {
         return new Project(r0, r1);
     }

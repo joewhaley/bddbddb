@@ -67,8 +67,10 @@ public abstract class RelationProblem extends Problem {
         }
 
         /**
-         * @param r
-         * @return
+         * Returns the fact associated with a relation.
+         * 
+         * @param r  relation
+         * @return  the fact for this relation
          */
         public RelationFact getFact(Relation r) {
             return (RelationFact) relationFacts.get(r);
@@ -82,8 +84,8 @@ public abstract class RelationProblem extends Problem {
         }
 
         /**
-         * @param that
-         * @return
+         * @param that  the other collection of relation facts
+         * @return  true if all relation facts are equal
          */
         public boolean equals(RelationFacts that) {
             return relationFacts.equals(that.relationFacts);

@@ -3,26 +3,25 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringTokenizer;
-
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.ListFactory;
+import jwutil.collections.MultiMap;
+import jwutil.collections.Pair;
+import jwutil.util.Assert;
 import org.sf.bddbddb.Learner.IndividualRuleLearner;
 import org.sf.bddbddb.ir.BDDInterpreter;
 import org.sf.bddbddb.ir.IR;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.ListFactory;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
 

@@ -17,7 +17,7 @@ import org.sf.javabdd.BDDFactory.BDDOp;
  * @version $Id$
  */
 public class Join extends BooleanOperation {
-    List/* <Attribute> */attributes;
+    List/*<Attribute>*/ attributes;
 
     /**
      * @param r0
@@ -64,7 +64,7 @@ public class Join extends BooleanOperation {
     
     
     /**
-     * @return
+     * @return  the attributes that are being joined
      */
     public List getAttributes(){ return attributes; }
 }

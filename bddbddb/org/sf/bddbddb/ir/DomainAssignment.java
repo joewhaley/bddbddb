@@ -15,6 +15,9 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.IOException;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.MultiMap;
+import jwutil.collections.Pair;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.BDDSolver;
@@ -43,9 +46,6 @@ import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDDDomain;
 
 /**

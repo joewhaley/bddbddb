@@ -12,86 +12,86 @@ package org.sf.bddbddb.ir.highlevel;
  */
 public interface HighLevelOperationVisitor {
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Join op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Project op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Rename op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Union op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Difference op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(JoinConstant op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(GenConstant op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Free op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Universe op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Zero op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Invert op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Copy op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Load op);
 
     /**
-     * @param op
-     * @return
+     * @param op  the operation
+     * @return  the result
      */
     public abstract Object visit(Save op);
 }

@@ -87,14 +87,14 @@ public class JoinConstant extends HighLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the value being joined
      */
     public long getValue() {
         return value;
     }
 
     /**
-     * @return
+     * @return  the attribute of the value being joined
      */
     public Attribute getAttribute() {
         return a;

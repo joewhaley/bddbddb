@@ -5,8 +5,8 @@ package org.sf.bddbddb.dataflow;
 
 import java.util.HashMap;
 import java.util.Map;
+import jwutil.util.Assert;
 import org.sf.bddbddb.ir.Operation;
-import org.sf.bddbddb.util.Assert;
 
 /**
  * RelationProblem

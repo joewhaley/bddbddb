@@ -5,13 +5,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import jwutil.math.BitString;
+import jwutil.math.BitString.BitStringIterator;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.IR;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.highlevel.Free;
-import org.sf.bddbddb.util.BitString;
-import org.sf.bddbddb.util.BitString.BitStringIterator;
 
 /**
  * @author Administrator

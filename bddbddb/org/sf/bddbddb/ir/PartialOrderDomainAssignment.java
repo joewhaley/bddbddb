@@ -1,4 +1,4 @@
-// UFDomainAssignment.java, created Jul 11, 2004 12:59:33 PM by joewhaley
+// PartialOrderDomainAssignment.java, created Jul 11, 2004 12:59:33 PM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
@@ -13,19 +13,19 @@ import java.util.Map;
 import java.util.Set;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import jwutil.collections.GenericMultiMap;
+import jwutil.collections.MultiMap;
+import jwutil.collections.Pair;
+import jwutil.collections.UnionFind;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDSolver;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.dataflow.PartialOrder.ConstraintGraph;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
-import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.UnionFind;
 
 /**
- * UFDomainAssignment
+ * PartialOrderDomainAssignment
  * 
  * @author John Whaley
  * @version $Id$

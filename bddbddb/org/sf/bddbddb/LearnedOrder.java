@@ -1,9 +1,6 @@
-/*
- * Created on Jul 27, 2004
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
- */
+// LearnedOrder.java, created Jul 27, 2004 8:57:36 PM 2004 by mcarbin
+// Copyright (C) 2004 Michael Carbin <mcarbin@stanford.edu>
+// Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.ArrayList;
@@ -37,16 +34,16 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import jwutil.collections.IndexMap;
+import jwutil.collections.Pair;
+import jwutil.math.PermutationGenerator;
+import jwutil.util.Assert;
 import org.sf.bddbddb.OrderClassifier.MyAttribute;
 import org.sf.bddbddb.OrderClassifier.MyInstance;
 import org.sf.bddbddb.dataflow.PartialOrder.BeforeConstraint;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import org.sf.bddbddb.dataflow.PartialOrder.InterleavedConstraint;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
@@ -59,7 +56,7 @@ import org.xml.sax.SAXException;
  * LearnedOrder
  * 
  * @author mcarbin
- *
+ * @version $Id$
  */
 public class LearnedOrder {
     String bestOrder;

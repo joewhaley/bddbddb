@@ -1,9 +1,6 @@
-/*
- * Created on Jul 6, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
+//PartialOrder.java, created Jul 6, 2004 1:44:46 PM by mcarbin
+//Copyright (C) 2004 Michael Carbin <mcarbin@stanford.edu>
+//Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.dataflow;
 
 import java.util.AbstractSet;
@@ -20,6 +17,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import jwutil.collections.IndexMap;
+import jwutil.collections.IndexedMap;
+import jwutil.collections.Pair;
+import jwutil.math.BitString;
+import jwutil.math.BitString.BitStringIterator;
+import jwutil.util.Assert;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
@@ -46,18 +49,12 @@ import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.Replace;
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.BitString;
-import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.IndexedMap;
-import org.sf.bddbddb.util.Pair;
-import org.sf.bddbddb.util.BitString.BitStringIterator;
 
 /**
- * @author mcarbin
+ * Partial redundancy elimination.
  * 
- * To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @author mcarbin
+ * @version $Id$
  */
 public class PartialRedundancy implements IRPass {
     public DefUse defUse;

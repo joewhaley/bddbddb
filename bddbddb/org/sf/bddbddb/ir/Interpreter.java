@@ -1,9 +1,6 @@
-/*
- * Created on Jul 13, 2004
- * 
- * TODO To change the template for this generated file go to Window -
- * Preferences - Java - Code Style - Code Templates
- */
+//IR.java, created Jul 13, 2004 12:24:59 PM 2004 by mcarbin
+//Copyright (C) 2004 Michael Carbin
+//Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
 import java.util.Collection;
@@ -13,7 +10,7 @@ import java.util.Map;
  * Interpreter
  * 
  * @author mcarbin
- *  
+ * @version $Id$
  */
 public abstract class Interpreter {
     boolean TRACE = false;
@@ -32,7 +29,7 @@ public abstract class Interpreter {
 
         /**
          * @param that
-         * @return
+         * @return the result of joining
          */
         public RelationStats join(RelationStats that) {
             RelationStats result = new RelationStats();

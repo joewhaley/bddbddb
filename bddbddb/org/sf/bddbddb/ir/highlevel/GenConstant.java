@@ -79,19 +79,22 @@ public class GenConstant extends Operation {
     }
 
     /**
-     * @return
+     * @return  the value of this constant
      */
     public long getValue() {
         return value;
     }
 
     /**
-     * @return
+     * @return  the attribute of this constant
      */
     public Attribute getAttribute() {
         return a;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#copy()
+     */
     public Operation copy() {
         return new GenConstant(r0, a, value);
     }

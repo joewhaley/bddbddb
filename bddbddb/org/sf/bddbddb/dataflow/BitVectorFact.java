@@ -6,8 +6,8 @@
  */
 package org.sf.bddbddb.dataflow;
 
+import jwutil.math.BitString;
 import org.sf.bddbddb.IterationList;
-import org.sf.bddbddb.util.BitString;
 
 /**
  * BitVectorFact

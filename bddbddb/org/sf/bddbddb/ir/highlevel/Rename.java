@@ -102,7 +102,7 @@ public class Rename extends HighLevelOperation {
     }
 
     /**
-     * @return
+     * @return  the rename map
      */
     public Map getRenameMap() {
         return renames;
