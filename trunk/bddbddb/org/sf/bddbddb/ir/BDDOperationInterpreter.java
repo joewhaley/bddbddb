@@ -370,7 +370,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         BDD b2 = makeDomainsMatch(r2.getBDD().id(), r2, r0);
         BDD b3 = op.getProjectSet();
-        if (TRACE) System.out.println("   " + r0 + " = ApplyEx " + r1 + "," + r2 + "," + bddop + "," + op.getAttributes());
+        if (TRACE) System.out.println("   " + op.toString());
         BDD b = b1.applyEx(b2, bddop, b3);
         b1.free();
         b2.free();

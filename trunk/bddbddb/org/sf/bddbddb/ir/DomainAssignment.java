@@ -518,6 +518,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     public abstract void saveDomainAssignment(DataOutput out) throws IOException;
     public void loadDomainAssignment(DataInput in) throws IOException {
         BDDSolver bs = (BDDSolver) solver;
+        int count = 0;
         for (;;) {
             String s = in.readLine();
             if (s == null) break;
@@ -570,9 +571,12 @@ public abstract class DomainAssignment implements OperationVisitor {
                 }
                 if (!success) {
                     System.out.println("Cannot add constraint: "+s);
+                } else {
+                    ++count;
                 }
             }
         }
+        System.out.println("Incorporated "+count+" constraints from file.");
     }
     
 }
