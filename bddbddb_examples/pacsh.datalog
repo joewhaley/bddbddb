@@ -11,7 +11,7 @@
 
 .include "fielddomains.pa"
 
-.bddvarorder N0_F0_I0_M1_M0_V1xV0_VC1xVC0_T0_Z0_T1_H0_H1
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_VC2xVC1xVC0_T0_Z0_T1_H0_H1
 
 ### Relations
 
@@ -57,7 +57,7 @@ IEcs(vc2,i,vc1,m) :- IE0(i,m), IEfilter(vc2,i,vc1,m).
 vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
 cA(vc1,v1,vc2,v2) :- formal(m,z,v1), IEcs(vc2,i,vc1,m), actual(i,z,v2).
 cA(vc2,v2,vc1,v1) :- Mret(m,v1), IEcs(vc2,i,vc1,m), Iret(i,v2).
-cA(vc2,v2,vc1,v1) :- Mthr(m,v1), IEcs(vc2,i,vc1,m), Ithr(i,v2).
+#cA(vc2,v2,vc1,v1) :- Mthr(m,v1), IEcs(vc2,i,vc1,m), Ithr(i,v2).
 
 cvP(vc1,v1,hc,h) :- cA(vc1,v1,vc2,v2), cvP(vc2,v2,hc,h), vPfilter(v1,h).
 hP(hc1,h1,f,hc2,h2) :- S(v1,f,v2), cvP(vc1,v1,hc1,h1), cvP(vc1,v2,hc2,h2).
