@@ -160,8 +160,8 @@ public class PAFly {
             s.addSaveHook(new Runnable() {
                 public void run() {
                     try {
-                        dumpCallGraph(s.getBaseDir()+"callgraph");
                         saveMaps(s);
+                        dumpCallGraph(s.getBaseDir()+"callgraph");
                     } catch (IOException x) {
                         x.printStackTrace();
                     }
@@ -227,7 +227,7 @@ public class PAFly {
     public static boolean RESOLVE_FORNAME = !System.getProperty("pa.resolveforname", "no").equals("no");
     
     static BDDRelation vP0, L, S, A, actual, formal, Mret, Iret, Mthr, Ithr, IE0, vT, hT, aT, cha, mI, roots, IE;
-    static BDDRelation stringToType, stringToField, stringToMethod, defaultConstructor, allConstructors, mapIH;
+    static BDDRelation stringToType, stringToField, stringToMethod, defaultConstructor, allConstructors, mapIH, skipMethod;
     static IndexMap Vmap, Fmap, Hmap, Mmap, Imap, Tmap, Nmap;
     static Collection stringNodes = new LinkedList();
     
@@ -568,7 +568,12 @@ public class PAFly {
         m.getDeclaringClass().prepare();
         
         int M_i = Mmap.get(m.toString());
-
+        
+        // Skip visiting some methods.
+        if (skipMethod.contains(0, BigInteger.valueOf(M_i))) {
+            out.println("Skipping generation of method "+m);
+            return;
+        }
         MethodSummary ms = MethodSummary.getSummary(m);
         
         if (m.getBytecode() == null && ms == null) {
@@ -966,7 +971,10 @@ public class PAFly {
          * @see joeq.Compiler.Quad.CallGraph#getRoots()
          */
         public Collection getRoots() {
-            return new BDDSet(roots.getBDD(), roots.getBDDDomain(0), methodMap);
+            BDD b = roots.getBDD().id();
+            BDD c = roots.getBDDDomain(0).ithVar(Mmap.get("null"));
+            b.applyWith(c, BDDFactory.diff);
+            return new BDDSet(b, roots.getBDDDomain(0), methodMap);
         }
 
         /* (non-Javadoc)
@@ -978,6 +986,8 @@ public class PAFly {
             BDD I_bdd = IE.getBDDDomain(0).ithVar(I_i);
             BDD b = IE.getBDD().restrict(I_bdd);
             I_bdd.free();
+            BDD c = IE.getBDDDomain(1).ithVar(Mmap.get("null"));
+            b.applyWith(c, BDDFactory.diff);
             return new BDDSet(b, IE.getBDDDomain(1), methodMap);
         }
         
@@ -989,6 +999,8 @@ public class PAFly {
             BDD s = IE.getBDDDomain(0).set();
             b.orWith(IE.getBDD().exist(s));
             s.free();
+            BDD c = roots.getBDDDomain(0).ithVar(Mmap.get("null"));
+            b.applyWith(c, BDDFactory.diff);
             return new BDDSet(b, IE.getBDDDomain(1), methodMap);
         }
     }
