@@ -65,6 +65,9 @@ public class UFDomainAssignment extends DomainAssignment {
         return null;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.DomainAssignment#doAssignment()
+     */
     public void doAssignment() {
         BDDSolver s = (BDDSolver) solver;
         Map physicalDomains = new HashMap();
