@@ -50,8 +50,7 @@ public class Stratify {
         firstSCCs = new LinkedList();
         innerSCCs = new GenericMultiMap();
         // Build dependence graph.
-        InferenceRule.DependenceNavigator depNav = new InferenceRule.DependenceNavigator(
-            rules);
+        InferenceRule.DependenceNavigator depNav = new InferenceRule.DependenceNavigator(rules);
         // Do a backward pass to figure out what relations/rules are necessary.
         Set necessary = findNecessary(depNav, outputs);
         if (TRACE) out.println("Necessary: " + necessary);
@@ -60,8 +59,7 @@ public class Stratify {
         unnecessary.addAll(solver.rules);
         unnecessary.removeAll(necessary);
         if (!unnecessary.isEmpty()) {
-            System.out
-                .println("Note: the following rules/relations are unused:");
+            System.out.println("Note: the following rules/relations are unused:");
             for (Iterator i = unnecessary.iterator(); i.hasNext();) {
                 System.out.println("    " + i.next());
             }
@@ -81,8 +79,7 @@ public class Stratify {
                 }
             }
         }
-        InferenceRule.DependenceNavigator depNav_orig = new InferenceRule.DependenceNavigator(
-            depNav);
+        InferenceRule.DependenceNavigator depNav_orig = new InferenceRule.DependenceNavigator(depNav);
         for (int i = 1;; ++i) {
             // Discover current stratum.
             if (TRACE) out.println("Discovering Stratum #" + i + "...");
@@ -90,8 +87,7 @@ public class Stratify {
             Set stratumNodes = getStratumNodes(stratumSccs);
             if (TRACE) out.println("Stratum #" + i + ": " + stratumNodes);
             // Make a navigator for this stratum.
-            InferenceRule.DependenceNavigator depNav2 = new InferenceRule.DependenceNavigator(
-                depNav);
+            InferenceRule.DependenceNavigator depNav2 = new InferenceRule.DependenceNavigator(depNav);
             depNav2.retainAll(stratumNodes);
             // Break current stratum into SCCs and sort them.
             // We can't use the SCCs in stratumSccs because they have links to
@@ -118,13 +114,11 @@ public class Stratify {
             depNav.removeAll(stratumNodes);
             if (!again) break;
         }
-        if (!depNav.relationToDefiningRule.isEmpty()
-            || !depNav.relationToUsingRule.isEmpty()) {
+        if (!depNav.relationToDefiningRule.isEmpty() || !depNav.relationToUsingRule.isEmpty()) {
             Set s = new HashSet();
             s.addAll(depNav.relationToDefiningRule.keySet());
             s.addAll(depNav.relationToUsingRule.keySet());
-            System.out
-                .println("Warning: The following relations are necessary, but not present in any strata:");
+            System.out.println("Warning: The following relations are necessary, but not present in any strata:");
             System.out.println("    " + s);
         }
         if (DUMP_DOTGRAPH) {
@@ -141,8 +135,7 @@ public class Stratify {
         return s;
     }
 
-    static Set findNewInputs(InferenceRule.DependenceNavigator depNav,
-        Set stratumNodes) {
+    static Set findNewInputs(InferenceRule.DependenceNavigator depNav, Set stratumNodes) {
         Set inputs = new HashSet();
         for (Iterator i = stratumNodes.iterator(); i.hasNext();) {
             Object o = i.next();
@@ -156,8 +149,7 @@ public class Stratify {
         return inputs;
     }
 
-    static Set findNecessary(InferenceRule.DependenceNavigator depNav,
-        Collection outputs) {
+    static Set findNecessary(InferenceRule.DependenceNavigator depNav, Collection outputs) {
         HashWorklist w = new HashWorklist(true);
         w.addAll(outputs);
         while (!w.isEmpty()) {
@@ -172,11 +164,9 @@ public class Stratify {
         return w.getVisitedSet();
     }
 
-    Set discoverStratum(InferenceRule.DependenceNavigator depNav,
-        Collection allRelations, Collection inputs) {
+    Set discoverStratum(InferenceRule.DependenceNavigator depNav, Collection allRelations, Collection inputs) {
         // Break into SCCs.
-        Collection/* <SCComponent> */sccs = SCComponent.buildSCC(allRelations,
-            depNav);
+        Collection/* <SCComponent> */sccs = SCComponent.buildSCC(allRelations, depNav);
         LinkedList w = new LinkedList();
         Set stratum = new HashSet();
         for (Iterator i = sccs.iterator(); i.hasNext();) {
@@ -185,8 +175,7 @@ public class Stratify {
             for (Iterator j = inputs.iterator(); j.hasNext();) {
                 Object o2 = j.next();
                 if (o.contains(o2)) {
-                    if (TRACE_FULL) out.println("SCC contains input " + o2
-                        + ", adding SCC to stratum.");
+                    if (TRACE_FULL) out.println("SCC contains input " + o2 + ", adding SCC to stratum.");
                     w.add(o);
                     stratum.add(o);
                     break;
@@ -200,19 +189,15 @@ public class Stratify {
             for (Iterator i = c.iterator(); i.hasNext();) {
                 SCComponent p = (SCComponent) i.next();
                 if (TRACE_FULL) out.println("  Successor: " + p);
-                if (TRACE_FULL) out.println("    Predecessors: "
-                    + Arrays.asList(p.prev()));
+                if (TRACE_FULL) out.println("    Predecessors: " + Arrays.asList(p.prev()));
                 if (stratum.containsAll(Arrays.asList(p.prev()))) {
-                    if (TRACE_FULL) out
-                        .println("  Adding " + p + " to stratum");
+                    if (TRACE_FULL) out.println("  Adding " + p + " to stratum");
                     if (stratum.add(p)) {
-                        if (TRACE_FULL) out
-                            .println("    New element, adding to worklist.");
+                        if (TRACE_FULL) out.println("    New element, adding to worklist.");
                         w.add(p);
                     }
                 } else {
-                    if (TRACE_FULL) out.println("  Not all predecessors of "
-                        + p + " (yet)");
+                    if (TRACE_FULL) out.println("  Not all predecessors of " + p + " (yet)");
                 }
             }
         }
@@ -220,25 +205,21 @@ public class Stratify {
         for (Iterator i = sccs.iterator(); i.hasNext();) {
             SCComponent p = (SCComponent) i.next();
             if (!stratum.containsAll(Arrays.asList(p.prev()))) {
-                if (TRACE_FULL) out.println("Not all predecessors of relation "
-                    + p + ", removing.");
+                if (TRACE_FULL) out.println("Not all predecessors of relation " + p + ", removing.");
                 stratum.remove(p);
             }
         }
         return stratum;
     }
 
-    SCComponent breakIntoSCCs(Collection stratumNodes,
-        InferenceRule.DependenceNavigator depNav) {
-        Collection/* <SCComponent> */sccs = SCComponent.buildSCC(stratumNodes,
-            depNav);
+    SCComponent breakIntoSCCs(Collection stratumNodes, InferenceRule.DependenceNavigator depNav) {
+        Collection/* <SCComponent> */sccs = SCComponent.buildSCC(stratumNodes, depNav);
         // Find root SCCs.
         Set roots = new HashSet();
         for (Iterator i = sccs.iterator(); i.hasNext();) {
             SCComponent scc = (SCComponent) i.next();
             if (scc.prevLength() == 0) {
-                if (TRACE) out.println("Root SCC: SCC" + scc.getId()
-                    + (scc.isLoop() ? " (loop)" : ""));
+                if (TRACE) out.println("Root SCC: SCC" + scc.getId() + (scc.isLoop() ? " (loop)" : ""));
                 roots.add(scc);
             }
         }
@@ -253,8 +234,7 @@ public class Stratify {
             for (SCComponent scc = first; scc != null; scc = scc.nextTopSort()) {
                 if (!scc.isLoop()) continue;
                 scc.fillEntriesAndExits(depNav);
-                InferenceRule.DependenceNavigator depNav2 = new InferenceRule.DependenceNavigator(
-                    depNav);
+                InferenceRule.DependenceNavigator depNav2 = new InferenceRule.DependenceNavigator(depNav);
                 Set nodeSet = scc.nodeSet();
                 depNav2.retainAll(nodeSet);
                 // Remove a backedge.
@@ -263,8 +243,7 @@ public class Stratify {
                 SCComponent first2 = breakIntoSCCs(nodeSet, depNav2);
                 if (TRACE) {
                     out.print("Order for SCC" + scc.getId() + ": ");
-                    for (SCComponent scc2 = first2; scc2 != null; scc2 = scc2
-                        .nextTopSort()) {
+                    for (SCComponent scc2 = first2; scc2 != null; scc2 = scc2.nextTopSort()) {
                         out.print(" SCC" + scc2.getId());
                     }
                     out.println();
@@ -275,13 +254,10 @@ public class Stratify {
         return first;
     }
 
-    void removeABackedge(SCComponent scc,
-        InferenceRule.DependenceNavigator depNav) {
-        if (TRACE_FULL) out.println("SCC" + scc.getId() + " contains: "
-            + scc.nodeSet());
+    void removeABackedge(SCComponent scc, InferenceRule.DependenceNavigator depNav) {
+        if (TRACE_FULL) out.println("SCC" + scc.getId() + " contains: " + scc.nodeSet());
         Object[] entries = scc.entries();
-        if (TRACE_FULL) out.println("SCC" + scc.getId() + " has "
-            + entries.length + " entries.");
+        if (TRACE_FULL) out.println("SCC" + scc.getId() + " has " + entries.length + " entries.");
         Object entry;
         if (entries.length > 0) {
             entry = entries[0];
@@ -289,14 +265,12 @@ public class Stratify {
             if (TRACE_FULL) out.println("No entries, choosing a node.");
             entry = scc.nodes()[0];
         }
-        if (TRACE_FULL) out.println("Entry into SCC" + scc.getId() + ": "
-            + entry);
+        if (TRACE_FULL) out.println("Entry into SCC" + scc.getId() + ": " + entry);
         if (false) {
             Collection preds = depNav.prev(entry);
             if (TRACE) out.println("Predecessors of entry: " + preds);
             Object pred = preds.iterator().next();
-            if (TRACE) out
-                .println("Removing backedge " + pred + " -> " + entry);
+            if (TRACE) out.println("Removing backedge " + pred + " -> " + entry);
             depNav.removeEdge(pred, entry);
         } else {
             // find longest path.
@@ -317,8 +291,7 @@ public class Stratify {
             if (TRACE_FULL) out.println("Last element in SCC: " + last);
             Object last_next;
             List possible = new LinkedList(depNav.next(last));
-            if (TRACE_FULL) out.println("Successors of last element: "
-                + possible);
+            if (TRACE_FULL) out.println("Successors of last element: " + possible);
             if (possible.size() == 1) last_next = possible.iterator().next();
             else if (possible.contains(entry)) last_next = entry;
             else {
@@ -326,8 +299,7 @@ public class Stratify {
                 possible.retainAll(Arrays.asList(entries));
                 if (!possible.isEmpty()) last_next = possible.iterator().next();
             }
-            if (TRACE_FULL) out.println("Removing backedge " + last + " -> "
-                + last_next);
+            if (TRACE_FULL) out.println("Removing backedge " + last + " -> " + last_next);
             depNav.removeEdge(last, last_next);
         }
     }
@@ -362,8 +334,7 @@ public class Stratify {
                         Object o = i.next();
                         if (o instanceof InferenceRule) {
                             InferenceRule ir = (InferenceRule) o;
-                            if (TRACE) out.println("Visiting inference rule "
-                                + ir);
+                            if (TRACE) out.println("Visiting inference rule " + ir);
                             boolean b = ir.update();
                             if (b) {
                                 if (TRACE) out.println("Result changed!");
@@ -379,8 +350,7 @@ public class Stratify {
             }
             if (!isLoop || !outerChange) break;
             if (iterations == MAX_ITERATIONS) {
-                if (TRACE) out
-                    .println("Hit max iterations, trying different rules...");
+                if (TRACE) out.println("Hit max iterations, trying different rules...");
                 again = true;
                 break;
             }
@@ -416,7 +386,7 @@ public class Stratify {
         }
         stratify(solver.rules, inputs, outputs);
     }
-    
+
     public void solve() {
         Iterator i = firstSCCs.iterator();
         for (int a = 1; i.hasNext(); ++a) {
@@ -428,9 +398,7 @@ public class Stratify {
             }
         }
     }
-
-    static boolean DUMP_DOTGRAPH = !System.getProperty("dumprulegraph", "no")
-        .equals("no");
+    static boolean DUMP_DOTGRAPH = !System.getProperty("dumprulegraph", "no").equals("no");
 
     void buildNodeToSCCMap(Map node2scc, SCComponent scc) {
         Collection c = innerSCCs.getValues(scc);
@@ -484,8 +452,7 @@ public class Stratify {
         ddg.setClusterNesting(new Navigator() {
             public Collection next(Object node) {
                 Collection c = new LinkedList();
-                for (Iterator i = innerSCCs.getValues(node).iterator(); i
-                    .hasNext();) {
+                for (Iterator i = innerSCCs.getValues(node).iterator(); i.hasNext();) {
                     SCComponent scc = (SCComponent) i.next();
                     while (scc != null) {
                         c.add(scc);
@@ -498,8 +465,7 @@ public class Stratify {
             public Collection prev(Object node) {
                 for (Iterator i = innerSCCs.keySet().iterator(); i.hasNext();) {
                     Object key = i.next();
-                    if (next(key).contains(node)) return Collections
-                        .singleton(key);
+                    if (next(key).contains(node)) return Collections.singleton(key);
                 }
                 return Collections.EMPTY_SET;
             }

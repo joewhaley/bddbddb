@@ -80,16 +80,14 @@ public class RelationGraph implements Graph {
     class Nav implements Navigator {
         Collection getEdges(Object node, int fromIndex, int toIndex) {
             GraphNode gn = (GraphNode) node;
-            if (TRACE) out.println("Getting edges of " + gn + " indices ("
-                + fromIndex + "," + toIndex + ")");
+            if (TRACE) out.println("Getting edges of " + gn + " indices (" + fromIndex + "," + toIndex + ")");
             Collection c = new LinkedList();
             for (Iterator a = edges.iterator(); a.hasNext();) {
                 RuleTerm rt = (RuleTerm) a.next();
                 if (rt.variables.get(fromIndex) == gn.v) {
                     if (TRACE) out.println("Rule term " + rt + " matches");
                     Variable v2 = (Variable) rt.variables.get(toIndex);
-                    TupleIterator i = rt.relation
-                        .iterator(fromIndex, gn.number);
+                    TupleIterator i = rt.relation.iterator(fromIndex, gn.number);
                     while (i.hasNext()) {
                         long[] j = i.nextTuple();
                         c.add(new GraphNode(v2, j[toIndex]));

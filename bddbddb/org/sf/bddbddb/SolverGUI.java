@@ -83,28 +83,27 @@ public class SolverGUI extends JFrame {
         if (jOpenMenuItem == null) {
             jOpenMenuItem = new JMenuItem();
             jOpenMenuItem.setText("Open Datalog...");
-            jOpenMenuItem
-                .addActionListener(new java.awt.event.ActionListener() {
-                    public void actionPerformed(java.awt.event.ActionEvent e) {
-                        // TODO: If buffer modified, query for save.
-                        JFileChooser fc = getJFileChooser();
-                        int returnVal = fc.showOpenDialog(SolverGUI.this);
-                        if (returnVal == JFileChooser.APPROVE_OPTION) {
-                            File file = fc.getSelectedFile();
-                            try {
-                                jTextPane.setPage(file.toURL());
-                            } catch (MalformedURLException e1) {
-                                // TODO Auto-generated catch block
-                                e1.printStackTrace();
-                            } catch (IOException e1) {
-                                // TODO Auto-generated catch block
-                                e1.printStackTrace();
-                            }
-                        } else {
-                            // Open command cancelled by user.
+            jOpenMenuItem.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    // TODO: If buffer modified, query for save.
+                    JFileChooser fc = getJFileChooser();
+                    int returnVal = fc.showOpenDialog(SolverGUI.this);
+                    if (returnVal == JFileChooser.APPROVE_OPTION) {
+                        File file = fc.getSelectedFile();
+                        try {
+                            jTextPane.setPage(file.toURL());
+                        } catch (MalformedURLException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
+                        } catch (IOException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
                         }
+                    } else {
+                        // Open command cancelled by user.
                     }
-                });
+                }
+            });
         }
         return jOpenMenuItem;
     }
@@ -124,12 +123,11 @@ public class SolverGUI extends JFrame {
         if (jExitMenuItem == null) {
             jExitMenuItem = new JMenuItem();
             jExitMenuItem.setText("Exit");
-            jExitMenuItem
-                .addActionListener(new java.awt.event.ActionListener() {
-                    public void actionPerformed(java.awt.event.ActionEvent e) {
-                        System.exit(0);
-                    }
-                });
+            jExitMenuItem.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    System.exit(0);
+                }
+            });
         }
         return jExitMenuItem;
     }
@@ -175,8 +173,7 @@ public class SolverGUI extends JFrame {
     private JTextPane getJTextPane() {
         if (jTextPane == null) {
             jTextPane = new JTextPane();
-            jTextPane.setFont(new java.awt.Font("Times New Roman",
-                java.awt.Font.ITALIC, 16));
+            jTextPane.setFont(new java.awt.Font("Times New Roman", java.awt.Font.ITALIC, 16));
         }
         return jTextPane;
     }
@@ -203,20 +200,18 @@ public class SolverGUI extends JFrame {
         if (jSaveAsMenuItem == null) {
             jSaveAsMenuItem = new JMenuItem();
             jSaveAsMenuItem.setText("Save As...");
-            jSaveAsMenuItem
-                .addActionListener(new java.awt.event.ActionListener() {
-                    public void actionPerformed(java.awt.event.ActionEvent e) {
-                        JFileChooser fc = getJFileChooser();
-                        int returnVal = fc.showSaveDialog(SolverGUI.this);
-                        if (returnVal == JFileChooser.APPROVE_OPTION) {
-                            File file = fc.getSelectedFile();
-                            jTextPane.setText("Saving: " + file.getName());
-                        } else {
-                            jTextPane
-                                .setText("Save command cancelled by user.");
-                        }
+            jSaveAsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    JFileChooser fc = getJFileChooser();
+                    int returnVal = fc.showSaveDialog(SolverGUI.this);
+                    if (returnVal == JFileChooser.APPROVE_OPTION) {
+                        File file = fc.getSelectedFile();
+                        jTextPane.setText("Saving: " + file.getName());
+                    } else {
+                        jTextPane.setText("Save command cancelled by user.");
                     }
-                });
+                }
+            });
         }
         return jSaveAsMenuItem;
     }
@@ -270,8 +265,7 @@ public class SolverGUI extends JFrame {
                 public void actionPerformed(java.awt.event.ActionEvent e) {
                     File sound = new File("bddbddb.wav");
                     try {
-                        AudioClip audioClip = Applet
-                            .newAudioClip(sound.toURL());
+                        AudioClip audioClip = Applet.newAudioClip(sound.toURL());
                         audioClip.play();
                     } catch (MalformedURLException e1) {
                         // TODO Auto-generated catch block
