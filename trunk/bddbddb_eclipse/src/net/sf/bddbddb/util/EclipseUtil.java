@@ -17,6 +17,14 @@ import org.eclipse.jdt.core.IType;
  */
 public class EclipseUtil {
     
+    /**
+     * Given an IClassFile object, get its fully-qualified class name.
+     * Returns null if we cannot figure it out.
+     * Example: java.util.Hashtable$Entry
+     * 
+     * @param e2  IClassFile object
+     * @return  class name, or null if unknown
+     */
     public static String getFullyQualifiedClassName(IClassFile e2) {
         // .class file
         StringBuffer sb = new StringBuffer();
@@ -36,6 +44,9 @@ public class EclipseUtil {
     /**
      * Return the fully-qualified class name corresponding to the given Eclipse
      * type. Example: java.util.Hashtable$Entry
+     * 
+     * @param t  IType object
+     * @return  class name, or null if unknown
      */
     public static String getFullyQualifiedClassName(IType t) {
         StringBuffer sb = new StringBuffer();
