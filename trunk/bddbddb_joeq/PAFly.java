@@ -101,17 +101,6 @@ public class PAFly {
         Tmap = s.getDomain("T").getMap(); if (Tmap == null) Tmap = new IndexMap("type");
         Nmap = s.getDomain("N").getMap(); if (Nmap == null) Nmap = new IndexMap("name");
         
-        for (Iterator i = Tmap.iterator(); i.hasNext(); ) {
-            String st = (String) i.next();
-            jq_Reference t;
-            if (st.equals("null") || st.equals("NULL_TYPE")) t = null;
-            else t = (jq_Reference) jq_Type.parseType(st);
-            visitType(t);
-        }
-        
-        // Add the default static variables (System in/out/err...)
-        GlobalNode.GLOBAL.addDefaultStatics();
-        
         if (subtypes != null) {
             OfflineSubtypeHelper subtypeHelper = new OfflineSubtypeHelper();
             for (Iterator i = subtypeHelper.allClasses().iterator(); i.hasNext(); ) {
@@ -134,6 +123,18 @@ public class PAFly {
                 }
             }
         }
+        
+        for (Iterator i = Tmap.iterator(); i.hasNext(); ) {
+            String st = (String) i.next();
+            jq_Reference t;
+            if (st.equals("null") || st.equals("NULL_TYPE")) t = null;
+            else t = (jq_Reference) jq_Type.parseType(st);
+            visitType(t);
+        }
+        
+        // Add the default static variables (System in/out/err...)
+        GlobalNode.GLOBAL.addDefaultStatics();
+        
     }
     
     static String canonicalizeClassName(String s) {
