@@ -221,6 +221,22 @@
       <url>http://weka.sourceforge.net/</url>
     </dependency>
     
+    <dependency>
+      <groupId>jwutil</groupId>
+      <artifactId>jwutil</artifactId>
+      <version>1.0</version>
+      <jar>jwutil-1.0.jar</jar>
+      <url>http://joeq.sourceforge.net/jwutil/</url>
+    </dependency>
+    
+    <dependency>
+      <groupId>jdom</groupId>
+      <artifactId>jdom</artifactId>
+      <version>1.0</version>
+      <jar>jdom.jar</jar>
+      <url>http://www.jdom.org/</url>
+     </dependency>
+    
   </dependencies>
 
   <build>
