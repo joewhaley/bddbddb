@@ -3,8 +3,10 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.io.IOException;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 
@@ -299,5 +301,17 @@ public abstract class Relation {
      */
     public int hashCode() {
         return id;
+    }
+
+    /**
+     * @return  map from names to variables
+     */
+    public Map getAttribNameMap() {
+        HashMap nameToAttrib = new HashMap();
+        for (Iterator i = attributes.iterator(); i.hasNext(); ) {
+            Attribute a = (Attribute) i.next();
+            nameToAttrib.put(a.attributeName, a);
+        }
+        return nameToAttrib;
     }
 }
