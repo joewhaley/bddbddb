@@ -442,7 +442,7 @@ public class BDDSolver extends Solver {
         return this.bdd;
     }
     
-    // FindBestOrder stuff below.
+    // FindBestDomainOrder stuff below.
     Map orderingConstraints;
     
     /**
