@@ -1,4 +1,7 @@
 
+### Object-sensitive Java pointer analysis.
+### Author: John Whaley
+
 .basedir "pa.joeq"
 
 ### Domains
