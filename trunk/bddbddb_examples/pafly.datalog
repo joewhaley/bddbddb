@@ -133,7 +133,9 @@ returnNewObject(i) :- IE(i,m), getMethod(m). modifies mapIH
 hT(h,t) :- IE(i,m), getMethod(m), Iret(i,v), mapIH(i,h), vT(v,t).
 returnNewObject(i) :- IE(i,m), newInstance(m). modifies mapIH
 
-classObjectType (heap:H0, type:T0) outputtuples
+classObjectType (heap:H0, type:T0) outputtuples { \
+    PAFly.addToClassObjectType(classObjectType); \
+}
 classObjectType(hc,t) :- forName(m), IE(i,m), mapIH(i,hc), actual(i,1,v), vP(v,h), stringToType(h,t).
 classObjectType(hc,t) :- getClass(m), IE(i,m), mapIH(i,hc), actual(i,0,v), vP(v,h), hT(h,t).
 
