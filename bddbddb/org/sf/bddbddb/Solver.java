@@ -1289,6 +1289,12 @@ public abstract class Solver {
                     out.print(at);
                     out.print('=');
                     out.print(at.attributeDomain.toString((int) a[k]));
+                    if (at.attributeDomain.map != null &&
+                        a[k] >= 0 && a[k] < at.attributeDomain.map.size()) {
+                        out.print('(');
+                        out.print(k);
+                        out.print(')');
+                    }
                 }
                 out.println(")");
             }
