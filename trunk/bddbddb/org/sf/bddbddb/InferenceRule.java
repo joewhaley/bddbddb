@@ -44,8 +44,7 @@ public abstract class InferenceRule implements IterationElement {
     Relation[] oldRelationValues;
     boolean split;
     boolean TRACE, TRACE_FULL;
-    boolean incrementalize = !System.getProperty("incremental", "yes").equals(
-        "no");
+    boolean incrementalize = !System.getProperty("incremental", "yes").equals("no");
     boolean cache_before_rename = true;
 
     /**
