@@ -436,14 +436,14 @@ public abstract class Solver {
      * @return
      * @throws IOException
      */
-    boolean parseDatalogLine(String s, MyReader in) throws IOException {
-        if (s.length() == 0) return false;
-        if (s.startsWith("#")) return false;
+    Object parseDatalogLine(String s, MyReader in) throws IOException {
+        if (s.length() == 0) return null;
+        if (s.startsWith("#")) return null;
         int lineNum = in.getLineNumber();
         if (s.startsWith(".")) {
             // directive
             parseDirective(in, lineNum, s);
-            return true;
+            return null;
         }
         MyStringTokenizer st = new MyStringTokenizer(s);
         if (st.hasMoreTokens()) {
@@ -466,7 +466,7 @@ public abstract class Solver {
                     } else {
                         nameToDomain.put(fd.name, fd);
                     }
-                    return false;
+                    return fd;
                 }
             }
         }
@@ -475,7 +475,7 @@ public abstract class Solver {
             InferenceRule ir = parseRule(lineNum, s);
             if (TRACE) out.println("Parsed rule " + ir);
             rules.add(ir);
-            return true;
+            return Collections.singletonList(ir);
         } else if (s.indexOf("?") > 0) {
             // query
             List/*<InferenceRule>*/ ir = parseQuery(lineNum, s);
@@ -483,12 +483,12 @@ public abstract class Solver {
                 if (TRACE) out.println("Parsed query " + ir);
                 rules.addAll(ir);
             }
-            return true;
+            return ir;
         } else {
             // relation
             Relation r = parseRelation(lineNum, s);
             if (TRACE && r != null) out.println("Parsed relation " + r);
-            return false;
+            return r;
         }
     }
 
