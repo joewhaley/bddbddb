@@ -890,6 +890,12 @@ public class BDDInferenceRule extends InferenceRule {
             Variable v1 = (Variable) arg1;
             BDDDomain d0 = (BDDDomain) variableToBDDDomain.get(v0);
             BDDDomain d1 = (BDDDomain) variableToBDDDomain.get(v1);
+            if (d0 == null) {
+                if (d1 == null) return 0;
+                return 1;
+            } else if (d1 == null) {
+                return -1;
+            }
             int index0 = varorder.indexOf(d0.getName());
             int index1 = varorder.indexOf(d1.getName());
             if (index0 < index1) return -1;
@@ -913,6 +919,7 @@ public class BDDInferenceRule extends InferenceRule {
      */
     void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, RuleTerm r1, RuleTerm r2, Collection vars1, Collection vars2) {
         Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
+        allVarSet.removeAll(unnecessaryVariables);
         Object[] a = allVarSet.toArray();
         // Sort the variables by domain so that we will first try orders that are close
         // to the default one.
