@@ -161,11 +161,15 @@ public class MyId3 extends Classifier {
             m_Attribute = null;
             m_Distribution = new double[data.numClasses()];
             Enumeration instEnum = data.enumerateInstances();
+            double sum = 0;
             while (instEnum.hasMoreElements()) {
                 Instance inst = (Instance) instEnum.nextElement();
                 m_Distribution[(int) inst.classValue()]++;
+                sum += 1;
             }
-            Utils.normalize(m_Distribution);
+            //laplace smooth the distribution instead
+            laplaceSmooth(m_Distribution, sum, data.numClasses());
+            //Utils.normalize(m_Distribution);
             m_ClassValue = Utils.maxIndex(m_Distribution);
             m_ClassAttribute = data.classAttribute();
         } else {
@@ -174,6 +178,12 @@ public class MyId3 extends Classifier {
                 m_Successors[j] = new MyId3();
                 m_Successors[j].buildClassifier(splitData[j]);
             }
+        }
+    }
+    
+    public void laplaceSmooth(double [] dist, double sum, int numClasses){
+        for(int i = 0; i < dist.length; ++i){
+            dist[i] = (dist[i] + 1)/ (sum + numClasses);
         }
     }
 
