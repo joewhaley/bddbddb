@@ -15,9 +15,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.io.IOException;
-import org.sf.bddbddb.ir.BDDInterpreter;
-import org.sf.bddbddb.ir.Interpreter;
-import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.LinearSet;
@@ -200,28 +197,6 @@ public class BDDInferenceRule extends InferenceRule {
      */
     public boolean update() {
         ++updateCount;
-        if (false) { // use_ir
-            solver.out.println(this);
-            List ir;
-            if (!incrementalize || updateCount == 1) ir = this.generateIR();
-            else ir = this.generateIR_incremental();
-            Interpreter interpret = new BDDInterpreter();
-            boolean anyChange = false;
-            for (Iterator i = ir.iterator(); i.hasNext();) {
-                Operation o = (Operation) i.next();
-                solver.out.println(o);
-                BDDRelation dest = (BDDRelation) o.getDest();
-                BDD oldValue = null;
-                if (!anyChange) oldValue = dest.getBDD().id();
-                o.visit(interpret);
-                if (!anyChange) {
-                    anyChange = !oldValue.equals(dest.getBDD());
-                    if (anyChange) solver.out.println("Changed!");
-                    oldValue.free();
-                }
-            }
-            return anyChange;
-        }
         if (incrementalize) {
             if (oldRelationValues != null) return updateIncremental();
         }

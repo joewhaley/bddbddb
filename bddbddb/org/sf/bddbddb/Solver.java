@@ -17,6 +17,9 @@ import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
+import org.sf.bddbddb.ir.Interpreter;
+import org.sf.bddbddb.util.Assert;
+import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.MyStringTokenizer;
 import org.sf.bddbddb.util.Pair;
 import org.sf.bddbddb.util.SystemProperties;
@@ -36,9 +39,25 @@ public abstract class Solver {
     boolean REPORT_STATS = true;
     boolean TRACE = System.getProperty("tracesolve") != null;
     boolean TRACE_FULL = System.getProperty("fulltracesolve") != null;
+    boolean USE_IR = !System.getProperty("useir", "no").equals("no");
     boolean PRINT_IR = System.getProperty("printir") != null;
     PrintStream out = System.out;
     String basedir = System.getProperty("basedir");
+
+    IndexMap/*<Relation>*/ relations;
+    Map/* <String,Domain> */nameToDomain;
+    Map/* <String,Relation> */nameToRelation;
+    Map/* <Domain,Relation> */equivalenceRelations;
+    Map/* <Domain,Relation> */notequivalenceRelations;
+    List/* <InferenceRule> */rules;
+    Collection/* <Relation> */relationsToLoad;
+    Collection/* <Relation> */relationsToLoadTuples;
+    Collection/* <Relation> */relationsToDump;
+    Collection/* <Relation> */relationsToDumpNegated;
+    Collection/* <Relation> */relationsToDumpTuples;
+    Collection/* <Relation> */relationsToDumpNegatedTuples;
+    Collection/* <Relation> */relationsToPrintSize;
+    Collection/* <Dot> */dotGraphsToDump;
 
     abstract InferenceRule createInferenceRule(List/* <RuleTerm> */top,
         RuleTerm bottom);
@@ -50,6 +69,14 @@ public abstract class Solver {
     abstract Relation createRelation(String name,
         List/* <Attribute> */attributes);
 
+    int registerRelation(Relation r) {
+        int i = relations.get(r);
+        Assert._assert(i == relations.size()-1);
+        Object old = nameToRelation.put(r.name, r);
+        Assert._assert(old == null);
+        return i;
+    }
+    
     NumberingRule createNumberingRule(InferenceRule ir) {
         return new NumberingRule(this, ir);
     }
@@ -59,6 +86,7 @@ public abstract class Solver {
     }
 
     public void clear() {
+        relations = new IndexMap("relations");
         nameToDomain = new HashMap();
         nameToRelation = new HashMap();
         equivalenceRelations = new HashMap();
@@ -105,20 +133,11 @@ public abstract class Solver {
     public Relation getRelation(String name) {
         return (Relation) nameToRelation.get(name);
     }
-    Map/* <String,Domain> */nameToDomain;
-    Map/* <String,Relation> */nameToRelation;
-    Map/* <Domain,Relation> */equivalenceRelations;
-    Map/* <Domain,Relation> */notequivalenceRelations;
-    List/* <InferenceRule> */rules;
-    Collection/* <Relation> */relationsToLoad;
-    Collection/* <Relation> */relationsToLoadTuples;
-    Collection/* <Relation> */relationsToDump;
-    Collection/* <Relation> */relationsToDumpNegated;
-    Collection/* <Relation> */relationsToDumpTuples;
-    Collection/* <Relation> */relationsToDumpNegatedTuples;
-    Collection/* <Relation> */relationsToPrintSize;
-    Collection/* <Dot> */dotGraphsToDump;
-
+    
+    public Relation getRelation(int index) {
+        return (Relation) relations.get(index);
+    }
+    
     public static void main(String[] args) throws IOException,
         InstantiationException, IllegalAccessException, ClassNotFoundException {
         String inputFilename = System.getProperty("datalog");
@@ -166,7 +185,6 @@ public abstract class Solver {
         if (dis.NOISY) dis.out.print("Initializing solver: ");
         dis.initialize();
         if (dis.NOISY) dis.out.println("done.");
-        if (dis.PRINT_IR) dis.printIR();
         if (dis.NOISY) dis.out.print("Loading initial relations: ");
         long time = System.currentTimeMillis();
         dis.loadInitialRelations();
@@ -323,16 +341,7 @@ public abstract class Solver {
             } else {
                 // relation
                 Relation r = parseRelation(lineNum, s);
-                if (TRACE) out.println("Parsed relation " + r);
-                if (nameToRelation.containsKey(r.name)) {
-                    System.err.println("Error, relation " + r.name
-                        + " redefined on line " + in.getLineNumber()
-                        + ", ignoring.");
-                    // Remove relation from lists.
-                    deleteRelation(r);
-                } else {
-                    nameToRelation.put(r.name, r);
-                }
+                if (TRACE && r != null) out.println("Parsed relation " + r);
                 continue;
             }
         }
@@ -544,6 +553,13 @@ public abstract class Solver {
                 throw new IllegalArgumentException();
             }
         }
+        if (nameToRelation.containsKey(name)) {
+            System.err.println("Error, relation " + name
+                + " redefined on line " + lineNum
+                + ", ignoring.");
+            return null;
+        }
+        
         Relation r = createRelation(name, attributes);
         while (st.hasMoreTokens()) {
             String option = nextToken(st);
@@ -793,6 +809,7 @@ public abstract class Solver {
     }
 
     void loadInitialRelations() throws IOException {
+        if (USE_IR) return;
         for (Iterator i = relationsToLoad.iterator(); i.hasNext();) {
             Relation r = (Relation) i.next();
             try {
@@ -831,6 +848,7 @@ public abstract class Solver {
     }
 
     void saveResults() throws IOException {
+        if (USE_IR) return;
         for (Iterator i = relationsToPrintSize.iterator(); i.hasNext();) {
             Relation r = (Relation) i.next();
             double size = r.dsize();
@@ -865,15 +883,36 @@ public abstract class Solver {
         }
     }
 
-    void printIR() {
-        for (Iterator i = rules.iterator(); i.hasNext();) {
-            InferenceRule ir = (InferenceRule) i.next();
-            System.out.println(ir);
-            List instr = ir.generateIR();
-            for (Iterator j = instr.iterator(); j.hasNext();) {
-                System.out.println(j.next());
-            }
-            System.out.println();
-        }
+    /**
+     * @return
+     */
+    public abstract Interpreter getInterpreter();
+
+    /**
+     * @return
+     */
+    public int getNumberOfRelations() {
+        return relations.size();
+    }
+
+    /**
+     * @return
+     */
+    public List getRules() {
+        return rules;
+    }
+
+    /**
+     * @return
+     */
+    public Collection getRelationsToLoad() {
+        return relationsToLoad;
+    }
+    
+    /**
+     * @return
+     */
+    public Collection getRelationsToSave() {
+        return relationsToDump;
     }
 }

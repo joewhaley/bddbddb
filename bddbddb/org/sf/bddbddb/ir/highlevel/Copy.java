@@ -1,26 +1,26 @@
-// Invert.java, created Jul 1, 2004 11:04:17 PM by joewhaley
+// Copy.java, created Jul 2, 2004 12:28:31 PM 2004 by jwhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
- * Invert
+ * Copy
  * 
- * @author John Whaley
+ * @author jwhaley
  * @version $Id$
  */
-public class Invert extends Operation {
+public class Copy extends HighLevelOperation {
     Relation r0, r1;
 
     /**
      * @param r0
      * @param r1
      */
-    public Invert(Relation r0, Relation r1) {
+    public Copy(Relation r0, Relation r1) {
         super();
         this.r0 = r0;
         this.r1 = r1;
@@ -29,19 +29,19 @@ public class Invert extends Operation {
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
      */
-    public Object visit(OperationVisitor i) {
+    public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#toString()
+     * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = invert(" + r1.toString() + ")";
+        return r0.toString() + " = copy(" + r1.toString() + ")";
     }
 
     /*
@@ -60,5 +60,12 @@ public class Invert extends Operation {
      */
     public List getSrcs() {
         return Collections.singletonList(r1);
+    }
+    
+    /**
+     * @return Returns the source relation.
+     */
+    public Relation getSrc() {
+        return r1;
     }
 }

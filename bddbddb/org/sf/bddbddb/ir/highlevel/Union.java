@@ -1,7 +1,7 @@
 // Union.java, created Jun 29, 2004 1:32:45 PM 2004 by jwhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import org.sf.bddbddb.Relation;
 
@@ -33,9 +33,9 @@ public class Union extends BooleanOperation {
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
      */
-    public Object visit(OperationVisitor i) {
+    public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
 }

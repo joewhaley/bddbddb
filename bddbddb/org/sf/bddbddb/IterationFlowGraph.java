@@ -5,13 +5,13 @@ package org.sf.bddbddb;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.LinkedList;
-import org.sf.bddbddb.util.SCComponent;
-import org.sf.bddbddb.util.MultiMap;
+import java.util.List;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.HashWorklist;
+import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Pair;
+import org.sf.bddbddb.util.SCComponent;
 
 /**
  * IterationFlowGraph
@@ -137,13 +137,6 @@ public class IterationFlowGraph {
 
     public IterationList getIterationList() {
         return iterationElements;
-    }
-
-    public void iterate() {
-        for (Iterator it = iterationElements.iterator(); it.hasNext();) {
-            IterationElement elem = (IterationElement) it.next();
-            elem.update();
-        }
     }
 
     public IterationList expand() {

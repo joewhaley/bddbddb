@@ -1,7 +1,7 @@
 // Rename.java, created Jun 29, 2004 12:25:20 PM 2004 by jwhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -15,7 +15,7 @@ import org.sf.bddbddb.Relation;
  * @author jwhaley
  * @version $Id$
  */
-public class Rename extends Operation {
+public class Rename extends HighLevelOperation {
     Relation r0, r1;
     Map/* <Pair,Attribute> */renames;
 
@@ -54,9 +54,9 @@ public class Rename extends Operation {
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
      */
-    public Object visit(OperationVisitor i) {
+    public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
 
@@ -76,5 +76,19 @@ public class Rename extends Operation {
      */
     public List getSrcs() {
         return Collections.singletonList(r1);
+    }
+    
+    /**
+     * @return Returns the source relation.
+     */
+    public Relation getSrc() {
+        return r1;
+    }
+    
+    /**
+     * @return
+     */
+    public Map getRenameMap() {
+        return renames;
     }
 }

@@ -4,6 +4,7 @@
 package org.sf.bddbddb.ir;
 
 import java.util.List;
+import org.sf.bddbddb.IterationElement;
 import org.sf.bddbddb.Relation;
 
 /**
@@ -12,9 +13,9 @@ import org.sf.bddbddb.Relation;
  * @author jwhaley
  * @version $Id$
  */
-public abstract class Operation {
+public abstract class Operation implements IterationElement {
     static int opNumber = 0;
-    public int id;
+    public final int id;
 
     public Operation() {
         id = ++opNumber;
@@ -41,5 +42,5 @@ public abstract class Operation {
     /**
      * @return
      */
-    public abstract List/* <Relation> */getSrcs();
+    public abstract List/*<Relation>*/ getSrcs();
 }

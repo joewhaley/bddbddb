@@ -1,37 +1,35 @@
-// Copy.java, created Jul 2, 2004 12:28:31 PM 2004 by jwhaley
+// Load.java, created Jul 4, 2004 3:47:13 AM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
- * Copy
+ * Load
  * 
- * @author jwhaley
+ * @author John Whaley
  * @version $Id$
  */
-public class Copy extends Operation {
-    Relation r0, r1;
+public class Load extends HighLevelOperation {
+    Relation r0;
 
     /**
      * @param r0
-     * @param r1
      */
-    public Copy(Relation r0, Relation r1) {
+    public Load(Relation r0) {
         super();
         this.r0 = r0;
-        this.r1 = r1;
     }
 
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
      */
-    public Object visit(OperationVisitor i) {
+    public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
 
@@ -41,7 +39,7 @@ public class Copy extends Operation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString() + " = copy(" + r1.toString() + ")";
+        return r0.toString() + " = load()";
     }
 
     /*
@@ -59,6 +57,7 @@ public class Copy extends Operation {
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {
-        return Collections.singletonList(r1);
+        return Collections.EMPTY_LIST;
     }
+    
 }

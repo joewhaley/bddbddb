@@ -12,7 +12,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.sf.bddbddb.ir.*;
+import org.sf.bddbddb.ir.highlevel.Copy;
+import org.sf.bddbddb.ir.highlevel.Difference;
+import org.sf.bddbddb.ir.highlevel.GenConstant;
+import org.sf.bddbddb.ir.highlevel.Invert;
+import org.sf.bddbddb.ir.highlevel.Join;
+import org.sf.bddbddb.ir.highlevel.JoinConstant;
+import org.sf.bddbddb.ir.highlevel.Project;
+import org.sf.bddbddb.ir.highlevel.Rename;
+import org.sf.bddbddb.ir.highlevel.Union;
+import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.LinearMap;
@@ -260,8 +269,6 @@ public abstract class InferenceRule implements IterationElement {
             Relation newRelation = solver.createRelation(relationName,
                 attributes);
             if (TRACE) solver.out.println("New relation: " + newRelation);
-            Object o = solver.nameToRelation.put(newRelation.name, newRelation);
-            Assert._assert(o == null);
             RuleTerm newBottom = new RuleTerm(newVariables, newRelation);
             InferenceRule newRule = solver.createInferenceRule(newTop,
                 newBottom);

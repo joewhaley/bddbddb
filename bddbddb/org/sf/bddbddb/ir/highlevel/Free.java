@@ -1,25 +1,25 @@
-// Universe.java, created Jul 1, 2004 11:01:59 PM by joewhaley
+// Free.java, created Jul 1, 2004 12:42:19 PM 2004 by jwhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-package org.sf.bddbddb.ir;
+package org.sf.bddbddb.ir.highlevel;
 
 import java.util.Collections;
 import java.util.List;
 import org.sf.bddbddb.Relation;
 
 /**
- * Universe
+ * Free
  * 
- * @author John Whaley
+ * @author jwhaley
  * @version $Id$
  */
-public class Universe extends Operation {
+public class Free extends HighLevelOperation {
     Relation r;
 
     /**
      * @param r
      */
-    public Universe(Relation r) {
+    public Free(Relation r) {
         super();
         this.r = r;
     }
@@ -27,9 +27,9 @@ public class Universe extends Operation {
     /*
      * (non-Javadoc)
      * 
-     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.OperationVisitor)
+     * @see org.sf.bddbddb.ir.Operation#visit(org.sf.bddbddb.ir.HighLevelOperationVisitor)
      */
-    public Object visit(OperationVisitor i) {
+    public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
 
@@ -39,7 +39,7 @@ public class Universe extends Operation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r.toString() + " = universe()";
+        return "free(" + r.toString() + ")";
     }
 
     /*
@@ -48,7 +48,7 @@ public class Universe extends Operation {
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getDest() {
-        return r;
+        return null;
     }
 
     /*
@@ -57,6 +57,13 @@ public class Universe extends Operation {
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {
-        return Collections.EMPTY_LIST;
+        return Collections.singletonList(r);
+    }
+    
+    /**
+     * @return Returns the source relation.
+     */
+    public Relation getSrc() {
+        return r;
     }
 }

@@ -10,22 +10,23 @@ import java.util.List;
 import java.util.Map;
 import org.sf.bddbddb.IterationList;
 import org.sf.bddbddb.Relation;
-import org.sf.bddbddb.ir.Copy;
-import org.sf.bddbddb.ir.Difference;
-import org.sf.bddbddb.ir.Free;
-import org.sf.bddbddb.ir.GenConstant;
-import org.sf.bddbddb.ir.Invert;
-import org.sf.bddbddb.ir.Join;
-import org.sf.bddbddb.ir.JoinConstant;
-import org.sf.bddbddb.ir.Load;
 import org.sf.bddbddb.ir.Operation;
 import org.sf.bddbddb.ir.OperationVisitor;
-import org.sf.bddbddb.ir.Project;
-import org.sf.bddbddb.ir.Rename;
-import org.sf.bddbddb.ir.Save;
-import org.sf.bddbddb.ir.Union;
-import org.sf.bddbddb.ir.Universe;
-import org.sf.bddbddb.ir.Zero;
+import org.sf.bddbddb.ir.highlevel.Copy;
+import org.sf.bddbddb.ir.highlevel.Difference;
+import org.sf.bddbddb.ir.highlevel.Free;
+import org.sf.bddbddb.ir.highlevel.GenConstant;
+import org.sf.bddbddb.ir.highlevel.Invert;
+import org.sf.bddbddb.ir.highlevel.Join;
+import org.sf.bddbddb.ir.highlevel.JoinConstant;
+import org.sf.bddbddb.ir.highlevel.Load;
+import org.sf.bddbddb.ir.highlevel.Project;
+import org.sf.bddbddb.ir.highlevel.Rename;
+import org.sf.bddbddb.ir.highlevel.Save;
+import org.sf.bddbddb.ir.highlevel.Union;
+import org.sf.bddbddb.ir.highlevel.Universe;
+import org.sf.bddbddb.ir.highlevel.Zero;
+import org.sf.bddbddb.ir.lowlevel.Relprod;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.Pair;
 
@@ -118,9 +119,7 @@ public class ConstantProp extends RelationProblem {
     boolean isSame(ConstantPropFact f1, ConstantPropFact f2) {
         return f1 != BOTTOM && f1.equals(f2);
     }
-    public class ConstantPropTF extends TransferFunction
-        implements
-            OperationVisitor {
+    public class ConstantPropTF extends TransferFunction implements OperationVisitor {
         Operation op;
 
         public ConstantPropTF(Operation op) {
@@ -142,7 +141,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Join)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Join)
          */
         public Object visit(Join op) {
             List srcs = op.getSrcs();
@@ -158,7 +157,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Project)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Project)
          */
         public Object visit(Project op) {
             List srcs = op.getSrcs();
@@ -171,7 +170,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Rename)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Rename)
          */
         public Object visit(Rename op) {
             List srcs = op.getSrcs();
@@ -184,7 +183,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Union)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Union)
          */
         public Object visit(Union op) {
             List srcs = op.getSrcs();
@@ -201,7 +200,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Difference)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Difference)
          */
         public Object visit(Difference op) {
             List srcs = op.getSrcs();
@@ -218,7 +217,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.JoinConstant)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.JoinConstant)
          */
         public Object visit(JoinConstant op) {
             List srcs = op.getSrcs();
@@ -231,7 +230,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.GenConstant)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.GenConstant)
          */
         public Object visit(GenConstant op) {
             return allocNewRelation(op.getDest(), op);
@@ -240,7 +239,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Free)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Free)
          */
         public Object visit(Free op) {
             return allocNewRelation(op.getDest(), op);
@@ -249,7 +248,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Universe)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Universe)
          */
         public Object visit(Universe op) {
             return allocNewRelation(op.getDest(), op);
@@ -258,7 +257,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Zero)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Zero)
          */
         public Object visit(Zero op) {
             return ZERO;
@@ -267,7 +266,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Invert)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Invert)
          */
         public Object visit(Invert op) {
             return allocNewRelation(op.getDest(), op);
@@ -276,7 +275,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Copy)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Copy)
          */
         public Object visit(Copy op) {
             List srcs = op.getSrcs();
@@ -288,7 +287,7 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Load)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Load)
          */
         public Object visit(Load op) {
             return allocNewRelation(op.getDest(), op);
@@ -297,10 +296,22 @@ public class ConstantProp extends RelationProblem {
         /*
          * (non-Javadoc)
          * 
-         * @see org.sf.bddbddb.ir.OperationVisitor#visit(org.sf.bddbddb.ir.Save)
+         * @see org.sf.bddbddb.ir.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.Save)
          */
         public Object visit(Save op) {
             return null;
+        }
+
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Relprod)
+         */
+        public Object visit(Relprod op) {
+            Relation r1 = op.getSrc1();
+            Relation r2 = op.getSrc2();
+            ConstantPropFact f1 = getRepresentativeFact(r1, op);
+            ConstantPropFact f2 = getRepresentativeFact(r2, op);
+            if (f1 == ZERO || f2 == ZERO) return ZERO;
+            return allocNewRelation(op.getDest(), op);
         }
     }
     public class ConstantPropFact extends RelationFact {
@@ -603,6 +614,13 @@ public class ConstantProp extends RelationProblem {
 
         public Object visit(Save op) {
             return op;
+        }
+
+        /* (non-Javadoc)
+         * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.Relprod)
+         */
+        public Object visit(Relprod op) {
+            return op; // for now.
         }
     }
 

@@ -10,5 +10,4 @@ package org.sf.bddbddb;
  * @version $Id$
  */
 public interface IterationElement {
-    public boolean update();
 }

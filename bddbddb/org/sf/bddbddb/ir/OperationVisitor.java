@@ -3,94 +3,15 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.ir;
 
+import org.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor;
+import org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor;
+
 /**
  * OperationVisitor
  * 
  * @author John Whaley
  * @version $Id$
  */
-public interface OperationVisitor {
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Join op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Project op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Rename op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Union op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Difference op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(JoinConstant op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(GenConstant op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Free op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Universe op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Zero op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Invert op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Copy op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Load op);
-
-    /**
-     * @param op
-     * @return
-     */
-    public abstract Object visit(Save op);
+public interface OperationVisitor extends HighLevelOperationVisitor, LowLevelOperationVisitor {
+    
 }
