@@ -767,4 +767,34 @@ public class BDDInferenceRule extends InferenceRule {
         }
     }
     
+    public String termToString(RuleTerm t) {
+        StringBuffer sb = new StringBuffer();
+        sb.append(t.relation);
+        sb.append("(");
+        for (Iterator i = t.variables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            sb.append(v);
+            BDDDomain d = (BDDDomain) variableToBDDDomain.get(v);
+            if (d != null) {
+                sb.append(':');
+                sb.append(d.getName());
+            }
+            if (i.hasNext()) sb.append(",");
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+    
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append(termToString(bottom));
+        sb.append(" :- ");
+        for (Iterator i = top.iterator(); i.hasNext(); ) {
+            RuleTerm t = (RuleTerm) i.next();
+            sb.append(termToString(t));
+            if (i.hasNext()) sb.append(", ");
+        }
+        sb.append(".");
+        return sb.toString();
+    }
 }
