@@ -35,6 +35,7 @@ public abstract class Solver {
     boolean REPORT_STATS = true;
     boolean TRACE = System.getProperty("tracesolve") != null;
     boolean TRACE_FULL = System.getProperty("fulltracesolve") != null;
+    boolean PRINT_IR = System.getProperty("printir") != null;
     PrintStream out = System.out;
     
     String basedir = System.getProperty("basedir");
@@ -160,6 +161,9 @@ public abstract class Solver {
         if (dis.NOISY) dis.out.print("Initializing solver: ");
         dis.initialize();
         if (dis.NOISY) dis.out.println("done.");
+        
+        if (dis.PRINT_IR)
+            dis.printIR();
         
         if (dis.NOISY) dis.out.print("Loading initial relations: ");
         long time = System.currentTimeMillis();
@@ -827,4 +831,15 @@ public abstract class Solver {
         }
     }
 
+    void printIR() {
+        for (Iterator i = rules.iterator(); i.hasNext(); ) {
+            InferenceRule ir = (InferenceRule) i.next();
+            System.out.println(ir);
+            List instr = ir.generateIR(this);
+            for (Iterator j = instr.iterator(); j.hasNext(); ) {
+                System.out.println(j.next());
+            }
+            System.out.println();
+        }
+    }
 }
