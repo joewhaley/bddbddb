@@ -1,9 +1,6 @@
-/*
- * Created on May 10, 2004
- *
- * To change the template for this generated file go to
- * Window - Preferences - Java - Code Generation - Code and Comments
- */
+//Attribute.java, created May 10, 2004 by cunkel
+//Copyright (C) 2004 cunkel
+//Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
 import java.util.Collection;
@@ -25,10 +22,10 @@ import org.sf.bddbddb.util.MyStringTokenizer;
 import org.sf.bddbddb.util.Worklist;
 
 /**
+ * Dot
+ * 
  * @author cunkel
- *
- * To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Generation - Code and Comments
+ * @version $Id$
  */
 public class Dot {
     private Solver solver;
