@@ -163,7 +163,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         }
         BDD b = r1.getBDD().id();
         if (any) {
-            if (TRACE) System.out.println("   Replace " + r1);
+            if (TRACE) System.out.println("   " + r0 +" = Replace " + r1);
             b.replaceWith(pair);
         }
         pair.reset();
@@ -201,7 +201,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDDRelation r2 = (BDDRelation) op.getSrc2();
         BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         BDD b2 = makeDomainsMatch(r2.getBDD().id(), r2, r0);
-        if (TRACE) System.out.println("   Diff " + r1 + "," + r2);
+        if (TRACE) System.out.println("   " + r0 + " = Diff " + r1 + "," + r2);
         b1.applyWith(b2, BDDFactory.diff);
         r0.setBDD(b1);
         if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount());
@@ -219,7 +219,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         Attribute a = op.getAttribute();
         long value = op.getValue();
         BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
-        if (TRACE) System.out.println("   And " + r1 + "," + r0.getBDDDomain(a) + ":" + value);
+        if (TRACE) System.out.println("   " + r0 + " = And " + r1 + "," + r0.getBDDDomain(a) + ":" + value);
         r.andWith(r0.getBDDDomain(a).ithVar(value));
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -235,7 +235,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         Attribute a = op.getAttribute();
         long value = op.getValue();
-        if (TRACE) System.out.println("   Ithvar " + r0.getBDDDomain(a) + ":" + value);
+        if (TRACE) System.out.println("   " + r0 + " = Ithvar " + r0.getBDDDomain(a) + ":" + value);
         BDD r = r0.getBDDDomain(a).ithVar(value);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -297,7 +297,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     public Object visit(Invert op) {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
-        if (TRACE) System.out.println("   Not " + r1);
+        if (TRACE) System.out.println("   " + r0 + " = Not " + r1);
         BDD r = makeDomainsMatch(r1.getBDD().not(), r1, r0);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -312,7 +312,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     public Object visit(Copy op) {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
-        if (TRACE) System.out.println("   Id " + r1);
+        if (TRACE) System.out.println("   " + r0 + " = Id " + r1);
         BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
@@ -368,7 +368,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDD b1 = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         BDD b2 = makeDomainsMatch(r2.getBDD().id(), r2, r0);
         BDD b3 = op.getProjectSet();
-        if (TRACE) System.out.println("   ApplyEx " + r1 + "," + r2 + "," + bddop + "," + op.getAttributes());
+        if (TRACE) System.out.println("   " + r0 + " = ApplyEx " + r1 + "," + r2 + "," + bddop + "," + op.getAttributes());
         BDD b = b1.applyEx(b2, bddop, b3);
         b1.free();
         b2.free();
@@ -404,7 +404,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
     public Object visit(Replace op) {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
-        if (TRACE) System.out.println("   Replace " + r1);
+        if (TRACE) System.out.println("   " + r0 + " = Replace " + r1);
         BDDPairing pair = op.getPairing(factory);
         BDD r = r1.getBDD().replace(pair);
         r0.setBDD(r);
