@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import org.sf.bddbddb.util.AppendIterator;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
+import org.sf.bddbddb.util.ListFactory;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Pair;
 import org.sf.bddbddb.util.PermutationGenerator;
@@ -52,7 +53,7 @@ public class BDDSolver extends Solver {
     public BDDSolver() {
         System.out.println("Initializing BDD library ("+BDDNODES+" nodes, cache size "+BDDCACHE+", min free "+BDDMINFREE+"%)");
         bdd = BDDFactory.init(BDDNODES, BDDCACHE);
-        fielddomainsToBDDdomains = new GenericMultiMap();
+        fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
         orderingConstraints = new HashMap();
         bdd.setMaxIncrease(BDDNODES/2);
         bdd.setMinFreeNodes(BDDMINFREE);
