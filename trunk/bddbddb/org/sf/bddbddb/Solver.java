@@ -1236,7 +1236,7 @@ public abstract class Solver {
         
         RuleTerm my_rt = new RuleTerm(r2, rt.variables);
         InferenceRule my_ir = createInferenceRule(Collections.singletonList(rt), my_rt);
-        my_ir.single = single;
+        //my_ir.single = single;
         if (TRACE) out.println("Adding rule: "+my_ir);
         newRules.add(my_ir);
         
@@ -1306,7 +1306,7 @@ public abstract class Solver {
                     Assert._assert(r4 != null, "no mapping for "+r3);
                     RuleTerm rt4 = new RuleTerm(r4, rt3.variables);
                     InferenceRule newrule2 = createInferenceRule(terms2, rt4);
-                    newrule2.single = single;
+                    //newrule2.single = single;
                     if (TRACE) out.println("Adding rule: "+newrule2);
                     newRules.add(newrule2);
                 }
