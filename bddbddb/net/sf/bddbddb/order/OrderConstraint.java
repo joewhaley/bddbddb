@@ -7,6 +7,7 @@ import java.util.Comparator;
 
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
+import net.sf.bddbddb.Constant;
 import net.sf.bddbddb.InferenceRule;
 import net.sf.bddbddb.Variable;
 import net.sf.bddbddb.XMLFactory;
@@ -36,10 +37,11 @@ public abstract class OrderConstraint {
         String s2 = b.toString();
         int c = s1.compareTo(s2);
         if (c == 0) {
-            c = ((Attribute) a).getRelation().toString().compareTo(((Attribute) b).getRelation().toString());
+            if (a instanceof Attribute)
+                c = ((Attribute) a).getRelation().toString().compareTo(((Attribute) b).getRelation().toString());
         }
-        Assert._assert(c != 0);
-        return c < 0;
+        //Assert._assert(c != 0);
+        return c <= 0;
     }
     
     public static OrderConstraint makeConstraint(int type, Object a, Object b) {

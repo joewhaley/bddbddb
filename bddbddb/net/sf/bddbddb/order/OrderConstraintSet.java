@@ -62,6 +62,18 @@ public class OrderConstraintSet {
         }
     }
     
+    public boolean constrain(Order c) {
+        return constrain(c.getConstraints());
+    }
+    
+    public boolean constrain(Collection c) {
+        for (Iterator i = c.iterator(); i.hasNext(); ) {
+            OrderConstraint oc = (OrderConstraint) i.next();
+            if (!constrain(oc)) return false;
+        }
+        return true;
+    }
+    
     public boolean constrain(OrderConstraint c) {
         if (set.contains(c)) return true;
         if (set.contains(c.getOpposite1())) return false;
@@ -346,6 +358,12 @@ public class OrderConstraintSet {
         return earliest;
     }
     
+    public boolean onlyOneOrder(int n) {
+        if (n == 0 || n == 1) return true;
+        int maxc = n * (n-1) / 2;
+        return set.size() == maxc;
+    }
+    
     static final double LOG2 = Math.log(2);
     
     public int approxNumOrders(int n) {
@@ -354,7 +372,7 @@ public class OrderConstraintSet {
         double result = Distributions.recurrenceA000670(n).doubleValue();
         double nc = Math.log(set.size()) / LOG2;
         if (nc < 0) nc = 0;
-        double maxc = Math.log(n * (n+1) / 2) / LOG2;
+        double maxc = Math.log(n * (n-1) / 2) / LOG2;
         if (maxc < 1) maxc = 1;
         double result2 = result - ((result - 1) * nc / maxc);
         double max = (double) Integer.MAX_VALUE;
