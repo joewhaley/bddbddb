@@ -88,6 +88,7 @@ public class BDDSolver extends Solver {
         super();
         System.out.println("Initializing BDD library (" + BDDNODES + " nodes, cache size " + BDDCACHE + ", min free " + BDDMINFREE + "%)");
         bdd = BDDFactory.init(1000, BDDCACHE);
+        System.out.println("Using BDD library "+bdd.getVersion());
         fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
         bdd.setMinFreeNodes(BDDMINFREE);
         fbo = new FindBestDomainOrder(this);
