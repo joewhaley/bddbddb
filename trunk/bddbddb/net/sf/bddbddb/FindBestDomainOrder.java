@@ -83,7 +83,7 @@ import weka.filters.unsupervised.attribute.PKIDiscretize;
  */
 public class FindBestDomainOrder {
     
-    public static int TRACE = 3;
+    public static int TRACE = 2;
     public static PrintStream out = System.out;
     
     static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
@@ -590,6 +590,7 @@ public class FindBestDomainOrder {
             //nf.setMinimumFractionDigits(3);
             nf.setMaximumFractionDigits(3);
         }
+        if (d == Double.MAX_VALUE) return "max";
         return nf.format(d);
     }
     
