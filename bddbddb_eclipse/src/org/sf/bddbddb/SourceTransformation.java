@@ -33,7 +33,6 @@ import org.sf.bddbddb.util.Graph;
 import org.sf.bddbddb.util.Navigator;
 import org.sf.bddbddb.util.SCComponent;
 import org.sf.bddbddb.util.SCCTopSortedGraph;
-;
 
 
 
@@ -55,6 +54,7 @@ public class SourceTransformation {
     private Map/*String, TypeParameter*/ typeVarDecl = new HashMap();
     private PrintStream out = System.out;
     private List/*SCComponent*/ sortedTypes; 
+    private Set singleTypes = new HashSet();
     
     SourceTransformation(PAFromSource p) {
         pa = p;
@@ -220,6 +220,7 @@ public class SourceTransformation {
             }
             
             ASTNode parent = arg0.getParent();
+            if (parent == null) return;
             out.println(parent.getClass());
             parent = parent.getParent();out.println(parent.getClass());
             // FIXME need to split the vds if instantiated with diff type params 
@@ -244,6 +245,30 @@ public class SourceTransformation {
        }
     }
 
+    public boolean visit(VariableDeclarationStatement arg0) {
+        List frags = arg0.fragments();
+        if (frags.size() == 1) {
+            VariableDeclarationFragment vdf = (VariableDeclarationFragment)frags.iterator().next();
+            
+            
+            
+            
+            
+        }
+        else {
+            for (Iterator i = frags.iterator(); i.hasNext(); ) {
+                VariableDeclarationFragment vdf = (VariableDeclarationFragment)i.next();
+                
+                
+            }    
+        }
+        
+        
+        return true;
+  }
+
+    
+    
     private ITypeBinding lub(ITypeBinding a, ITypeBinding b) {
         out.println("lub {"+ ((a == null) ? "null" : a.getKey() )+ ", "+((b == null) ? "null" :b.getKey()) + "}");
         // theres probably a much faster alg
@@ -430,18 +455,6 @@ public class SourceTransformation {
 //            tparams.add(param);
             
         }
-        public void endVisit(VariableDeclarationStatement arg0) {
-//            Type oldtype = arg0.getType();
-//            if (oldtype.isPrimitiveType()) return;
-//            
-//            Type param = ast.newPrimitiveType(PrimitiveType.INT);
-//            arg0.setType(param);
-//            ParameterizedType pt = ast.newParameterizedType(oldtype);
-//            arg0.setType(pt);
-//            
-//            List tparams = pt.typeArguments();
-//            tparams.add(param);   
-        }
 
 
 
@@ -527,6 +540,7 @@ public class SourceTransformation {
     
     public void run() throws IOException {
         loadMultiTypes();
+        //loadSingleTypes();
 
         Map javaASTs = pa.javaASTs;
         assignTypeVars();
@@ -727,6 +741,29 @@ public class SourceTransformation {
         in.close();  
         
         
+    }
+    
+    private void loadSingleTypes() throws IOException {
+        BufferedReader in = 
+            new BufferedReader(new FileReader(dumpPath + "singleType.rtuples"));
+        String line;
+        while ((line = in.readLine()) != null) {
+            if (line.startsWith("#")) continue;
+                    
+            Wrapper wrapper = (Wrapper)pa.TVmap.get(Integer.parseInt(line.trim()));
+            
+            if (wrapper instanceof StringWrapper) {
+                // skip
+            }
+            else if (wrapper instanceof ThisWrapper) {
+                // skip?
+            }
+            else if (wrapper instanceof ASTNodeWrapper) {
+                singleTypes.add(wrapper);
+            }
+            else throw new RuntimeException("unexpected node in singletype" + wrapper);
+        }        
+        in.close();               
     }
     
     private void loadMultiTypes() throws IOException {
