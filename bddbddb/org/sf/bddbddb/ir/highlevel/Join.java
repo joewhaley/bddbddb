@@ -6,6 +6,8 @@ package org.sf.bddbddb.ir.highlevel;
 import java.util.LinkedList;
 import java.util.List;
 import org.sf.bddbddb.Relation;
+import org.sf.javabdd.BDDFactory;
+import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
  * Join
@@ -45,4 +47,11 @@ public class Join extends BooleanOperation {
         return i.visit(this);
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.highlevel.BooleanOperation#getBDDOp()
+     */
+    public BDDOp getBDDOp() {
+        return BDDFactory.and;
+    }
+    
 }

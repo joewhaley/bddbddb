@@ -4,6 +4,8 @@
 package org.sf.bddbddb.ir.highlevel;
 
 import org.sf.bddbddb.Relation;
+import org.sf.javabdd.BDDFactory;
+import org.sf.javabdd.BDDFactory.BDDOp;
 
 /**
  * Difference
@@ -38,4 +40,12 @@ public class Difference extends BooleanOperation {
     public Object visit(HighLevelOperationVisitor i) {
         return i.visit(this);
     }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.highlevel.BooleanOperation#getBDDOp()
+     */
+    public BDDOp getBDDOp() {
+        return BDDFactory.diff;
+    }
+    
 }
