@@ -1579,22 +1579,37 @@ public class FindBestDomainOrder {
  }
  public static int NUM_CV_FOLDS = 10;
 
- public double genAccuracy(String cClassName, Instances data0) {
-     if (data0.numInstances() < NUM_CV_FOLDS)
+ public double leaveOneOutCV(Instances data, String cClassName){
+     return cvError(data.numInstances(), data, cClassName);
+ }
+ /**
+ * @param data
+ * @param cClassName
+ * @return Cross validation with number of folds as set by NUM_CV_FOLDS;
+ */
+public double constFoldCV( Instances data, String cClassName){
+     return cvError(NUM_CV_FOLDS, data, cClassName);
+ }
+ 
+ public double cvError(int numFolds, Instances data0, String cClassName) {
+     if (data0.numInstances() < numFolds)
          return Double.NaN; //more folds than elements
+     if(numFolds == 0)
+         return Double.NaN; // no folds
      if (data0.numInstances() == 0)
-         return Double.NaN; //no instances
+         return 0; //no instances
+
      Instances data = new Instances(data0);
-     //should stratify
-     data.randomize(new Random(System.currentTimeMillis()));
+     //data.randomize(new Random(System.currentTimeMillis()));
+     data.stratify(numFolds);
      Assert._assert(data.classAttribute() != null);
-     double[] estimates = new double[NUM_CV_FOLDS];
-     for (int i = 0; i < NUM_CV_FOLDS; ++i) {
-         Instances trainData = data.trainCV(NUM_CV_FOLDS, i);
+     double[] estimates = new double[numFolds];
+     for (int i = 0; i < numFolds; ++i) {
+         Instances trainData = data.trainCV(numFolds, i);
          Assert._assert(trainData.classAttribute() != null);
          Assert._assert(trainData.numInstances() != 0, "Cannot train classifier on 0 instances.");
 
-         Instances testData = data.testCV(NUM_CV_FOLDS, i);
+         Instances testData = data.testCV(numFolds, i);
          Assert._assert(testData.classAttribute() != null);
          Assert._assert(testData.numInstances() != 0, "Cannot test classifier on 0 instances.");
 
@@ -1603,25 +1618,29 @@ public class FindBestDomainOrder {
          Classifier classifier = buildClassifier(cClassName, trainData);
          TRACE = temp;
          int count = testData.numInstances();
+         double loss = 0;
+         double sum = 0;
          for (Enumeration e = testData.enumerateInstances(); e.hasMoreElements();) {
              Instance instance = (Instance) e.nextElement();
              Assert._assert(instance.classAttribute() != null && instance.classAttribute() == trainData.classAttribute());
              Assert._assert(instance != null);
              try {
                  double testClass = classifier.classifyInstance(instance);
+                 double weight = instance.weight();
                  if (testClass != instance.classValue())
-                     --count;
+                     loss+=weight;
+                 sum += weight;
              } catch (Exception ex) {
                  out.println("Exception while classifying: " + instance + "\n" + ex);
              }
          }
-         estimates[i] = count / (double) testData.numInstances();
+         estimates[i] = 1 - loss / sum;
      }
      double average = 0;
-     for (int i = 0; i < NUM_CV_FOLDS; ++i)
+     for (int i = 0; i < numFolds; ++i)
          average += estimates[i];
 
-     return average / NUM_CV_FOLDS;
+     return average / numFolds;
  }
  public static boolean DISCRETIZE1 = true;
  public static boolean DISCRETIZE2 = true;
@@ -1659,21 +1678,43 @@ public class FindBestDomainOrder {
      if (DISCRETIZE2) aDis = aData.discretize();
      if (DISCRETIZE3) dDis = dData.threshold(1000);
      
-     double vGenErr, aGenErr, dGenErr;
-     vGenErr = genAccuracy(CLASSIFIER1, vData);
-     aGenErr = genAccuracy(CLASSIFIER2, aData);
-     dGenErr = genAccuracy(CLASSIFIER3, dData);
+     long vCTime = System.currentTimeMillis();
+     double vConstCV = constFoldCV(vData, CLASSIFIER1);
+     vCTime = System.currentTimeMillis() - vCTime;
+     
+     long aCTime = System.currentTimeMillis();
+     double aConstCV = constFoldCV(aData, CLASSIFIER2);
+     aCTime = System.currentTimeMillis() - aCTime;
+     
+     long dCTime = System.currentTimeMillis();
+     double dConstCV = constFoldCV(dData, CLASSIFIER3);
+     dCTime = System.currentTimeMillis() - dCTime;
+     
+     long vLTime = System.currentTimeMillis();
+     double vLeaveCV = -1; //leaveOneOutCV(vData, CLASSIFIER1);
+     vLTime = System.currentTimeMillis() - vLTime;
+     
+     long aLTime = System.currentTimeMillis();
+     double aLeaveCV = -1; //leaveOneOutCV(aData, CLASSIFIER2);
+     aLTime = System.currentTimeMillis() - aLTime;
+     
+     long dLTime = System.currentTimeMillis();
+     double dLeaveCV = -1; //leaveOneOutCV(dData, CLASSIFIER3);
+     dLTime = System.currentTimeMillis() - dLTime;
      
      if (TRACE > 1) {
          out.println(" Var data points: "+vData.numInstances());
-         out.println(" Var Classifier Accuracy: " + vGenErr);
+         out.println(" Var Classifier " + NUM_CV_FOLDS + " fold CV Score: " + vConstCV + " took " + vCTime + " ms");
+         out.println(" Var Classifier leave one out CV Score: " + vLeaveCV + " took " + vLTime + " ms");
          out.println(" Var Classifier Weight: " + varClassWeight);
          //out.println(" Var data points: "+vData);
          out.println(" Attrib data points: "+aData.numInstances());
-         out.println(" Attrib Classifier Accuracy: " + aGenErr);
+         out.println(" Attrib Classifier " + NUM_CV_FOLDS + " fold CV Score : " + aConstCV + " took " + aCTime + " ms");
+         out.println(" Attrib Classifier leave one out CV Score: " + aLeaveCV + " took " + aLTime + " ms");
          out.println(" Attrib Classifier Weight: " + attrClassWeight);
          out.println(" Domain data points: "+dData.numInstances());
-         out.println(" Domain Classifier Accuracy: " + dGenErr);
+         out.println(" Domain Classifier " + NUM_CV_FOLDS + " fold CV Score: " + dConstCV + " took " + dCTime + " ms");
+         out.println(" Attrib Classifier leave one out CV Score: " + dLeaveCV + " took " + dLTime + " ms");
          out.println(" Domain Classifier Weight: " + domClassWeight);
          //out.println(" Domain data points: "+dData);
      
@@ -1723,7 +1764,7 @@ public class FindBestDomainOrder {
      OrderTranslator v2a = new VarToAttribTranslator(ir);
      OrderTranslator a2d = AttribToDomainTranslator.INSTANCE;
      OrderIterator i = new OrderIterator(allVars);
-     Order best = null; double bestScore = Double.MAX_VALUE;
+     Order best = null; double bestScore = Double.MAX_VALUE; double bestProb = 0;
      TrialPrediction prediction = null;
      Collection never = neverAgain.getValues(ir);
     
@@ -1734,11 +1775,15 @@ public class FindBestDomainOrder {
          
          double vScore = NO_CLASS, aScore = NO_CLASS, dScore = NO_CLASS;
          double vClass = NO_CLASS, aClass = NO_CLASS, dClass = NO_CLASS;
-         
+         double vClassProb = 0, aClassProb = 0, dClassProb = 0;
+         int probCount = 0;
          if (vClassifier != null) {
              OrderInstance vInst = OrderInstance.construct(o_v, vData);
              try {
                  vClass = vClassifier.classifyInstance(vInst);
+                 double [] classProbs = vClassifier.distributionForInstance(vInst);
+                 vClassProb = vClass != Double.NaN ? classProbs[(int) vClass] : vClassProb;
+                 ++probCount;
              } catch (Exception x) {
                  out.println("Exception while predicting "+vInst+" "+o_v+":\n"+x);
              }
@@ -1750,6 +1795,9 @@ public class FindBestDomainOrder {
              OrderInstance aInst = OrderInstance.construct(o_a, aData);
              try {
                  aClass = aClassifier.classifyInstance(aInst);
+                 double [] classProbs = aClassifier.distributionForInstance(aInst);
+                 aClassProb = aClass != Double.NaN ? classProbs[(int) aClass] : aClassProb;
+                 ++probCount;
              } catch (Exception x) {
                  out.println("Exception while predicting "+aInst+" "+o_a+":\n"+x);
              }
@@ -1761,6 +1809,9 @@ public class FindBestDomainOrder {
              OrderInstance dInst = OrderInstance.construct(o_d, dData);
              try {
                  dClass = dClassifier.classifyInstance(dInst);
+                 double [] classProbs = dClassifier.distributionForInstance(dInst);
+                 dClassProb = dClass != Double.NaN ? classProbs[(int) dClass] : dClassProb;
+                 ++probCount;
              } catch (Exception x) {
                  out.println("Exception while predicting "+dInst+" "+o_d+":\n"+x);
              }
@@ -1772,13 +1823,14 @@ public class FindBestDomainOrder {
          dScore = dClass == NO_CLASS ? NO_CLASS_SCORE : dBucketMeans[(int) dClass];
          // Combine the scores in some fashion.
          double score = vScore + aScore + dScore;
+         //combine probabilities somehow
+         double prob = probCount == 0 ? 0 : (vClassProb + aClassProb + dClassProb) / probCount;
          
          if (best == null || bestScore > score) {
-             if (TRACE > 1) out.println("Better order "+o_v+" score = "+score+" (v="+vScore+",a="+aScore+",d="+dScore+")");
+             if (TRACE > 1) out.println("Better order "+o_v+" score = "+score+" (v="+vScore+",a="+aScore+",d="+dScore+") probs = (v=" + vClassProb + ",a=" + aClassProb + ",d=" + dClassProb);
              best = o_v;
              bestScore = score;
-             
-             
+             bestProb = prob;
              double vLowerBound,vUpperBound, aLowerBound,aUpperBound, dLowerBound, dUpperBound;
              vLowerBound = vUpperBound = aLowerBound = aUpperBound = dLowerBound = dUpperBound = -1;
             
@@ -1830,21 +1882,21 @@ public class FindBestDomainOrder {
      
      // Calculate the accuracy of each classifier using cv folds.
      double vGenErr, aGenErr, dGenErr;
-     vGenErr = genAccuracy(CLASSIFIER1, vData);
-     aGenErr = genAccuracy(CLASSIFIER2, aData);
-     dGenErr = genAccuracy(CLASSIFIER3, dData);
+     vGenErr = constFoldCV(vData, CLASSIFIER1);
+     aGenErr = constFoldCV(aData, CLASSIFIER2);
+     dGenErr = constFoldCV(dData, CLASSIFIER3);
      
      if (TRACE > 1) {
          out.println(" Var data points: "+vData.numInstances());
-         out.println(" Var Classifier Accuracy: " + vGenErr);
+         out.println(" Var Classifier CV Score: " + vGenErr);
          out.println(" Var Classifier Weight: " + varClassWeight);
          //out.println(" Var data points: "+vData);
          out.println(" Attrib data points: "+aData.numInstances());
-         out.println(" Attrib Classifier Accuracy: " + aGenErr);
+         out.println(" Attrib Classifier CV Score: " + aGenErr);
          out.println(" Attrib Classifier Weight: " + attrClassWeight);
          //out.println(" Attrib data points: "+aData);
          out.println(" Domain data points: "+dData.numInstances());
-         out.println(" Domain Classifier Accuracy: " + dGenErr);
+         out.println(" Domain Classifier CV Score: " + dGenErr);
          out.println(" Domain Classifier Weight: " + domClassWeight);
          //out.println(" Domain data points: "+dData);
      
