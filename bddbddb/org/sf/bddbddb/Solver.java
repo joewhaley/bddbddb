@@ -23,7 +23,8 @@ import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
 import org.sf.bddbddb.InferenceRule.DependenceNavigator;
-import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
+import org.sf.bddbddb.dataflow.PartialOrder.BeforeConstraint;
+import org.sf.bddbddb.dataflow.PartialOrder.InterleavedConstraint;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.MyStringTokenizer;
@@ -58,6 +59,8 @@ public abstract class Solver {
     /** Print the IR before interpreting it. */
     boolean PRINT_IR = System.getProperty("printir") != null;
     
+    boolean LEARN_ALL_RULES = !System.getProperty("learnbestorder", "no").equals("no");
+    boolean LEARN_BEST_ORDER = !System.getProperty("learnbestorder", "no").equals("no");
     /** Trace output stream. */
     PrintStream out = System.out;
     
@@ -246,6 +249,8 @@ public abstract class Solver {
     public Relation getRelation(int index) {
         return (Relation) relations.get(index);
     }
+    
+    public IndexMap getRelations(){ return relations; }
 
     /**
      * Get all the equivalence relations.
@@ -687,6 +692,13 @@ public abstract class Solver {
             String val = "";
             if (s.length() > index) val = s.substring(index).trim();
             System.setProperty("findbestorder", val);
+        }else if (s.startsWith(".learnbestorder")){
+            int index = ".learnbestorder".length() + 1;
+            String val = "";
+            if (s.length() > index) val = s.substring(index).trim();
+            LEARN_BEST_ORDER = true;
+            LEARN_ALL_RULES = true;
+            System.setProperty("learnbestorder", val);
         } else if (s.startsWith(".incremental")) {
             int index = ".incremental".length() + 1;
             String val = "";
@@ -886,9 +898,9 @@ public abstract class Solver {
                 System.out.println("Specified Attribute not found: " + rightAttr);
                 throw new IllegalArgumentException();
             }
-            Constraint c = new Constraint(left, right, 10);
-            if (type.equals("=")) r.constraints.addInterleavedConstraint(c);
-            else if (type.equals("<")) r.constraints.addBeforeConstraint(c);
+            
+            if (type.equals("=")) r.constraints.addInterleavedConstraint(new InterleavedConstraint(r,left,r,right,10));
+            else if (type.equals("<")) r.constraints.addBeforeConstraint(new BeforeConstraint(r,left,r,right,10));
             if (TRACE) System.out.println("parsed constraint: " + leftAttr + " " + type + " " + rightAttr);
         } else {
             //handle error
@@ -971,6 +983,33 @@ public abstract class Solver {
             } else if (option.equals("findbestorder")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.find_best_order = true;
+            }else if(option.equals("learnbestorder")) {
+                BDDInferenceRule r = (BDDInferenceRule) ir;
+                r.learn_best_order = true;
+                LEARN_BEST_ORDER = true;
+            }else if(option.equals("training_set_size")){
+                nextToken(st);
+                String sizeToken= nextToken(st);
+                try{
+                    System.out.println("size: " + sizeToken);
+                    int size = Integer.parseInt(sizeToken);
+                    BDDInferenceRule r = (BDDInferenceRule) ir;
+                    r.getLearnedOrder().SIZE_OF_TRAINING_SET = size;
+                }catch(NumberFormatException e){
+                    outputError(lineNum, st.getPosition(), s, "Invalid number format for training_set_size \"" + option + "\"");
+                    throw new IllegalArgumentException();
+                }
+            }else if(option.equals("min_confidence")){
+                nextToken(st);
+                String confToken= nextToken(st);
+                try{
+                    double conf = Double.parseDouble(confToken);
+                    BDDInferenceRule r = (BDDInferenceRule) ir;
+                    r.getLearnedOrder().MIN_CONFIDENCE = conf;
+                }catch(NumberFormatException e){
+                    outputError(lineNum, st.getPosition(), s, "Invalid number format for min_confidence \"" + option + "\"");
+                    throw new IllegalArgumentException();
+                }
             } else if (option.equals("trace")) {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.TRACE = true;

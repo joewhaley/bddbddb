@@ -4,7 +4,6 @@
 package org.sf.bddbddb.ir;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -20,7 +19,10 @@ import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.dataflow.PartialOrder.ConstraintGraph;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
+import org.sf.bddbddb.util.GenericMultiMap;
+import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Pair;
+import org.sf.bddbddb.util.UnionFind;
 
 /**
  * UFDomainAssignment
@@ -29,7 +31,7 @@ import org.sf.bddbddb.util.Pair;
  * @version $Id$
  */
 public class PartialOrderDomainAssignment extends UFDomainAssignment {
-    List beforeConstraints;
+    Collection beforeConstraints;
     List ileavedConstraints;
 
     /**
@@ -47,7 +49,6 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
     
     public void doAssignment() {
         super.doAssignment();
-        setTotalOrder();
     }
 
     boolean wouldBeLegal(Object a1, Object a2) {
@@ -122,32 +123,39 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
         return !graph.isCycle(cycle);
     }
 
-    private List updateConstraints(List constraints) {
+    private List updateConstraints(Collection constraints) {
         List newCons = new LinkedList(constraints);
         List adds = new LinkedList();
         for (Iterator it = newCons.iterator(); it.hasNext();) {
             Pair c = (Pair) it.next();
             Object crep1 = uf.find(c.left);
             Object crep2 = uf.find(c.right);
+            if (crep1.equals(crep2)){
+                it.remove();
+                continue;
+            }
             if (!crep1.equals(c.left) || !crep2.equals(c.right)) {
                 it.remove();
-                //Assert._assert(crep1 != crep2, c.toString());
-                if (!crep1.equals(crep2)) adds.add(new Pair(crep1, crep2));
+                adds.add(new Pair(crep1, crep2));
             }
         }
         newCons.addAll(adds);
         return newCons;
     }
 
-    public String setTotalOrder() {
+    public void setVariableOrdering() {
+        TRACE = true;
         if (beforeConstraints.size() == 0 && ileavedConstraints.size() == 0) {
             if (TRACE) System.out.println("No constraints specified using default ordering");
-            return "";
+            super.setVariableOrdering();
         }
+      //  System.out.println("beforeConstraints: " + beforeConstraints);
         if (TRACE) System.out.println("Interleaved constraints: " + ileavedConstraints);
-        Map ileavedDomains = new HashMap();
+        //System.out.println("physical domains: " + physicalDomains);
+        MultiMap ileavedDomains = new GenericMultiMap();
         Collection nodes = new LinkedHashSet(physicalDomains.keySet());
-        int i = 0;
+        
+       
         for (Iterator it = ileavedConstraints.iterator(); it.hasNext();) {
             Pair c = (Pair) it.next();
             Object rep1 = uf.find(c.left);
@@ -177,17 +185,31 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
                 domains.add(physicalDomains.get(rep2));
             }
             if (TRACE) System.out.println("interleaved: " + domains);
-            ileavedDomains.put(newRep, domains);
+            ileavedDomains.addAll(newRep, domains);
         }
         beforeConstraints = updateConstraints(beforeConstraints);
-        Set visited = new HashSet();
+      //  Constraints cons = new Constraints(new TreeSet(beforeConstraints));
+       // cons.satisfy();
+      //  beforeConstraints = (SortedSet) cons.getBeforeConstraints();
         ConstraintGraph graph = new ConstraintGraph(nodes, beforeConstraints);
+        
         if (TRACE) System.out.println("Nodes: " + nodes);
         if (TRACE) System.out.println("Constraints: " + beforeConstraints);
-        if (TRACE) System.out.println("Order graph: " + graph);
+        String order = graphToOrder(TRACE, graph, uf, ileavedDomains, physicalDomains);
+        BDDSolver s = (BDDSolver) solver;
+        s.VARORDER = order;
+        s.setVariableOrdering();
+    }
+
+    public static String graphToOrder(boolean trace, ConstraintGraph graph, UnionFind uf, MultiMap ileavedDomains, Map domainMap){
+        
+        Set visited = new HashSet();
+        int i = 0;
+       if (trace) System.out.println("Order graph: " + graph);
         StringBuffer sb = new StringBuffer();
         for (Collection roots = graph.getRoots(); !roots.isEmpty();) {
-            if (TRACE) System.out.println("Roots: " + roots);
+            System.out.println("Nodes left: " + graph.getNodes());
+            if (trace) System.out.println("Roots: " + roots);
             for (Iterator it = roots.iterator(); it.hasNext();) {
                 Object root = it.next();
                 Object rep = uf.find(root);
@@ -195,16 +217,17 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
                     sb.append((i != 0) ? "_" : "");
                     i++;
                     visited.add(rep);
-                    if (TRACE) System.out.println("root: " + rep);
-                    List ileaved = (List) ileavedDomains.get(rep);
-                    if (ileaved != null) {
-                        if (TRACE) System.out.println("interleaved");
+                    if (trace) System.out.println("root: " + rep);
+                    Collection ileaved = ileavedDomains.getValues(rep);
+                    if (ileaved != null & ileaved.size() != 0) {
+                        
+                        if (trace) System.out.println("interleaved");
                         Iterator jt = ileaved.iterator();
                         sb.append(jt.next());
                         while (jt.hasNext())
                             sb.append("x" + jt.next());
                     } else {
-                        sb.append(physicalDomains.get(rep));
+                        sb.append(domainMap.get(rep));
                     }
                 }
                 graph.removeEdgesFrom(root);
@@ -212,12 +235,8 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
             }
             roots = graph.getRoots();
         }
-        BDDSolver s = (BDDSolver) solver;
-        s.VARORDER = sb.toString();
-        s.setVariableOrdering();
         return sb.toString();
     }
-
     /* (non-Javadoc)
      * @see org.sf.bddbddb.ir.DomainAssignment#saveDomainAssignment(java.io.BufferedWriter)
      */

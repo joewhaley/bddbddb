@@ -1,14 +1,15 @@
 package org.sf.bddbddb.ir;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationFlowGraph;
 import org.sf.bddbddb.IterationList;
@@ -28,6 +29,7 @@ import org.sf.bddbddb.dataflow.Problem;
 import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
 import org.sf.bddbddb.dataflow.DefUse.DefUseFact;
+import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import org.sf.bddbddb.ir.highlevel.BooleanOperation;
 import org.sf.bddbddb.ir.highlevel.Copy;
 import org.sf.bddbddb.ir.highlevel.Invert;
@@ -38,6 +40,7 @@ import org.sf.bddbddb.ir.highlevel.Save;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
 import org.sf.bddbddb.util.Assert;
+import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.javabdd.BDDPairing;
 import org.sf.javabdd.BDDFactory.BDDOp;
@@ -141,11 +144,19 @@ public class IR {
             DataflowSolver solver = new DataflowSolver();
             PartialOrder p = new PartialOrder(this);
             solver.solve(p, graph.getIterationList());
-            DomainAssignment ass = new PartialOrderDomainAssignment(this.solver, p.currFact.getConstraintsMap());
+            IndexMap relations =  this.solver.getRelations();
+            
+            Constraints[] constraintsMap = new Constraints[relations.size()];
+            for(Iterator it = relations.iterator(); it.hasNext(); ){
+                Relation r = (Relation) it.next();
+                constraintsMap[r.id] = r.getConstraints();
+            }
+            DomainAssignment ass = new PartialOrderDomainAssignment(this.solver, constraintsMap);
             //DomainAssignment ass = new UFDomainAssignment(this.solver);
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
             ass.doAssignment();
+            ass.setVariableOrdering();
             BufferedWriter dos = null;
             try {
                 dos = new BufferedWriter(new FileWriter("domainassign.gen"));

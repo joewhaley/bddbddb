@@ -3,17 +3,18 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
@@ -432,9 +433,9 @@ public class BDDRelation extends Relation {
                 return;
             }
             
-            calculateDomainSet();
-            int lines = 0;
-            BDDIterator i = relation.iterator(domainSet);
+           calculateDomainSet();
+           int lines = 0;
+           BDDIterator i = relation.iterator(domainSet);
             while (i.hasNext()) {
                 BDD sat = (BDD) i.next();
                 long[] v = sat.scanAllVar();
@@ -644,6 +645,12 @@ public class BDDRelation extends Relation {
         int i = attributes.indexOf(a);
         if (i == -1) return null;
         return (BDDDomain) domains.get(i);
+    }
+    
+    public Attribute getAttribute(BDDDomain d){
+       int i = domains.indexOf(d);
+       if(i == -1) return null;
+       return (Attribute) attributes.get(i);
     }
 
     /**

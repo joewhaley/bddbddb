@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationList;
@@ -42,6 +44,7 @@ import org.sf.bddbddb.ir.highlevel.Universe;
 import org.sf.bddbddb.ir.highlevel.Zero;
 import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.ir.lowlevel.Replace;
+import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.HashWorklist;
 import org.sf.bddbddb.util.MultiMap;
@@ -253,8 +256,8 @@ public class PartialOrder extends OperationProblem {
         }
 
         public Set project(Constraints cons, List attributes) {
-            Pair rels = cons.getRelevantConstraints(attributes);
-            Constraints relCs = new Constraints(cons.attributes, (Collection) rels.left, (Collection) rels.right);
+            SortedSet relCons = cons.getRelevantConstraints(attributes);
+            Constraints relCs = new Constraints(relCons);
             if (TRACE) System.out.println("relevant constraints: " + relCs);
             relCs.doTransitiveClosure();
             if (TRACE) System.out.println("transitive relevant constraints: " + relCs);
@@ -283,22 +286,28 @@ public class PartialOrder extends OperationProblem {
              //Pair cons = c.getRelevantConstraints(srcAttrs);
              if(TRACE) System.out.println("relevant constraints: " + cons);
              */
-            Constraints newCons = new Constraints(dest.getAttributes());
+          
+            Constraints newCons = new Constraints();
             for (Iterator it = c.getBeforeConstraints().iterator(); it.hasNext();) {
                 Constraint oldC = (Constraint) it.next();
-                Attribute a1 = (Attribute) renames.get(oldC.left);
-                a1 = a1 != null ? a1 : (Attribute) oldC.left;
-                Attribute a2 = (Attribute) renames.get(oldC.right);
-                a2 = a2 != null ? a2 : (Attribute) oldC.right;
-                newCons.addBeforeConstraint(new Constraint(a1, a2, oldC.confidence));
+                Attribute a1 = (Attribute) renames.get(oldC.getLeftAttribute());
+                //a1 = a1 != null ? a1 : (Attribute) oldC.getLeftAttribute();
+                Attribute a2 = (Attribute) renames.get(oldC.getRightAttribute());
+                //a2 = a2 != null ? a2 : (Attribute) oldC.getRightAttribute();
+                Constraint newC = a1 != null && a2 != null  ? new BeforeConstraint(dest, a1, dest, a2, oldC.confidence) : oldC;
+             
             }
             for (Iterator it = c.getInterleavedConstraints().iterator(); it.hasNext();) {
                 Constraint oldC = (Constraint) it.next();
-                Attribute a1 = (Attribute) renames.get(oldC.left);
-                a1 = a1 != null ? a1 : (Attribute) oldC.left;
-                Attribute a2 = (Attribute) renames.get(oldC.right);
-                a2 = a2 != null ? a2 : (Attribute) oldC.right;
-                newCons.addInterleavedConstraint(new Constraint(a1, a2, oldC.confidence));
+                Attribute a1 = (Attribute) renames.get(oldC.getLeftAttribute());
+               // a1 = a1 != null ? a1 : (Attribute) oldC.getLeftAttribute();
+                Attribute a2 = (Attribute) renames.get(oldC.getRightAttribute());
+              //  a2 = a2 != null ? a2 : (Attribute) oldC.getRightAttribute();
+                Constraint newC = a1 != null && a2 != null ? new InterleavedConstraint(dest, a1, dest, a2, oldC.confidence) : oldC;
+              
+               newCons.addInterleavedConstraint(newC);
+                
+                
             }
             newCons.join(dest.getConstraints());
             if (TRACE) System.out.println("new constraints: " + newCons);
@@ -440,53 +449,156 @@ public class PartialOrder extends OperationProblem {
     public Fact getBoundary() {
         PartialOrderFact fact = new PartialOrderFact();
         for (int i = 0; i < fact.constraintsMap.length; i++)
-            fact.constraintsMap[i] = new Constraints(new LinkedList());
+            fact.constraintsMap[i] = new Constraints();
         return fact;
     }
-    public static class Constraint extends Pair {
-        public Constraint(Object left, Object right, double confidence) {
-            super(left, right);
+    public abstract static class Constraint extends Pair implements Comparable{
+        public static final int BEFORE = 0;
+        public static final int INTERLEAVED = 1;
+        double confidence;
+        public Constraint(Relation leftRel, Attribute leftAttr,
+            Relation rightRel, Attribute rightAttr, double confidence) {
+            super(new Pair(leftRel,leftAttr), new Pair(rightRel,rightAttr));
+            Assert._assert(leftRel.getAttributes().contains(leftAttr), "Left Attribute: " + leftAttr + " not part of Left Relation: " +leftRel);
+            Assert._assert(rightRel.getAttributes().contains(rightAttr), "Right attribute: " + rightAttr + " not part of Right Relation: " + rightRel);
             this.confidence = confidence;
         }
 
-        public Constraint(Object left, Object right) {
-            super(left, right);
-            confidence = 0;
+        public Pair getLeftRelationAttrPair(){ return (Pair) left; }
+        public Pair getRightRelationAttrPair(){ return (Pair) right; }
+        public Relation getLeftRelation(){ return (Relation) ((Pair) left).left; }
+        public Attribute getLeftAttribute(){ return (Attribute) ((Pair)left).right; }
+        public Relation getRightRelation(){ return (Relation) ((Pair) right).left; }
+        public Attribute getRightAttribute(){ return (Attribute) ((Pair)right).right; }
+        
+        public Constraint(Relation leftRel, Attribute leftAttr,
+            Relation rightRel, Attribute rightAttr) {
+            this(leftRel, leftAttr,rightRel, rightAttr, 0);
         }
-        double confidence;
+        
+       public String toString(){
+           return  "(" + left + (getType() == BEFORE ? " before " : " interleaved with ") + right + " conf: " + confidence + ")";
+       }
+       
+       public abstract int getType();
+       
+       public boolean isBeforeConstraint(){ return getType() == BEFORE; }
+       public boolean isInterleavedConstraint(){ return getType() == INTERLEAVED; }
+    
+      public int compareTo(Object o){
+          Constraint that = (Constraint) o;
+          return Double.compare(that.confidence,this.confidence);
+      }
+    }
+    
+    public static class InterleavedConstraint extends Constraint{
+        
+        /**
+         * @param leftRel
+         * @param leftAttr
+         * @param rightRel
+         * @param rightAttr
+         */
+        public InterleavedConstraint(Relation leftRel, Attribute leftAttr, Relation rightRel, Attribute rightAttr) {
+            super(leftRel, leftAttr, rightRel, rightAttr);
+      
+        }
+        /**
+         * @param leftRel
+         * @param leftAttr
+         * @param rightRel
+         * @param rightAttr
+         * @param confidence
+         */
+        public InterleavedConstraint(Relation leftRel, Attribute leftAttr, Relation rightRel, Attribute rightAttr, double confidence) {
+            super(leftRel, leftAttr, rightRel, rightAttr, confidence);
+
+        }
+        public int getType(){ return INTERLEAVED; }
+     
+        
+        
+    }
+    
+    public static class BeforeConstraint extends Constraint{
+        
+        /**
+         * @param leftRel
+         * @param leftAttr
+         * @param rightRel
+         * @param rightAttr
+         */
+        public BeforeConstraint(Relation leftRel, Attribute leftAttr, Relation rightRel, Attribute rightAttr) {
+            super(leftRel, leftAttr, rightRel, rightAttr);
+      
+        }
+        /**
+         * @param leftRel
+         * @param leftAttr
+         * @param rightRel
+         * @param rightAttr
+         * @param confidence
+         */
+        public BeforeConstraint(Relation leftRel, Attribute leftAttr, Relation rightRel, Attribute rightAttr, double confidence) {
+            super(leftRel, leftAttr, rightRel, rightAttr, confidence);
+  
+        }
+        public int getType(){ return BEFORE; }
     }
     public static class Constraints {
         static boolean TRACE = true;
-        List/*Attribute*/attributes;
         MultiMap graph;
         UnionFind uf;
-        Collection beforeConstraints;
+  /*      Collection beforeConstraints;
         Collection interleavedConstraints;
-        MultiMap repToAttributes = new GenericMultiMap();
+   */
+           SortedSet constraints;
 
-        public Constraints(List attributes) {
-            beforeConstraints = new LinkedHashSet();
+        public Constraints() {
+            constraints = new TreeSet();
+     /*       beforeConstraints = new LinkedHashSet();
             interleavedConstraints = new LinkedHashSet();
-            this.attributes = attributes;
-        }
-
-        public Constraints(List attributes, Collection beforeConstraints, Collection interConstraints) {
+       */
+         }
+/*
+        public Constraints(Collection beforeConstraints, Collection interConstraints) {
             this.beforeConstraints = beforeConstraints;
             this.interleavedConstraints = interConstraints;
-            this.attributes = attributes;
         }
-
-        public Pair getRelevantConstraints(Collection attributes) {
-            return new Pair(relevantBeforeConstraints(attributes), relevantInterConstraints(attributes));
+*/
+        public Constraints(SortedSet constraints){
+            this.constraints = constraints;
+        }
+        public SortedSet getRelevantConstraints(Collection attributes) {
+            SortedSet cons = new TreeSet();
+            cons.addAll(relevantBeforeConstraints(attributes));
+            cons.addAll(relevantInterConstraints(attributes));
+            return cons;
         }
 
         public Collection getBeforeConstraints() {
-            return beforeConstraints;
+            SortedSet cons = new TreeSet();
+            for(Iterator it = constraints.iterator(); it.hasNext(); ){
+                Constraint con = (Constraint) it.next();
+                if(con.isBeforeConstraint())
+                    cons.add(con);
+            }
+            
+            return cons;
         }
 
-        public Collection getInterleavedConstraints() {
-            return interleavedConstraints;
+        public SortedSet getInterleavedConstraints() {
+            SortedSet cons = new TreeSet();
+            for(Iterator it = constraints.iterator(); it.hasNext(); ){
+                Constraint con = (Constraint) it.next();
+                if(con.isInterleavedConstraint())
+                    cons.add(con);
+            }
+            
+            return cons;
         }
+        
+        public SortedSet getAllConstraints(){ return constraints; }
 
         private List relevantConstraints(Collection attributes, Collection srcCons) {
             List relevantConstraints = new LinkedList();
@@ -498,32 +610,31 @@ public class PartialOrder extends OperationProblem {
         }
 
         public List relevantBeforeConstraints(Collection attributes) {
-            return relevantConstraints(attributes, beforeConstraints);
+            return relevantConstraints(attributes, getBeforeConstraints());
         }
 
         public List relevantInterConstraints(Collection attributes) {
-            return relevantConstraints(attributes, interleavedConstraints);
+            return relevantConstraints(attributes, getInterleavedConstraints());
         }
 
-        public void addBeforeConstraint(Pair p) {
-            beforeConstraints.add(p);
+        public void addBeforeConstraint(Constraint c) {
+            constraints.add(c);
         }
 
-        public void addInterleavedConstraint(Pair p) {
-            interleavedConstraints.add(p);
+        public void addInterleavedConstraint(Constraint c) {
+            constraints.add(c);
         }
 
         public Constraints copy() {
-            Constraints c = new Constraints(new LinkedList(attributes));
-            c.beforeConstraints = new HashSet(this.beforeConstraints);
-            c.interleavedConstraints = new HashSet(this.interleavedConstraints);
+            Constraints c = new Constraints();
+            c.constraints = new TreeSet(this.constraints);
             return c;
         }
 
         public List removeInvolving(Attribute a) {
             List removed = new LinkedList();
-            removed.addAll(removeInvolving(a, beforeConstraints));
-            removed.addAll(removeInvolving(a, interleavedConstraints));
+            removed.addAll(removeInvolving(a, constraints));
+           // removed.addAll(removeInvolving(a, interleavedConstraints));
             return removed;
         }
 
@@ -539,11 +650,15 @@ public class PartialOrder extends OperationProblem {
             return removed;
         }
 
-        public List isSatisifiable() {
+        public List buildGraphAndReps(){
             ConstraintGraph graph = new ConstraintGraph();
+            MultiMap repToAttributes = new GenericMultiMap();
             uf = new UnionFind(4096);
-            for (Iterator it = interleavedConstraints.iterator(); it.hasNext();) {
+           Set seen = new HashSet();
+            for (Iterator it = getInterleavedConstraints().iterator(); it.hasNext();) {
                 Pair p = (Pair) it.next();
+                seen.add(p.left);
+                seen.add(p.right);
                 Object repl = uf.find(p.left);
                 Object repr = uf.find(p.right);
                 if (repl == null && repr == null) {
@@ -557,16 +672,13 @@ public class PartialOrder extends OperationProblem {
                 }
             }
             Set nodes = new HashSet();
-            for (Iterator it = attributes.iterator(); it.hasNext();) {
-                Object o = it.next();
-                Object rep = uf.find(o);
-                graph.addNode(rep);
-                repToAttributes.add(rep, o);
-            }
-            for (Iterator it = beforeConstraints.iterator(); it.hasNext();) {
+          
+            for (Iterator it = getBeforeConstraints().iterator(); it.hasNext();) {
                 Pair p = (Pair) it.next();
                 Object repl = uf.find(p.left);
                 Object repr = uf.find(p.right);
+                seen.add(repl);
+                seen.add(repr);
                 if (repl == null && repr == null) {
                     graph.addEdge(p.left, p.right);
                 } else if (repl != null && repr == null) {
@@ -577,17 +689,21 @@ public class PartialOrder extends OperationProblem {
                     graph.addEdge(repl, repr);
                 }
             }
-            List cycles = new LinkedList();
-            Set visited = new HashSet();
-            for (Iterator it = graph.nodes.iterator(); it.hasNext();) {
+            
+            for (Iterator it = seen.iterator(); it.hasNext();) {
                 Object o = it.next();
-                if (!visited.contains(o)) {
-                    cycles.addAll(findCycles(o, visited, new LinkedList(), graph.getNavigator()));
-                }
+                Object rep = uf.find(o);
+                graph.addNode(rep);
+                repToAttributes.add(rep, o);
             }
-            if (TRACE && cycles.size() != 0) System.out.println("Not satisfiable, cycles found: " + cycles);
-            return cycles;
+            
+            List result = new LinkedList();
+            result.add(graph);
+            result.add(uf);
+            result.add(repToAttributes);
+            return result;
         }
+      
 
         List findCycles(Object start, Set visited, List trace, ConstraintNavigator nav) {
             List cycles = new LinkedList();
@@ -610,27 +726,31 @@ public class PartialOrder extends OperationProblem {
             return cycles;
         }
 
-        List cycleToConstraints(List cycle) {
+        List cycleToConstraints(List cycle, MultiMap repToAttributes) {
+           // System.out.println("reps: " + repToAttributes);
             List constraints = new LinkedList();
             for (ListIterator it = cycle.listIterator(); it.hasNext();) {
                 Object o1 = it.next();
                 if (it.hasNext()) {
-                    constraints.addAll(constraints(o1, it.next()));
+                    constraints.addAll(constraints(o1, it.next(), repToAttributes));
                     it.previous();
                 }
             }
-            constraints.addAll(constraints(cycle.get(cycle.size() - 1), cycle.get(0)));
+            constraints.addAll(constraints(cycle.get(cycle.size() - 1), cycle.get(0),repToAttributes));
             return constraints;
         }
 
-        List constraints(Object o1, Object o2) {
+        List constraints(Object o1, Object o2, MultiMap repToActual) {
             List constraints = new LinkedList();
-            Collection o1jects = repToAttributes.getValues(o1);
-            Collection o2jects = repToAttributes.getValues(o2);
+            Collection o1jects = repToActual.getValues(o1);
+            Collection o2jects = repToActual.getValues(o2);
+            Collection beforeConstraints = getBeforeConstraints();
             for (Iterator it = o1jects.iterator(); it.hasNext();) {
-                Attribute left = (Attribute) it.next();
+                Pair left = (Pair) it.next();
                 for (Iterator jt = o2jects.iterator(); jt.hasNext();) {
-                    Constraint p = new Constraint(left, (Attribute) jt.next(), 0);
+                    Pair right = (Pair) jt.next();
+                    Constraint p = new BeforeConstraint((Relation) left.left, (Attribute) left.right,
+                                                (Relation) right.left, (Attribute) right.right);
                     if (beforeConstraints.contains(p)) {
                         constraints.add(p);
                     }
@@ -639,7 +759,7 @@ public class PartialOrder extends OperationProblem {
             return constraints;
         }
 
-        void breakCycles(List cycles) {
+   /*     void breakCycles(List cycles) {
             List ccycles = new LinkedList();
             for (Iterator it = cycles.iterator(); it.hasNext();) {
                 List cycle = cycleToConstraints((List) it.next());
@@ -674,34 +794,58 @@ public class PartialOrder extends OperationProblem {
             for (; jt.hasNext();) {
                 Constraint next = (Constraint) jt.next();
                 if (next.confidence < lowest.confidence) lowest = next;
-                /* TODO depending on granularity of confidence, add ability to
-                 * choose between relatively similar ones.
-                 */
+                
             }
             beforeConstraints.remove(lowest);
         }
-
+*/
         public void satisfy() {
-            List cycles = null;
-            while ((cycles = isSatisifiable()).size() != 0) {
-                breakCycles(cycles);
+            System.out.println("satisfying constraints" + hashCode());
+            List cycle = new LinkedList();
+            List info = buildGraphAndReps();
+            ConstraintGraph graph = (ConstraintGraph) info.get(0);
+            UnionFind uf = (UnionFind) info.get(1);
+            MultiMap repToAttributes = (MultiMap) info.get(2);
+            while(true){
+                cycle.clear();
+                if(graph.isCycle(cycle)){
+                   System.out.println("cycle: " + cycle);
+                    List constraints = cycleToConstraints(cycle,repToAttributes);
+                    System.out.println("possibilities: " + constraints);
+                    Iterator jt = constraints.iterator();
+                    Constraint lowest = (Constraint) jt.next();
+                    for (; jt.hasNext(); ) {
+                        Constraint next = (Constraint) jt.next();
+                        if (next.confidence < lowest.confidence) lowest = next;
+                    }
+                    System.out.println("removing: " + lowest);
+                    if(constraints.remove(lowest))
+                        System.out.println("removed");
+                    info = buildGraphAndReps();
+                    graph = (ConstraintGraph) info.get(0);
+                    uf = (UnionFind) info.get(1);
+                    repToAttributes = (MultiMap) info.get(2);
+                }else
+                    break;
             }
         }
 
         public Constraints join(Constraints that) {
-            List resultAttributes = new LinkedList(attributes);
-            resultAttributes.addAll(that.attributes);
-            Constraints result = new Constraints(resultAttributes);
-            result.beforeConstraints = new HashSet(this.beforeConstraints);
+           
+            Constraints result = new Constraints();
+            /*result.beforeConstraints = new HashSet(this.beforeConstraints);
             result.beforeConstraints.addAll(that.beforeConstraints);
             result.interleavedConstraints = new HashSet(this.interleavedConstraints);
             result.interleavedConstraints.addAll(that.interleavedConstraints);
+            result.satisfy();
+            */
+            result.constraints = new TreeSet(this.constraints);
             result.satisfy();
             return result;
         }
 
         public boolean isEmpty() {
-            return beforeConstraints.isEmpty() && interleavedConstraints.isEmpty();
+            return constraints.isEmpty();
         }
 
         /* (non-Javadoc)
@@ -710,8 +854,7 @@ public class PartialOrder extends OperationProblem {
         public boolean equals(Object o) {
             if (o instanceof Constraints) {
                 Constraints that = (Constraints) o;
-                return this.attributes.equals(that.attributes) && this.beforeConstraints.equals(that.beforeConstraints)
-                    && this.interleavedConstraints.equals(that.interleavedConstraints);
+                return this.constraints.equals(that.constraints);
             }
             return false;
         }
@@ -720,35 +863,38 @@ public class PartialOrder extends OperationProblem {
          * @see java.lang.Object#hashCode()
          */
         public int hashCode() {
-            return this.attributes.hashCode() ^ 
-                   this.beforeConstraints.hashCode() ^
-                   this.interleavedConstraints.hashCode();
+            return constraints.hashCode();
         }
         
         public String toString() {
-            return "[before constraints: " + beforeConstraints + " interleaved constraints: " + interleavedConstraints + "]";
+            return "[before constraints: " + getBeforeConstraints() + " interleaved constraints: " + getInterleavedConstraints() + "]";
         }
 
         public void doTransitiveClosure() {
-            beforeConstraints = doTransitiveClosure(attributes, beforeConstraints);
-            interleavedConstraints = doTransitiveClosure(attributes, interleavedConstraints);
+            SortedSet newConstraints = new TreeSet();
+            newConstraints.addAll(doTransitiveClosure(getBeforeConstraints()));
+            newConstraints.addAll(doTransitiveClosure(getInterleavedConstraints()));
         }
 
-        public Collection doTransitiveClosure(Collection attributes, Collection constraints) {
-            ConstraintGraph graph = new ConstraintGraph(attributes, constraints);
+        public Collection doTransitiveClosure(Collection/*Constraint*/ constraints) {
+            ConstraintGraph graph = new ConstraintGraph(constraints);
             Collection newConstraints = new LinkedHashSet(constraints);
             ConstraintGraph.ConstraintNavigator nav = graph.getNavigator();
             HashWorklist w = new HashWorklist(true);
             w.addAll(constraints);
             //transitive closure
             while (!w.isEmpty()) {
-                Pair pair = (Pair) w.pull();
-                Object left = pair.left;
-                Object right = pair.right;
+                Constraint con = (Constraint) w.pull();
+                Pair left = con.getLeftRelationAttrPair();
+                Pair right = con.getRightRelationAttrPair();
                 Collection nexts = nav.next(right);
                 for (Iterator it = nexts.iterator(); it.hasNext();) {
-                    Object trans = it.next();
-                    newConstraints.add(new Constraint(left, trans)); //consider confidence
+                    Pair trans = (Pair) it.next();
+                    if(con.getType() == Constraint.BEFORE)
+                    newConstraints.add(new BeforeConstraint((Relation) left.left, (Attribute) left.right, (Relation) trans.left, (Attribute)trans.right)); //consider confidence
+                    else
+                        newConstraints.add(new InterleavedConstraint((Relation) left.left, (Attribute) left.right, (Relation) trans.left, (Attribute)trans.right)); //consider confidence
+                    
                     w.add(new Pair(left, trans));
                 }
             }
@@ -764,6 +910,31 @@ public class PartialOrder extends OperationProblem {
             nav = new ConstraintNavigator();
             graph = new GenericMultiMap();
             nodes = new HashSet();
+        }
+        public ConstraintGraph(ConstraintGraph that){
+            this.graph = ((GenericMultiMap)that.graph).copy();
+            this.nodes = new HashSet(that.nodes);
+            nav = new ConstraintNavigator();
+        }
+        
+        public void update(UnionFind uf){
+            MultiMap newGraph = new GenericMultiMap();
+            Set newNodes = new HashSet();
+            for(Iterator it = nodes.iterator(); it.hasNext(); ){
+                Object node = it.next();
+                System.out.println("node: " + node + " rep: " + uf.find(node));
+                newNodes.add(uf.find(node));
+            }
+            for(Iterator it = graph.entrySet().iterator(); it.hasNext(); ){
+                Map.Entry entry = (Map.Entry) it.next();
+                Object key = entry.getKey();
+                Object value = entry.getValue();
+                Object keyRep = uf.find(key);
+                Object valueRep = uf.find(value);
+                newGraph.add(keyRep, valueRep);
+            }
+            graph = newGraph;
+            nodes = newNodes;
         }
 
         public ConstraintGraph(Collection constraints) {
@@ -792,11 +963,9 @@ public class PartialOrder extends OperationProblem {
         public void addEdge(Object o1, Object o2) {
             graph.add(o1, o2);
         }
-
-        public void removeEdge(Object o1, Object o2) {
+        
+        public void removeEdge(Object o1, Object o2){
             graph.remove(o1, o2);
-            if (graph.get(o1) == null) nodes.remove(o1);
-            if (!graph.containsValue(o2)) nodes.remove(o2);
         }
 
         public void removeEdgesFrom(Object o) {
@@ -806,17 +975,25 @@ public class PartialOrder extends OperationProblem {
         public void addNode(Object o) {
             nodes.add(o);
         }
-
+        public void addNodes(Collection nodes){
+            this.nodes.addAll(nodes);
+        }
         public void removeNode(Object o) {
             nodes.remove(o);
         }
+        
+        /**
+         * @return
+         */
+        public Collection getNodes() {
+            
+            return nodes;
+        }
 
         public boolean isCycle(List cycle) {
-            Collection keys = new HashSet(graph.keySet());
-            Set visited = new HashSet();
-            for (Iterator it = keys.iterator(); it.hasNext();) {
+            for (Iterator it = nodes.iterator(); it.hasNext();) {
                 Object obj = it.next();
-                if (!visited.contains(obj)) if (isPath(obj, obj, visited, cycle)) return true;
+                if (isPath(obj, obj,cycle)) return true;
             }
             return false;
         }
@@ -828,13 +1005,18 @@ public class PartialOrder extends OperationProblem {
         private boolean isPath(Object start, Object target, Set visited, List path) {
             path.add(start);
             visited.add(start);
+           // System.out.println("start: " + start);
             Collection nexts = graph.getValues(start);
+           // System.out.println("nexts: " + nexts);
             for (Iterator it = nexts.iterator(); it.hasNext();) {
                 Object next = it.next();
+              //  System.out.println("next: " + next);
                 if (next == target) {
                     return true;
                 }
-                if (!visited.contains(next)) if (isPath(next, target, visited, path)) return true;
+                if (!visited.contains(next)) 
+                    if (isPath(next, target, visited, path)) 
+                        return true;
             }
             path.remove(start);
             return false;
@@ -868,5 +1050,6 @@ public class PartialOrder extends OperationProblem {
                 throw new UnsupportedOperationException();
             }
         }
+    
     }
 }

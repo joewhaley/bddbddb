@@ -59,7 +59,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     Solver solver;
     MultiMap/* <Domain,Attribute> */domainToAttributes;
     List inserted;
-    boolean TRACE = false;
+    static boolean TRACE = false;
     ListIterator currentBlock;
     Map/*Relation,Constraints*/constraintMap;
 
@@ -206,12 +206,14 @@ public abstract class DomainAssignment implements OperationVisitor {
             if (TRACE && bcons.size() == 0) System.out.println("No before constraints for " + r);
             for (Iterator it = bcons.iterator(); it.hasNext();) {
                 Constraint c = (Constraint) it.next();
-                forceBefore(r, (Attribute) c.left, r, (Attribute) c.right);
+                forceBefore(c.getLeftRelation(), c.getLeftAttribute(),
+                    c.getRightRelation(), c.getRightAttribute());
             }
             Collection icons = cons.getInterleavedConstraints();
             for (Iterator it = icons.iterator(); it.hasNext();) {
                 Constraint c = (Constraint) it.next();
-                forceInterleaved(r, (Attribute) c.left, r, (Attribute) c.right);
+                forceInterleaved(c.getLeftRelation(), c.getLeftAttribute(),
+                    c.getRightRelation(), c.getRightAttribute());
             }
         }
     }
@@ -646,4 +648,6 @@ public abstract class DomainAssignment implements OperationVisitor {
         }
         System.out.println("Incorporated " + count + " constraints from file.");
     }
+    
+    public abstract void setVariableOrdering();
 }

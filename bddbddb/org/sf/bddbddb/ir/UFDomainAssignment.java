@@ -142,8 +142,13 @@ public class UFDomainAssignment extends DomainAssignment {
             System.out.print(domAssign+"                        \r");
             r.setDomainAssignment(domAssign);
         }
-        s.setVariableOrdering();
     }
+
+
+    public void setVariableOrdering(){
+        ((BDDSolver) solver).setVariableOrdering();
+    }
+    
 
     /**
      * Choose a BDD domain to allocate for the given attribute in the given relation.

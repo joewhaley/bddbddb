@@ -3,17 +3,19 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringTokenizer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import org.sf.bddbddb.Learner.IndividualRuleLearner;
 import org.sf.bddbddb.ir.BDDInterpreter;
 import org.sf.bddbddb.ir.IR;
 import org.sf.bddbddb.util.Assert;
@@ -220,17 +222,38 @@ public class BDDSolver extends Solver {
     public void solve() {
         Stratify s = new Stratify(this);
         s.stratify();
+       
         if (USE_IR) {
             IR ir = IR.create(s);
             ir.optimize();
             if (PRINT_IR) ir.printIR();
             BDDInterpreter interpreter = new BDDInterpreter(ir);
             interpreter.interpret();
-        } else {
             s.solve();
+        } else {
+            long time = System.currentTimeMillis();
+            s.solve();
+            if(LEARN_BEST_ORDER) {
+      
+                time = System.currentTimeMillis() - time;
+                System.out.println("SOLVE_TIME: " + time);
+                reportStats();
+                Learner learner = new IndividualRuleLearner(this, s); 
+                learner.learn();
+     
+            }
         }
     }
-
+    
+    public  List rulesToLearn(){
+        List rulesToLearn = new LinkedList();
+        for(Iterator it = rules.iterator(); it.hasNext(); ){
+            BDDInferenceRule rule = (BDDInferenceRule) it.next();
+            if(LEARN_ALL_RULES || rule.learn_best_order) rulesToLearn.add(rule);     
+        }  
+        return rulesToLearn;
+    }
+    
     /*
      * (non-Javadoc)
      * 
