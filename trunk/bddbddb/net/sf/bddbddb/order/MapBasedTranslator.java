@@ -84,7 +84,7 @@ public class MapBasedTranslator implements OrderTranslator {
      * @see net.sf.bddbddb.FindBestDomainOrder.OrderTranslator#translate(net.sf.bddbddb.FindBestDomainOrder.Order)
      */
     public Order translate(Order o) {
-        if (FindBestDomainOrder.TRACE > 2) System.out.print("Translating "+o);
+        if (FindBestDomainOrder.TRACE > 3) System.out.print("Translating "+o);
         LinkedList result = new LinkedList();
         for (Iterator i = o.iterator(); i.hasNext(); ) {
             Object a = i.next();
@@ -105,7 +105,7 @@ public class MapBasedTranslator implements OrderTranslator {
                 if (b != null) result.add(b);
             }
         }
-        if (FindBestDomainOrder.TRACE > 2) System.out.println(" -> "+result);
+        if (FindBestDomainOrder.TRACE > 3) System.out.println(" -> "+result);
         return new Order(result);
     }
 }

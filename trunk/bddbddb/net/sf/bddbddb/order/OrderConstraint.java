@@ -19,7 +19,7 @@ import org.jdom.Element;
 public abstract class OrderConstraint {
     
     static final boolean compare(Object a, Object b) {
-        Assert._assert(a != b);
+        if (a == b) return true;
         String s1 = a.toString();
         String s2 = b.toString();
         if (a instanceof Attribute) s1 += "_"+((Attribute) a).getRelation();

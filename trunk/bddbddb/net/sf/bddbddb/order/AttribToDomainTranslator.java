@@ -1,4 +1,4 @@
-// VarToAttribTranslator.java, created Oct 27, 2004 2:26:29 AM by joewhaley
+// AttribToDomainTranslator.java, created Oct 31, 2004 1:39:40 AM by joewhaley
 // Copyright (C) 2004 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.order;
@@ -7,35 +7,35 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import net.sf.bddbddb.Attribute;
-import net.sf.bddbddb.FindBestDomainOrder;
-import net.sf.bddbddb.InferenceRule;
-import net.sf.bddbddb.Variable;
 
 /**
- * VarToAttribTranslator
+ * AttribToDomainTranslator
  * 
  * @author jwhaley
  * @version $Id$
  */
-public class VarToAttribTranslator implements OrderTranslator {
+public class AttribToDomainTranslator implements OrderTranslator {
     
-    InferenceRule ir;
+    public static final AttribToDomainTranslator INSTANCE =
+        new AttribToDomainTranslator();
     
-    public VarToAttribTranslator(InferenceRule ir) {
-        this.ir = ir;
-    }
-    
+    /**
+     * 
+     */
+    private AttribToDomainTranslator() { }
+
+    /* (non-Javadoc)
+     * @see net.sf.bddbddb.order.OrderTranslator#translate(net.sf.bddbddb.order.Order)
+     */
     public Order translate(Order o) {
-        if (FindBestDomainOrder.TRACE > 3) System.out.print("Translating "+o);
         LinkedList result = new LinkedList();
         for (Iterator i = o.iterator(); i.hasNext(); ) {
             Object a = i.next();
             if (a instanceof Collection) {
                 Collection result2 = new LinkedList();
                 for (Iterator j = ((Collection) a).iterator(); j.hasNext(); ) {
-                    Variable a2 = (Variable) j.next();
-                    Attribute b2 = ir.getAttribute(a2);
-                    if (b2 != null) result2.add(b2);
+                    Attribute a2 = (Attribute) j.next();
+                    result2.add(a2.getDomain());
                 }
                 if (result2.size() > 1) {
                     result.add(result2);
@@ -43,12 +43,10 @@ public class VarToAttribTranslator implements OrderTranslator {
                     result.add(result2.iterator().next());
                 }
             } else {
-                Attribute b = ir.getAttribute((Variable) a);
-                if (b != null) result.add(b);
+                Attribute b = (Attribute) a;
+                result.add(b.getDomain());
             }
         }
-        if (FindBestDomainOrder.TRACE > 3) System.out.println(" -> "+result);
         return new Order(result);
     }
-    
 }

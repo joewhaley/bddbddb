@@ -1715,7 +1715,14 @@ public abstract class Solver {
      * @return  inference rule
      */
     public InferenceRule getRule(int i) {
-        return (InferenceRule) rules.get(i);
+        InferenceRule ir = (InferenceRule) rules.get(i);
+        if (ir.id == i) return ir;
+        System.out.println("Id "+i+" doesn't match id "+ir.id+": "+ir);
+        for (Iterator j = rules.iterator(); j.hasNext(); ) {
+            ir = (InferenceRule) j.next();
+            if (ir.id == i) return ir;
+        }
+        return null;
     }
     
     /**
@@ -1733,6 +1740,7 @@ public abstract class Solver {
     public InferenceRule getRuleThatContains(Variable v) {
         for (Iterator i = rules.iterator(); i.hasNext(); ) {
             InferenceRule ir = (InferenceRule) i.next();
+            if (ir.necessaryVariables == null) continue; // NumberingRule (?)
             if (ir.necessaryVariables.contains(v) ||
                 ir.unnecessaryVariables.contains(v)) return ir;
         }
