@@ -927,31 +927,7 @@ public class FindBestDomainOrder {
          * @see java.lang.Object#toString()
          */
         public String toString() {
-            StringBuffer varOrder = new StringBuffer();
-            for (Iterator i = iterator(); i.hasNext(); ) {
-                Object p = i.next();
-                if (p instanceof Collection) {
-                    Collection c = (Collection) p;
-                    int num = 0;
-                    for (Iterator j = c.iterator(); j.hasNext(); ) {
-                        Object d = j.next();
-                        if (varOrder.length() > 0) {
-                            if (num == 0) {
-                                varOrder.append('_');
-                            } else {
-                                varOrder.append('x');
-                            }
-                        }
-                        varOrder.append(d);
-                        ++num;
-                    }
-                } else {
-                    if (varOrder.length() > 0) varOrder.append('_');
-                    varOrder.append(p);
-                }
-            }
-            String vOrder = varOrder.toString();
-            return vOrder;
+            return list.toString();
         }
 
         public String toVarOrderString(Map/*<Variable,BDDDomain>*/ variableToBDDDomain) {
@@ -1466,6 +1442,7 @@ public class FindBestDomainOrder {
         public Element toXMLElement() {
             Element dis = new Element("trialInfoCollection");
             dis.setAttribute("name", name);
+            dis.setAttribute("timeStamp", Long.toString(timeStamp));
             for (Iterator i = trials.values().iterator(); i.hasNext(); ) {
                 TrialInfo info = (TrialInfo) i.next();
                 dis.addContent(info.toXMLElement());
