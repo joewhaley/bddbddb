@@ -1730,6 +1730,15 @@ public abstract class Solver {
         return getRule(index);
     }
     
+    public InferenceRule getRuleThatContains(Variable v) {
+        for (Iterator i = rules.iterator(); i.hasNext(); ) {
+            InferenceRule ir = (InferenceRule) i.next();
+            if (ir.necessaryVariables.contains(v) ||
+                ir.unnecessaryVariables.contains(v)) return ir;
+        }
+        return null;
+    }
+    
     /**
      * Return the iteration flow graph.  This contains the iteration order.
      * 

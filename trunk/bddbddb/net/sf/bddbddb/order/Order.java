@@ -16,6 +16,7 @@ import java.util.StringTokenizer;
 import jwutil.util.Assert;
 import net.sf.bddbddb.FindBestDomainOrder;
 import net.sf.bddbddb.Variable;
+import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;
 import net.sf.javabdd.BDDDomain;
 
 /**
@@ -93,7 +94,7 @@ public class Order implements List, Comparable {
                         Object x1 = x.next();
                         while (y.hasNext()) {
                             Object y1 = y.next();
-                            constraints.add(new PrecedenceConstraint(x1, y1));
+                            constraints.add(OrderConstraint.makePrecedenceConstraint(x1, y1));
                         }
                     }
                 }
@@ -110,7 +111,7 @@ public class Order implements List, Comparable {
                         while (y.hasNext() && y.next() != a) ;
                         while (y.hasNext()) {
                             Object b = y.next();
-                            constraints.add(new InterleaveConstraint(a, b));
+                            constraints.add(OrderConstraint.makeInterleaveConstraint(a, b));
                         }
                     }
                 }
@@ -194,12 +195,12 @@ public class Order implements List, Comparable {
      * 
      * @return  collection of precedence constraints
      */
-    public Collection/*<PrecedenceConstraint>*/ getAllPrecedenceConstraints() {
+    public Collection/*<OrderConstraint>*/ getAllPrecedenceConstraints() {
         getConstraints();
         Collection s = new LinkedList();
         for (Iterator i = constraints.iterator(); i.hasNext(); ) {
             Object o = i.next();
-            if (o instanceof PrecedenceConstraint)
+            if (!(o instanceof InterleaveConstraint))
                 s.add(o);
         }
         return s;

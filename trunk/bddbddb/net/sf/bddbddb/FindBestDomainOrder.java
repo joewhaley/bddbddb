@@ -25,7 +25,7 @@ import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraint;
 import net.sf.bddbddb.order.OrderIterator;
 import net.sf.bddbddb.order.OrderTranslator;
-import net.sf.bddbddb.order.PrecedenceConstraint;
+import net.sf.bddbddb.order.BeforeConstraint;
 import net.sf.bddbddb.order.VarToAttribTranslator;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -80,6 +80,10 @@ public class FindBestDomainOrder {
      */
     Collection allTrials;
     
+    /**
+     * Whether we should keep track of per-rule constraints, in addition to global
+     * constraints.
+     */
     public static boolean PER_RULE_CONSTRAINTS = true;
     
     /**
@@ -136,6 +140,9 @@ public class FindBestDomainOrder {
         incorporateTrials();
     }
     
+    /**
+     * Incorporate all of the trials in allTrials.
+     */
     void incorporateTrials() {
         for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
             TrialCollection tc = (TrialCollection) i.next();
@@ -312,9 +319,11 @@ public class FindBestDomainOrder {
             }
         }
         
-        public Element toXMLElement() {
+        public Element toXMLElement(Solver solver) {
             Element dis = new Element("constraintInfo");
-            Element constraint = c.toXMLElement();
+            InferenceRule ir = null;
+            if (c.isVariableConstraint()) ir = solver.getRuleThatContains((Variable) c.getFirst());
+            Element constraint = c.toXMLElement(ir);
             dis.setAttribute("sumCost", Double.toString(sumCost));
             dis.setAttribute("sumMinimumCost", Double.toString(sumMinimumCost));
             dis.setAttribute("sumNormalizedCost", Double.toString(sumNormalizedCost));
@@ -345,6 +354,159 @@ public class FindBestDomainOrder {
     }
     
     /**
+     * Calculated information about an order.  This consists of a score
+     * and an estimated information gain.
+     * 
+     * @author John Whaley
+     * @version $Id$
+     */
+    public static class OrderInfo implements Comparable {
+        
+        /**
+         * The order this information is about.
+         */
+        Order order;
+        
+        /**
+         * A measure of how good this order is.
+         */
+        double score;
+        
+        /**
+         * A measure of the expected information gain from running this order.
+         */
+        double infoGain;
+        
+        /**
+         * Construct a new OrderInfo.
+         * 
+         * @param o  order
+         * @param s  score
+         * @param c  info gain
+         */
+        public OrderInfo(Order o, double s, double c) {
+            this.order = o;
+            this.score = s;
+            this.infoGain = c;
+        }
+        
+        /**
+         * Construct a new OrderInfo that is a clone of another.
+         * 
+         * @param that  other OrderInfo to clone from
+         */
+        public OrderInfo(OrderInfo that) {
+            this.order = that.order;
+            this.score = that.score;
+            this.infoGain = that.infoGain;
+        }
+        
+        public void update(ConstraintInfo info) {
+            update(info.score, info.confidence);
+        }
+        
+        /**
+         * Update the score and confidence to take into account another order info.
+         * Assumes that the two are referring to the same order.
+         * 
+         * @param that  order to incorporate
+         */
+        public void update(OrderInfo that) {
+            update(that.score, that.confidence);
+        }
+        public void update(double that_score, double that_confidence) {
+            if (this.confidence + that_confidence < 0.0001) {
+                // Do not update the score if the confidence is too low.
+                return;
+            }
+            double newScore = (this.score * this.confidence + that_score * that_confidence) /
+                              (this.confidence + that_confidence);
+            // todo: this confidence calculation seems slightly bogus, but seems
+            // to give reasonable answers.
+            double diff = (this.score - newScore);
+            double diffSquared = diff * diff;
+            double newConfidence = (this.confidence + that_confidence) / (diffSquared + 1.);
+            if (TRACE > 4) out.println("Updating info: "+this+" * score "+format(that_score)+" confidence "+format(that_confidence)+
+                                       " -> score "+format(newScore)+" confidence "+format(newConfidence));
+            this.score = newScore;
+            this.confidence = newConfidence;
+        }
+        
+        public void unupdate(ConstraintInfo that) {
+            update(that.score, that.confidence);
+        }
+        public void unupdate(double that_score, double that_confidence) {
+            if (this.confidence + that_confidence < 0.0001) {
+                // Do not update the score if the confidence is too low.
+                return;
+            }
+            double newScore = (this.score * this.confidence + that_score * that_confidence) /
+                              (this.confidence + that_confidence);
+            // todo: this confidence calculation seems slightly bogus, but seems
+            // to give reasonable answers.
+            double diff = (this.score - newScore);
+            double diffSquared = diff * diff;
+            double newConfidence = (this.confidence + that_confidence) / (diffSquared + 1.);
+            if (TRACE > 4) out.println("Updating info: "+this+" * score "+format(that_score)+" confidence "+format(that_confidence)+
+                                       " -> score "+format(newScore)+" confidence "+format(newConfidence));
+            this.score = newScore;
+            this.confidence = newConfidence;
+        }
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
+        public String toString() {
+            return order+": score "+format(score)+" info gain "+format(infoGain);
+        }
+
+        /* (non-Javadoc)
+         * @see java.lang.Comparable#compareTo(java.lang.Object)
+         */
+        public int compareTo(Object arg0) {
+            return compareTo((OrderInfo) arg0);
+        }
+        /**
+         * Comparison operator for OrderInfo objects.  Score is most important, followed
+         * by info gain.  If both are equal, we compare the order lexigraphically.
+         * 
+         * @param that  OrderInfo to compare to
+         * @return  -1, 0, or 1 if this OrderInfo is less than, equal to, or greater than the other
+         */
+        public int compareTo(OrderInfo that) {
+            if (this == that) return 0;
+            int result = signum(this.score - that.score);
+            if (result == 0) {
+                result = (int) signum(this.infoGain - that.infoGain);
+                if (result == 0) {
+                    result = this.order.compareTo(that.order);
+                }
+            }
+            return result;
+        }
+        
+        /**
+         * Returns this OrderInfo as an XML element.
+         * 
+         * @return  XML element
+         */
+        public Element toXMLElement() {
+            Element dis = new Element("orderInfo");
+            dis.setAttribute("order", order.toString());
+            dis.setAttribute("score", Double.toString(score));
+            dis.setAttribute("infoGain", Double.toString(infoGain));
+            return dis;
+        }
+        
+        public static OrderInfo fromXMLElement(Element e, Map nameToVar) {
+            Order o = Order.parse(e.getAttributeValue("order"), nameToVar);
+            double s = Double.parseDouble(e.getAttributeValue("score"));
+            double c = Double.parseDouble(e.getAttributeValue("infoGain"));
+            return new OrderInfo(o, s, c);
+        }
+    }
+    
+    /**
      * Generate all orders of a given list of variables.
      * 
      * @param vars  list of variables
@@ -371,10 +533,10 @@ public class FindBestDomainOrder {
         ArrayList/*<OrderInfo>*/ afterConstraints = new ArrayList(vars.size()-1);
         while (it.hasNext()) {
             Object cadr = it.next();
-            PrecedenceConstraint before = new PrecedenceConstraint(car, cadr);
+            BeforeConstraint before = new BeforeConstraint(car, cadr);
             ConstraintInfo before_i = constraints.getInfo(before);
             beforeConstraints.add(before_i);
-            PrecedenceConstraint after = new PrecedenceConstraint(cadr, car);
+            BeforeConstraint after = new BeforeConstraint(cadr, car);
             ConstraintInfo after_i = constraints.getInfo(after);
             afterConstraints.add(after_i);
         }
