@@ -30,7 +30,7 @@ import org.sf.bddbddb.util.Navigator;
  * @author jwhaley
  * @version $Id$
  */
-public abstract class InferenceRule {
+public abstract class InferenceRule implements IterationElement{
     
     List/*<RuleTerm>*/ top;
     RuleTerm bottom;
