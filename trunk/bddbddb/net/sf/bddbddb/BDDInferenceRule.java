@@ -3,6 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -13,9 +14,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.io.IOException;
+
 import jwutil.collections.AppendIterator;
 import jwutil.util.Assert;
+import net.sf.bddbddb.FindBestDomainOrder.TrialGuess;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.VarToAttribTranslator;
 import net.sf.javabdd.BDD;
@@ -1050,7 +1052,8 @@ public class BDDInferenceRule extends InferenceRule {
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
             //Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
-            Order o = fbdo.tryNewGoodOrder2(tc, allVars, this);
+            TrialGuess guess = fbdo.tryNewGoodOrder2(tc, allVars, this);
+            Order o = guess.order;
             if (o == null) break;
             String vOrder = o.toVarOrderString(variableToBDDDomain);
             System.out.println("Trying order "+vOrder);
@@ -1059,7 +1062,7 @@ public class BDDInferenceRule extends InferenceRule {
             time = fbo.tryOrder(true, vOrder);
             time = Math.min(time, LONG_TIME);
             bestTime = Math.min(time, bestTime);
-            tc.addTrial(o, time);
+            tc.addTrial(o,guess.prediction, time);
             if (time >= LONG_TIME)
                 fbdo.neverTryAgain(this, o);
         }
