@@ -1,0 +1,72 @@
+
+.basedir "pa.joeq"
+
+### Domains
+
+.include "fielddomains.pa"
+
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_VC1xVC0_T0_Z0_T1_H0_H1
+
+### Relations
+
+cvP (vc:VC0, v:V0, h:H0) input
+hP (ha:H0, field:F0, hb:H1) input
+IE (invoke:I0, target:M0) input
+vP0 (v:V0, h:H0) input
+S (base:V0, field:F0, src:V1) input
+L (base:V0, field:F0, dest:V1) input
+actual (invoke:I0, num:Z0, actualparam:V1) input
+formal (method:M0, num:Z0, formalparam:V0) input
+Mret (method:M0, v:V1) input
+Mthr (method:M0, v:V1) input
+Iret (invoke:I0, v:V0) input
+Ithr (invoke:I0, v:V0) input
+mI (method:M0, invoke:I0, name:N0) input
+IE0 (invoke:I0, target:M0) input
+vT (var:V0, type:T0) input
+hT (heap:H0, type:T1) input
+aT (type:T0, type:T1) input
+cha (type:T1, name:N0, method:M0) input
+hP0 (ha:H0, field:F0, hb:H1) input
+IEfilter (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0) input
+cA (vcdest:VC0, dest:V0, vcsrc:VC1, source:V1) input
+
+pH (h:H0) input
+methodAccess (method:M0, type:Z0) input
+fieldAccess (field:F0, type:Z0) input
+
+publicFields (field:F0)
+privateFields (field:F0)
+protectedFields (field:F0)
+packageFields (field:F0)
+publicMethods (method:M0)
+privateMethods (method:M0)
+protectedMethods (method:M0)
+packageMethods (method:M0)
+
+nH (h:H0) output
+nV (v:V0) output
+
+### Rules
+
+publicFields(f) :- fieldAccess(f, 0).
+privateFields(f) :- fieldAccess(f, 1).
+protectedFields(f) :- fieldAccess(f, 2).
+packageFields(f) :- fieldAccess(f, 3).
+publicMethods(m) :- methodAccess(m, 0).
+privateMethods(m) :- methodAccess(m, 1).
+protectedMethods(m) :- methodAccess(m, 2).
+packageMethods(m) :- methodAccess(m, 3).
+
+# Anything returned/thrown by a public method when it is called externally.
+nH(h) :- publicMethod(m), Mret(m,v), cvP(0,v,h).
+nH(h) :- publicMethod(m), Mthr(m,v), cvP(0,v,h).
+# Anything reachable via a public field from a necessary object.
+nH(h) :- nH(h0), hP(h0,f,h), publicFields(f).
+# Anything written into a public static field.
+nH(h) :- hP(0,f,h), publicFields(f).
+
+# Anything written into a placeholder object.
+nH(h) :- hP(h0,f,h), pH(h0).
+# Anything passed into a method called on a placeholder object.
+nH(h) :- pH(h0), cvP(c,v0,h0), actual(i,0,v0), actual(i,k,v), cvP(c,v,h).
