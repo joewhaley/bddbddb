@@ -363,7 +363,7 @@ public class BDDRelation extends Relation {
                     long val = v[k];
                     if (val == 0L) {
                         // Check if this is the universal set.
-                        BDDDomain d = solver.bdd.getDomain(k);
+                        BDDDomain d = solver.bdd.getDomain(domIndices[k]);
                         if (i.isDontCare(d)) {
                             i.skipDontCare(d);
                             dos.write("* ");
