@@ -26,7 +26,7 @@ import net.sf.bddbddb.Solver;
 public class AttribToDomainMap extends AbstractMap {
     
     public static Collection convert(Collection attribs) {
-        Collection result = new HashSet();
+        Collection result = new LinkedList();
         for (Iterator i = attribs.iterator(); i.hasNext(); ) {
             Attribute a = (Attribute) i.next();
             result.add(a.getDomain());

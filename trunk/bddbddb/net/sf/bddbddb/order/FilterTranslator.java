@@ -29,13 +29,17 @@ public class FilterTranslator implements OrderTranslator {
      */
     public Order translate(Order o) {
         LinkedList result = new LinkedList();
+        Collection cCopy = new LinkedList(c);
         for (Iterator i = o.iterator(); i.hasNext(); ) {
             Object a = i.next();
             if (a instanceof Collection) {
                 Collection result2 = new LinkedList();
                 for (Iterator j = ((Collection) a).iterator(); j.hasNext(); ) {
                     Object a2 = j.next();
-                    if (c.contains(a2)) result2.add(a2);
+                    if (cCopy.contains(a2)){
+                        result2.add(a2);
+                        cCopy.remove(a2);
+                    }
                 }
                 if (result2.size() > 1) {
                     result.add(result2);
@@ -43,7 +47,10 @@ public class FilterTranslator implements OrderTranslator {
                     result.add(result2.iterator().next());
                 }
             } else {
-                if (c.contains(a)) result.add(a);
+                if (cCopy.contains(a)){
+                    result.add(a);
+                    cCopy.remove(a);
+                }
             }
         }
         return new Order(result);

@@ -37,12 +37,13 @@ public class TrialDataRepository {
     Collection allTrials;
     static int TRACE = FindBestDomainOrder.TRACE;
     Map /*InferenceRule, TrialDataGroup*/ varDataMap, /*Set, TrialDataGroup */attribDataMap, domainDataMap;
-    MultiMap attribListeners, domainListeners;
+    MultiMap varListeners, attribListeners, domainListeners;
     static PrintStream out = FindBestDomainOrder.out;
     BDDSolver solver;
     public TrialDataRepository(BDDSolver solver){
         this.solver = solver;
         varDataMap = new HashMap();
+        varListeners = new GenericMultiMap();
         attribDataMap = new HashMap();
         attribListeners = new GenericMultiMap();
         domainDataMap = new HashMap();
@@ -114,7 +115,7 @@ public class TrialDataRepository {
         return data;
     }
     
-    public static void addToInstances(Instances data, TrialCollection tc, OrderTranslator t) {
+    public static void addToInstances(TrialInstances data, TrialCollection tc, OrderTranslator t) {
         if (tc.size() == 0) return;
         double best;
         if (tc.getMinimum().isMax()) best = 1;
@@ -130,11 +131,16 @@ public class TrialDataRepository {
     }
     
 
+ 
     public TrialDataGroup getVariableDataGroup(InferenceRule rule, List variables){
-        TrialDataGroup dataGroup = (TrialDataGroup)varDataMap.get(rule);
+        TrialDataGroup dataGroup = (TrialDataGroup) varDataMap.get(variables);
         if(dataGroup == null){
-            dataGroup = new TrialDataGroup.VariableTrialDataGroup(variables, buildVarInstances(rule, variables) );
-            varDataMap.put(rule, dataGroup);
+            dataGroup = new TrialDataGroup.VariableTrialDataGroup(variables, buildVarInstances(rule, variables));
+            varDataMap.put(variables, dataGroup);
+            Collection pairs = WekaInterface.generateAllPairs(variables);
+            for(Iterator it = pairs.iterator(); it.hasNext(); ){
+                varListeners.add(it.next(), dataGroup); 
+            }
         }
         return dataGroup;
     }
@@ -144,7 +150,7 @@ public class TrialDataRepository {
         Set attribs = new HashSet(VarToAttribMap.convert(variables, rule));
         TrialDataGroup dataGroup = (TrialDataGroup) attribDataMap.get(attribs);
         if(dataGroup == null){
-            dataGroup = new TrialDataGroup.AttribTrialDataGroup(attribs, buildAttribInstances(rule, variables) );
+            dataGroup = new TrialDataGroup.AttribTrialDataGroup(attribs, buildAttribInstances(rule, variables));
             attribDataMap.put(attribs, dataGroup);
             Collection pairs = WekaInterface.generateAllPairs(attribs);
             for(Iterator it = pairs.iterator(); it.hasNext(); ){
@@ -155,11 +161,12 @@ public class TrialDataRepository {
     }
     
     public TrialDataGroup getDomainDataGroup(InferenceRule rule, List variables){
-        Set domains = new HashSet(AttribToDomainMap.convert(VarToAttribMap.convert(variables, rule)));
-        TrialDataGroup dataGroup = (TrialDataGroup) domainDataMap.get(domains);
+        List domains = new LinkedList(AttribToDomainMap.convert(VarToAttribMap.convert(variables, rule)));
+        Set domainSet = new HashSet(domains);
+        TrialDataGroup dataGroup = (TrialDataGroup) domainDataMap.get(domainSet);
         if(dataGroup == null){
             dataGroup = new TrialDataGroup.DomainTrialDataGroup(domains, buildDomainInstances(rule, variables) );
-            domainDataMap.put(domains, dataGroup);
+            domainDataMap.put(domainSet, dataGroup);
             Collection pairs = WekaInterface.generateAllPairs(domains);
             for(Iterator it = pairs.iterator(); it.hasNext(); ){
                 domainListeners.add(it.next(), dataGroup); 
@@ -170,22 +177,34 @@ public class TrialDataRepository {
     
     public boolean addTrial(InferenceRule rule, List variables, TrialInfo info){
         Order o_v = info.order;
-        TrialDataGroup varData = (TrialDataGroup) varDataMap.get(rule);
-        Assert._assert(varData != null);
         TrialCollection tc = info.getCollection();
         double trialColBest;
         if (tc.getMinimum().isMax()) trialColBest = 1;
         else trialColBest = (double) tc.getMinimum().cost + 1;
         
-        boolean changed = varData.update(o_v,info, trialColBest);
+        //boolean changed = varData.update(o_v,info, trialColBest);
+        boolean changed = false;
+        Collection varPairs = WekaInterface.generateAllPairs(variables);
+        Collection notified = new HashSet();
+        for(Iterator it = varPairs.iterator(); it.hasNext(); ){
+            Collection listeners = varListeners.getValues(it.next());                                              
+            Assert._assert(listeners != null);
+            for(Iterator jt = listeners.iterator(); jt.hasNext();){
+                TrialDataGroup dataGroup = (TrialDataGroup) jt.next();
+                if(!notified.contains(dataGroup)){
+                    changed |= dataGroup.update(o_v, info,trialColBest);
+                    notified.add(dataGroup);
+                }
+            }
+        }
+        
         OrderTranslator translator = new VarToAttribTranslator(rule);
         Order o_a = translator.translate(o_v);
         Collection attribs = VarToAttribMap.convert(variables, rule);
         Collection attribPairs = WekaInterface.generateAllPairs(attribs);
-        Collection notified = new HashSet();
         for(Iterator it = attribPairs.iterator(); it.hasNext(); ){
             Collection listeners = attribListeners.getValues(it.next());                                              
-            Assert._assert(attribListeners != null);
+            Assert._assert(listeners != null);
             for(Iterator jt = listeners.iterator(); jt.hasNext();){
                 TrialDataGroup dataGroup = (TrialDataGroup) jt.next();
                 if(!notified.contains(dataGroup)){
@@ -195,7 +214,6 @@ public class TrialDataRepository {
             }
         }
         Order o_d = AttribToDomainTranslator.INSTANCE.translate(o_a);
-       
         Collection domainPairs = WekaInterface.generateAllPairs(AttribToDomainMap.convert(attribs));
         for(Iterator it = domainPairs.iterator(); it.hasNext(); ){
             Collection domListeners = domainListeners.getValues(it.next());
@@ -215,11 +233,13 @@ public class TrialDataRepository {
 
         public static String CLASSIFIER = "net.sf.bddbddb.order.MyId3";
         private TrialInstances trialInstances;
+        private TrialInstances trialInstancesCopy;
         private Discretization discretization;
         private double discretizeParam = 0;
         private double thresholdParam = 0;
+        
         private Classifier classifier;
-        private double infoSinceClassRebuild, infoSinceDiscRebuild;
+        private double infoSinceClassRebuild, infoSinceDiscRebuild, infoSinceInstances;
         private double infoThreshold; 
         protected FilterTranslator filter;
         protected TrialDataGroup(TrialInstances instances){
@@ -240,8 +260,8 @@ public class TrialDataRepository {
                discretize(discretizeParam);
            else
                threshold(thresholdParam);
-          
-            classifier = WekaInterface.buildClassifier(CLASSIFIER, trialInstances);
+          TrialInstances instances = getTrialInstances();
+            classifier = instances.numInstances() > 0 ? WekaInterface.buildClassifier(CLASSIFIER, instances) : null;
             return classifier;
         }
         
@@ -258,18 +278,18 @@ public class TrialDataRepository {
          * @return Returns the discretization.
          */
         public Discretization discretize(double discretizeFact) {
-            if((discretizeFact != discretizeParam) || (infoSinceDiscRebuild >= infoThreshold)){
+            if((discretizeFact != discretizeParam) || (infoSinceDiscRebuild > infoThreshold)){
                 setDiscretizeParam(discretizeFact);
-                discretization = trialInstances.discretize(discretizeParam);
+                discretization = getTrialInstances().discretize(discretizeParam);
                 infoSinceDiscRebuild = 0;
             }
             return discretization;
         }
        
         public Discretization threshold(double threshold){
-            if((threshold != thresholdParam) || (infoSinceDiscRebuild >= infoThreshold)){
+            if((threshold != thresholdParam) || (infoSinceDiscRebuild > infoThreshold)){
                 setThresholdParam(threshold);
-                discretization = trialInstances.threshold(thresholdParam);
+                discretization = getTrialInstances().threshold(thresholdParam);
                 infoSinceDiscRebuild = 0;
             }
             return discretization;
@@ -279,20 +299,27 @@ public class TrialDataRepository {
          * @return Returns the instances.
          */
         public TrialInstances getTrialInstances() {
-            return trialInstances;
+            if(trialInstancesCopy == null || infoSinceInstances > infoThreshold){
+                trialInstancesCopy = trialInstances.copy();
+                infoSinceInstances = 0;
+            }
+            return trialInstancesCopy;
         }
         
         public boolean update(Order order, TrialInfo info, double trialColBest){
             infoSinceClassRebuild = Double.POSITIVE_INFINITY;
             infoSinceDiscRebuild = Double.POSITIVE_INFINITY;
+            infoSinceInstances = Double.POSITIVE_INFINITY;
             Order filteredOrder = filter.translate(order);
             Assert._assert(filteredOrder.numberOfElements() > 1);
+            System.out.println("Order: " + order + "\n" + filter + "\nfiltered order: " + filteredOrder);
             double score = (double) (info.cost + 1) / trialColBest; 
             TrialInstance instance = TrialInstance.construct(info, filteredOrder, score, trialInstances);
             if(instance == null){
                 System.out.println("Failed constructing instance of " + filteredOrder + " with " + filter + " on " + trialInstances);
                 Assert.UNREACHABLE();
             }
+            System.out.println("Adding new Instance to DataGroup: " + this);
             trialInstances.add(instance);
             return true;
         }

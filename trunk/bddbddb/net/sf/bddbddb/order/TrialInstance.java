@@ -19,15 +19,16 @@ import weka.core.Instances;
 
 public class TrialInstance extends OrderInstance implements Comparable {
 
-    public static TrialInstance construct(TrialInfo ti, Order o, double cost, Instances dataSet) {
+    public static TrialInstance construct(TrialInfo ti, Order o, double cost, TrialInstances dataSet) {
         return construct(ti, o, cost, dataSet, 1);
     }
 
-    public static TrialInstance construct(TrialInfo ti, Order o, double cost, Instances dataSet, double weight) {
+    public static TrialInstance construct(TrialInfo ti, Order o, double cost, TrialInstances dataSet, double weight) {
         double[] d = new double[dataSet.numAttributes()];
         for (int i = 0; i < d.length; ++i) {
             d[i] = Instance.missingValue();
         }
+      
         for (Iterator i = o.getConstraints().iterator(); i.hasNext();) {
             OrderConstraint oc = (OrderConstraint) i.next();
             // TODO: use a map from Pair to int instead of building String and doing linear search.
@@ -36,7 +37,7 @@ public class TrialInstance extends OrderInstance implements Comparable {
             if (oa != null) {
                 d[oa.index()] = WekaInterface.getType(oc);
             } else {
-                System.out.println("Warning: cannot find constraint "+oc+" order "+ti.order+" in dataset "+dataSet.relationName());
+                System.out.println("Warning: cannot find constraint "+oc+" order "+ti.order+" in dataset "+dataSet);
                 Assert.UNREACHABLE();
                 return null;
             }
@@ -78,6 +79,11 @@ public class TrialInstance extends OrderInstance implements Comparable {
     
     public static TrialInstance cloneInstance(TrialInstance instance){
         return new TrialInstance(instance.weight(), instance.toDoubleArray(), instance.getOrder(), instance.getTrialInfo());
+    }
+    
+    /* just tests if the orders are equal */
+    public boolean equals(Object o){
+        return this.ti.order.equals(((TrialInstance) o).ti.order);
     }
 
 }
