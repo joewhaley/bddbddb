@@ -85,8 +85,8 @@ public class BDDSolver extends Solver {
                 if (s.length() == 0) continue;
                 if (s.startsWith("#")) continue;
                 StringTokenizer st = new StringTokenizer(s);
-                String fieldDomain = st.nextToken();
-                Domain fd = (Domain) nameToFieldDomain.get(fieldDomain);
+                String domain = st.nextToken();
+                Domain fd = (Domain) nameToDomain.get(domain);
                 allocateBDDDomain(fd);
             }
         } catch (IOException x) {
@@ -432,7 +432,7 @@ public class BDDSolver extends Solver {
         
         // one BDDDomain for each relation field.
         Set activeRelations = new HashSet();
-        Map fieldOrVarToFieldDomain = new HashMap();
+        Map fieldOrVarToDomain = new HashMap();
         Map fieldOrVarToBDDDomain = new HashMap();
         for (Iterator i = rules.iterator(); i.hasNext(); ) {
             InferenceRule ir = (InferenceRule) i.next();
@@ -442,10 +442,10 @@ public class BDDSolver extends Solver {
                     int x = 0;
                     for (Iterator k = rt.relation.attributes.iterator(); k.hasNext(); ++x) {
                         Attribute a = (Attribute) k.next();
-                        Assert._assert(!fieldOrVarToFieldDomain.containsKey(a));
+                        Assert._assert(!fieldOrVarToDomain.containsKey(a));
                         Assert._assert(!fieldOrVarToBDDDomain.containsKey(a));
                         Domain fd = a.attributeDomain;
-                        fieldOrVarToFieldDomain.put(a, fd);
+                        fieldOrVarToDomain.put(a, fd);
                         BDDDomain dom = makeDomain(my_bdd, a.toString(), BITS);
                         fieldOrVarToBDDDomain.put(a, dom);
                     }
@@ -463,9 +463,9 @@ public class BDDSolver extends Solver {
                     if (!ir.necessaryVariables.contains(v)) continue;
                     Attribute a = (Attribute) rt.relation.attributes.get(k);
                     Domain fd = a.attributeDomain;
-                    Domain fd2 = (Domain) fieldOrVarToFieldDomain.get(v);
+                    Domain fd2 = (Domain) fieldOrVarToDomain.get(v);
                     Assert._assert(fd2 == null || fd == fd2);
-                    fieldOrVarToFieldDomain.put(v, fd);
+                    fieldOrVarToDomain.put(v, fd);
                     BDDDomain dom = (BDDDomain) fieldOrVarToBDDDomain.get(v);
                     if (dom == null) {
                         dom = makeDomain(my_bdd, v.toString(), BITS);
@@ -479,7 +479,7 @@ public class BDDSolver extends Solver {
         
         // Every field and variable must be assigned to a physical domain
         // of the appropriate size.
-        for (Iterator i = fieldOrVarToFieldDomain.entrySet().iterator(); i.hasNext(); ) {
+        for (Iterator i = fieldOrVarToDomain.entrySet().iterator(); i.hasNext(); ) {
             Map.Entry e = (Map.Entry) i.next();
             BDDDomain my_d = (BDDDomain) fieldOrVarToBDDDomain.get(e.getKey());
             Domain fd = (Domain) e.getValue();
