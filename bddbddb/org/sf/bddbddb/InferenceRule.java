@@ -410,6 +410,8 @@ public abstract class InferenceRule {
         Collection varsToProject = new LinkedList(rt.variables);
         varsToProject.removeAll(necessaryVariables);
         if (!varsToProject.isEmpty()) {
+            if (solver.TRACE)
+                solver.out.println("Projecting away variables: "+varsToProject);
             List newAttributes = new LinkedList();
             for (int j = 0; j < rt.numberOfVariables(); ++j) {
                 Variable v = rt.getVariable(j);
@@ -417,15 +419,21 @@ public abstract class InferenceRule {
                     newAttributes.add(top_r.getAttribute(j));
                 } else if (v instanceof Constant) {
                     Relation new_r = top_r.copy();
+                    new_r.initialize();
                     Attribute a = top_r.getAttribute(j);
                     long value = ((Constant) v).value;
                     JoinConstant jc = new JoinConstant(new_r, top_r, a, value);
+                    if (solver.TRACE)
+                        solver.out.println("Generated: "+jc);
                     ir.add(jc);
                     top_r = new_r;
                 }
             }
             Relation new_r = solver.createRelation(top_r+"_p", newAttributes);
+            new_r.initialize();
             Project p = new Project(new_r, top_r);
+            if (solver.TRACE)
+                solver.out.println("Generated: "+p);
             ir.add(p);
             top_r = new_r;
         }
@@ -449,17 +457,25 @@ public abstract class InferenceRule {
                 Variable v = rt.getVariable(j);
                 if (unnecessaryVariables.contains(v)) continue;
                 Attribute a = rt.relation.getAttribute(j);
-                Attribute a2 = (Attribute) varToAttrib.put(v, a);
-                if (a2 != null && a2 != a) {
+                Attribute a2 = (Attribute) varToAttrib.get(v);
+                if (a2 == null) {
+                    if (result != null && result.attributes.contains(a)) {
+                        // Attribute is already present in result, use a different attribute.
+                        a = new Attribute(a.attributeName+'\'', a.attributeDomain, "");
+                        anyRenames = true;
+                    }
+                    varToAttrib.put(v, a2 = a);
+                } else if (!a2.equals(a)) {
                     anyRenames = true;
-                    newAttributes.add(a2);
-                } else {
-                    newAttributes.add(a);
                 }
+                newAttributes.add(a2);
             }
             if (anyRenames) {
                 Relation new_r = solver.createRelation(r+"_r", newAttributes);
+                new_r.initialize();
                 Rename rename = new Rename(new_r, r);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+rename);
                 ir.add(rename);
                 r = new_r;
             }
@@ -470,25 +486,33 @@ public abstract class InferenceRule {
                 newAttributes.removeAll(r.attributes);
                 newAttributes.addAll(r.attributes);
                 Relation new_r = solver.createRelation(r+"_j", newAttributes);
+                new_r.initialize();
                 Join join = new Join(new_r, r, result);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+join);
                 ir.add(join);
                 result = new_r;
             } else {
                 result = r;
             }
             
+            if (solver.TRACE && result != null)
+                System.out.println("Result attributes after join: "+result.attributes);
+            
             // Project away unnecessary attributes.
-            boolean anyProjects = false;
-            newAttributes = new LinkedList();
+            List toProject = new LinkedList();
         outer:
             for (int k = 0; k < rt.numberOfVariables(); ++k) {
                 Variable v = rt.getVariable(k);
                 if (unnecessaryVariables.contains(v)) continue;
                 Attribute a = (Attribute) varToAttrib.get(v);
                 Assert._assert(a != null);
+                if (solver.TRACE)
+                    solver.out.print("Variable "+v+" Attribute "+a+": ");
                 Assert._assert(result.attributes.contains(a));
                 if (bottom.variables.contains(v)) {
-                    newAttributes.add(a);
+                    if (solver.TRACE)
+                        solver.out.println("variable needed for bottom");
                     continue;
                 }
                 Iterator j = top.iterator();
@@ -496,15 +520,24 @@ public abstract class InferenceRule {
                 while (j.hasNext()) {
                     RuleTerm rt2 = (RuleTerm) j.next();
                     if (rt2.variables.contains(v)) {
-                        newAttributes.add(a);
+                        if (solver.TRACE)
+                            solver.out.println("variable needed for future term");
                         continue outer;
                     }
                 }
-                anyProjects = true;
+                if (solver.TRACE)
+                    solver.out.println("Not needed anymore, projecting away");
+                toProject.add(a);
             }
-            if (anyProjects) {
+            
+            if (!toProject.isEmpty()) {
+                newAttributes = new LinkedList(result.attributes);
+                newAttributes.removeAll(toProject);
                 Relation result2 = solver.createRelation(result+"_p2", newAttributes);
+                result2.initialize();
                 Project p = new Project(result2, result);
+                if (solver.TRACE)
+                    solver.out.println("Generated: "+p);
                 ir.add(p);
                 result = result2;
             }
@@ -518,14 +551,17 @@ public abstract class InferenceRule {
             Attribute a = bottom.relation.getAttribute(j);
             Attribute a2 = (Attribute) varToAttrib.get(v);
             Assert._assert(a2 != null);
-            if (a2 != a) {
+            if (!a2.equals(a)) {
                 anyRenames = true;
             }
-            newAttributes.add(a2);
+            newAttributes.add(a);
         }
         if (anyRenames) {
-            Relation result2 = solver.createRelation(result+"_r", newAttributes);
+            Relation result2 = solver.createRelation(result+"_r2", newAttributes);
+            result2.initialize();
             Rename rename = new Rename(result2, result);
+            if (solver.TRACE)
+                solver.out.println("Generated: "+rename);
             ir.add(rename);
             result = result2;
         }
@@ -538,11 +574,17 @@ public abstract class InferenceRule {
                 if (result == null) {
                     // Empty right-hand-side.
                     result = bottom.relation.copy();
+                    result.initialize();
                     GenConstant c = new GenConstant(result, a, value);
+                    if (solver.TRACE)
+                        solver.out.println("Generated: "+c);
                     ir.add(c);
                 } else {
                     Relation result2 = result.copy();
+                    result2.initialize();
                     JoinConstant jc = new JoinConstant(result2, result, a, value);
+                    if (solver.TRACE)
+                        solver.out.println("Generated: "+jc);
                     ir.add(jc);
                     result = result2;
                 }
@@ -551,6 +593,8 @@ public abstract class InferenceRule {
         if (result != null) {
             // Finally, union in the result.
             Union u = new Union(bottom.relation, bottom.relation, result);
+            if (solver.TRACE)
+                solver.out.println("Generated: "+u);
             ir.add(u);
         }
         

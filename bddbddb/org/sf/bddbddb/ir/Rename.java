@@ -29,11 +29,11 @@ public class Rename extends Operation {
         this.r0 = r0;
         this.r1 = r1;
         this.renames = new LinkedList();
-        for (int i = 0; i < r0.getAttributes().size(); ++i) {
+        for (int i = 0; i < r0.numberOfAttributes(); ++i) {
             Attribute a0 = r0.getAttribute(i);
             Attribute a1 = r1.getAttribute(i);
-            if (!a0.equals(a1)) {
-                renames.add(new Pair(a0, a1));
+            if (!a1.equals(a0)) {
+                renames.add(new Pair(a1, a0));
             }
         }
     }
@@ -48,7 +48,10 @@ public class Rename extends Operation {
         sb.append(r1.toString());
         for (Iterator i = renames.iterator(); i.hasNext(); ) {
             Pair p = (Pair) i.next();
-            sb.append(p.left.toString()+"->"+p.right.toString());
+            sb.append(',');
+            sb.append(p.left.toString());
+            sb.append("->");
+            sb.append(p.right.toString());
         }
         sb.append(")");
         return sb.toString();

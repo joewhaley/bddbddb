@@ -21,7 +21,6 @@ public class Project extends Operation {
     /**
      * @param r0
      * @param r1
-     * @param a
      */
     public Project(Relation r0, Relation r1) {
         this.r0 = r0;
