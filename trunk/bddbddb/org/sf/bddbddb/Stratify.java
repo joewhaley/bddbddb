@@ -35,6 +35,7 @@ public class Stratify {
     
     boolean USE_NESTED_SCCS = true;
     boolean TRACE;
+    boolean TRACE_FULL = System.getProperty("tracestratify") != null;
     PrintStream out;
     
     Solver solver;
@@ -179,20 +180,20 @@ public class Stratify {
         }
         while (!w.isEmpty()) {
             SCComponent o = (SCComponent) w.removeFirst();
-            if (TRACE) out.println("Pulling from worklist: "+o);
+            if (TRACE_FULL) out.println("Pulling from worklist: "+o);
             Collection c = Arrays.asList(o.next());
             for (Iterator i = c.iterator(); i.hasNext(); ) {
                 SCComponent p = (SCComponent) i.next();
-                if (TRACE) out.println("  Successor: "+p);
-                if (TRACE) out.println("    Predecessors: "+Arrays.asList(p.prev()));
+                if (TRACE_FULL) out.println("  Successor: "+p);
+                if (TRACE_FULL) out.println("    Predecessors: "+Arrays.asList(p.prev()));
                 if (stratum.containsAll(Arrays.asList(p.prev()))) {
-                    if (TRACE) out.println("  Adding "+p+" to stratum");
+                    if (TRACE_FULL) out.println("  Adding "+p+" to stratum");
                     if (stratum.add(p)) {
-                        if (TRACE) out.println("    New element, adding to worklist.");
+                        if (TRACE_FULL) out.println("    New element, adding to worklist.");
                         w.add(p);
                     }
                 } else {
-                    if (TRACE) out.println("  Not all predecessors of "+p+" (yet)");
+                    if (TRACE_FULL) out.println("  Not all predecessors of "+p+" (yet)");
                 }
             }
         }
@@ -200,7 +201,7 @@ public class Stratify {
         for (Iterator i = sccs.iterator(); i.hasNext(); ) {
             SCComponent p = (SCComponent) i.next();
             if (!stratum.containsAll(Arrays.asList(p.prev()))) {
-                if (TRACE) out.println("Not all predecessors of relation "+p+", removing.");
+                if (TRACE_FULL) out.println("Not all predecessors of relation "+p+", removing.");
                 stratum.remove(p);
             }
         }
@@ -255,17 +256,17 @@ public class Stratify {
     }
     
     void removeABackedge(SCComponent scc, InferenceRule.DependenceNavigator depNav) {
-        if (TRACE) out.println("SCC"+scc.getId()+" contains: "+scc.nodeSet());
+        if (TRACE_FULL) out.println("SCC"+scc.getId()+" contains: "+scc.nodeSet());
         Object[] entries = scc.entries();
-        if (TRACE) out.println("SCC"+scc.getId()+" has "+entries.length+" entries.");
+        if (TRACE_FULL) out.println("SCC"+scc.getId()+" has "+entries.length+" entries.");
         Object entry;
         if (entries.length > 0) {
             entry = entries[0];
         } else {
-            if (TRACE) out.println("No entries, choosing a node.");
+            if (TRACE_FULL) out.println("No entries, choosing a node.");
             entry = scc.nodes()[0];
         }
-        if (TRACE) out.println("Entry into SCC"+scc.getId()+": "+entry);
+        if (TRACE_FULL) out.println("Entry into SCC"+scc.getId()+": "+entry);
         
         if (false) {
             Collection preds = depNav.prev(entry);
@@ -289,10 +290,10 @@ public class Stratify {
                     }
                 }
             }
-            if (TRACE) out.println("Last element in SCC: "+last);
+            if (TRACE_FULL) out.println("Last element in SCC: "+last);
             Object last_next;
             List possible = new LinkedList(depNav.next(last));
-            if (TRACE) out.println("Successors of last element: "+possible);
+            if (TRACE_FULL) out.println("Successors of last element: "+possible);
             if (possible.size() == 1) last_next = possible.iterator().next();
             else if (possible.contains(entry)) last_next = entry;
             else {
@@ -301,7 +302,7 @@ public class Stratify {
                 if (!possible.isEmpty())
                     last_next = possible.iterator().next();
             }
-            if (TRACE) out.println("Removing backedge "+last+" -> "+last_next);
+            if (TRACE_FULL) out.println("Removing backedge "+last+" -> "+last_next);
             depNav.removeEdge(last, last_next);
         }
     }
