@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Random;
 
 import jwutil.util.Assert;
-import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.NoSupportForMissingValuesException;

@@ -197,7 +197,7 @@ public class OrderConstraintSet {
      * @return  collection of interleaved elements, including o
      */
     Collection getInterleaved(Object o) {
-        Collection result = new LinkedList(); // LinkedHashSet()
+        Collection result = new LinkedHashSet(); // LinkedList();
         result.add(o);
         Collection c = objToConstraints.getValues(o);
         if (c != null) {
