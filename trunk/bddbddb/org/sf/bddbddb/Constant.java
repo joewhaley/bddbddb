@@ -14,7 +14,7 @@ public class Constant extends Variable {
     long value;
     
     /**
-     * 
+     * Create a constant with the given value.
      */
     public Constant(long value) {
         super(Long.toString(value));

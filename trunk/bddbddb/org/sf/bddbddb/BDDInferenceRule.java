@@ -46,6 +46,11 @@ public class BDDInferenceRule extends InferenceRule {
     boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
     boolean TRACE, TRACE_FULL;
     
+    /**
+     * @param solver
+     * @param top
+     * @param bottom
+     */
     public BDDInferenceRule(BDDSolver solver, List/*<RuleTerm>*/ top, RuleTerm bottom) {
         super(top, bottom);
         updateCount = 0;
@@ -55,6 +60,9 @@ public class BDDInferenceRule extends InferenceRule {
         //initialize();
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.InferenceRule#copyOptions(org.sf.bddbddb.InferenceRule)
+     */
     public void copyOptions(InferenceRule r) {
         super.copyOptions(r);
         if (r instanceof BDDInferenceRule) {
@@ -67,6 +75,9 @@ public class BDDInferenceRule extends InferenceRule {
         }
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.InferenceRule#initialize()
+     */
     void initialize() {
         super.initialize();
         if (TRACE) solver.out.println("Initializing BDDInferenceRule "+this);
@@ -88,7 +99,8 @@ public class BDDInferenceRule extends InferenceRule {
                         d2 = d;
                     } else {
                         // need to use a new BDDDomain
-                        FieldDomain fd = (FieldDomain) r.fieldDomains.get(j);
+                        Attribute a = (Attribute) r.attributes.get(j);
+                        Domain fd = a.attributeDomain;
                         Collection existingBDDDomains = solver.getBDDDomains(fd);
                         for (Iterator k = existingBDDDomains.iterator(); k.hasNext(); ) {
                             BDDDomain d3 = (BDDDomain) k.next();
@@ -139,6 +151,9 @@ public class BDDInferenceRule extends InferenceRule {
         }
     }
     
+    /**
+     * 
+     */
     void initializeOldRelationValues() {
         this.oldRelationValues = new BDD[top.size()];
         for (int i = 0; i < oldRelationValues.length; ++i) {
@@ -146,6 +161,11 @@ public class BDDInferenceRule extends InferenceRule {
         }
     }
     
+    /**
+     * @param rt
+     * @param direction
+     * @return
+     */
     BDDPairing calculateRenames(RuleTerm rt, boolean direction) {
         BDDRelation r = (BDDRelation) rt.relation;
         if (TRACE) solver.out.println("Calculating renames for "+r);
@@ -166,13 +186,16 @@ public class BDDInferenceRule extends InferenceRule {
         return pairing;
     }
     
-    // non-incremental version.
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.InferenceRule#update()
+     */
     public boolean update() {
         ++updateCount;
         if (incrementalize) {
             if (oldRelationValues != null) return updateIncremental();
         }
         
+        // non-incremental version.
         if (solver.NOISY)
             solver.out.println("Applying inference rule:\n   "+this+" ("+updateCount+")");
         
@@ -374,7 +397,10 @@ public class BDDInferenceRule extends InferenceRule {
         return changed;
     }
     
-    // Incremental version.
+    /**
+     * Incremental version.
+     * @return
+     */
     private boolean updateIncremental() {
         if (solver.NOISY)
             solver.out.println("Applying inference rule:\n   "+this+" (inc) ("+updateCount+")");
@@ -670,6 +696,9 @@ public class BDDInferenceRule extends InferenceRule {
         return changed;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.InferenceRule#reportStats()
+     */
     public void reportStats() {
         solver.out.println("Rule "+this);
         solver.out.println("   Updates: "+updateCount);
@@ -693,6 +722,10 @@ public class BDDInferenceRule extends InferenceRule {
         return sb.toString();
     }
     
+    /**
+     * @param b
+     * @param domains
+     */
     static void addDomainsOf(BDD b, Collection domains) {
         BDD s = b.support();
         int[] a = s.scanSetDomains();
@@ -709,12 +742,21 @@ public class BDDInferenceRule extends InferenceRule {
         long time;
         boolean first;
         
+        /**
+         * @param order
+         * @param varOrder
+         * @param time
+         */
         PermData(List order, String varOrder, long time) {
             this.order = order;
             this.varOrder = varOrder;
             this.time = time;
         }
         
+        /**
+         * @param that
+         * @return
+         */
         public int compareTo(PermData that) {
             if (this.time < that.time) return -1;
             if (this.time > that.time) return 1;
@@ -735,6 +777,15 @@ public class BDDInferenceRule extends InferenceRule {
     static int MAX_ORDERS = 25;
     static int MAX_DIFF = 10000;
     
+    /**
+     * @param bdd
+     * @param domains
+     * @param origVarOrder
+     * @param b1
+     * @param b2
+     * @param b3
+     * @return
+     */
     String findBestDomainOrder(BDDFactory bdd,
                                List domains,
                                String origVarOrder,
@@ -860,6 +911,12 @@ public class BDDInferenceRule extends InferenceRule {
         return bestVarOrder;
     }
     
+    /**
+     * @param varorder
+     * @param domains
+     * @param p
+     * @return
+     */
     static List getDomainOrder(String varorder, List domains, int[] p) {
         List order = new LinkedList();
         for (int i = 0; i < p.length; ++i) {
@@ -880,6 +937,9 @@ public class BDDInferenceRule extends InferenceRule {
         return order;
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.InferenceRule#free()
+     */
     public void free() {
         for (int i = 0; i < oldRelationValues.length; ++i) {
             if (oldRelationValues[i] != null) {
@@ -905,6 +965,10 @@ public class BDDInferenceRule extends InferenceRule {
         }
     }
     
+    /**
+     * @param t
+     * @return
+     */
     public String termToString(RuleTerm t) {
         StringBuffer sb = new StringBuffer();
         sb.append(t.relation);
@@ -925,6 +989,9 @@ public class BDDInferenceRule extends InferenceRule {
         return sb.toString();
     }
     
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append(termToString(bottom));

@@ -50,6 +50,9 @@ public class BDDSolver extends Solver {
     int BDDMINFREE = Integer.parseInt(System.getProperty("bddminfree", "20"));
     String VARORDER = System.getProperty("bddvarorder", null);
     
+    /**
+     * 
+     */
     public BDDSolver() {
         System.out.println("Initializing BDD library ("+BDDNODES+" nodes, cache size "+BDDCACHE+", min free "+BDDMINFREE+"%)");
         bdd = BDDFactory.init(BDDNODES, BDDCACHE);
@@ -59,6 +62,9 @@ public class BDDSolver extends Solver {
         bdd.setMinFreeNodes(BDDMINFREE);
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#initialize()
+     */
     public void initialize() {
         loadBDDDomainInfo();
         super.initialize();
@@ -66,6 +72,9 @@ public class BDDSolver extends Solver {
         initialize2(); // Do some more initialization after variable ordering is set.
     }
     
+    /**
+     * 
+     */
     void loadBDDDomainInfo() {
         BufferedReader in = null; 
         try {
@@ -77,7 +86,7 @@ public class BDDSolver extends Solver {
                 if (s.startsWith("#")) continue;
                 StringTokenizer st = new StringTokenizer(s);
                 String fieldDomain = st.nextToken();
-                FieldDomain fd = (FieldDomain) nameToFieldDomain.get(fieldDomain);
+                Domain fd = (Domain) nameToFieldDomain.get(fieldDomain);
                 allocateBDDDomain(fd);
             }
         } catch (IOException x) {
@@ -86,6 +95,9 @@ public class BDDSolver extends Solver {
         }
     }
     
+    /**
+     * 
+     */
     public void initialize2() {
         for (Iterator i = nameToRelation.values().iterator(); i.hasNext(); ) {
             BDDRelation r = (BDDRelation) i.next();
@@ -101,6 +113,9 @@ public class BDDSolver extends Solver {
         }
     }
     
+    /**
+     * 
+     */
     void setVariableOrdering() {
         if (VARORDER != null) {
             fixVarOrder();
@@ -111,6 +126,9 @@ public class BDDSolver extends Solver {
         }
     }
     
+    /**
+     * 
+     */
     void fixVarOrder() {
         // Verify that variable order is sane.
         StringTokenizer st = new StringTokenizer(VARORDER, "x_");
@@ -164,11 +182,17 @@ public class BDDSolver extends Solver {
         }
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#solve()
+     */
     public void solve() {
         Stratify s = new Stratify(this);
         s.solve();
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#finish()
+     */
     public void finish() {
         try {
             saveBDDDomainInfo();
@@ -177,6 +201,9 @@ public class BDDSolver extends Solver {
         calcOrderConstraints();
     }
     
+    /**
+     * 
+     */
     void calcOrderConstraints() {
         if (orderingConstraints.isEmpty()) return;
         System.out.println("Ordering constraints: "+orderingConstraints);
@@ -221,6 +248,10 @@ public class BDDSolver extends Solver {
     
     static final Long MAX = new Long(Long.MAX_VALUE);
     
+    /**
+     * @param doms
+     * @param time
+     */
     void registerOrderConstraint(List doms, long time) {
         if (time == Long.MAX_VALUE) {
             System.out.println("Invalidating "+doms);
@@ -267,6 +298,10 @@ public class BDDSolver extends Solver {
         }
     }
     
+    /**
+     * @param doms
+     * @return
+     */
     long getOrderConstraint(List doms) {
         Long t = (Long) orderingConstraints.get(doms);
         if (t == null) {
@@ -288,6 +323,9 @@ public class BDDSolver extends Solver {
         }
     }
     
+    /**
+     * @throws IOException
+     */
     void saveBDDDomainInfo() throws IOException {
         DataOutputStream dos = null;
         try {
@@ -295,7 +333,7 @@ public class BDDSolver extends Solver {
             for (int i = 0; i < bdd.numberOfDomains(); ++i) {
                 BDDDomain d = bdd.getDomain(i);
                 for (Iterator j = fielddomainsToBDDdomains.keySet().iterator(); j.hasNext(); ) {
-                    FieldDomain fd = (FieldDomain) j.next();
+                    Domain fd = (Domain) j.next();
                     if (fielddomainsToBDDdomains.getValues(fd).contains(d)) {
                         dos.writeBytes(fd.toString()+"\n");
                         break;
@@ -307,6 +345,11 @@ public class BDDSolver extends Solver {
         }
     }
     
+    /**
+     * @param name
+     * @param bits
+     * @return
+     */
     BDDDomain makeDomain(String name, int bits) {
         Assert._assert(bits < 64);
         BDDDomain d = bdd.extDomain(new long[] { 1L << bits })[0];
@@ -314,7 +357,11 @@ public class BDDSolver extends Solver {
         return d;
     }
     
-    BDDDomain allocateBDDDomain(FieldDomain dom) {
+    /**
+     * @param dom
+     * @return
+     */
+    BDDDomain allocateBDDDomain(Domain dom) {
         int version = getBDDDomains(dom).size();
         int bits = BigInteger.valueOf(dom.size-1).bitLength();
         BDDDomain d = makeDomain(dom.name+version, bits);
@@ -323,7 +370,11 @@ public class BDDSolver extends Solver {
         return d;
     }
     
-    Collection getBDDDomains(FieldDomain dom) {
+    /**
+     * @param dom
+     * @return
+     */
+    Collection getBDDDomains(Domain dom) {
         return fielddomainsToBDDdomains.getValues(dom);
     }
     
@@ -337,33 +388,43 @@ public class BDDSolver extends Solver {
     /* (non-Javadoc)
      * @see org.sf.bddbddb.Solver#createRelation(java.lang.String, java.util.List, java.util.List, java.util.List)
      */
-    Relation createRelation(String name, List names, List fieldDomains, List fieldOptions) {
-        return new BDDRelation(this, name, names, fieldDomains, fieldOptions);
+    Relation createRelation(String name, List attributes) {
+        return new BDDRelation(this, name, attributes);
     }
 
-    Relation createEquivalenceRelation(FieldDomain fd) {
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#createEquivalenceRelation(org.sf.bddbddb.Domain)
+     */
+    Relation createEquivalenceRelation(Domain fd) {
         String name = fd+"_eq";
-        List names = new Pair(fd+"1", fd+"2");
-        List fieldDomains = new Pair(fd, fd);
-        List fieldOptions = new Pair("", "");
-        BDDRelation r = new BDDRelation(this, name, names, fieldDomains, fieldOptions);
+        Attribute a1 = new Attribute(fd+"1", fd, "");
+        Attribute a2 = new Attribute(fd+"2", fd, "");
+        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
         return r;
     }
     
-    Relation createNotEquivalenceRelation(FieldDomain fd) {
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#createNotEquivalenceRelation(org.sf.bddbddb.Domain)
+     */
+    Relation createNotEquivalenceRelation(Domain fd) {
         String name = fd+"_neq";
-        List names = new Pair(fd+"1", fd+"2");
-        List fieldDomains = new Pair(fd, fd);
-        List fieldOptions = new Pair("", "");
-        BDDRelation r = new BDDRelation(this, name, names, fieldDomains, fieldOptions);
+        Attribute a1 = new Attribute(fd+"1", fd, "");
+        Attribute a2 = new Attribute(fd+"2", fd, "");
+        BDDRelation r = new BDDRelation(this, name, new Pair(a1, a2));
         return r;
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#saveResults()
+     */
     void saveResults() throws IOException {
         super.saveResults();
         bdd.done();
     }
     
+    /**
+     * 
+     */
     void findPhysicalDomainMapping() {
         BDDFactory my_bdd = BDDFactory.init(100000, 10000);
         
@@ -379,14 +440,14 @@ public class BDDSolver extends Solver {
                 RuleTerm rt = (RuleTerm) j.next();
                 if (activeRelations.add(rt.relation)) {
                     int x = 0;
-                    for (Iterator k = rt.relation.fieldDomains.iterator(); k.hasNext(); ++x) {
-                        Object field = new Pair(rt.relation, new Integer(x));
-                        Assert._assert(!fieldOrVarToFieldDomain.containsKey(field));
-                        Assert._assert(!fieldOrVarToBDDDomain.containsKey(field));
-                        FieldDomain fd = (FieldDomain)k.next();
-                        fieldOrVarToFieldDomain.put(field, fd);
-                        BDDDomain dom = makeDomain(my_bdd, field.toString(), BITS);
-                        fieldOrVarToBDDDomain.put(field, dom);
+                    for (Iterator k = rt.relation.attributes.iterator(); k.hasNext(); ++x) {
+                        Attribute a = (Attribute) k.next();
+                        Assert._assert(!fieldOrVarToFieldDomain.containsKey(a));
+                        Assert._assert(!fieldOrVarToBDDDomain.containsKey(a));
+                        Domain fd = a.attributeDomain;
+                        fieldOrVarToFieldDomain.put(a, fd);
+                        BDDDomain dom = makeDomain(my_bdd, a.toString(), BITS);
+                        fieldOrVarToBDDDomain.put(a, dom);
                     }
                 }
             }
@@ -400,8 +461,9 @@ public class BDDSolver extends Solver {
                 for (int k = 0; k < rt.variables.size(); ++k) {
                     Variable v = (Variable) rt.variables.get(k);
                     if (!ir.necessaryVariables.contains(v)) continue;
-                    FieldDomain fd = (FieldDomain) rt.relation.fieldDomains.get(k);
-                    FieldDomain fd2 = (FieldDomain) fieldOrVarToFieldDomain.get(v);
+                    Attribute a = (Attribute) rt.relation.attributes.get(k);
+                    Domain fd = a.attributeDomain;
+                    Domain fd2 = (Domain) fieldOrVarToFieldDomain.get(v);
                     Assert._assert(fd2 == null || fd == fd2);
                     fieldOrVarToFieldDomain.put(v, fd);
                     BDDDomain dom = (BDDDomain) fieldOrVarToBDDDomain.get(v);
@@ -420,7 +482,7 @@ public class BDDSolver extends Solver {
         for (Iterator i = fieldOrVarToFieldDomain.entrySet().iterator(); i.hasNext(); ) {
             Map.Entry e = (Map.Entry) i.next();
             BDDDomain my_d = (BDDDomain) fieldOrVarToBDDDomain.get(e.getKey());
-            FieldDomain fd = (FieldDomain) e.getValue();
+            Domain fd = (Domain) e.getValue();
             Collection s = fielddomainsToBDDdomains.getValues(fd);
             BDD t = bdd.zero();
             for (Iterator j = s.iterator(); j.hasNext(); ) {
@@ -436,15 +498,13 @@ public class BDDSolver extends Solver {
         for (Iterator i = activeRelations.iterator(); i.hasNext(); ) {
             Relation r = (Relation) i.next();
             int x = 0;
-            for (Iterator j = r.fieldDomains.iterator(); j.hasNext(); ++x) {
-                FieldDomain fd1 = (FieldDomain)j.next();
-                Object f1 = new Pair(r, new Integer(x));
-                BDDDomain dom1 = (BDDDomain) fieldOrVarToBDDDomain.get(f1);
-                int y = 0;
-                for (Iterator k = r.fieldDomains.iterator(); k.hasNext(); ++y) {
-                    FieldDomain fd2 = (FieldDomain)j.next();
-                    Object f2 = new Pair(r, new Integer(y));
-                    BDDDomain dom2 = (BDDDomain) fieldOrVarToBDDDomain.get(f2);
+            for (Iterator j = r.attributes.iterator(); j.hasNext(); ++x) {
+                Attribute a = (Attribute) j.next();
+                BDDDomain dom1 = (BDDDomain) fieldOrVarToBDDDomain.get(a);
+                for (Iterator k = r.attributes.iterator(); k.hasNext(); ) {
+                    Attribute a2 = (Attribute) k.next();
+                    Domain fd2 = a2.attributeDomain;
+                    BDDDomain dom2 = (BDDDomain) fieldOrVarToBDDDomain.get(a2);
                     BDD not_eq = dom1.buildEquals(dom2).not();
                     sol.andWith(not_eq);
                 }
@@ -470,10 +530,12 @@ public class BDDSolver extends Solver {
         // Set user-specified domains.
         for (Iterator i = activeRelations.iterator(); i.hasNext(); ) {
             BDDRelation r = (BDDRelation) i.next();
-            for (int k = 0; k < r.fieldDomains.size(); ++k) {
-                String name = (String) r.fieldNames.get(k);
-                String option = (String) r.fieldOptions.get(k);
-                FieldDomain fd = (FieldDomain) r.fieldDomains.get(k);
+            for (Iterator k = r.attributes.iterator(); k.hasNext(); ) {
+                Attribute a = (Attribute) k.next();
+                String name = a.attributeName;
+                Domain fd = a.attributeDomain;
+                String option = a.attributeOptions;
+                if (option.equals("")) continue;
                 if (!option.startsWith(fd.name))
                     throw new IllegalArgumentException("Field "+name+" has domain "+fd+", but tried to assign "+option);
                 Collection doms = getBDDDomains(fd);
@@ -488,8 +550,7 @@ public class BDDSolver extends Solver {
                 if (d == null)
                     throw new IllegalArgumentException("Unknown BDD domain "+option);
                 int index = d.getIndex();
-                Object field = new Pair(r, new Integer(k));
-                BDDDomain my_dom = (BDDDomain) fieldOrVarToBDDDomain.get(field);
+                BDDDomain my_dom = (BDDDomain) fieldOrVarToBDDDomain.get(a);
                 sol.andWith(my_dom.ithVar(index));
             }
         }
@@ -500,6 +561,12 @@ public class BDDSolver extends Solver {
         my_bdd.done();
     }
     
+    /**
+     * @param bdd
+     * @param name
+     * @param bits
+     * @return
+     */
     static BDDDomain makeDomain(BDDFactory bdd, String name, int bits) {
         Assert._assert(bits < 64);
         BDDDomain d = bdd.extDomain(new long[] { 1L << bits })[0];
@@ -507,6 +574,9 @@ public class BDDSolver extends Solver {
         return d;
     }
     
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Solver#reportStats()
+     */
     public void reportStats() {
         int final_node_size = bdd.getNodeNum();
         int final_table_size = bdd.getAllocNum();

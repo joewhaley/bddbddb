@@ -15,23 +15,20 @@ import java.io.IOException;
 public abstract class Relation {
     
     String name;
-    List/*<String>*/ fieldNames;
-    List/*<FieldDomain>*/ fieldDomains;
-    List/*<String>*/ fieldOptions;
+    List/*<Attribute>*/ attributes;
     
     Relation negated;
     
     /**
+     * Create a new Relation.
+     * 
      * @param name
-     * @param fieldNames
-     * @param fieldDomains
+     * @param attributes
      */
-    public Relation(String name, List fieldNames, List fieldDomains, List fieldOptions) {
+    public Relation(String name, List attributes) {
         super();
         this.name = name;
-        this.fieldNames = fieldNames;
-        this.fieldDomains = fieldDomains;
-        this.fieldOptions = fieldOptions;
+        this.attributes = attributes;
     }
     
     public abstract void initialize();
@@ -42,9 +39,16 @@ public abstract class Relation {
     public abstract void saveTuples() throws IOException;
     public abstract void saveNegatedTuples() throws IOException;
     
+    /**
+     * @return number of tuples in relation
+     */
     public int size() {
         return (int) dsize();
     }
+    
+    /**
+     * @return number of tuples in relation
+     */
     public abstract double dsize();
     
     /**
@@ -109,13 +113,37 @@ public abstract class Relation {
      */
     public Relation makeNegated(Solver solver) {
         if (negated != null) return negated;
-        negated = solver.createRelation("!"+name, fieldNames, fieldDomains, fieldOptions);
+        negated = solver.createRelation("!"+name, attributes);
         negated.negated = this;
         return negated;
     }
     
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         return name;
     }
 
+    /**
+     * @return Returns the attributes.
+     */
+    public List getAttributes() {
+        return attributes;
+    }
+    
+    /**
+     * @param x
+     * @return
+     */
+    public Attribute getAttribute(int x) {
+        return (Attribute) attributes.get(x);
+    }
+    
+    /**
+     * @return
+     */
+    public int numberOfAttributes() {
+        return attributes.size();
+    }
 }
