@@ -4,6 +4,7 @@
 package org.sf.bddbddb.ir.lowlevel;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
@@ -33,13 +34,15 @@ public class ApplyEx extends LowLevelOperation {
      * @param r1
      * @param r2
      */
-    public ApplyEx(BDDRelation r0, BDDRelation r1, BDDOp op, BDDRelation r2,
-        List/* <Attribute> */attributes) {
+    public ApplyEx(BDDRelation r0, BDDRelation r1, BDDOp op, BDDRelation r2) {
         this.r0 = r0;
         this.r1 = r1;
         this.r2 = r2;
         this.op = op;
-        this.attributes = attributes;
+        this.attributes = new LinkedList(r1.getAttributes());
+        this.attributes.removeAll(r2.getAttributes());
+        this.attributes.addAll(r2.getAttributes());
+        this.attributes.removeAll(r0.getAttributes());
     }
 
     /*
@@ -57,7 +60,6 @@ public class ApplyEx extends LowLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#toString()
      */
     public String toString() {
-
         return r0.toString() + " = " + getExpressionString();
     }
 
