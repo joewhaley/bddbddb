@@ -67,7 +67,7 @@ public abstract class Interpreter {
             return "size: " + Double.toString(size);
         }
     }
-    public class LoopStats {
+    public static class LoopStats {
         Collection/* Relation */inputRelations;
     }
 }
