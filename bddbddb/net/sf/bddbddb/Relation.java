@@ -213,6 +213,14 @@ public abstract class Relation {
     public abstract boolean contains(int k, BigInteger j);
 
     /**
+     * Adds the given tuple to this relation.  Returns true if the relation changed.
+     * 
+     * @param tuple  new tuple
+     * @return  true iff relation changed
+     */
+    public abstract boolean add(BigInteger[] tuple);
+    
+    /**
      * Return the negated form of this relation, or null if it does not exist.
      * 
      * @return negated version of this relation, or null
