@@ -31,7 +31,7 @@ public class ClassHierarchyAnalysis {
         this.Tmap = pa.Tmap;
         this.Nmap = pa.Nmap;
         this.Mmap = pa.Mmap;
-        this.T = pa.T1;
+        this.T = pa.T2;
         this.N = pa.N;
         this.M = pa.M;
         this.cha = pa.bdd.zero();
@@ -49,6 +49,10 @@ public class ClassHierarchyAnalysis {
         int T_i = Tmap.get(pa.new TypeWrapper(type));
         int N_i = Nmap.get(pa.new MethodWrapper(name));
         int M_i = Mmap.get(pa.new MethodWrapper(target));
+        
+        System.out.println("adding to CHA: "+pa.new TypeWrapper(type)+" / "
+            +pa.new MethodWrapper(name)+" / "+pa.new MethodWrapper(target));
+        
         BDD b = T.ithVar(T_i).andWith(N.ithVar(N_i)).andWith(M.ithVar(M_i));
         cha.orWith(b);
     }
@@ -58,7 +62,7 @@ public class ClassHierarchyAnalysis {
             Object o = i.next();
             if (!(o instanceof MethodWrapper)) continue;
             MethodWrapper mw = (MethodWrapper) o;
-            IMethodBinding name = mw.method;
+            IMethodBinding name = mw.getBinding();
             calculateCHA(name);
         }
         return cha;
@@ -69,7 +73,7 @@ public class ClassHierarchyAnalysis {
             Object o = i.next();
             if (!(o instanceof TypeWrapper)) continue;
             TypeWrapper tw = (TypeWrapper) o;
-            ITypeBinding type = tw.type;
+            ITypeBinding type = tw.getType();
             IMethodBinding target = calculateVirtualTarget(type, name);
             if (target != null) {
                 addToCHA(type, name, target);
@@ -98,7 +102,7 @@ public class ClassHierarchyAnalysis {
                     return method;
                 }
             }
-            if (type == OBJECT) break;
+            if (type.getKey().equals(OBJECT.getKey())) break;
             type = type.getSuperclass();
         }
         return null;
