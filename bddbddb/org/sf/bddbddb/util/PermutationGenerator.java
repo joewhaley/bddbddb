@@ -57,7 +57,7 @@ public class PermutationGenerator {
     /**
      * Compute factorial
      */
-    private static BigInteger getFactorial(int n) {
+    public static BigInteger getFactorial(int n) {
         BigInteger fact = BigInteger.ONE;
         for (int i = n; i > 1; i--) {
             fact = fact.multiply(BigInteger.valueOf(i));
