@@ -1282,7 +1282,7 @@ public class FindBestDomainOrder {
                 if (TRACE > 1) out.println(this+": updating info "+info+" with score="+format(s)+" confidence="+format(c));
                 info.update(o, s, c);
             }
-            if (true) {
+            if (false) {
                 for (Iterator i = infos.values().iterator(); i.hasNext(); ) {
                     OrderInfo info2 = (OrderInfo) i.next();
                     if (info == info2) continue;
@@ -1309,7 +1309,7 @@ public class FindBestDomainOrder {
                 if (TRACE > 1) out.println(this+": updating info "+info+" with score="+format(i.score)+" confidence="+format(i.confidence));
                 info.update(i);
             }
-            if (true) {
+            if (false) {
                 for (Iterator j = infos.values().iterator(); j.hasNext(); ) {
                     OrderInfo info2 = (OrderInfo) j.next();
                     if (info == info2) continue;
