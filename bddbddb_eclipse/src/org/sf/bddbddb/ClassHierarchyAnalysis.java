@@ -35,7 +35,7 @@ public class ClassHierarchyAnalysis {
         this.N = pa.N;
         this.M = pa.M;
         this.cha = pa.bdd.zero();
-        OBJECT = pa.OBJECT.getBinding();
+        OBJECT = pa.OBJECT.getType();
     }
     
     IndexMap Tmap;

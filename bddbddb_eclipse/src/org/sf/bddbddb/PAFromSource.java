@@ -5,6 +5,8 @@ package org.sf.bddbddb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -388,7 +390,7 @@ public class PAFromSource {
     }
         
     class ASTNodeWrapper {
-        private ASTNode n; // null for global this or implicit this
+        protected ASTNode n; // null for global this or implicit this
         
         ASTNodeWrapper(ASTNode obj) {
             n = obj;
@@ -493,40 +495,48 @@ public class PAFromSource {
             if (n == null) return 0;
             return n.hashCode();
         }
+        
+        public ITypeBinding getType() {
+            if (n instanceof Expression) {
+                return ((Expression)n).resolveTypeBinding();
+            }
+            return null;
+        }
     }
     
     
     class ThisWrapper extends ASTNodeWrapper {
-        IMethodBinding method;
+        IMethodBinding enclosingMethod;
                 
         ThisWrapper(IMethodBinding binding, ThisExpression n) {
             super(n);
-            method = binding;
+            enclosingMethod = binding;
         }
         
         ThisWrapper(MethodDeclaration decl, ThisExpression n) {
             super(n);
-            method = decl.resolveBinding();
+            enclosingMethod = decl.resolveBinding();
         }
         
         public String toString() {
-            return "THIS: " + method.getKey();
+            return "THIS: " + enclosingMethod.getKey();
         }
         
         public boolean equals(Object o) {
             if (o instanceof ThisWrapper) {
-                return method.getKey().equals(((ThisWrapper) o).method.getKey());
+                return enclosingMethod.getKey().equals(((ThisWrapper) o).enclosingMethod.getKey());
             }
             return false;
         }
         
         public int hashCode() { // doesn't depend on the thisexpression
             //if (method == null) return 0;
-            return method.getKey().hashCode();
+            return enclosingMethod.getKey().hashCode();
         }
         
-        public IMethodBinding getBinding() {
-            return method;
+        public ITypeBinding getType() {
+            // type of this is type of class it's defined in
+            return enclosingMethod.getDeclaringClass();
         }
     }
     
@@ -539,8 +549,7 @@ public class PAFromSource {
         }
         
         public String toString() {
-            String s =  type.getQualifiedName();
-            return "TYPE NODE: " +s;
+            return "TYPE: " + type.getQualifiedName();
         }
         
         public boolean equals(Object o) {
@@ -553,11 +562,44 @@ public class PAFromSource {
             return false;
         }
         
-        public int hashCode() { // doesn't depend on the thisexpression
+        public int hashCode() {
             return type.getQualifiedName().hashCode();
         }
         
-        public ITypeBinding getBinding() {
+        public ITypeBinding getType() {
+            return type;
+        }
+    }
+    
+    
+    
+    // Note: The type of the exception is not the type of the encapsulated ASTNode.
+    class ExceptionWrapper extends ASTNodeWrapper {
+        ITypeBinding type; // might need to switch to Type in JLS3
+        ExceptionWrapper(ASTNode exception, ITypeBinding binding) {
+            super(exception);
+            type = binding;
+        }
+        
+        public String toString() {
+            return "EXCEPTION: " + n + " of type " + type.getQualifiedName();
+        }
+        
+        public boolean equals(Object o) {
+            if (o instanceof ExceptionWrapper) {
+                ExceptionWrapper ew = (ExceptionWrapper)o;
+                if (type.getKey().equals(ew.type.getKey())) {
+                    return super.equals(o);
+                }
+            }
+            return false;
+        }
+        
+        public int hashCode() { 
+            return n.hashCode();
+        }
+        
+        public ITypeBinding getType() {
             return type;
         }
     }
@@ -575,7 +617,7 @@ public class PAFromSource {
         }
         
         public String toString() {
-            return "METHOD NODE: " + method.getKey();
+            return "METHOD: " + method.getKey();
         }
         
         public boolean equals(Object o) {
@@ -588,6 +630,11 @@ public class PAFromSource {
         public int hashCode() { // doesn't depend on the thisexpression
             return method.getKey().hashCode();
         }
+        
+        public ITypeBinding getType() {
+            out.println("ERROR: gettype called on methodwrapper");
+            return null;
+        }
     }
     
     
@@ -599,7 +646,7 @@ public class PAFromSource {
         }
         
         public String toString() {
-            return "NODE: " + name;
+            return "STRING: " + name;
         }
         
         public boolean equals(Object o) {
@@ -619,6 +666,10 @@ public class PAFromSource {
         public String getString() {
             return name;
         }
+        
+        public ITypeBinding getType() {
+            return null;
+        }
     }
 
     TypeWrapper CLONEABLE = null;
@@ -628,6 +679,8 @@ public class PAFromSource {
     
     final StringWrapper GLOBAL_THIS = new StringWrapper("GlobalThis"); 
     final StringWrapper ARRAY_FIELD = new StringWrapper("ArrayField");
+    final StringWrapper CLINIT = new StringWrapper("<clinit>");
+    final StringWrapper OUTER_THIS_FIELD = new StringWrapper("OuterThisField");
     
     ASTNode stripParens(ASTNode n) {
         while (n.getNodeType() == ASTNode.PARENTHESIZED_EXPRESSION) {
@@ -651,12 +704,10 @@ public class PAFromSource {
                 new TypeWrapper(ast.resolveWellKnownType("java.io.Serializable"));
             STRING = 
                 new TypeWrapper(ast.resolveWellKnownType("java.lang.String"));
-            
             return true; 
         }
         
-        // TODO handle super.this
-        // TODO handle <clinit>
+        // TODO handle outer this
         
         /*
         public PAASTVisitor(int i, int s) {
@@ -692,22 +743,32 @@ public class PAFromSource {
             addToVP(n, n);
             
             IMethodBinding method = arg0.resolveConstructorBinding();
-
-            MethodDeclaration m = (MethodDeclaration)findDeclaringParent(arg0);
-            ASTNodeWrapper thisParam;
-            ASTNodeWrapper name = new StringWrapper(method.getName());
+            BodyDeclaration decl = findDeclaringParent(arg0);
+            List thisParams;
+            List enclosingMethods;
+            if (decl instanceof TypeDeclaration) { // in an initializer
+                if (inStaticInitializer(arg0)) {
+                    enclosingMethods = Collections.singletonList(CLINIT);
+                    thisParams = processStaticInit(null, false);
+                }
+                else {
+                    enclosingMethods = new ArrayList();
+                    thisParams = processInitializer(null, false, 
+                        enclosingMethods, getConstructors((TypeDeclaration)decl));
+                }
+            }
+            else {
+                enclosingMethods = 
+                    Collections.singletonList(new MethodWrapper((MethodDeclaration)decl));
+                thisParams = processEnclosedMethod(null, false, 
+                    (MethodDeclaration)decl);               
+            }
             
-            Expression expr = arg0.getExpression();
-            ThisExpression t = null;
-            if (expr != null && (t = getThis(expr)) == null) {
-                thisParam = new ASTNodeWrapper(expr);
-            }
-            else { // implicit this or expr is thisexpr
-                thisParam = new ThisWrapper(m, t); 
-            }
-  
+            MethodDeclaration m = (MethodDeclaration)findDeclaringParent(arg0);
+            ASTNodeWrapper name = new StringWrapper(method.getName());
+              
             List args = arg0.arguments();
-            addMethodInvocation(thisParam, n, method, args, m, name);
+            addMethodInvocation(thisParams, n, method, args, enclosingMethods, name);
             return true;
         }
         
@@ -1086,19 +1147,29 @@ public class PAFromSource {
             addBindingToAT(arg0.resolveBinding()); 
             
             ITypeBinding classBinding = arg0.resolveBinding();
+            boolean outerthis = hasOuterThis(classBinding);
             IMethodBinding[] bindings = classBinding.getDeclaredMethods();
             for (int i = 0; i < bindings.length; i++) {
+                IMethodBinding binding = bindings[i];
                 ASTNodeWrapper thisParam;
-                if (isStatic(bindings[i])) {
+                if (isStatic(binding)) {
                     thisParam = GLOBAL_THIS;
                 }
                 else {
-                    thisParam = new ThisWrapper(bindings[i], null);
+                    thisParam = new ThisWrapper(binding, null);
                 }
                 
-                int M_i = Mmap.get(new MethodWrapper(bindings[i]));
+                int M_i = Mmap.get(new MethodWrapper(binding));
                 BDD M_bdd = M.ithVar(M_i);
                 addToFormal(M_bdd, 0, thisParam);
+                
+                if (outerthis && binding.isConstructor()) {
+                    addToFormal(M_bdd, 
+                        binding.getParameterTypes().length + 1, 
+                        OUTER_THIS_FIELD);
+                    addToS(thisParam, OUTER_THIS_FIELD, OUTER_THIS_FIELD);
+                }
+                
                 M_bdd.free();
             }
             return true;
@@ -1242,33 +1313,105 @@ public class PAFromSource {
             return s;
         }
         
+        
+        private boolean inStaticInitializer(ASTNode n) {
+            while (!((n = n.getParent()) instanceof Initializer));
+            
+            Initializer i = (Initializer)n;
+            return Modifier.isStatic(i.getModifiers());
+        }
+        
+        private List processStaticInit(Expression qualifier, 
+            boolean methodStatic) {
+            if (methodStatic) {
+                return Collections.singletonList(GLOBAL_THIS);
+            }
+            else { 
+                ThisExpression t = null;
+                if (qualifier != null && (t = getThis(qualifier)) == null) {
+                    return Collections.singletonList(new ASTNodeWrapper(qualifier));
+                }
+                else { // implicit this or expr is thisexpr
+                   out.println("ERROR: this pter in static initializer");
+                   return null;
+                }
+            }
+        }
+        
+        private List processInitializer(Expression qualifier, 
+            boolean methodStatic, List enclosingMethods, List ctors) {
+            for (Iterator i = ctors.iterator(); i.hasNext(); ) {
+                IMethodBinding mb = (IMethodBinding)i.next();
+                enclosingMethods.add(new MethodWrapper(mb));
+            }
+            
+            if (methodStatic) {
+                return Collections.singletonList(GLOBAL_THIS);   
+            }
+            else { 
+                ThisExpression t = null;
+                if (qualifier != null && (t = getThis(qualifier)) == null) {
+                    return Collections.singletonList(new ASTNodeWrapper(qualifier));
+                }
+                else { // implicit this or expr is thisexpr
+                    List thisParams = new ArrayList();
+                    for (Iterator i = ctors.iterator(); i.hasNext(); ) {
+                        thisParams.add(new ThisWrapper((IMethodBinding)i.next(), t));
+                    }
+                    return thisParams;
+                }
+            }
+        }
+        
+        private List processEnclosedMethod(Expression qualifier, 
+            boolean methodStatic, MethodDeclaration parent) {
+            if (methodStatic) {
+                return Collections.singletonList(GLOBAL_THIS); 
+            }
+            else { 
+                ThisExpression t = null;
+                if (qualifier != null && (t = getThis(qualifier)) == null) {
+                    return Collections.singletonList(new ASTNodeWrapper(qualifier));
+                }
+                else { // implicit this or expr is thisexpr
+                    return Collections.singletonList(new ThisWrapper(parent, t)); 
+                }
+            }
+        }
+        
         // actual, Mthr, Iret, Ithr, IE0, mI
         public boolean visit(MethodInvocation arg0) {
             ASTNodeWrapper n = new ASTNodeWrapper(arg0);
             IMethodBinding method = arg0.resolveMethodBinding();
             
-            MethodDeclaration m = (MethodDeclaration)findDeclaringParent(arg0);
-            ASTNodeWrapper thisParam;
-            SimpleName name = null;
-            if (isStatic(method)) {
-                thisParam = GLOBAL_THIS;
-                
-                addToIE(n, method);
+            boolean stat = isStatic(method);
+            BodyDeclaration decl = findDeclaringParent(arg0);
+            List thisParams;
+            List enclosingMethods;
+            if (decl instanceof TypeDeclaration) { // in an initializer
+                if (inStaticInitializer(arg0)) {
+                    enclosingMethods = Collections.singletonList(CLINIT);
+                    thisParams = processStaticInit(arg0.getExpression(), stat);
+                }
+                else {
+                    enclosingMethods = new ArrayList();
+                    List ctors = getConstructors((TypeDeclaration)decl);
+                    thisParams = processInitializer(arg0.getExpression(), stat, 
+                        enclosingMethods, ctors);
+                }
             }
             else {
-                Expression expr = arg0.getExpression();
-                ThisExpression t = null;
-                if (expr != null && (t = getThis(expr)) == null) {
-                    thisParam = new ASTNodeWrapper(expr);
-                }
-                else { // implicit this or expr is thisexpr
-                    thisParam = new ThisWrapper(m, t); 
-                }
-                name = arg0.getName();
+                enclosingMethods = 
+                    Collections.singletonList(new MethodWrapper((MethodDeclaration)decl));
+                thisParams = processEnclosedMethod(arg0.getExpression(), 
+                    stat, (MethodDeclaration)decl);               
             }
+            SimpleName name = stat ? null : arg0.getName();
+            if (stat) addToIE(n, method);                
+                        
             List args = arg0.arguments();
-            addMethodInvocation(thisParam, n, method, args, 
-                m, new ASTNodeWrapper(name));
+            addMethodInvocation(thisParams, n, method, args, 
+                enclosingMethods, new ASTNodeWrapper(name));
             
             return true; 
         }
@@ -1277,21 +1420,34 @@ public class PAFromSource {
             ASTNodeWrapper n = new ASTNodeWrapper(arg0);
             IMethodBinding method = arg0.resolveMethodBinding();
             
-            MethodDeclaration m = (MethodDeclaration)findDeclaringParent(arg0);
-            ASTNodeWrapper thisParam;
-            if (isStatic(method)) {
-                thisParam = GLOBAL_THIS;
+            boolean stat = isStatic(method);
+            BodyDeclaration decl = findDeclaringParent(arg0);
+            List thisParams;
+            List enclosingMethods;
+            if (decl instanceof TypeDeclaration) { // in an initializer
+                if (inStaticInitializer(arg0)) {
+                    enclosingMethods = Collections.singletonList(CLINIT);
+                    thisParams = processStaticInit(null, stat);
+                }
+                else {
+                    enclosingMethods = new ArrayList();
+                    List ctors = getConstructors((TypeDeclaration)decl);
+                    thisParams = processInitializer(null, stat, 
+                        enclosingMethods, ctors);
+                }
             }
             else {
-                // TODO need super this
-                thisParam = GLOBAL_THIS; // change this
+                enclosingMethods = 
+                    Collections.singletonList(new MethodWrapper((MethodDeclaration)decl));
+                thisParams = processEnclosedMethod(null, 
+                    stat, (MethodDeclaration)decl);               
             }
+            addToIE(n, method);  
+            // TODO if qualified, access outer class
 
-            addToIE(n, method);
-            
             List args = arg0.arguments();
-            addMethodInvocation(thisParam, n, method, 
-                args, m, new ASTNodeWrapper(null));
+            addMethodInvocation(thisParams, n, method, 
+                args, enclosingMethods, new ASTNodeWrapper(null));
             
             return true;
         }
@@ -1299,12 +1455,17 @@ public class PAFromSource {
 
         public boolean visit(ConstructorInvocation arg0) {
             ASTNodeWrapper n = new ASTNodeWrapper(arg0);
-            IMethodBinding method = arg0.resolveConstructorBinding();
-            
-            MethodDeclaration m = (MethodDeclaration)findDeclaringParent(arg0);
+            IMethodBinding method = arg0.resolveConstructorBinding();   
             ASTNodeWrapper name = new StringWrapper(method.getName());
+            
+            MethodDeclaration decl = 
+                (MethodDeclaration)findDeclaringParent(arg0);
+            List enclosingMethods = Collections.singletonList(new MethodWrapper(decl));
+            List thisParams = Collections.singletonList(new ThisWrapper(decl, null)); 
+            
             List args = arg0.arguments();
-            addMethodInvocation(new ThisWrapper(m, null), n, method, args, m, name);
+            addMethodInvocation(thisParams, n, 
+                method, args, enclosingMethods, name);
             return true; 
         }
         
@@ -1312,47 +1473,48 @@ public class PAFromSource {
             ASTNodeWrapper n = new ASTNodeWrapper(arg0);
             IMethodBinding method = arg0.resolveConstructorBinding();
 
-            MethodDeclaration m = (MethodDeclaration)findDeclaringParent(arg0);
-            ASTNodeWrapper thisParam;
             ASTNodeWrapper name = new StringWrapper(method.getName());
             
-            Expression expr = arg0.getExpression();
-            ThisExpression t = null;
-            if (expr != null && (t = getThis(expr)) == null) {
-                thisParam = new ASTNodeWrapper(expr);
-            }
-            else { // implicit this or expr is thisexpr
-                thisParam = new ThisWrapper(m, t); 
-            }
-  
+            MethodDeclaration decl = (MethodDeclaration)findDeclaringParent(arg0);
+            List enclosingMethods = 
+                Collections.singletonList(new MethodWrapper(decl));
+            List thisParams = processEnclosedMethod(arg0.getExpression(), 
+                false, decl);               
+            addToIE(n, method);     
+            
             List args = arg0.arguments();
-            addMethodInvocation(thisParam, n, method, args, m, name);
+            addMethodInvocation(thisParams, n, method, args, enclosingMethods, name);
             
             return true; 
         }
 
-        private void addMethodInvocation(ASTNodeWrapper thisParam, 
+        private void addMethodInvocation(List thisParams, 
                 ASTNodeWrapper invocation, IMethodBinding invocationBinding, 
-                List args, MethodDeclaration enclosingMethod, 
+                List args, List enclosingMethods, 
                 ASTNodeWrapper methodName) {
             int I_i = Imap.get(invocation);
             BDD I_bdd = I.ithVar(I_i);
+            ASTNode inv = invocation.getNode();
             
             // Mthr, Ithr
-            addToIthr(I_bdd, invocation); 
             ITypeBinding[] exs = invocationBinding.getExceptionTypes();
-            ASTNode inv = invocation.getNode();
             for (int i = 0; i < exs.length; i++) {
+                ExceptionWrapper ew = new ExceptionWrapper(inv, exs[i]);
+                addToIthr(I_bdd, ew); 
+                
                 ASTNode parent = findThrowParent(inv, exs[i]);    
                 if (parent instanceof MethodDeclaration) { 
-                    addToMthr((MethodDeclaration)parent, invocation); // not caught
+                    addToMthr((MethodDeclaration)parent, ew); // not caught
                 }
                 else { // caught, match up with var
-                    addToA(new ASTNodeWrapper(parent), invocation);
+                    addToA(new ASTNodeWrapper(parent), ew);
                 }
             }
             
-            addToActual(I_bdd, 0, thisParam);
+            // actual
+            for (Iterator i = thisParams.iterator(); i.hasNext(); ) {
+                addToActual(I_bdd, 0, (ASTNodeWrapper)i.next());
+            }
             Iterator it = args.iterator();
             for (int i = 1; it.hasNext(); i++) {
                 Expression arg = (Expression)it.next();
@@ -1366,7 +1528,9 @@ public class PAFromSource {
             if (!retType.isPrimitive()) addToIret(I_bdd, invocation);
                    
             // mI
-            addToMI(enclosingMethod, I_bdd, methodName);
+            for (Iterator i = enclosingMethods.iterator(); i.hasNext(); ) {
+                addToMI((ASTNodeWrapper)i.next(), I_bdd, methodName);
+            }
             
             I_bdd.free();
         }
@@ -1853,6 +2017,7 @@ public class PAFromSource {
         Hmap = makeMap("Heaps", H_BITS);
         Fmap = makeMap("Fields", F_BITS);
         Tmap = makeMap("Types", T_BITS);
+        Tmap.get(GLOBAL_THIS);
         Nmap = makeMap("Names", N_BITS);
         Mmap = makeMap("Methods", M_BITS);
         Mmap.get(new StringWrapper("DummyMethod")); 
@@ -1940,7 +2105,7 @@ public class PAFromSource {
         BDD V_bdd = V1.ithVar(V_i);
         BDD bdd1 = H1.ithVar(H_i);
         bdd1.andWith(V_bdd); // .id()?
-        //out.println("adding to vP " + v + " / " + h); 
+        out.println("adding to vP " + v + " / " + h); 
         if (TRACE_RELATIONS) out.println("Adding to vP: "+bdd1.toStringWithDomains());
         vP.orWith(bdd1);
     }
@@ -2031,6 +2196,7 @@ public class PAFromSource {
         int V_i = Vmap.get(v);
         bdd1.andWith(V1.ithVar(V_i));
         bdd1.andWith(M_bdd.id());
+        out.println("adding to formal " + M_bdd.toStringWithDomains() + " / " + z + " / " + v); 
         if (TRACE_RELATIONS) out.println("Adding to formal: "+bdd1.toStringWithDomains());
         formal.orWith(bdd1);
     }
@@ -2041,6 +2207,7 @@ public class PAFromSource {
         int V_i = Vmap.get(v);
         bdd1.andWith(V2.ithVar(V_i));
         bdd1.andWith(I_bdd.id());
+        out.println("adding to actual " + I_bdd.toStringWithDomains() + " / " + z + " / " + v);
         if (TRACE_RELATIONS) out.println("Adding to actual: "+bdd1.toStringWithDomains());
         actual.orWith(bdd1);
     }
@@ -2163,53 +2330,43 @@ public class PAFromSource {
         BDD bdd1 = V1.ithVar(V_i);
         int T_i = Tmap.get(new TypeWrapper(type));
         bdd1.andWith(T1.ithVar(T_i));
+        out.println("adding to vT: " + V_i + " / " + type.getQualifiedName());
         if (TRACE_RELATIONS) out.println("Adding to vT: "+bdd1.toStringWithDomains());
         vT.orWith(bdd1);
     }
     
     void addToVT(int V_i, ASTNodeWrapper v) {
-        if (v instanceof ThisWrapper) {
-            IBinding bind = ((ThisWrapper)v).getBinding();
-            switch (bind.getKind()) {
-                case IBinding.VARIABLE:
-                    addToVT(V_i, ((IVariableBinding)bind).getType());
-                    return;
-                case IBinding.TYPE:
-                    addToVT(V_i, (ITypeBinding)bind);
-                    return;
-                case IBinding.METHOD:
-                    addToVT(V_i, ((IMethodBinding)bind).getDeclaringClass());
-                    return;
-                default:
-                    out.println("ERROR: unhandled binding type " + v);
-            }            
-        }    
-        else if (v instanceof StringWrapper) {
-            if (v == GLOBAL_THIS) {
-                BDD bdd1 = V1.ithVar(V_i);
-                bdd1.andWith(T1.ithVar(0));
-                if (TRACE_RELATIONS) out.println("Adding to vT: "+bdd1.toStringWithDomains());
-                vT.orWith(bdd1);
-            }
-            else {
-                out.println("ERROR: unhandled stringwrapper node in V: " + v);
-            }
+        if (v instanceof TypeWrapper || v instanceof MethodWrapper) {
+            out.println("ERROR: this type of node shouldn't be in V: " + v);
+            return;
         }
-        else if (v instanceof TypeWrapper) {
-            out.println("ERROR: this type of node shouldn't be in V");
+        
+        ITypeBinding type = v.getType();
+        if (type == null) {
+            if (v instanceof StringWrapper) {
+                if (v == GLOBAL_THIS) {
+                    BDD bdd1 = V1.ithVar(V_i);
+                    bdd1.andWith(T1.ithVar(0));
+                    out.println("adding to vT: 0 / " + GLOBAL_THIS);
+                    if (TRACE_RELATIONS) out.println("Adding to vT: "+bdd1.toStringWithDomains());
+                    vT.orWith(bdd1);
+                }
+                else out.println("ERROR: unhandled stringwrapper node in V: " + v);
+            }
+            else out.println("ERROR: gettype returned null");
         }
-        else if (v.getNode() instanceof Expression) {
-            addToVT(V_i, ((Expression)v.getNode()).resolveTypeBinding());
-        }    
-        else out.println("addToVT: unhandled node type: " + v);
+        else {
+            addToVT(V_i, type);
+        }
     }
 
     
     void addToHT(int H_i, ITypeBinding type) {
-        int T_i = Tmap.get(type);
+        int T_i = Tmap.get(new TypeWrapper(type));
         BDD T_bdd = T2.ithVar(T_i);
         BDD bdd1 = H1.ithVar(H_i);
         bdd1.andWith(T_bdd);
+        out.println("adding to hT: " + H_i + " / " + type.getQualifiedName());
         if (TRACE_RELATIONS) out.println("Adding to hT: "+bdd1.toStringWithDomains());
         hT.orWith(bdd1);
     }
@@ -2230,14 +2387,14 @@ public class PAFromSource {
         }        
     }
     
-    // super, this
+    // supertype, subtype
     void addToAT(ASTNodeWrapper t1, ASTNodeWrapper t2) {
         int T1_i = Tmap.get(t1);
         int T2_i = Tmap.get(t2);
         BDD T1_bdd = T1.ithVar(T1_i);
         BDD bdd1 = T2.ithVar(T2_i);
         bdd1.andWith(T1_bdd);
-        //out.println("Adding to aT: "+ T1_i + " " + t1+" / " + T2_i + " " + t2);
+        out.println("Adding to aT: "+ T1_i + " " + t1+" / " + T2_i + " " + t2);
         if (TRACE_RELATIONS) out.println("Adding to aT: "+bdd1.toStringWithDomains());
         aT.orWith(bdd1);
     }
@@ -2286,17 +2443,19 @@ public class PAFromSource {
         BDD M_bdd = M.ithVar(M_i);
         BDD bdd1 = V2.ithVar(V_i);
         bdd1.andWith(M_bdd);
+        out.println("Adding to Mret: "+ new MethodWrapper(m) + " / " + v);
         if (TRACE_RELATIONS) out.println("Adding to Mret: "+bdd1.toStringWithDomains());
         Mret.orWith(bdd1);
         
     }
-    
+        
     private void addToMthr(MethodDeclaration m, ASTNodeWrapper v) {
         int V_i = Vmap.get(v);
         int M_i = Mmap.get(new MethodWrapper(m));
         BDD M_bdd = M.ithVar(M_i);
         BDD bdd1 = V2.ithVar(V_i);
         bdd1.andWith(M_bdd);
+        out.println("Adding to Mthr: "+ new MethodWrapper(m) + " / " + v);
         if (TRACE_RELATIONS) out.println("Adding to Mthr: "+bdd1.toStringWithDomains());
         Mthr.orWith(bdd1);        
     }
@@ -2359,9 +2518,9 @@ public class PAFromSource {
         addToAT(CLONEABLE, t);
         addToAT(SERIALIZABLE, t);
         addToAT(OBJECT, t);
-        types.add(CLONEABLE.getBinding().getQualifiedName());
-        types.add(SERIALIZABLE.getBinding().getQualifiedName());
-        types.add(OBJECT.getBinding().getQualifiedName());   
+        types.add(CLONEABLE.getType().getQualifiedName());
+        types.add(SERIALIZABLE.getType().getQualifiedName());
+        types.add(OBJECT.getType().getQualifiedName());   
         
         // add [] to returned superclasses of stripped array
         if (dim > 1) {
@@ -2391,6 +2550,7 @@ public class PAFromSource {
         int V_i = Vmap.get(v);
         BDD bdd1 = V1.ithVar(V_i);
         bdd1.andWith(I_bdd.id());
+        out.println("Adding to Iret: "+ I_bdd.toStringWithDomains() + " / " + v);
         if (TRACE_RELATIONS) out.println("Adding to Iret: "+bdd1.toStringWithDomains());
         Iret.orWith(bdd1);
     }
@@ -2400,17 +2560,19 @@ public class PAFromSource {
         int V_i = Vmap.get(v);
         BDD bdd1 = V1.ithVar(V_i);
         bdd1.andWith(I_bdd.id());
+        out.println("Adding to Ithr: "+ I_bdd.toStringWithDomains() + " / " + v);       
         if (TRACE_RELATIONS) out.println("Adding to Ithr: "+bdd1.toStringWithDomains());
         Ithr.orWith(bdd1);
     }
     
 
-    void addToMI(MethodDeclaration m, BDD I_bdd, ASTNodeWrapper target) {
-        BDD M_bdd = M.ithVar(Mmap.get(new MethodWrapper(m)));
+    void addToMI(ASTNodeWrapper m, BDD I_bdd, ASTNodeWrapper target) {
+        BDD M_bdd = M.ithVar(Mmap.get(m));
         int N_i = Nmap.get(target);
         BDD bdd1 = N.ithVar(N_i);
         bdd1.andWith(M_bdd);
         bdd1.andWith(I_bdd.id());
+        out.println("Adding to mI: "+ m+ " / " +I_bdd.toStringWithDomains() + " / " + target); 
         if (TRACE_RELATIONS) out.println("Adding to mI: "+bdd1.toStringWithDomains());
         mI.orWith(bdd1);
     }
@@ -2422,9 +2584,25 @@ public class PAFromSource {
         int M2_i = Mmap.get(new MethodWrapper(target));
         BDD bdd1 = M.ithVar(M2_i);
         bdd1.andWith(I_bdd.id());
+        out.println("Adding to IE: "+ i+ " / " +new MethodWrapper(target) ); 
         if (TRACE_RELATIONS) out.println("Adding to IE: "+bdd1.toStringWithDomains());
         IE.orWith(bdd1);
     }
     
+    List/*IMethodBinding*/ getConstructors(TypeDeclaration n) {
+        ArrayList l = new ArrayList();
+        ITypeBinding p = n.resolveBinding();
+        IMethodBinding[] methods = p.getDeclaredMethods();
+        for (int i = 0; i < methods.length; i++) {
+            if (methods[i].isConstructor()) {
+               l.add(methods[i]);
+            }
+        }
+        return l;
+    }
     
+    boolean hasOuterThis(ITypeBinding binding) {
+        // TODO need isclass check?
+        return binding.isNested() && binding.isClass() && !isStatic(binding);
+    }
 }
