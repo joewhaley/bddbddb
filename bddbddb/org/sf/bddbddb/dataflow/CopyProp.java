@@ -204,9 +204,7 @@ public class CopyProp extends OperationProblem implements IRPass {
             }
             if (op instanceof Copy) {
                 Copy cOp = (Copy) op;
-                //do path compression
-                Relation src = (Relation) newFact.copies.get(cOp.getSrc());
-                if (src == null) src = cOp.getSrc();
+                Relation src = cOp.getSrc();
                 newFact.copies.put(cOp.getRelationDest(), src);
             }
             newFact.op = op;
@@ -276,6 +274,34 @@ public class CopyProp extends OperationProblem implements IRPass {
         return changed;
     }
     class Transformer implements OperationVisitor {
+        
+        public Object visitBinary(Operation op, Relation src1, Relation src2){
+            Boolean changed = Boolean.FALSE;
+            CopyPropFact fact = getIn(op);
+            Relation t1 = fact.getCopy(src1);
+            if (t1 != null && !t1.equals(src1)) {
+                if (TRACE) System.out.println(op + ": replacing " + src1 + " with " + t1);
+                op.replaceSrc(src1, t1);
+                changed = Boolean.TRUE;
+            }
+            Relation t2 = fact.getCopy(src2);
+            if (t2 != null && !t2.equals(src2)) {
+                if (TRACE) System.out.println(op + ": changing " + src2 + " to " + t2);
+                op.replaceSrc(src2, t2);
+                changed = Boolean.TRUE;
+            }
+            return changed;
+        }
+        public Object visitUnary(Operation op, Relation src){
+            CopyPropFact fact = getIn(op);
+            Relation t = fact.getCopy(src);
+            if (t != null && !t.equals(src)) {
+                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
+                op.replaceSrc(src, t);
+                return Boolean.TRUE;
+            }
+            return Boolean.FALSE;
+        }
         /*
          * (non-Javadoc)
          * 
@@ -285,20 +311,7 @@ public class CopyProp extends OperationProblem implements IRPass {
             Boolean changed = Boolean.FALSE;
             Relation src1 = op.getSrc1();
             Relation src2 = op.getSrc2();
-            CopyPropFact fact = getIn(op);
-            Relation t1 = fact.getCopy(src1);
-            if (t1 != null && !t1.equals(src1)) {
-                if (TRACE) System.out.println(op + ": replacing " + src1 + " with " + t1);
-                op.replaceSrc(src1, t1);
-                changed = Boolean.TRUE;
-            }
-            Relation t2 = fact.getCopy(src2);
-            if (t2 != null && !t2.equals(src2)) {
-                if (TRACE) System.out.println(op + ": changing " + src2 + " to " + t2);
-                op.replaceSrc(src2, t2);
-                changed = Boolean.TRUE;
-            }
-            return changed;
+            return visitBinary(op,src1,src2);
         }
 
         /*
@@ -308,14 +321,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          */
         public Object visit(Project op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
+            return visitUnary(op,src);
         }
 
         /*
@@ -325,14 +331,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          */
         public Object visit(Rename op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
+            return visitUnary(op,src);
         }
 
         /*
@@ -341,23 +340,11 @@ public class CopyProp extends OperationProblem implements IRPass {
          * @see org.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.highlevel.Union)
          */
         public Object visit(Union op) {
-            Boolean changed = Boolean.FALSE;
+            
             Relation src1 = op.getSrc1();
             Relation src2 = op.getSrc2();
-            CopyPropFact fact = getIn(op);
-            Relation t1 = fact.getCopy(src1);
-            if (t1 != null && !t1.equals(src1)) {
-                if (TRACE) System.out.println(op + ": replacing " + src1 + " with " + t1);
-                op.replaceSrc(src1, t1);
-                changed = Boolean.TRUE;
-            }
-            Relation t2 = fact.getCopy(src2);
-            if (t2 != null && !t2.equals(src2)) {
-                if (TRACE) System.out.println(op + ": changing " + src2 + " to " + t2);
-                op.replaceSrc(src2, t2);
-                changed = Boolean.TRUE;
-            }
-            return changed;
+            return visitBinary(op,src1,src2);
+           
         }
 
         /*
@@ -366,23 +353,9 @@ public class CopyProp extends OperationProblem implements IRPass {
          * @see org.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor#visit(org.sf.bddbddb.ir.highlevel.Difference)
          */
         public Object visit(Difference op) {
-            Boolean changed = Boolean.FALSE;
             Relation src1 = op.getSrc1();
             Relation src2 = op.getSrc2();
-            CopyPropFact fact = getIn(op);
-            Relation t1 = fact.getCopy(src1);
-            if (t1 != null && !t1.equals(src1)) {
-                if (TRACE) System.out.println(op + ": replacing " + src1 + " with " + t1);
-                op.replaceSrc(src1, t1);
-                changed = Boolean.TRUE;
-            }
-            Relation t2 = fact.getCopy(src2);
-            if (t2 != null && !t2.equals(src2)) {
-                if (TRACE) System.out.println(op + ": changing " + src2 + " to " + t2);
-                op.replaceSrc(src2, t2);
-                changed = Boolean.TRUE;
-            }
-            return changed;
+            return visitBinary(op,src1,src2);
         }
 
         /*
@@ -392,15 +365,8 @@ public class CopyProp extends OperationProblem implements IRPass {
          */
         public Object visit(JoinConstant op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
-        }
+            return visitUnary(op,src);
+           }
 
         /*
          * (non-Javadoc)
@@ -418,14 +384,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          */
         public Object visit(Free op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
+           return visitUnary(op,src);
         }
 
         /*
@@ -453,14 +412,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          */
         public Object visit(Invert op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
+            return visitUnary(op,src);
         }
 
         /*
@@ -470,14 +422,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          */
         public Object visit(Copy op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
+           return visitUnary(op,src);
         }
 
         /*
@@ -496,14 +441,7 @@ public class CopyProp extends OperationProblem implements IRPass {
          */
         public Object visit(Save op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
+            return visitUnary(op,src);
         }
 
         /*
@@ -512,23 +450,9 @@ public class CopyProp extends OperationProblem implements IRPass {
          * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor#visit(org.sf.bddbddb.ir.lowlevel.ApplyEx)
          */
         public Object visit(ApplyEx op) {
-            Boolean changed = Boolean.FALSE;
             Relation src1 = op.getSrc1();
             Relation src2 = op.getSrc2();
-            CopyPropFact fact = getIn(op);
-            Relation t1 = fact.getCopy(src1);
-            if (t1 != null && !t1.equals(src1)) {
-                if (TRACE) System.out.println(op + ": replacing " + src1 + " with " + t1);
-                op.replaceSrc(src1, t1);
-                changed = Boolean.TRUE;
-            }
-            Relation t2 = fact.getCopy(src2);
-            if (t2 != null && !t2.equals(src2)) {
-                if (TRACE) System.out.println(op + ": changing " + src2 + " to " + t2);
-                op.replaceSrc(src2, t2);
-                changed = Boolean.TRUE;
-            }
-            return changed;
+            return visitBinary(op,src1,src2);
         }
 
         /*
@@ -551,15 +475,10 @@ public class CopyProp extends OperationProblem implements IRPass {
 
         public Object visit(Replace op) {
             Relation src = op.getSrc();
-            CopyPropFact fact = getIn(op);
-            Relation t = fact.getCopy(src);
-            if (t != null && !t.equals(src)) {
-                if (TRACE) System.out.println(op + ": changing " + src + " to " + t);
-                op.replaceSrc(src, t);
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
+            return visitUnary(op,src);
         }
+       
+    
     }
     /*
      * (non-Javadoc)

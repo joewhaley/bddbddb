@@ -60,7 +60,7 @@ public abstract class RelationProblem extends Problem {
          * @see org.sf.bddbddb.dataflow.Problem.Fact#copy(org.sf.bddbddb.IterationList)
          */
         public Fact copy(IterationList loc) {
-            RelationFacts that = new RelationFacts();
+            RelationFacts that = create();
             that.relationFacts.putAll(this.relationFacts);
             that.location = loc;
             return that;

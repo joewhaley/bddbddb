@@ -88,7 +88,7 @@ public class Copy extends HighLevelOperation {
      *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
-        if (r1 == r_old) r1 = r_new;
+          if (r1 == r_old) r1 = r_new; 
     }
 
     /*

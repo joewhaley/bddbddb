@@ -61,4 +61,10 @@ public class Join extends BooleanOperation {
     public Operation copy() {
         return new Join(r0, r1, r2);
     }
+    
+    
+    /**
+     * @return
+     */
+    public List getAttributes(){ return attributes; }
 }

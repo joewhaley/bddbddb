@@ -132,6 +132,7 @@ public class UFDomainAssignment extends DomainAssignment {
             System.out.print(domAssign+"                        \r");
             r.setDomainAssignment(domAssign);
         }
+        s.setVariableOrdering();
     }
 
     BDDDomain chooseBDDDomain(BDDRelation r, Attribute a) {
@@ -141,6 +142,7 @@ public class UFDomainAssignment extends DomainAssignment {
         List legal = new ArrayList();
         for (Iterator i = s.getBDDDomains(d).iterator(); i.hasNext();) {
             BDDDomain b = (BDDDomain) i.next();
+            if(TRACE) System.out.println("assign " + p + " = " + b);
             if (wouldBeLegal(p, b)) {
                 legal.add(b);
             }
@@ -303,7 +305,7 @@ public class UFDomainAssignment extends DomainAssignment {
     }
 
     public void saveDomainAssignment(DataOutput out) throws IOException {
-        BDDSolver s = (BDDSolver) solver;
+        BDDSolver s = (BDDSolver) solver;       
         for (int i = 0; i < s.getNumberOfRelations(); ++i) {
             BDDRelation r = (BDDRelation) s.getRelation(i);
             StringBuffer sb = new StringBuffer();
