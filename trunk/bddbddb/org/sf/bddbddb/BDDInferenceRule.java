@@ -635,8 +635,7 @@ public class BDDInferenceRule extends InferenceRule {
                     if (TRACE) solver.out.print("'");
                 }
                 if (find_best_order && !results[i].isOne()) {
-                    String varOrder = solver.VARORDER;
-                    findBestDomainOrder(solver.bdd, null, varOrder, results[i], b, canNowQuantify);
+                    findBestDomainOrder(solver.bdd, results[i], b, canNowQuantify, variableSet[j], rt.variables);
                 }
                 if (!canNowQuantify.isOne()) {
                     if (TRACE) {
@@ -896,14 +895,22 @@ public class BDDInferenceRule extends InferenceRule {
     
     void findBestDomainOrder(BDDFactory bdd, BDD b1, BDD b2, BDD b3, Collection vars1, Collection vars2) {
         System.out.println("Finding best order for "+vars1+","+vars2);
+        FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
+        try {
+            fbo.init(b1, b2, b3, BDDFactory.and);
+        } catch (IOException x) {
+            System.err.println("IO Exception occurred: " + x);
+            fbo.cleanup();
+            return;
+        }
         Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
         List allVars = new LinkedList(allVarSet);
         FindBestDomainOrder fbdo = FindBestDomainOrder.INSTANCE;
         FindBestDomainOrder.OrderingInfo info = fbdo.getOrderInfo(this);
         FindBestDomainOrder.UpdatableOrderingInfo info2 = info.createUpdatable();
-        int count = 5;
+        int count = 6;
         while (--count >= 0) {
-            FindBestDomainOrder.Order o = info2.gimmeAGoodOrder(allVars);
+            FindBestDomainOrder.Order o = info2.tryNewGoodOrder(allVars);
             StringBuffer varOrder = new StringBuffer();
             for (Iterator i = o.iterator(); i.hasNext(); ) {
                 Object p = i.next();
@@ -914,10 +921,12 @@ public class BDDInferenceRule extends InferenceRule {
                         Variable v = (Variable) j.next();
                         BDDDomain d = (BDDDomain) variableToBDDDomain.get(v);
                         if (d != null) {
-                            if (num == 0) {
-                                varOrder.append('_');
-                            } else {
-                                varOrder.append('x');
+                            if (varOrder.length() > 0) {
+                                if (num == 0) {
+                                    varOrder.append('_');
+                                } else {
+                                    varOrder.append('x');
+                                }
                             }
                             varOrder.append(d);
                             ++num;
@@ -932,10 +941,14 @@ public class BDDInferenceRule extends InferenceRule {
                 }
             }
             String vOrder = varOrder.toString();
-            FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
+            System.out.println("Trying order "+vOrder);
+            vOrder = solver.fixVarOrder(vOrder);
+            System.out.println("Complete order "+vOrder);
             long time = fbo.tryOrder(true, vOrder);
             info2.registerNewRawData(o, time);
         }
+        info.incorporate(info2);
+        fbo.cleanup();
     }
     
     String findBestDomainOrder(BDDFactory bdd, List domains, String origVarOrder, BDD b1, BDD b2, BDD b3) {
