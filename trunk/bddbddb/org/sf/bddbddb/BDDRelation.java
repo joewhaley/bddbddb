@@ -3,7 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,7 +17,7 @@ import java.io.IOException;
 import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
-import org.sf.javabdd.BDDFactory;
+import org.sf.javabdd.BDD.BDDIterator;
 
 /**
  * BDDRelation
@@ -333,61 +332,47 @@ public class BDDRelation extends Relation {
             if (relation.isZero()) {
                 return;
             }
-            BDD ss = relation.support();
-            int[] a = ss.scanSetDomains();
-            ss.free();
             BDD allDomains = solver.bdd.one();
             dos.write("#");
             System.out.print(fileName + " domains {");
+            int[] domIndices = new int[domains.size()];
+            int k = -1;
             for (Iterator i = domains.iterator(); i.hasNext();) {
                 BDDDomain d = (BDDDomain) i.next();
                 System.out.print(" " + d.toString());
                 dos.write(" " + d.toString() + ":" + d.varNum());
+                domIndices[++k] = d.getIndex();
             }
             dos.write("\n");
             System.out.println(" } = " + relation.nodeCount() + " nodes, " + dsize() + " elements");
             if (relation.isOne()) {
-                for (Iterator j = domains.iterator(); j.hasNext();) {
-                    BDDDomain d = (BDDDomain) j.next();
+                for (k = 0; k < domIndices.length; ++k) {
                     dos.write("* ");
                 }
                 dos.write("\n");
                 return;
             }
-            for (int i = 0; i < a.length; ++i) {
-                BDDDomain d = solver.bdd.getDomain(a[i]);
-                allDomains.andWith(d.set());
-            }
-            BDDDomain iterDomain = (BDDDomain) domains.get(0);
-            BDD foo = relation.exist(allDomains.exist(iterDomain.set()));
+            
             int lines = 0;
-            for (Iterator i = foo.iterator(iterDomain.set()); i.hasNext();) {
-                BDD q = (BDD) i.next();
-                q.andWith(relation.id());
-                while (!q.isZero()) {
-                    BDD sat = q.satOne(allDomains, solver.bdd.zero());
-                    BDD sup = q.support();
-                    int[] b = sup.scanSetDomains();
-                    sup.free();
-                    long[] v = sat.scanAllVar();
-                    sat.free();
-                    BDD t = solver.bdd.one();
-                    for (Iterator j = domains.iterator(); j.hasNext();) {
-                        BDDDomain d = (BDDDomain) j.next();
-                        int jj = d.getIndex();
-                        if (Arrays.binarySearch(b, jj) < 0) {
+            BDDIterator i = relation.iterator(domainSet);
+            while (i.hasNext()) {
+                BDD sat = (BDD) i.next();
+                long[] v = sat.scanAllVar();
+                for (k = 0; k < domIndices.length; ++k) {
+                    long val = v[k];
+                    if (val == 0L) {
+                        // Check if this is the universal set.
+                        BDDDomain d = solver.bdd.getDomain(k);
+                        if (i.isDontCare(d)) {
+                            i.skipDontCare(d);
                             dos.write("* ");
-                            t.andWith(d.domain());
-                        } else {
-                            dos.write(v[jj] + " ");
-                            t.andWith(d.ithVar(v[jj]));
+                            continue;
                         }
                     }
-                    q.applyWith(t, BDDFactory.diff);
-                    dos.write("\n");
-                    ++lines;
+                    dos.write(val + " ");
                 }
-                q.free();
+                dos.write("\n");
+                ++lines;
             }
             System.out.println("Done writing " + lines + " lines.");
         } finally {
