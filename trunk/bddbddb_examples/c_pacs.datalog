@@ -1,0 +1,30 @@
+
+.basedir "c_pacs.enscript"
+
+.include "cons_flc_baserules"
+
+.bddvarorder V0xV1xV2_FD0xFD1xFD2_FD3xFD4_C0xC1xC2
+
+pointsTo_consc0 (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) input
+initialPointsTo(a,b,c,d) :- pointsTo_consc0(a,b,c,d).
+
+pointsToAbstract_opt (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2) input
+pointsToAbstract(a,b,c,d) :- pointsToAbstract_opt(a,b,c,d).
+
+assign_orig (v1:V0 , v1fd:FD0 , v2:V1 , v2fd:FD1) input
+assign(a,b,c,d) :- assign_orig(a,b,c,d).
+
+contextNumbering_cons(fp:V, proc:V, c_r:C, c_e:C) input
+contextNumbering(fp,proc,r,e) :- contextNumbering_cons(fp,proc,r,e).
+
+pointsTo_consc3 (c2:C1 , v2:V1 , v2fd:FD1 , c3:C2, v3:V2 , v3fd:FD2) output
+pointsTo_consc3(a,b,c,d,e,f) :- pointsTo(a,b,c,d,e,f).
+
+assign_consc3 (v1:V0 , v1fd:FD0 , v2:V1 , v2fd:FD1) output
+assign_consc3(a,b,c,d) :- assign(a,b,c,d).
+
+externStringManip_consc3(o:V2) output
+externStringManip_consc3(o) :- externStringManip(o).
+
+interContextAssign_consc3 (c1:C0 , v1:V0 , v1fd:FD0 , c2:C1 , v2:V1 , v2fd:FD1) output
+interContextAssign_consc3(a,b,c,d,e,f) :- interContextAssign(a,b,c,d,e,f).
