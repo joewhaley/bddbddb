@@ -21,7 +21,6 @@ import jwutil.collections.Pair;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Learner.IndividualRuleLearner;
 import net.sf.bddbddb.ir.BDDInterpreter;
-import net.sf.bddbddb.ir.IR;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
 
@@ -211,38 +210,31 @@ public class BDDSolver extends Solver {
         return varOrder;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /* (non-Javadoc)
      * @see net.sf.bddbddb.Solver#solve()
      */
     public void solve() {
-        Stratify s = new Stratify(this);
-        s.stratify();
-       
         if (USE_IR) {
-            IR ir = IR.create(s);
-            ir.optimize();
-            if (PRINT_IR) ir.printIR();
             BDDInterpreter interpreter = new BDDInterpreter(ir);
             interpreter.interpret();
-            s.solve();
+            //stratify.solve();
         } else {
+            IterationList list = ifg.getIterationList();
+            //System.out.println(list);
+            BDDInterpreter interpreter = new BDDInterpreter(null);
             long time = System.currentTimeMillis();
-            s.solve();
-            if(LEARN_BEST_ORDER) {
-      
+            interpreter.interpret(list);
+            if (LEARN_BEST_ORDER) {
                 time = System.currentTimeMillis() - time;
                 System.out.println("SOLVE_TIME: " + time);
                 reportStats();
-                Learner learner = new IndividualRuleLearner(this, s); 
+                Learner learner = new IndividualRuleLearner(this, stratify);
                 learner.learn();
-     
             }
         }
     }
     
-    public  List rulesToLearn(){
+    public List rulesToLearn(){
         List rulesToLearn = new LinkedList();
         for(Iterator it = rules.iterator(); it.hasNext(); ){
             BDDInferenceRule rule = (BDDInferenceRule) it.next();

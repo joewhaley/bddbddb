@@ -35,6 +35,7 @@ import jwutil.util.Assert;
 import net.sf.bddbddb.InferenceRule.DependenceNavigator;
 import net.sf.bddbddb.dataflow.PartialOrder.BeforeConstraint;
 import net.sf.bddbddb.dataflow.PartialOrder.InterleavedConstraint;
+import net.sf.bddbddb.ir.IR;
 
 /**
  * Solver
@@ -93,6 +94,8 @@ public abstract class Solver {
     Map/*<Pair<Domain,Domain>,Relation>*/ mapRelations;
     /** List of inference rules. */
     List/*<InferenceRule>*/ rules;
+    /** Iteration order. */
+    IterationFlowGraph ifg;
     
     /** Flag that is set on initialization. */
     boolean isInitialized;
@@ -224,6 +227,27 @@ public abstract class Solver {
         }
     }
 
+    Stratify stratify;
+    IR ir;
+    
+    /**
+     * Stratify the rules.
+     */
+    public void stratify() {
+        stratify = new Stratify(this);
+        stratify.stratify();
+        
+        if (USE_IR) {
+            IR ir = IR.create(stratify);
+            ifg = ir.graph;
+            ir.optimize();
+            if (PRINT_IR) ir.printIR();
+        } else {
+            ifg = new IterationFlowGraph(rules, stratify);
+            //IterationList list = ifg.expand();
+        }
+    }
+    
     /**
      * Solve the rules.
      */
@@ -326,6 +350,61 @@ public abstract class Solver {
         if (includedirs == null) includedirs = basedir;
     }
     
+    public void load(String filename) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+        inputFilename = filename;
+        if (NOISY) out.println("Opening Datalog program \"" + inputFilename + "\"");
+        MyReader in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
+        initializeBasedir(inputFilename);
+        load(in);
+    }
+    
+    public void load(MyReader in) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+        readDatalogProgram(in);
+        if (NOISY) out.println(nameToDomain.size() + " field domains.");
+        if (NOISY) out.println(nameToRelation.size() + " relations.");
+        if (NOISY) out.println(rules.size() + " rules.");
+        in.close();
+        if (NOISY) out.print("Splitting rules: ");
+        splitRules();
+        if (NOISY) out.println("done.");
+        if (NOISY) out.print("Initializing solver: ");
+        initialize();
+        if (NOISY) out.println("done.");
+        if (NOISY) out.print("Loading initial relations: ");
+        long time = System.currentTimeMillis();
+        loadInitialRelations();
+        time = System.currentTimeMillis() - time;
+        if (NOISY) out.println("done. (" + time + " ms)");
+        out.println("Stratifying: ");
+        time = System.currentTimeMillis();
+        stratify();
+        time = System.currentTimeMillis() - time;
+        out.println("done. (" + time + " ms)");
+        out.println("Solving: ");
+    }
+    
+    public void run() {
+        long time = System.currentTimeMillis();
+        solve();
+        time = System.currentTimeMillis() - time;
+        out.println("done. (" + time + " ms)");
+        long solveTime = time;
+        finish();
+        if (REPORT_STATS) {
+            System.out.println("SOLVE_TIME=" + solveTime);
+            reportStats();
+        }
+    }
+    
+    public void save() throws IOException {
+        if (NOISY) out.print("Saving results: ");
+        long time = System.currentTimeMillis();
+        saveResults();
+        time = System.currentTimeMillis() - time;
+        if (NOISY) out.println("done. (" + time + " ms)");
+        cleanup();
+    }
+    
     /**
      * The entry point to the application.
      * 
@@ -345,43 +424,9 @@ public abstract class Solver {
         String solverName = System.getProperty("solver", "net.sf.bddbddb.BDDSolver");
         Solver dis;
         dis = (Solver) Class.forName(solverName).newInstance();
-        if (dis.NOISY) dis.out.println("Opening Datalog program \"" + inputFilename + "\"");
-        MyReader in = new MyReader(new LineNumberReader(new FileReader(inputFilename)));
-        dis.inputFilename = inputFilename;
-        dis.initializeBasedir(inputFilename);
-        dis.readDatalogProgram(in);
-        if (dis.NOISY) dis.out.println(dis.nameToDomain.size() + " field domains.");
-        if (dis.NOISY) dis.out.println(dis.nameToRelation.size() + " relations.");
-        if (dis.NOISY) dis.out.println(dis.rules.size() + " rules.");
-        in.close();
-        if (dis.NOISY) dis.out.print("Splitting rules: ");
-        dis.splitRules();
-        if (dis.NOISY) dis.out.println("done.");
-        if (dis.NOISY) dis.out.print("Initializing solver: ");
-        dis.initialize();
-        if (dis.NOISY) dis.out.println("done.");
-        if (dis.NOISY) dis.out.print("Loading initial relations: ");
-        long time = System.currentTimeMillis();
-        dis.loadInitialRelations();
-        time = System.currentTimeMillis() - time;
-        if (dis.NOISY) dis.out.println("done. (" + time + " ms)");
-        dis.out.println("Solving: ");
-        time = System.currentTimeMillis();
-        dis.solve();
-        time = System.currentTimeMillis() - time;
-        dis.out.println("done. (" + time + " ms)");
-        long solveTime = time;
-        dis.finish();
-        if (dis.REPORT_STATS) {
-            System.out.println("SOLVE_TIME=" + solveTime);
-            dis.reportStats();
-        }
-        if (dis.NOISY) dis.out.print("Saving results: ");
-        time = System.currentTimeMillis();
-        dis.saveResults();
-        time = System.currentTimeMillis() - time;
-        if (dis.NOISY) dis.out.println("done. (" + time + " ms)");
-        dis.cleanup();
+        dis.load(inputFilename);
+        dis.run();
+        dis.save();
     }
 
     /**
@@ -1663,6 +1708,37 @@ public abstract class Solver {
         return rules;
     }
 
+    /**
+     * Returns the ith rule.
+     * 
+     * @param i  index
+     * @return  inference rule
+     */
+    public InferenceRule getRule(int i) {
+        return (InferenceRule) rules.get(i);
+    }
+    
+    /**
+     * Returns the inference rule with the given name.
+     * 
+     * @param s  rule name
+     * @return  inference rul
+     */
+    public InferenceRule getRule(String s) {
+        if (!s.startsWith("rule")) return null;
+        int index = Integer.parseInt(s.substring(4));
+        return getRule(index);
+    }
+    
+    /**
+     * Return the iteration flow graph.  This contains the iteration order.
+     * 
+     * @return  iteration flow graph
+     */
+    public IterationFlowGraph getIterationFlowGraph() {
+        return ifg;
+    }
+    
     /**
      * Return the collection of relations to load.
      * 

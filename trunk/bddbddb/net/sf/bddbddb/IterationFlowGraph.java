@@ -26,6 +26,10 @@ public class IterationFlowGraph {
     MultiMap containedBy;
     MultiMap dependencies;
 
+    public IterationFlowGraph(List rules, Stratify strat) {
+        this(rules, strat.firstSCCs, strat.innerSCCs);
+    }
+    
     public IterationFlowGraph(List rules, List firstSCCs, MultiMap innerSCCs) {
         this.firstSCCs = firstSCCs;
         this.innerSCCs = innerSCCs;
@@ -156,5 +160,9 @@ public class IterationFlowGraph {
      */
     public List getLoops() {
         return loops;
+    }
+    
+    public IterationElement getIterationElement(String s) {
+        return iterationElements.getElement(s);
     }
 }
