@@ -7,13 +7,12 @@
 package org.sf.bddbddb.dataflow;
 
 import org.sf.bddbddb.util.BitString;
-import org.sf.bddbddb.util.BitString.BitStringIterator;
 
 /**
- * @author Collective
+ * BitVectorFact
  * 
- * TODO To change the template for this generated type comment go to Window -
- * Preferences - Java - Code Style - Code Templates
+ * @author Collective
+ * @version $Id$
  */
 public abstract class BitVectorFact implements Problem.Fact {
     protected final BitString fact;
