@@ -1,4 +1,7 @@
 
+### C pointer analysis
+### Author: Dzintars Avots
+
 .basedir "c_pa.enscript"
 
 .bddvarorder V0xV1xV2_FD0xFD1xFD2_FD3xFD4_C0xC1xC2
