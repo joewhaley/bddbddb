@@ -1100,7 +1100,7 @@ public abstract class Solver {
                 if (!option.equals("{")) {
                     if (option.equals("pre")) type = 1;
                     if (!s2.equals("{")) {
-                        outputError(lineNum, st.getPosition(), s, "Invalid number format for min_confidence \"" + option + "\"");
+                        outputError(lineNum, st.getPosition(), s, "Expected \"{\", but found \""+s2+"\"");
                         throw new IllegalArgumentException();
                     }
                     s2 = nextToken(st);
@@ -1108,11 +1108,37 @@ public abstract class Solver {
                 while (!s2.equals("}")) {
                     sb.append(' ');
                     sb.append(s2);
+                    if (!st.hasMoreTokens()) {
+                        outputError(lineNum, st.getPosition(), s, "Expected \"}\" to terminate code block");
+                        throw new IllegalArgumentException();
+                    }
                     s2 = nextToken(st);
                 }
-                CodeFragment f = new CodeFragment(sb.toString());
+                CodeFragment f = new CodeFragment(sb.toString(), ir);
                 if (type == 1) ir.preCode.add(f);
                 else ir.postCode.add(f);
+            } else if (option.equals("modifies")) {
+                String relationName = nextToken(st);
+                if (relationName.equals("(")) {
+                    for (;;) {
+                        relationName = nextToken(st);
+                        if (relationName.equals(",")) continue;
+                        if (relationName.equals(")")) break;
+                        Relation r = getRelation(relationName);
+                        if (r == null) {
+                            outputError(lineNum, st.getPosition(), s, "Unknown relation \""+relationName+"\"");
+                            throw new IllegalArgumentException();
+                        }
+                        ir.extraDefines.add(r);
+                    }
+                } else {
+                    Relation r = getRelation(relationName);
+                    if (r == null) {
+                        outputError(lineNum, st.getPosition(), s, "Unknown relation \""+relationName+"\"");
+                        throw new IllegalArgumentException();
+                    }
+                    ir.extraDefines.add(r);
+                }
             } else {
                 // todo: pri=#, maxiter=#
                 outputError(lineNum, st.getPosition(), s, "Unknown rule option \"" + option + "\"");

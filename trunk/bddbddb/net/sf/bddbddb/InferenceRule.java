@@ -127,6 +127,12 @@ public abstract class InferenceRule implements IterationElement {
     List postCode;
 
     /**
+     * Relations (besides the head relation) that are modified as a side effect of this rule.
+     * Used with code fragments.
+     */
+    List extraDefines;
+    
+    /**
      * Construct a new inference rule.
      * 
      * @param solver  solver
@@ -145,6 +151,7 @@ public abstract class InferenceRule implements IterationElement {
         this.id = id;
         this.preCode = new LinkedList();
         this.postCode = new LinkedList();
+        this.extraDefines = new LinkedList();
     }
 
     /**
@@ -298,6 +305,10 @@ public abstract class InferenceRule implements IterationElement {
             if (o instanceof InferenceRule) {
                 InferenceRule ir = (InferenceRule) o;
                 mm.add(ir.bottom.relation, ir);
+                for (Iterator j = ir.extraDefines.iterator(); j.hasNext(); ) {
+                    Relation r = (Relation) j.next();
+                    mm.add(r, ir);
+                }
             }
         }
         return mm;
@@ -397,8 +408,12 @@ public abstract class InferenceRule implements IterationElement {
             //s.rules.add(newRule);
             newRules.add(newRule);
             newRule.copyOptions(this);
-            newRule.preCode.addAll(this.preCode);
+            boolean changed = newRule.preCode.addAll(this.preCode);
             this.preCode.clear();
+            if (changed) {
+                // todo: split extraDefines into pre- and post-
+                newRule.extraDefines.addAll(this.extraDefines);
+            }
             // Now include the bottom of the new rule on the top of our rule.
             top.add(0, newBottom);
             // Reinitialize this rule because the terms have changed.
@@ -561,8 +576,19 @@ public abstract class InferenceRule implements IterationElement {
         public Collection next(Object node) {
             if (node instanceof InferenceRule) {
                 InferenceRule ir = (InferenceRule) node;
-                if (relationToDefiningRule.contains(ir.bottom.relation, ir)) return Collections.singleton(ir.bottom.relation);
-                else return Collections.EMPTY_SET;
+                Collection extras = ir.extraDefines;
+                if (extras == null || extras.isEmpty()) {
+                    if (relationToDefiningRule.contains(ir.bottom.relation, ir)) return Collections.singleton(ir.bottom.relation);
+                    else return Collections.EMPTY_SET;
+                } else {
+                    LinkedList result = new LinkedList();
+                    for (Iterator i = extras.iterator(); i.hasNext(); ) {
+                        Relation r = (Relation) i.next();
+                        if (relationToDefiningRule.contains(r, ir)) result.add(r);
+                    }
+                    if (relationToDefiningRule.contains(ir.bottom.relation, ir)) result.add(ir.bottom.relation);
+                    return result;
+                }
             } else {
                 Relation r = (Relation) node;
                 Collection c = relationToUsingRule.getValues(r);
