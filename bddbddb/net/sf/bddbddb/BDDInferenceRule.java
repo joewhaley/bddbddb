@@ -1053,8 +1053,8 @@ public class BDDInferenceRule extends InferenceRule {
         while (--count >= 0) {
             //Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
             TrialGuess guess = fbdo.tryNewGoodOrder(tc, allVars, this);
+            if (guess == null || guess.order == null) break;
             Order o = guess.order;
-            if (o == null) break;
             String vOrder = o.toVarOrderString(variableToBDDDomain);
             System.out.println("Trying order "+vOrder);
             vOrder = solver.fixVarOrder(vOrder, false);
