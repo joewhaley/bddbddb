@@ -1,4 +1,4 @@
-MODULES = org
+MODULES = net
 SUPPORT_LIBS = javabdd.jar weka.jar jwutil-1.0.jar jdom.jar
 JAR_NAME = bddbddb.jar
 
@@ -81,11 +81,11 @@ $(JAR_NAME): class_list
 ### RULES TO RUN TEST CASES
 #
 DATALOG = ../bddbddb_examples/pa.datalog
-test:	$(JAR_NAME)
-	$(JAVA) -mx512m -cp $(BUILD_CLASSPATH) $(TESTOPT) org.sf.bddbddb.Solver $(DATALOG)
+test:	net/sf/bddbddb/Solver.class
+	$(JAVA) -mx512m -cp $(BUILD_CLASSPATH) $(TESTOPT) net.sf.bddbddb.Solver $(DATALOG)
 
-interactive:	$(JAR_NAME)
-	$(JAVA) -mx512m -cp $(BUILD_CLASSPATH) $(TESTOPT) org.sf.bddbddb.Interactive $(DATALOG)
+interactive:	net/sf/bddbddb/Interactive.class
+	$(JAVA) -mx512m -cp $(BUILD_CLASSPATH) $(TESTOPT) net.sf.bddbddb.Interactive $(DATALOG)
 
 
 ### MISC RULES

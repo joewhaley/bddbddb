@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path=""/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path=""/>
+	<classpathentry kind="src" path="/JavaBDD"/>
 	<classpathentry exported="true" sourcepath="/JavaBDD" kind="lib" path="javabdd.jar"/>
 	<classpathentry kind="lib" path="weka.jar"/>
 	<classpathentry exported="true" sourcepath="/jwutil/main/src/java" kind="lib" path="jwutil-1.0.jar"/>
