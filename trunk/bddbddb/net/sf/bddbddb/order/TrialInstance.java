@@ -11,10 +11,10 @@ import java.util.Iterator;
 import jwutil.util.Assert;
 import net.sf.bddbddb.BDDInferenceRule;
 import net.sf.bddbddb.FindBestDomainOrder;
+import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;
 import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
 import net.sf.bddbddb.order.WekaInterface.OrderInstance;
 import weka.core.Instance;
-import weka.core.Instances;
 
 
 public class TrialInstance extends OrderInstance implements Comparable {
@@ -32,9 +32,16 @@ public class TrialInstance extends OrderInstance implements Comparable {
         for (Iterator i = o.getConstraints().iterator(); i.hasNext();) {
             OrderConstraint oc = (OrderConstraint) i.next();
             // TODO: use a map from Pair to int instead of building String and doing linear search.
+     
+            
             String cName = oc.getFirst() + "," + oc.getSecond();
             OrderAttribute oa = (OrderAttribute) dataSet.attribute(cName);
             if (oa != null) {
+                if(oc.getFirst().equals(oc.getSecond()) && d[oa.index()] == WekaInterface.INTERLEAVE) 
+                    continue;
+               /* TODO should only one type of constraint for
+                * when first == second and they are not interleaved
+                */  
                 d[oa.index()] = WekaInterface.getType(oc);
             } else {
                 System.out.println("Warning: cannot find constraint "+oc+" order "+ti.order+" in dataset "+dataSet);
@@ -62,6 +69,14 @@ public class TrialInstance extends OrderInstance implements Comparable {
 
     public double getCost() {
         return value(numAttributes() - 1);
+    }
+    
+    public void setCost(double cost){
+        this.setValue(numAttributes() -1 , cost);
+    }
+    
+    public void recomputeCost(double best){
+        setCost((double) (ti.cost + 1) / best);
     }
 
     public Object copy() {

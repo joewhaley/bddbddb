@@ -108,4 +108,5 @@ public class MapBasedTranslator implements OrderTranslator {
         if (FindBestDomainOrder.TRACE > 3) System.out.println(" -> "+result);
         return new Order(result);
     }
+    
 }

@@ -65,7 +65,7 @@ public class TrialDataRepository {
         TrialInstances data = new TrialInstances("Var Ordering Constraints", attributes, capacity);
         if (allVars.size() <= 1) return data;
         for (Iterator i = allTrials.iterator(); i.hasNext();) {
-            TrialCollection tc2 = (TrialCollection) i.next();
+            EpisodeCollection tc2 = (EpisodeCollection) i.next();
             InferenceRule ir2 = tc2.getRule(solver);
             if (ir != ir2) continue;
             addToInstances(data, tc2, filter);
@@ -84,7 +84,7 @@ public class TrialDataRepository {
         TrialInstances data = new TrialInstances("Attribute Ordering Constraints", attributes, capacity);
         if (allAttribs.size() <= 1) return data;
         for (Iterator i = allTrials.iterator(); i.hasNext();) {
-            TrialCollection tc2 = (TrialCollection) i.next();
+            EpisodeCollection tc2 = (EpisodeCollection) i.next();
             InferenceRule ir2 = tc2.getRule(solver);
             OrderTranslator t = new VarToAttribTranslator(ir2);
             t = new OrderTranslator.Compose(t, new FilterTranslator(allAttribs));
@@ -104,7 +104,7 @@ public class TrialDataRepository {
         TrialInstances data = new TrialInstances("Domain Ordering Constraints", attributes, capacity);
         if (allDomains.size() <= 1) return data;
         for (Iterator i = allTrials.iterator(); i.hasNext();) {
-            TrialCollection tc2 = (TrialCollection) i.next();
+            EpisodeCollection tc2 = (EpisodeCollection) i.next();
             InferenceRule ir2 = tc2.getRule(solver);
             OrderTranslator t = new VarToAttribTranslator(ir2);
             t = new OrderTranslator.Compose(t, AttribToDomainTranslator.INSTANCE);
@@ -115,8 +115,8 @@ public class TrialDataRepository {
         return data;
     }
     
-    public static void addToInstances(TrialInstances data, TrialCollection tc, OrderTranslator t) {
-        if (tc.size() == 0) return;
+    public static void addToInstances(TrialInstances data, EpisodeCollection tc, OrderTranslator t) {
+        if (tc.getNumTrials() == 0) return;
         double best;
         if (tc.getMinimum().isMax()) best = 1;
         else best = (double) tc.getMinimum().cost + 1;
@@ -163,10 +163,10 @@ public class TrialDataRepository {
     public TrialDataGroup getDomainDataGroup(InferenceRule rule, List variables){
         List domains = new LinkedList(AttribToDomainMap.convert(VarToAttribMap.convert(variables, rule)));
         Set domainSet = new HashSet(domains);
-        TrialDataGroup dataGroup = (TrialDataGroup) domainDataMap.get(domainSet);
+        TrialDataGroup dataGroup = (TrialDataGroup) domainDataMap.get(domains);
         if(dataGroup == null){
             dataGroup = new TrialDataGroup.DomainTrialDataGroup(domains, buildDomainInstances(rule, variables) );
-            domainDataMap.put(domainSet, dataGroup);
+            domainDataMap.put(domains, dataGroup);
             Collection pairs = WekaInterface.generateAllPairs(domains);
             for(Iterator it = pairs.iterator(); it.hasNext(); ){
                 domainListeners.add(it.next(), dataGroup); 
@@ -177,10 +177,7 @@ public class TrialDataRepository {
     
     public boolean addTrial(InferenceRule rule, List variables, TrialInfo info){
         Order o_v = info.order;
-        TrialCollection tc = info.getCollection();
-        double trialColBest;
-        if (tc.getMinimum().isMax()) trialColBest = 1;
-        else trialColBest = (double) tc.getMinimum().cost + 1;
+        EpisodeCollection tc = info.getCollection();
         
         //boolean changed = varData.update(o_v,info, trialColBest);
         boolean changed = false;
@@ -192,7 +189,7 @@ public class TrialDataRepository {
             for(Iterator jt = listeners.iterator(); jt.hasNext();){
                 TrialDataGroup dataGroup = (TrialDataGroup) jt.next();
                 if(!notified.contains(dataGroup)){
-                    changed |= dataGroup.update(o_v, info,trialColBest);
+                    changed |= dataGroup.update(o_v, info,tc);
                     notified.add(dataGroup);
                 }
             }
@@ -208,7 +205,7 @@ public class TrialDataRepository {
             for(Iterator jt = listeners.iterator(); jt.hasNext();){
                 TrialDataGroup dataGroup = (TrialDataGroup) jt.next();
                 if(!notified.contains(dataGroup)){
-                    changed |= dataGroup.update(o_a, info,trialColBest);
+                    changed |= dataGroup.update(o_a, info,tc);
                     notified.add(dataGroup);
                 }
             }
@@ -221,7 +218,7 @@ public class TrialDataRepository {
             for(Iterator jt = domListeners.iterator(); jt.hasNext(); ){
                 TrialDataGroup dataGroup = (TrialDataGroup) jt.next();
                 if(!notified.contains(dataGroup)){
-                    changed |= dataGroup.update(o_d, info, trialColBest);
+                    changed |= dataGroup.update(o_d, info, tc);
                     notified.add(dataGroup);
                 }
             }
@@ -237,7 +234,7 @@ public class TrialDataRepository {
         private Discretization discretization;
         private double discretizeParam = 0;
         private double thresholdParam = 0;
-        
+        private MultiMap /*EpisodeCollection, Instances*/ trialMap;
         private Classifier classifier;
         private double infoSinceClassRebuild, infoSinceDiscRebuild, infoSinceInstances;
         private double infoThreshold; 
@@ -246,6 +243,7 @@ public class TrialDataRepository {
             trialInstances = instances;
             discretizeParam  = -1;
             thresholdParam = -1;
+            trialMap = new GenericMultiMap();
         }
         
         /**
@@ -260,11 +258,15 @@ public class TrialDataRepository {
                discretize(discretizeParam);
            else
                threshold(thresholdParam);
+           
           TrialInstances instances = getTrialInstances();
             classifier = instances.numInstances() > 0 ? WekaInterface.buildClassifier(CLASSIFIER, instances) : null;
             return classifier;
         }
         
+        public Classifier getClassifier(){
+            return classifier;
+        }
         public void setDiscretizeParam(double discretize){
             discretizeParam = discretize;
             thresholdParam = -1;
@@ -284,6 +286,14 @@ public class TrialDataRepository {
                 infoSinceDiscRebuild = 0;
             }
             return discretization;
+        }
+        
+        public Discretization getDiscretization(){
+            //Assert._assert(discretization != null && discretizeParam != -1 && (infoSinceDiscRebuild <= infoThreshold));
+            Assert._assert(discretizeParam != -1 || thresholdParam != -1);
+            if(discretizeParam != -1) return discretize(discretizeParam);
+            return threshold(thresholdParam);
+           
         }
        
         public Discretization threshold(double threshold){
@@ -305,21 +315,35 @@ public class TrialDataRepository {
             }
             return trialInstancesCopy;
         }
-        
-        public boolean update(Order order, TrialInfo info, double trialColBest){
+        public void forceRebuildNext(){
             infoSinceClassRebuild = Double.POSITIVE_INFINITY;
             infoSinceDiscRebuild = Double.POSITIVE_INFINITY;
             infoSinceInstances = Double.POSITIVE_INFINITY;
+        }
+        public boolean update(Order order, TrialInfo info, EpisodeCollection tc){
+            forceRebuildNext();
+            double trialColBest;
+            if (tc.getMinimum().isMax()) trialColBest = 1;
+            else trialColBest = (double) tc.getMinimum().cost + 1;
             Order filteredOrder = filter.translate(order);
+            Collection trials = trialMap.getValues(tc);
+            if(trials != null){
+                for(Iterator it = trials.iterator(); it.hasNext(); ){
+                    TrialInstance instance = (TrialInstance) it.next();
+                    instance.recomputeCost(trialColBest);
+                }
+            }
+            
             Assert._assert(filteredOrder.numberOfElements() > 1);
-            System.out.println("Order: " + order + "\n" + filter + "\nfiltered order: " + filteredOrder);
+          //  System.out.println("Order: " + order + "\n" + filter + "\nfiltered order: " + filteredOrder);
             double score = (double) (info.cost + 1) / trialColBest; 
             TrialInstance instance = TrialInstance.construct(info, filteredOrder, score, trialInstances);
             if(instance == null){
                 System.out.println("Failed constructing instance of " + filteredOrder + " with " + filter + " on " + trialInstances);
                 Assert.UNREACHABLE();
             }
-            System.out.println("Adding new Instance to DataGroup: " + this);
+            trialMap.add(tc, instance);
+            //System.out.println("Adding new Instance to DataGroup: " + this);
             trialInstances.add(instance);
             return true;
         }

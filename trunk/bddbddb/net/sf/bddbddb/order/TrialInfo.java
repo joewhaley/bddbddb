@@ -10,6 +10,7 @@ import java.util.Map;
 
 import net.sf.bddbddb.BDDInferenceRule;
 import net.sf.bddbddb.FindBestDomainOrder;
+import net.sf.bddbddb.order.EpisodeCollection.Episode;
 
 import org.jdom.Element;
 
@@ -34,7 +35,7 @@ public class TrialInfo implements Comparable {
     /**
      * Collection that contains this trial.
      */
-    public TrialCollection collection;
+    public Episode episode;
 
     /**
      * The predicted results for this trial.
@@ -48,18 +49,18 @@ public class TrialInfo implements Comparable {
      * @param p predict value for this trial
      * @param c  cost
      */
-    public TrialInfo(Order o, TrialPrediction p, long c, TrialCollection col) {
+    public TrialInfo(Order o, TrialPrediction p, long c, Episode ep) {
         this.order = o;
         this.pred = p;
         this.cost = c;
-        this.collection = col;
+        this.episode = ep;
     }
 
     /**
      * @return Returns the trial collection that this is a member of.
      */
-    public TrialCollection getCollection() {
-        return collection;
+    public EpisodeCollection getCollection() {
+        return episode.getEpisodeCollection();
     }
 
     /* (non-Javadoc)
@@ -118,8 +119,11 @@ public class TrialInfo implements Comparable {
         return dis;
     }
 
-    public static TrialInfo fromXMLElement(Element e, Map nameToVar, TrialCollection col) {
-        Order o = Order.parse(e.getAttributeValue("order"), nameToVar);
+    public static TrialInfo fromXMLElement(Element e, Map nameToVar, Episode ep) {
+        String o_str = e.getAttributeValue("order");
+        if(o_str == null) throw new IllegalArgumentException();
+        Order o = Order.parse(o_str, nameToVar);
+        
         long c = Long.parseLong(e.getAttributeValue("cost"));
 
         String score1 = e.getAttributeValue("score");
@@ -136,6 +140,6 @@ public class TrialInfo implements Comparable {
         var2 = e.getAttributeValue("dom" + PREDICTION_VAR2);
         double dVar1 = var1 == null ? 0 : Double.parseDouble(var1);
         double dVar2 = var2 == null ? Double.MAX_VALUE : Double.parseDouble(var2);
-        return new TrialInfo(o, new TrialPrediction(score, vVar1, vVar2, aVar1, aVar2, dVar1, dVar2), c, col);
+        return new TrialInfo(o, new TrialPrediction(score, vVar1, vVar2, aVar1, aVar2, dVar1, dVar2), c, ep);
     }
 }

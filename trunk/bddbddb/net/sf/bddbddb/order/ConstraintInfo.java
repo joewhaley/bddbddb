@@ -174,7 +174,7 @@ public class ConstraintInfo implements Comparable {
      */
     public void registerTrials(Collection newTrials) {
         if (newTrials.isEmpty()) return;
-        TrialCollection tc = ((TrialInfo) newTrials.iterator().next()).getCollection();
+        EpisodeCollection tc = ((TrialInfo) newTrials.iterator().next()).getCollection();
         long min = tc.getMinimum().cost + 1;
         sumMinimumCost += min;
         for (Iterator i = newTrials.iterator(); i.hasNext();) {

@@ -41,7 +41,9 @@ public class TrialInstances extends Instances {
         FastVector origAttributes = (FastVector) this.m_Attributes.copy(); //shared across all buckets
 
         buckets[0] = new TrialInstances(this.m_RelationName + "_bucket_0", origAttributes, 30);
+        buckets[0].setClassIndex(classIndex());
         buckets[1] = new TrialInstances(this.m_RelationName + "_bucket_1", origAttributes, 30);
+        buckets[1].setClassIndex(classIndex());
         double[] cutPoint = new double[1];
         cutPoint[0] = thres;
 
