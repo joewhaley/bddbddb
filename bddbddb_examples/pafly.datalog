@@ -97,7 +97,7 @@ sb2_append("MyMockLib.MyStringBuffer.append (Ljava/lang/StringBuffer;Ljava/lang/
 sb2_toString (m:M0)
 sb2_toString("MyMockLib.MyStringBuffer.toString (Ljava/lang/StringBuffer;)Ljava/lang/String;").
 
-skipMethod (m:M0)
+skipMethod (m:M0) printsize
 skipMethod(m) :- forName(m).
 skipMethod(m) :- getClass(m).
 skipMethod(m) :- getConstructor(m).
