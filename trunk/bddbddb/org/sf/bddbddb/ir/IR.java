@@ -26,6 +26,7 @@ import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
 import org.sf.bddbddb.dataflow.DefUse.DefUseFact;
 import org.sf.bddbddb.ir.highlevel.BooleanOperation;
 import org.sf.bddbddb.ir.highlevel.Copy;
+import org.sf.bddbddb.ir.highlevel.Invert;
 import org.sf.bddbddb.ir.highlevel.Load;
 import org.sf.bddbddb.ir.highlevel.Project;
 import org.sf.bddbddb.ir.highlevel.Rename;
@@ -67,6 +68,9 @@ public class IR {
             for (Iterator j = solver.getRelationsToLoad().iterator(); j.hasNext();) {
                 Relation r = (Relation) j.next();
                 loadList.addElement(new Load(r, solver.basedir + r + ".bdd", false));
+                if (r.getNegated() != null) {
+                    loadList.addElement(new Invert(r.getNegated(), r));
+                }
             }
             list.addElement(0, loadList);
         }
