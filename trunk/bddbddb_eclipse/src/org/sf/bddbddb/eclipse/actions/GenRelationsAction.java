@@ -1,14 +1,21 @@
 package org.sf.bddbddb.eclipse.actions;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.io.IOException;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMember;
+import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.internal.core.JavaProject;
+import org.eclipse.jdt.internal.core.PackageFragment;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
@@ -43,23 +50,45 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
      */
     public void run(IAction action) {
         if (selection instanceof IStructuredSelection && !selection.isEmpty()) {
-            List classes = new LinkedList();
+            HashSet classes = new HashSet(); // no dups
             IStructuredSelection is = (IStructuredSelection) selection;
             IPath path = null;
             for (Iterator i = is.iterator(); i.hasNext();) {
-                Object o = i.next();
-                System.out.println("Selected: "+o);
-                IMember m = (IMember) o;
-                ICompilationUnit cu = m.getCompilationUnit();
-                classes.add(cu);
+                Object elem = i.next();
                 try {
+                    IJavaElement o = (IJavaElement)elem;
+                    System.out.println("Selected: "+o.toString().split("\n", 2)[0]);
+                    if (o instanceof ICompilationUnit || 
+                        o instanceof IClassFile) {
+                        classes.add(o);
+                    }
+                    else if (o instanceof IJavaProject){
+                        IPackageFragment[] pf = ((IJavaProject) o).getPackageFragments();
+                        for (int j = 0; j < pf.length; j++) {
+                            addPackageFragment(classes, pf[j]);
+                        }
+                    }
+                    else if (o instanceof IMember){
+                        classes.add(((IMember) o).getCompilationUnit());
+                    }
+                    else if (o instanceof IPackageFragment) {
+                        addPackageFragment(classes, (IPackageFragment)o);
+                    }
+                    else {
+                        MessageDialog.openInformation(window.getShell(),
+                            "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());                    System.out.println();
+
+                    }
                     path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
-                    path = path.append(cu.getJavaProject().getOutputLocation());
+                    path = path.append(o.getJavaProject().getOutputLocation());
                     path = path.makeAbsolute();
                 } catch (JavaModelException x) {
                     // todo!
                     System.err.println(x);
                     x.printStackTrace();
+                } catch (ClassCastException x) {
+                    MessageDialog.openInformation(window.getShell(),
+                        "bddbddb Eclipse Plug-in", "Type unsupported: "+ elem.getClass());                    System.out.println();
                 }
             }
             System.out.println("Dumping to path: \""+path+"\"");
@@ -75,6 +104,14 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
         } else {
             MessageDialog.openInformation(window.getShell(),
                 "bddbddb Eclipse Plug-in", "Nothing is selected!");
+        }
+    }
+
+    private void addPackageFragment(HashSet classes, IPackageFragment pf) 
+        throws JavaModelException {
+        ICompilationUnit[] cu = ((IPackageFragment) pf).getCompilationUnits();
+        for (int j = 0; j < cu.length; j++) {
+            classes.add(cu[j]);
         }
     }
 
