@@ -900,7 +900,7 @@ public class PAFly {
     
     static boolean isWellFormed(String stringConst) {
         if(stringConst.equals(".")) {
-            return false;   
+            return false;
         }
         int dotCount = 0;
         for(int i = 0; i < stringConst.length(); i++){
@@ -909,7 +909,7 @@ public class PAFly {
             if(ch == '.'){
                 dotCount++;                
             } else {            
-                if(ch != '$' && !Character.isLetterOrDigit(ch)){
+                if(ch != '$' && ch != '_' && !Character.isLetterOrDigit(ch)){
                     return false;                
                 }      
             }
