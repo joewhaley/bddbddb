@@ -5,7 +5,6 @@ package org.sf.bddbddb;
 
 import java.io.DataInput;
 import java.io.IOException;
-
 import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.IndexedMap;
 

@@ -12,7 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.LinearMap;

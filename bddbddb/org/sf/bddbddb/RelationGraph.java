@@ -8,13 +8,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import java.io.PrintStream;
-
 import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.Pair;
 import org.sf.bddbddb.util.Graph;
 import org.sf.bddbddb.util.Navigator;
+import org.sf.bddbddb.util.Pair;
 
 /**
  * RelationGraph

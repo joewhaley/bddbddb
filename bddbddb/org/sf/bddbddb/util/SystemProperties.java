@@ -3,9 +3,9 @@
 //Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb.util;
 
+import java.util.Properties;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Properties;
 
 /**
  * Read system properties from a file.

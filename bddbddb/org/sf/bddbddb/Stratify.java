@@ -13,16 +13,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import java.io.IOException;
 import java.io.PrintStream;
-
 import org.sf.bddbddb.util.Assert;
+import org.sf.bddbddb.util.DumpDotGraph;
+import org.sf.bddbddb.util.Filter;
 import org.sf.bddbddb.util.GenericMultiMap;
 import org.sf.bddbddb.util.HashWorklist;
 import org.sf.bddbddb.util.MultiMap;
-import org.sf.bddbddb.util.Filter;
-import org.sf.bddbddb.util.DumpDotGraph;
 import org.sf.bddbddb.util.Navigator;
 import org.sf.bddbddb.util.SCCTopSortedGraph;
 import org.sf.bddbddb.util.SCComponent;

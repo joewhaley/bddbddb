@@ -14,14 +14,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import java.io.IOException;
-
-import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.bddbddb.util.AppendIterator;
+import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.LinearSet;
-
+import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;

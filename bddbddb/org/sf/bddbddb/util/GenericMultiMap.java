@@ -3,13 +3,13 @@
 // Licensed under the terms of the GNU GPL; see COPYING for details.
 package org.sf.bddbddb.util;
 
-import java.util.Map;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * <code>GenericMultiMap</code> is a default implementation of a

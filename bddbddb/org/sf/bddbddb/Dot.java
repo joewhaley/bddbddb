@@ -6,11 +6,6 @@
  */
 package org.sf.bddbddb;
 
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import org.sf.bddbddb.RelationGraph.GraphNode;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,12 +13,16 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import org.sf.bddbddb.RelationGraph.GraphNode;
 import org.sf.bddbddb.util.Assert;
-import org.sf.bddbddb.util.HashWorklist;
-import org.sf.bddbddb.util.Worklist;
 import org.sf.bddbddb.util.Graph;
+import org.sf.bddbddb.util.HashWorklist;
 import org.sf.bddbddb.util.MyStringTokenizer;
+import org.sf.bddbddb.util.Worklist;
 
 /**
  * @author cunkel
