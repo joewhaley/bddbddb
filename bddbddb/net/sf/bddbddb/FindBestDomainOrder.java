@@ -1407,6 +1407,7 @@ public class FindBestDomainOrder {
             while (newData.numInstances() < numInstances()) {
               newData.add(instance(random.nextInt(numInstances())));
             }
+            newData.setClassIndex(classIndex());
             return newData;
           }
     }
@@ -2039,11 +2040,12 @@ public class FindBestDomainOrder {
                bestScore = score;
                best = o_v;
            }
-        }  
+        }
         Collection ordersToTry = new LinkedList();
-        ordersToTry.add(best);
+        if (bestScore < UNCERTAINTY_THRESHOLD) ordersToTry.add(best);
         return ordersToTry;
     }
+    public static double UNCERTAINTY_THRESHOLD = 0.25;
     
     public static int SAMPLE_SIZE = 1;
     public static int NUM_LM_ESTIMATORS = 10;
@@ -2066,9 +2068,7 @@ public class FindBestDomainOrder {
         Order[] orderArr = new Order[orders.size()];
 
         double normalFact = 0;
-        double [][] estimates = new double[NUM_LM_ESTIMATORS + 1][];
-        for(int i = 0; i < NUM_LM_ESTIMATORS; ++i)
-            estimates[i] = new double[3];
+        double [][] estimates = new double[NUM_LM_ESTIMATORS + 1][3];
         
         OrderTranslator v2a = new VarToAttribTranslator(ir);
         OrderTranslator a2d = AttribToDomainTranslator.INSTANCE;
@@ -2088,12 +2088,12 @@ public class FindBestDomainOrder {
             estimates[NUM_LM_ESTIMATORS][1] = 0;
             estimates[NUM_LM_ESTIMATORS][2] = 0;
             for(int j = 0; j < NUM_LM_ESTIMATORS; ++j){
-               estimates[j][0] = vEstimators[j].classProbability(vInstance,0);
-               estimates[j][1] = aEstimators[j].classProbability(aInstance,0);
-               estimates[j][2] = dEstimators[j].classProbability(dInstance,0);
-               estimates[NUM_LM_ESTIMATORS][0] += estimates[j][0];
-               estimates[NUM_LM_ESTIMATORS][1] += estimates[j][1];
-               estimates[NUM_LM_ESTIMATORS][2] += estimates[j][2];                            
+               estimates[j][0] = vEstimators[j] != null ? vEstimators[j].classProbability(vInstance,0) : 0.5;
+               estimates[j][1] = aEstimators[j] != null ? aEstimators[j].classProbability(aInstance,0) : 0.5;
+               estimates[j][2] = dEstimators[j] != null ? dEstimators[j].classProbability(dInstance,0) : 0.5;
+               estimates[NUM_LM_ESTIMATORS][0] += vEstimators[j] != null ? estimates[j][0] : 0;
+               estimates[NUM_LM_ESTIMATORS][1] += aEstimators[j] != null ? estimates[j][1] : 0;
+               estimates[NUM_LM_ESTIMATORS][2] += dEstimators[j] != null ? estimates[j][2] : 0;
             }
             estimates[NUM_LM_ESTIMATORS][0] /= NUM_LM_ESTIMATORS;
             estimates[NUM_LM_ESTIMATORS][1] /= NUM_LM_ESTIMATORS;
@@ -2107,21 +2107,18 @@ public class FindBestDomainOrder {
             }
             normalFact += distribution[i];
         }
-        final int poolSize = 1000;
-        int [] sample = new int[poolSize];
-        int insertIndex = 0;
-         for(i = 0; i < distribution.length; ++i){
-            long num = Math.round(distribution[i] / normalFact * poolSize);
-            for(int j = 0; j < num; ++j){
-                sample[insertIndex] = i;
-                ++insertIndex;
-            }
-        }
         
-        Collection ordersToTry = new LinkedList();
+        Collection ordersToTry = new LinkedHashSet();
         for(i = 0; i < SAMPLE_SIZE; ++i){
-            int choice = random.nextInt(poolSize);
-            ordersToTry.add(orderArr[choice]);
+            double choice = random.nextDouble() * normalFact;
+            double current = 0.;
+            for(int j = 0; j < distribution.length; ++j) {
+                current += distribution[j];
+                if (current > choice) {
+                    ordersToTry.add(orderArr[j]);
+                    break;
+                }
+            }
         }
         return ordersToTry;
     }
