@@ -43,43 +43,6 @@ public class Liveness extends OperationProblem {
             return new LivenessFacts();
         }
 
-        public Fact copy(IterationList loc) {
-            LivenessFacts that = new LivenessFacts();
-            that.operationFacts.putAll(this.operationFacts);
-            that.location = loc;
-            that.lastOp = lastOp;
-            return that;
-        }
-
-        public Fact join(Fact fact) {
-            LivenessFacts that = (LivenessFacts) fact;
-            LivenessFacts result = (LivenessFacts) create();
-            result.operationFacts.putAll(this.operationFacts);
-            for (Iterator i = that.operationFacts.entrySet().iterator(); i.hasNext();) {
-                Map.Entry e = (Map.Entry) i.next();
-                Operation o = (Operation) e.getKey();
-                OperationFact f = (OperationFact) e.getValue();
-                OperationFact old = (OperationFact) result.operationFacts.put(o, f);
-                if (old != null) {
-                    f = (OperationFact) f.join(old);
-                    result.operationFacts.put(o, f);
-                }
-            }
-            LivenessFact thisLastFact = (LivenessFact) getLastFact();
-            LivenessFact thatLastFact = (LivenessFact) that.getLastFact();
-            if (thisLastFact != null) {
-                LivenessFact resultLastFact = (LivenessFact) thisLastFact
-                    .join(thatLastFact);
-                // resultLastFact.fact.or(thisLastFact.fact);
-                //resultLastFact.fact.or(thatLastFact.fact);
-
-                result.setLastOp(that.lastOp);
-                result.setLastFact(resultLastFact);
-            }
-            result.location = location;
-            return result;
-        }
-
         public String toString() {
             StringBuffer sb = new StringBuffer();
             for (Iterator it = operationFacts.entrySet().iterator(); it
@@ -91,28 +54,6 @@ public class Liveness extends OperationProblem {
                 sb.append('\n');
             }
             return sb.toString();
-        }
-
-        public boolean equals(Object o) {
-            OperationFacts that = (OperationFacts) o;
-            if (this.operationFacts == that.operationFacts) return true;
-            if (operationFacts.size() != that.operationFacts.size()) {
-                if (TRACE) System.out.println("Size not equal");
-                return false;
-            }
-            Iterator i = operationFacts.entrySet().iterator();
-            while (i.hasNext()) {
-                Map.Entry e = (Map.Entry) i.next();
-                Object key = e.getKey();
-                Object value = e.getValue();
-                Object value2 = that.operationFacts.get(key);
-                if (!value.equals(value2)) {
-                    if (TRACE) System.out.println("Key " + key + " differs: "
-                        + value + " vs " + value2);
-                    return false;
-                }
-            }
-            return true;
         }
     }
 
@@ -175,10 +116,11 @@ public class Liveness extends OperationProblem {
             //gen
             List srcs = op.getSrcs();
             for (Iterator it = srcs.iterator(); it.hasNext();) {
-                newFact.fact.set(((Relation) it.next()).id);
+                Object o = it.next();
+                if (o instanceof Relation) newFact.fact.set(((Relation) o).id);
             }
             currentFacts.operationFacts.put(op, newFact);
-            currentFacts.setLastOp(op);
+            currentFacts.setLastFact(newFact);
             return currentFacts;
         }
     }
