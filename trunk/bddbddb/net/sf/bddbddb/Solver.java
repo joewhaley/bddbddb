@@ -762,25 +762,41 @@ public abstract class Solver {
             if (System.getProperty("bddvarorder") == null) {
                 int index = ".bddvarorder".length() + 1;
                 String varOrder = s.substring(index).trim();
-                ((BDDSolver) this).VARORDER = varOrder;
+                if (this instanceof BDDSolver) {
+                    ((BDDSolver) this).VARORDER = varOrder;
+                } else {
+                    System.err.println("Ignoring .bddvarorder "+varOrder);
+                }
             }
         } else if (s.startsWith(".bddnodes")) {
             if (System.getProperty("bddnodes") == null) {
                 int index = ".bddnodes".length() + 1;
                 int n = Integer.parseInt(s.substring(index).trim());
-                ((BDDSolver) this).BDDNODES = n;
+                if (this instanceof BDDSolver) {
+                    ((BDDSolver) this).BDDNODES = n;
+                } else {
+                    System.err.println("Ignoring .bddnodes "+n);
+                }
             }
         } else if (s.startsWith(".bddcache")) {
             if (System.getProperty("bddcache") == null) {
                 int index = ".bddcache".length() + 1;
                 int n = Integer.parseInt(s.substring(index).trim());
-                ((BDDSolver) this).BDDCACHE = n;
+                if (this instanceof BDDSolver) {
+                    ((BDDSolver) this).BDDCACHE = n;
+                } else {
+                    System.err.println("Ignoring .bddcache "+n);
+                }
             }
         } else if (s.startsWith(".bddminfree")) {
             if (System.getProperty("bddminfree") == null) {
                 int index = ".bddminfree".length() + 1;
                 double n = Double.parseDouble(s.substring(index).trim());
-                ((BDDSolver) this).BDDMINFREE = n;
+                if (this instanceof BDDSolver) {
+                    ((BDDSolver) this).BDDMINFREE = n;
+                } else {
+                    System.err.println("Ignoring .bddminfree "+n);
+                }
             }
         } else if (s.startsWith(".findbestorder")) {
             int index = ".findbestorder".length() + 1;
