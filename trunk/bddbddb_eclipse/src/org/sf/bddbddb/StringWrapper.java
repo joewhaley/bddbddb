@@ -52,12 +52,15 @@ public class StringWrapper implements Wrapper {
             return ((FieldWrapper)o).field.getKey().equals(name);
         }
         else if (o instanceof ASTNodeWrapper) {
+            return false;
+            /*
             ASTNodeWrapper aw = (ASTNodeWrapper)o;
             ASTNode astnode = aw.getNode();
             if (astnode == null) return false;
             if (astnode.getNodeType() == ASTNode.SIMPLE_NAME) {
+                if (PAFromSource.isField((Name)astnode)) return false;
                 return ((Name)astnode).resolveBinding().getKey().equals(name);
-            }
+            }*/
         }
         
         return false;

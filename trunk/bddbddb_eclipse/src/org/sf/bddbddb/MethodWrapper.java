@@ -42,8 +42,12 @@ public class MethodWrapper implements Wrapper {
     public ITypeBinding getType() {
         throw new RuntimeException("ERROR: gettype called on methodwrapper");
         //return null;
-        }
+    }
 
+    public ITypeBinding getReturnType() {
+        return method.getReturnType();
+    }
+    
     public IMethodBinding getBinding() {
         return method;
     } 

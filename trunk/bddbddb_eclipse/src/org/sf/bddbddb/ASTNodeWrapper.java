@@ -44,11 +44,12 @@ public class ASTNodeWrapper implements Wrapper {
         }
         else s = n.toString();
         return "NODE: " + n.getNodeType() + ", " + s +
-            " @ " + n.getLocationInParent();
+            " @ [" + n.getStartPosition() + ", " + n.getLength() + "], " + n.getLocationInParent().getId();
     }
     public boolean equals(Object o) {
         if (o instanceof ExceptionWrapper) return false;
         if (o instanceof StringWrapper) {
+            /*
             switch (n.getNodeType()) {
                 case ASTNode.SIMPLE_NAME:
                     if (PAFromSource.isField((SimpleName)n)) return false;
@@ -56,6 +57,7 @@ public class ASTNodeWrapper implements Wrapper {
                     return nName.equals(((StringWrapper)o).getString());
                 default:
             }
+            */
             return false;
         }
         else if (o instanceof ASTNodeWrapper) {

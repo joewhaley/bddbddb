@@ -8,15 +8,15 @@
 ### Relations
 
 vP0 (v:V0, h:H0) input outputtuples
-vP (v:V0, h:H0) output outputtuples
+vP (v:V0, h:H0) output 
 A (dest:V0, source:V1) input outputtuples
 # hP0 (ha:H0, field:F0, hb:H1) input
-hP (ha:H0, field:F0, hb:H1) output outputtuples
+hP (ha:H0, field:F0, hb:H1) output 
 S (base:V0, field:F0, src:V1) input outputtuples
 L (base:V0, field:F0, dest:V1) input outputtuples
 vT (var:V0, type:T0) input outputtuples
 hT (heap:H0, type:T1) input outputtuples
-aT (type:T0, type:T1) input outputtuples
+aT (type:T0, type:T1) input output outputtuples
 vPfilter (v:V0, h:H0)
 cha (type:T1, name:N0, method:M0) input outputtuples
 actual (invoke:I0, num:Z0, actualparam:V1) input outputtuples
@@ -51,8 +51,8 @@ A(v2,v1) :- IE(i,m), Mthr(m,v1), Ithr(i,v2).
 IE(i,m2) :- mI(m1,i,n), actual(i,0,v), vP(v,h), hT(h,t), cha(t,n,m2). split
 IE(i,m) :- IE0(i,m).
 
-#visited(m) :- IE(_,m).
-#S(v1,f,v2) :- visited(m), mS(m,v1,f,v2).
-#L(v1,f,v2) :- visited(m), mL(m,v1,f,v2).
-#vP(v,h) :- visited(m), mvP(m,v,h).
-#IE(i,m2) :- visited(m), mIE(m,i,m2).
+visited(m) :- IE(_,m).
+S(v1,f,v2) :- visited(m), mS(m,v1,f,v2).
+L(v1,f,v2) :- visited(m), mL(m,v1,f,v2).
+vP(v,h) :- visited(m), mvP(m,v,h).
+IE(i,m2) :- visited(m), mIE(m,i,m2).
