@@ -211,6 +211,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         b1.andWith(b2);
         r0.setBDD(b1);
         if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount() + " Domains: " + BDDRelation.activeDomains(b1));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -236,6 +237,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDD b1 = makeDomainsMatch(r, r1, r0);
         r0.setBDD(b1);
         if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount() + " Domains: " + BDDRelation.activeDomains(b1));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -273,6 +275,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         pair.reset();
         r0.setBDD(b);
         if (TRACE) System.out.println("   ---> Nodes: " + b.nodeCount() + " Domains: " + BDDRelation.activeDomains(b));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         if (CHECK) {
             r0.verify();
         }
@@ -294,6 +297,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         b1.orWith(b2);
         r0.setBDD(b1);
         if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount() + " Domains: " + BDDRelation.activeDomains(b1));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -312,6 +316,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         b1.applyWith(b2, BDDFactory.diff);
         r0.setBDD(b1);
         if (TRACE) System.out.println("   ---> Nodes: " + b1.nodeCount() + " Domains: " + BDDRelation.activeDomains(b1));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -332,6 +337,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         r.andWith(r0.getBDDDomain(a).ithVar(value));
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount() + " Domains: " + BDDRelation.activeDomains(r));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -348,6 +354,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDD r = r0.getBDDDomain(a).ithVar(value);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount());
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -410,6 +417,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDD r = makeDomainsMatch(r1.getBDD().not(), r1, r0);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount() + " Domains: " + BDDRelation.activeDomains(r));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -425,6 +433,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDD r = makeDomainsMatch(r1.getBDD().id(), r1, r0);
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount() + " Domains: " + BDDRelation.activeDomains(r));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 
@@ -491,6 +500,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         b3.free();
         r0.setBDD(b);
         if (TRACE) System.out.println("   ---> Nodes: " + b.nodeCount() + " Domains: " + BDDRelation.activeDomains(b));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         if (CHECK) {
             r0.verify();
         }
@@ -528,6 +538,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDD r = pair != null ? r1.getBDD().replace(pair) : r1.getBDD().id();
         r0.setBDD(r);
         if (TRACE) System.out.println("   ---> Nodes: " + r.nodeCount() + " Domains: " + BDDRelation.activeDomains(r));
+        if (TRACE) System.out.println("   ---> " + r0 + "+ elements: "+r0.dsize());
         return null;
     }
 }
