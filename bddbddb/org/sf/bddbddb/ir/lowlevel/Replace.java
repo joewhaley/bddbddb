@@ -31,29 +31,37 @@ public class Replace extends LowLevelOperation {
         this.r0 = r0;
         this.r1 = r1;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.lowlevel.LowLevelOperation#visit(org.sf.bddbddb.ir.lowlevel.LowLevelOperationVisitor)
      */
     public Object visit(LowLevelOperationVisitor i) {
         return i.visit(this);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r0.toString()+" = "+getExpressionString();
+        return r0.toString() + " = " + getExpressionString();
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getRelationDest()
      */
     public Relation getRelationDest() {
         return r0;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
      */
     public void setRelationDest(Relation r0) {
@@ -66,28 +74,35 @@ public class Replace extends LowLevelOperation {
     public BDDRelation getSrc() {
         return r1;
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getSrcs()
      */
     public List getSrcs() {
         return Collections.singletonList(r1);
     }
 
-    /* (non-Javadoc)
-     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation,
+     *      org.sf.bddbddb.Relation)
      */
     public void replaceSrc(Relation r_old, Relation r_new) {
         if (r1 == r_old) r1 = (BDDRelation) r_new;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.ir.Operation#getExpressionString()
      */
     public String getExpressionString() {
-        return "replace("+r1.toString()+Operation.getRenames(r1,r0)+")";
+        return "replace(" + r1.toString() + Operation.getRenames(r1, r0) + ")";
     }
-    
+
     /**
      * @return
      */
@@ -102,9 +117,11 @@ public class Replace extends LowLevelOperation {
             any = true;
             pair.set(d1, d2);
         }
-        if (any)
-            return pair;
-        else 
-            return null;
+        if (any) return pair;
+        else return null;
+    }
+
+    public Operation copy() {
+        return new Replace(r0, r1);
     }
 }
