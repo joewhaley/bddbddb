@@ -33,12 +33,7 @@ public class BufferedDataInput implements DataInput {
      * @see java.io.DataInput#readFully(byte[])
      */
     public void readFully(byte[] b) throws IOException {
-        char[] c = new char[b.length];
-        in.read(c);
-        for (int i = 0; i < c.length; ++i) {
-            // truncate
-            b[i] = (byte) c[i];
-        }
+        readFully(b, 0, b.length);
     }
 
     /* (non-Javadoc)
@@ -46,7 +41,13 @@ public class BufferedDataInput implements DataInput {
      */
     public void readFully(byte[] b, int off, int len) throws IOException {
         char[] c = new char[len];
-        in.read(c);
+        int k = 0;
+        while (len > 0) {
+            int k2 = in.read(c, k, len);
+            if (k2 == -1) throw new IOException();
+            k += k2;
+            len -= k2;
+        }
         for (int i = 0; i < c.length; ++i) {
             // truncate
             b[off + i] = (byte) c[i];
