@@ -8,7 +8,39 @@
 
 .include "fielddomains.pa"
 
+### Hand-tuned order:
+# 44s
 .bddvarorder N0_F0_I0_M1_M0_V1xV0_T0_Z0_Z1_H2_H3_T1_H0_H1
+
+### Find best order:
+# 42s
+#.bddvarorder N0_F0_I0xM0xM1_V1_V0_Z0xZ1_H2_H3_T0xT1_H0xH1
+# 42s
+#.bddvarorder N0_F0_I0xM0xM1_V1_V0_Z0xZ1_H2_H3_T0xT1_H1_H0
+# 42s
+#.bddvarorder N0_F0_I0xM0xM1_V1_V0_Z0xZ1_H2_H3_T0xT1_H0_H1
+# 42s
+#.bddvarorder N0_F0_I0xM1xM0_V1_V0_Z0xZ1_H2_H3_T0_T1_H0_H1
+# 43s
+#.bddvarorder N0_F0_I0xM1_M0_V1_V0_Z0xZ1_H2_H3_T0_T1_H0_H1
+# 43s
+#.bddvarorder N0_F0_I0xM1_M0_V1_V0_Z0_Z1_H2_H3_T0_T1_H0_H1
+# 43s
+#.bddvarorder N0_F0_I0xM1_M0_V1xV0_Z0_Z1_H2_H3_T0_T1_H0_H1
+# 43s
+#.bddvarorder N0_F0_I0xM1_M0_V1xV0_T0_Z0_Z1_H2_H3_T1_H0_H1
+# 44s
+#.bddvarorder N0_F0_I0xM1xM0_V1_V0_Z0xZ1_H3_H2_T0_T1_H0_H1
+# 44s
+#.bddvarorder N0_F0_M0_I0xM1_V1_V0_Z0_Z1_H2_H3_T0_T1_H0_H1
+# 46s
+#.bddvarorder N0_F0_M0_I0xM1xV1xV0_Z0_Z1_H2_H3_T0_T1_H0_H1
+# 51s
+#.bddvarorder N0_F0_I0xM0xM1_V1_V0_Z0xZ1_H2xH3_T0xT1_H0xH1
+# 64s
+#.bddvarorder N0_F0_I0xM1_M0_V1xV0_T0_T1_Z0_Z1_H2_H3_H0_H1
+# 84s
+#.bddvarorder M0_I0xM1_V1_V0_F0_N0_Z0_Z1_H2_H3_T0_T1_H0_H1
 
 ### Relations
 

@@ -10,9 +10,12 @@
 
 .include "fielddomains.pa"
 
-.bddvarorder N0_F0_I0_M1_M0_V1xV0_VC1xVC0_T0_Z0_T1_H0_H1
+#.bddvarorder N0_F0_I0_M1_M0_V1xV0_VC1xVC0_T0_Z0_T1_H0_H1
 .bddnodes 10000000
 .bddcache 1000000
+
+# found by findbestorder:
+.bddvarorder N0_F0_I0_M1_M0_V1_V0_VC1xVC0_T0_Z0_T1_H0_H1
 
 ### Relations
 
