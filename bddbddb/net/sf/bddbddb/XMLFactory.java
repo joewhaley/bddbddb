@@ -11,8 +11,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import net.sf.bddbddb.FindBestDomainOrder.ConstraintInfoCollection;
-import net.sf.bddbddb.FindBestDomainOrder.TrialCollection;
 import net.sf.bddbddb.order.OrderConstraint;
+import net.sf.bddbddb.order.TrialCollection;
+
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.output.Format;
