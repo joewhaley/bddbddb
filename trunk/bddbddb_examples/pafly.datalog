@@ -77,6 +77,17 @@ getConstructors("java.lang.Class.getDeclaredConstructors ()[Ljava/lang/reflect/C
 getField (m:M0)
 getField("java.lang.Class.getField (Ljava/lang/String;)Ljava/lang/reflect/Field;").
 getField("java.lang.Class.getDeclaredField (Ljava/lang/String;)Ljava/lang/reflect/Field;").
+getMethod (m:M0)
+getMethod("java.lang.Class.getMethod (Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;").
+getMethod("java.lang.Class.getDeclaredMethod (Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;").
+
+sb_append (m:M0)
+sb_append("java.lang.StringBuffer.append (Ljava/lang/String;)Ljava/lang/StringBuffer;").
+sb_append("java.lang.StringBuffer.append (Ljava/lang/Object;)Ljava/lang/StringBuffer;").
+sb_toString (m:M0)
+sb_toString("java.lang.StringBuffer.toString ()Ljava/lang/String;").
+invoke (m:M0)
+invoke("java.lang.reflect.Method.invoke (Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;").
 
 skipMethod (m:M0)
 skipMethod(m) :- forName(m).
@@ -84,7 +95,11 @@ skipMethod(m) :- getClass(m).
 skipMethod(m) :- getConstructor(m).
 skipMethod(m) :- getConstructors(m).
 skipMethod(m) :- getField(m).
+skipMethod(m) :- getMethod(m).
 skipMethod(m) :- newInstance(m).
+skipMethod(m) :- sb_append(m).
+skipMethod(m) :- sb_toString(m).
+skipMethod(m) :- invoke(m).
 
 mapIH (i:I0, h:H0)
 
@@ -104,6 +119,8 @@ returnNewObject(i) :- IE(i,m), getConstructors(m). modifies mapIH
 hT(h,t) :- IE(i,m), getConstructors(m), Iret(i,v), mapIH(i,h), vT(v,t).
 returnNewObject(i) :- IE(i,m), getField(m). modifies mapIH
 hT(h,t) :- IE(i,m), getField(m), Iret(i,v), mapIH(i,h), vT(v,t).
+returnNewObject(i) :- IE(i,m), getMethod(m). modifies mapIH
+hT(h,t) :- IE(i,m), getMethod(m), Iret(i,v), mapIH(i,h), vT(v,t).
 returnNewObject(i) :- IE(i,m), newInstance(m). modifies mapIH
 
 classObjectType (heap:H0, type:T0) outputtuples
@@ -129,23 +146,39 @@ constructorObjectType(h,t) :- getConstructors(cm), IE(i,cm), mapIH(i,h), actual(
 hP(h,f,h2) :- constructorObjectType(h,_), f = "null", h = h2.
 
 fieldObject (h:H0, f:F0) outputtuples
-
 fieldObject(h,f) :- getField(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToField(hc,f).
 S(v1,f,v2) :- IE(i,"java.lang.reflect.Field.set (Ljava/lang/Object;Ljava/lang/Object;)V"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
               actual(i,1,v1), actual(i,2,v2).
 L(v1,f,v2) :- IE(i,"java.lang.reflect.Field.get (Ljava/lang/Object;)Ljava/lang/Object;"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
               actual(i,1,v1), Iret(i,v2).
 
+methodObject (h:H0, m:M0) outputtuples
+methodObject(h,m) :- getMethod(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToMethod(hc,m).
+
+resolvedInvoke (i:I0, m:M0) outputtuples
+resolvedInvoke(i,m) :- IE(i,m2), invoke(m2), actual(i,0,v), vP(v,h), methodObject(h,m).
+# Param #0
+A(v1,v2) :- resolvedInvoke(i,m), formal(m,0,v1), actual(i,1,v2).
+# Other params
+vP(v,h) :- resolvedInvoke(i,m), formal(m,z,v), z > 0, actual(i,2,v2), vP(v2,h2), hP(h2,"null",h).
+# Return values
+A(v1,v2) :- resolvedInvoke(i,m), Iret(i,v1), Mret(m,v2).
+
 leadsToForName (v:V0,i:I0) output
 leadsToForName(v,i) :- IE(i,m), forName(m), actual(i,1,v).
 leadsToForName(v2,i) :- leadsToForName(v1,i), A(v1,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_append(m), actual(i2,0,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_append(m), actual(i2,1,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,0,v1), IE(i2,m), sb_append(m), actual(i2,1,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb_toString(m), actual(i2,0,v2).
 
 lhs (v:V0)
 lhs(v) :- A(v,_).
+lhs(v) :- Iret(i2,v), IE(i2,m), sb_append(m).
+lhs(v) :- Iret(i2,v), IE(i2,m), sb_toString(m).
 
 typeString (v:V0)
 typeString(v) :- vP(v,h), stringToType(h,_).
 
 deadEndForName (v:V0,i:I0) outputtuples
 deadEndForName(v,i) :- leadsToForName(v,i), !lhs(v), !typeString(v).
-
