@@ -1,3 +1,3 @@
 Manifest-Version: 1.0
 Main-Class: net.sf.bddbddb.Solver
-Class-Path: javabdd.jar weka.jar jwutil-1.0.jar
+Class-Path: javabdd.jar weka.jar jwutil-1.0.jar jdom.jar
