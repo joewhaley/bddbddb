@@ -789,7 +789,9 @@ public class PAFly {
         addToVT(V_i, node.getDeclaredType());
         
         if (node instanceof ConcreteTypeNode) {
-            addToVP0(V_i, node);            
+            addToVP0(V_i, node);
+            if (node.getDeclaredType() instanceof jq_Class)
+                addClassInitializer((jq_Class) node.getDeclaredType());
         } else if (node instanceof ConcreteObjectNode ||
                    node instanceof UnknownTypeNode ||
                    node == GlobalNode.GLOBAL) 
