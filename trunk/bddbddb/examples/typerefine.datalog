@@ -1,0 +1,81 @@
+
+.basedir "pa.joeq"
+
+### Domains
+
+.include "fielddomains.pa"
+
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_T0_Z0_T1_H0_H1
+
+### Relations
+
+vP (v:V0, h:H0) input
+vT (v:V0, t:T0) input
+ovP (c:H2, v:V0, h:H0) input
+cvP (c:VC0, v:V0, h:H0) input
+ccvP (c1:VC0, v:V0, c2:HC0, h:H0) input
+vTc (c:VC0, v:V0, t:T0) input
+hT (h:H0, t:T1) input
+aT (t1:T0, t2:T1) input
+mV (m:M0, v:V0) input
+
+nullType (t:T0) input
+
+notVarType (v:V0, t:T0)
+notVarType_cs (c:VC0, v:V0, t:T0)
+notVarType_os (c:H, v:V0, t:T0)
+varSuperTypes (v:V, t:T)
+varSuperTypes_cs (c:VC, v:V, t:T)
+varSuperTypes_os (c:H, v:V, t:T)
+varExactTypes (v:V0, t:T1)
+varExactTypes_cs (c:VC0, v:V0, t:T1)
+varExactTypes_os (c:H, v:V0, t:T1)
+refinable(v:V, t:T)
+refinable_cs(c:VC, v:V, t:T)
+refinable_os(c:H, v:V, t:T)
+
+refine(v:V) printsize
+refine_cs(c:VC, v:V) printsize
+refine_os(c:H, v:V) printsize
+multiType (v:V0) printsize outputtuples
+multiType_cs (c:VC0, v:V0) printsize
+multiType_os (c:H, v:V0) printsize
+singleType(v:V0) printsize outputtuples
+singleType_cs(c:VC0, v:V0) printsize
+singleType_os(c:H, v:V0) printsize
+
+### Rules
+
+nullType(x) :- x = "null".
+nullType(x) :- x = "NULL_TYPE".
+
+nullType("NULL_TYPE").
+nullType("null").
+
+cvP(c,v,h) :- ccvP(c,v,_,h).
+vP(v,h) :- cvP(_,v,h).
+vP(v,h) :- ovP(_,v,h).
+varExactTypes(v,t) :- vP(v,h), hT(h,t), !nullType(t), vT(v,t2), aT(t2,t).
+varExactTypes(v,t) :- vTc(_,v,t), !nullType(t).
+varExactTypes_cs(c,v,t) :- cvP(c,v,h), hT(h,t), !nullType(t), vT(v,t2), aT(t2,t).
+varExactTypes_cs(c,v,t) :- vTc(c,v,t), !nullType(t).
+varExactTypes_os(c,v,t) :- ovP(c,v,h), hT(h,t), !nullType(t), vT(v,t2), aT(t2,t).
+multiType(v) :- varExactTypes(v,t1), varExactTypes(v,t2), t1 != t2.
+multiType_cs(c,v) :- varExactTypes_cs(c,v,t1), varExactTypes_cs(c,v,t2), t1 != t2.
+multiType_os(c,v) :- varExactTypes_os(c,v,t1), varExactTypes_os(c,v,t2), t1 != t2.
+notVarType(v,t) :- varExactTypes(v,t2), !aT(t,t2).
+notVarType_cs(c,v,t) :- varExactTypes_cs(c,v,t2), !aT(t,t2).
+notVarType_os(c,v,t) :- varExactTypes_os(c,v,t2), !aT(t,t2).
+refinable(v,tc) :- vT(v,td), varSuperTypes(v,tc), aT(td,tc), td != tc.
+refinable_cs(c,v,tc) :- vT(v,td), varSuperTypes_cs(c,v,tc), aT(td,tc), td != tc.
+refinable_os(c,v,tc) :- vT(v,td), varSuperTypes_os(c,v,tc), aT(td,tc), td != tc.
+refine(v) :- refinable(v,_).
+refine_cs(c,v) :- refinable_cs(c,v,_).
+refine_os(c,v) :- refinable_os(c,v,_).
+
+varSuperTypes(v,t) :- !notVarType(v,t), !nullType(t), mV(_,v).
+varSuperTypes_cs(c,v,t) :- !notVarType_cs(c,v,t), !nullType(t), mV(_,v).
+varSuperTypes_os(c,v,t) :- !notVarType_os(c,v,t), !nullType(t), mV(_,v).
+singleType(v) :- !multiType(v), mV(_,v).
+singleType_cs(c,v) :- !multiType_cs(c,v), mV(m,v).
+singleType_os(c,v) :- !multiType_os(c,v), mV(m,v).
