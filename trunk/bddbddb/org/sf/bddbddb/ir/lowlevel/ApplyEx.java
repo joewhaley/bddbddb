@@ -10,6 +10,7 @@ import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.Relation;
 import org.sf.bddbddb.ir.Operation;
+import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
@@ -113,7 +114,11 @@ public class ApplyEx extends LowLevelOperation {
         for (Iterator i = attributes.iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
             BDDDomain d = r1.getBDDDomain(a);
-            b.andWith(d.set());
+            if (d == null) d = r2.getBDDDomain(a);
+            else {
+                System.out.println("Trying to project attribute "+a+" which is neither in "+r1+" "+r1.getAttributes()+" nor "+r2+" "+r2.getAttributes());
+            }
+            if (d != null) b.andWith(d.set());
         }
         return b;
     }
