@@ -12,18 +12,18 @@ import org.sf.bddbddb.Solver;
 import org.sf.bddbddb.Stratify;
 import org.sf.bddbddb.dataflow.ConstantProp;
 import org.sf.bddbddb.dataflow.DataflowSolver;
-import org.sf.bddbddb.dataflow.DefUse;
 import org.sf.bddbddb.dataflow.Liveness;
 import org.sf.bddbddb.dataflow.Problem;
 import org.sf.bddbddb.dataflow.ConstantProp.ConstantPropFacts;
 import org.sf.bddbddb.dataflow.DataflowSolver.DataflowIterator;
-import org.sf.bddbddb.dataflow.DefUse.DefUseFact;
 import org.sf.bddbddb.dataflow.Liveness.LivenessFact;
 import org.sf.bddbddb.dataflow.RelationProblem.RelationFacts;
+import org.sf.bddbddb.ir.highlevel.BooleanOperation;
 import org.sf.bddbddb.ir.highlevel.Free;
 import org.sf.bddbddb.ir.highlevel.Load;
 import org.sf.bddbddb.ir.highlevel.Project;
 import org.sf.bddbddb.ir.highlevel.Save;
+import org.sf.bddbddb.ir.lowlevel.ApplyEx;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.MultiMap;
 
@@ -127,8 +127,11 @@ public class IR {
                         Relation src = p.getSrc();
                         DefUseFact duf = (DefUseFact) f.getFact(src);
                         if (duf.getDefs().size() == 1) {
-                            Operation op2 = (Operation) duf.getDefs()
-                                .iterator().next();
+                            Operation op2 = (Operation) duf.getDefs().iterator().next();
+                            if (op2 instanceof BooleanOperation) {
+                                // todo: check if this specific def reaches any other uses.
+                                //ApplyEx new_op = new ApplyEx();
+                            }
                         }
                     }
                 } else {
