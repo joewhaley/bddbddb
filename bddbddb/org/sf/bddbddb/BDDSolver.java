@@ -113,10 +113,6 @@ public class BDDSolver extends Solver {
             BDDRelation r = (BDDRelation) i.next();
             r.initialize2();
         }
-        for (Iterator i = notequivalenceRelations.values().iterator(); i.hasNext();) {
-            BDDRelation r = (BDDRelation) i.next();
-            r.initialize2();
-        }
     }
 
     /**

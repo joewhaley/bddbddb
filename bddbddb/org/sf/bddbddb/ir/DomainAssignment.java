@@ -161,15 +161,14 @@ public abstract class DomainAssignment implements OperationVisitor {
         }
         // Equality relations are treated special here, because we don't support
         // renaming them yet.
-        for (Iterator i = s.equivalenceRelations.values().iterator(); i.hasNext();) {
+        for (Iterator i = s.getEquivalenceRelations().iterator(); i.hasNext();) {
             BDDRelation r = (BDDRelation) i.next();
             forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
             forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
-        }
-        for (Iterator i = s.notequivalenceRelations.values().iterator(); i.hasNext();) {
-            BDDRelation r = (BDDRelation) i.next();
-            forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
-            forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
+            if (r.getNegated() != null) {
+                forceEqual(new Pair(r.getNegated(), r.getAttribute(0)), r.getBDDDomain(0));
+                forceEqual(new Pair(r.getNegated(), r.getAttribute(1)), r.getBDDDomain(1));
+            }
         }
         // Add constraints from file.
         String domainFile = System.getProperty("domainfile", "domainfile");

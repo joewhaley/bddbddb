@@ -364,16 +364,10 @@ public class Stratify {
         Set inputs = new HashSet();
         inputs.addAll(solver.relationsToLoad);
         inputs.addAll(solver.relationsToLoadTuples);
-        inputs.addAll(solver.equivalenceRelations.values());
-        inputs.addAll(solver.notequivalenceRelations.values());
-        if (false) {
-            i = solver.rules.iterator();
-            while (i.hasNext()) {
-                InferenceRule ir = (InferenceRule) i.next();
-                if (ir.top.isEmpty()) {
-                    inputs.add(ir.bottom.relation);
-                }
-            }
+        for (i = solver.equivalenceRelations.values().iterator(); i.hasNext(); ) {
+            Relation r = (Relation) i.next();
+            inputs.add(r);
+            if (r.getNegated() != null) inputs.add(r.getNegated());
         }
         Set outputs = new HashSet();
         outputs.addAll(solver.relationsToDump);

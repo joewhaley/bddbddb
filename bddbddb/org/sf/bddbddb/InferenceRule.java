@@ -35,7 +35,11 @@ import org.sf.bddbddb.util.Navigator;
  * @version $Id$
  */
 public abstract class InferenceRule implements IterationElement {
+    
+    static int ruleCount;
+    
     final Solver solver;
+    public final int id;
     List/* <RuleTerm> */top;
     RuleTerm bottom;
     Set/* <Variable> */necessaryVariables;
@@ -57,6 +61,7 @@ public abstract class InferenceRule implements IterationElement {
         this.bottom = bottom;
         this.TRACE = solver.TRACE;
         this.TRACE_FULL = solver.TRACE_FULL;
+        this.id = ruleCount++;
     }
 
     /**
@@ -843,5 +848,12 @@ public abstract class InferenceRule implements IterationElement {
         }
         sb.append(".");
         return sb.toString();
+    }
+    
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        return id;
     }
 }
