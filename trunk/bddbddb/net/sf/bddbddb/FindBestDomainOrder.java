@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.io.File;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -26,7 +27,6 @@ import jwutil.util.Assert;
 import net.sf.bddbddb.order.AttribToDomainMap;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
 import net.sf.bddbddb.order.FilterTranslator;
-import net.sf.bddbddb.order.MapBasedTranslator;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraint;
 import net.sf.bddbddb.order.OrderIterator;
@@ -43,6 +43,8 @@ import weka.classifiers.Classifier;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Discretize;
 import weka.filters.unsupervised.attribute.PKIDiscretize;
 
 /**
@@ -346,14 +348,14 @@ public class FindBestDomainOrder {
         public void registerTrials(Collection newTrials) {
             if (newTrials.isEmpty()) return;
             TrialCollection tc = ((TrialInfo)newTrials.iterator().next()).getCollection();
-            long min = tc.getMinimum().cost;
+            long min = tc.getMinimum().cost + 1;
             sumMinimumCost += min;
             for (Iterator i = newTrials.iterator(); i.hasNext(); ) {
                 TrialInfo t = (TrialInfo) i.next();
                 Order o = t.order;
                 //if (!o.obeysConstraint(c)) continue;
-                sumCost += t.cost;
-                double normalized = (double)t.cost / (double)min;
+                sumCost += t.cost+1;
+                double normalized = (double)(t.cost+1) / (double)min;
                 sumNormalizedCost += normalized;
                 sumNormalizedCostSq += normalized * normalized;
                 trials.add(t);
@@ -680,7 +682,7 @@ public class FindBestDomainOrder {
     public static String format(double d) {
         if (nf == null) {
             nf = NumberFormat.getNumberInstance();
-            nf.setMinimumFractionDigits(3);
+            //nf.setMinimumFractionDigits(3);
             nf.setMaximumFractionDigits(3);
         }
         return nf.format(d);
@@ -840,7 +842,7 @@ public class FindBestDomainOrder {
          * @param i  trial info
          */
         public void addTrial(TrialInfo i) {
-            if (TRACE > 1) out.println(this+": Adding trial "+i);
+            if (TRACE > 2) out.println(this+": Adding trial "+i);
             trials.put(i.order, i);
             if (best == null || best.cost > i.cost) {
                 best = i;
@@ -1192,7 +1194,7 @@ public class FindBestDomainOrder {
         return bestOrder;
     }
     
-    public static class TrialInstance extends OrderInstance {
+    public static class TrialInstance extends OrderInstance implements Comparable {
         
         public static TrialInstance construct(TrialInfo ti, Order o, double cost, Instances dataSet) {
             return construct(ti, o, cost, dataSet, 1);
@@ -1237,6 +1239,109 @@ public class FindBestDomainOrder {
         
         public Object copy() {
             return new TrialInstance(this);
+        }
+
+        public int compareTo(Object arg0) {
+            TrialInstance that = (TrialInstance) arg0;
+            return compare(this.getCost(), that.getCost());
+        }
+        
+        public boolean isMaxTime() {
+            return ti.cost >= BDDInferenceRule.LONG_TIME;
+        }
+        
+    }
+    
+    // JDK1.4 only.
+    public static final int compare(double d1, double d2) {
+        if (d1 < d2)
+            return -1;       // Neither val is NaN, thisVal is smaller
+        if (d1 > d2)
+            return 1;        // Neither val is NaN, thisVal is larger
+
+        long thisBits = Double.doubleToLongBits(d1);
+        long anotherBits = Double.doubleToLongBits(d2);
+
+        return (thisBits == anotherBits ?  0 : // Values are equal
+                (thisBits < anotherBits ? -1 : // (-0.0, 0.0) or (!NaN, NaN)
+                 1));                          // (0.0, -0.0) or (NaN, !NaN)
+    }
+    
+    public static class TrialInstances extends Instances {
+
+        /**
+         * @param name
+         * @param attInfo
+         * @param capacity
+         */
+        public TrialInstances(String name, FastVector attInfo, int capacity) {
+            super(name, attInfo, capacity);
+        }
+        
+        public void threshold(double thres) {
+            threshold(thres, this.classIndex());
+        }
+        
+        public void threshold(double thres, int index) {
+            FastVector clusterValues = new FastVector(2);
+            clusterValues.addElement("<"+format(thres));
+            clusterValues.addElement(">"+format(thres));
+            weka.core.Attribute a = new weka.core.Attribute("costThres"+format(thres), clusterValues);
+            m_Attributes.setElementAt(a, index);
+            setIndex(a, index);
+            Enumeration f = m_Instances.elements();
+            while (f.hasMoreElements()) {
+                Instance old_i = (Instance) f.nextElement();
+                double oldVal = old_i.value(index);
+                double val = oldVal < thres ? 0 : 1;
+                old_i.setValue(index, val);
+            }
+        }
+        
+        public double[] discretize() {
+            int numBins = (int) Math.sqrt(numInstances());
+            return discretize(new PKIDiscretize(), numBins, this.classIndex());
+        }
+        
+        public double[] discretize(Discretize d, int numBins, int index) {
+            try {
+                int classIndex = this.classIndex();
+                setClassIndex(-1); // clear class instance for discretization.
+                d.setAttributeIndices(Integer.toString(index+1)); // RANGE IS 1-BASED!!!
+                d.setInputFormat(this); // NOTE: this must be LAST because it calls setUpper
+                Instances newInstances;
+                newInstances = Filter.useFilter(this, d);
+                if (d.getFindNumBins()) numBins = d.getBins();
+                double[] result = d.getCutPoints(index);
+                weka.core.Attribute a = makeBucketAttribute(numBins);
+                m_Attributes.setElementAt(a, index);
+                setIndex(a, index);
+                Enumeration e = newInstances.enumerateInstances();
+                Enumeration f = m_Instances.elements();
+                while (e.hasMoreElements()) {
+                    Instance new_i = (Instance) e.nextElement();
+                    Instance old_i = (Instance) f.nextElement();
+                    double val = new_i.value(index);
+                    old_i.setValue(index, val);
+                }
+                setClassIndex(classIndex); // reset class index.
+                Assert._assert(!f.hasMoreElements());
+                return result;
+            } catch (Exception x) {
+                x.printStackTrace();
+                return null;
+            }
+        }
+        
+        static void setIndex(weka.core.Attribute a, int i) {
+            try {
+                Class c = Class.forName("weka.core.Attribute");
+                Field f = c.getDeclaredField("m_Index");
+                f.setAccessible(true);
+                f.setInt(a, i);
+            } catch (Exception x) {
+                Assert.UNREACHABLE("weka sucks: "+x);
+            }
         }
         
     }
@@ -1293,10 +1398,10 @@ public class FindBestDomainOrder {
     
     void addToInstances(Instances data, TrialCollection tc, OrderTranslator t) {
         if (tc.size() == 0) return;
-        double best = (double) tc.getMinimum().cost;
+        double best = (double) tc.getMinimum().cost+1;
         for (Iterator j = tc.trials.values().iterator(); j.hasNext(); ) {
             TrialInfo ti = (TrialInfo) j.next();
-            double score = (double) ti.cost / best;
+            double score = (double) (ti.cost+1) / best;
             Order o = t == null ? ti.order : t.translate(ti.order);
             if (o.numberOfElements() <= 1) continue;
             TrialInstance tinst = TrialInstance.construct(ti, o, score, data); 
@@ -1304,14 +1409,14 @@ public class FindBestDomainOrder {
         }
     }
     
-    Instances buildVarInstances(InferenceRule ir, List allVars) {
+    TrialInstances buildVarInstances(InferenceRule ir, List allVars) {
         if (allVars.size() <= 1) return null;
         FastVector attributes = new FastVector();
         WekaInterface.addAllPairs(attributes, allVars);
         attributes.addElement(new weka.core.Attribute("score"));
         int capacity = 30;
         OrderTranslator filter = new FilterTranslator(allVars);
-        Instances data = new Instances("Var Ordering Constraints", attributes, capacity);
+        TrialInstances data = new TrialInstances("Var Ordering Constraints", attributes, capacity);
         for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
             TrialCollection tc2 = (TrialCollection) i.next();
             InferenceRule ir2 = tc2.getRule(solver);
@@ -1322,14 +1427,15 @@ public class FindBestDomainOrder {
         return data;
     }
     
-    Instances buildAttribInstances(InferenceRule ir, List allVars) {
+    TrialInstances buildAttribInstances(InferenceRule ir, List allVars) {
         List allAttribs = VarToAttribMap.convert(allVars, ir);
+        if (TRACE > 1) out.println("Attribs: "+allAttribs);
         if (allAttribs.size() <= 1) return null;
         FastVector attributes = new FastVector();
         WekaInterface.addAllPairs(attributes, allAttribs);
         attributes.addElement(new weka.core.Attribute("score"));
         int capacity = 30;
-        Instances data = new Instances("Attribute Ordering Constraints", attributes, capacity);
+        TrialInstances data = new TrialInstances("Attribute Ordering Constraints", attributes, capacity);
         for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
             TrialCollection tc2 = (TrialCollection) i.next();
             InferenceRule ir2 = tc2.getRule(solver);
@@ -1341,14 +1447,15 @@ public class FindBestDomainOrder {
         return data;
     }
     
-    Instances buildDomainInstances(InferenceRule ir, List allVars) {
+    TrialInstances buildDomainInstances(InferenceRule ir, List allVars) {
         List allDomains = AttribToDomainMap.convert(VarToAttribMap.convert(allVars, ir));
+        if (TRACE > 1) out.println("Domains: "+allDomains);
         if (allDomains.size() <= 1) return null;
         FastVector attributes = new FastVector();
         WekaInterface.addAllPairs(attributes, allDomains);
         attributes.addElement(new weka.core.Attribute("score"));
         int capacity = 30;
-        Instances data = new Instances("Domain Ordering Constraints", attributes, capacity);
+        TrialInstances data = new TrialInstances("Domain Ordering Constraints", attributes, capacity);
         for (Iterator i = allTrials.iterator(); i.hasNext(); ) {
             TrialCollection tc2 = (TrialCollection) i.next();
             InferenceRule ir2 = tc2.getRule(solver);
@@ -1385,7 +1492,7 @@ public class FindBestDomainOrder {
     public static String CLASSIFIER3 = "net.sf.bddbddb.order.MyId3";
     
     public void neverTryAgain(InferenceRule ir, Order o) {
-        if (TRACE > 1) out.println("For rule"+ir.id+", never trying order "+o+" again.");
+        if (TRACE > 2) out.println("For rule"+ir.id+", never trying order "+o+" again.");
         neverAgain.add(ir, o);
     }
     
@@ -1394,19 +1501,22 @@ public class FindBestDomainOrder {
     public Order tryNewGoodOrder2(TrialCollection tc, List allVars, InferenceRule ir) {
         
         // TODO: improve this code.
-        Instances vData, aData, dData;
+        TrialInstances vData, aData, dData;
         vData = buildVarInstances(ir, allVars);
         aData = buildAttribInstances(ir, allVars);
         dData = buildDomainInstances(ir, allVars);
         
-        if (DISCRETIZE1) vData = discretize(vData);
-        if (DISCRETIZE2) aData = discretize(aData);
-        if (DISCRETIZE3) dData = discretize(dData);
+        if (DISCRETIZE1) vData.discretize();
+        if (DISCRETIZE2) aData.discretize();
+        if (DISCRETIZE3) dData.threshold(1000);
         
         if (TRACE > 1) {
-            out.print("Var data points: "+vData.numInstances());
-            out.print(" Attrib data points: "+aData.numInstances());
+            out.println(" Var data points: "+vData.numInstances());
+            //out.println(" Var data points: "+vData);
+            out.println(" Attrib data points: "+aData.numInstances());
+            //out.println(" Attrib data points: "+aData);
             out.println(" Domain data points: "+dData.numInstances());
+            //out.println(" Domain data points: "+dData);
         }
         
         Classifier vClassifier = null, aClassifier = null, dClassifier = null;
@@ -1468,7 +1578,8 @@ public class FindBestDomainOrder {
                 if (TRACE > 2) out.println("Order "+dInst.getOrder()+" score = "+dScore);
             }
             
-            double score = (vScore + aScore + dScore) / 3;
+            // Combine the scores in some fashion.
+            double score = vScore + aScore + dScore*10;
             if (best == null || bestScore > score) {
                 if (TRACE > 1) out.println("New best = "+o_v+" score = "+score);
                 best = o_v;
