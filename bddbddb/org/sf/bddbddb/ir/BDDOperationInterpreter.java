@@ -40,8 +40,7 @@ import org.sf.javabdd.BDDFactory.BDDOp;
  * BDDOperationInterpreter
  * 
  * @author jwhaley
- * @version $Id: BDDOperationInterpreter.java,v 1.16 2004/07/12 20:52:34 cs343
- *          Exp $
+ * @version $Id$
  */
 public class BDDOperationInterpreter implements OperationInterpreter {
     boolean TRACE = System.getProperty("traceinterpreter") != null;
