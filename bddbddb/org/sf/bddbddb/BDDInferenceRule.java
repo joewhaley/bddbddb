@@ -744,7 +744,11 @@ public class BDDInferenceRule extends InferenceRule {
             set.andWith(d2.set());
         }
         BDD singleResult = result.satOne(set, zero);
-        result.free(); set.free(); zero.free();
+        result.free(); zero.free();
+        if (solver.NOISY) {
+            solver.out.println("        Limiting result to a single tuple: "+singleResult.toStringWithDomains());
+        }
+        set.free();
         return singleResult;
     }
     
