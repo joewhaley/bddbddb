@@ -72,7 +72,7 @@ public class XMLFactory {
                     }
                 }
             }
-            if (c == null) c = new ConstraintInfoCollection();
+            if (c == null) c = new ConstraintInfoCollection(solver);
             o = new FindBestDomainOrder(c);
         } else if (name.equals("rule")) {
             o = InferenceRule.fromXMLElement(e, solver);
