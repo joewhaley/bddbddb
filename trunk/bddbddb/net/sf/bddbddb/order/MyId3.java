@@ -206,6 +206,7 @@ public class MyId3 extends Classifier {
                 // Use superclass implementation, which uses distributionForInstance.
                 return super.classifyInstance(instance);
             } catch (Exception x) {
+                x.printStackTrace();
                 Assert.UNREACHABLE();
                 return 0.;
             }

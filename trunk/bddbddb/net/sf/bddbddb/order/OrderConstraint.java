@@ -5,9 +5,7 @@ package net.sf.bddbddb.order;
 
 import java.util.Comparator;
 
-import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
-import net.sf.bddbddb.Constant;
 import net.sf.bddbddb.InferenceRule;
 import net.sf.bddbddb.Variable;
 import net.sf.bddbddb.XMLFactory;

@@ -62,16 +62,18 @@ public class OrderConstraintSet {
         }
     }
     
-    public boolean constrain(Order c) {
-        return constrain(c.getConstraints());
+    public boolean constrain(Order c, Collection /*OrderConstraint*/ invalidConstraints) {
+        return constrain(c.getConstraints(), invalidConstraints);
     }
     
-    public boolean constrain(Collection c) {
+    public boolean constrain(Collection c, Collection /*OrderConstraint*/ invalidConstraints) {
         for (Iterator i = c.iterator(); i.hasNext(); ) {
             OrderConstraint oc = (OrderConstraint) i.next();
-            if (!constrain(oc)) return false;
+            if (!constrain(oc)){
+                invalidConstraints.add(oc);
+            }
         }
-        return true;
+        return invalidConstraints.size() == 0;
     }
     
     public boolean constrain(OrderConstraint c) {

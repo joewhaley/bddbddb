@@ -6,10 +6,12 @@ package net.sf.bddbddb.order;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+
 import jwutil.collections.UnmodifiableIterator;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.Relation;
@@ -23,8 +25,8 @@ import net.sf.bddbddb.Solver;
  */
 public class AttribToDomainMap extends AbstractMap {
     
-    public static List convert(List attribs) {
-        List result = new LinkedList();
+    public static Collection convert(Collection attribs) {
+        Collection result = new HashSet();
         for (Iterator i = attribs.iterator(); i.hasNext(); ) {
             Attribute a = (Attribute) i.next();
             result.add(a.getDomain());

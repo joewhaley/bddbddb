@@ -8,6 +8,7 @@ package net.sf.bddbddb.order;
 
 import java.util.Iterator;
 
+import jwutil.util.Assert;
 import net.sf.bddbddb.BDDInferenceRule;
 import net.sf.bddbddb.FindBestDomainOrder;
 import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
@@ -35,7 +36,8 @@ public class TrialInstance extends OrderInstance implements Comparable {
             if (oa != null) {
                 d[oa.index()] = WekaInterface.getType(oc);
             } else {
-                //System.out.println("Warning: cannot find constraint "+oc+" order "+ti.order+" in dataset "+dataSet.relationName());
+                System.out.println("Warning: cannot find constraint "+oc+" order "+ti.order+" in dataset "+dataSet.relationName());
+                Assert.UNREACHABLE();
                 return null;
             }
         }

@@ -48,4 +48,7 @@ public class FilterTranslator implements OrderTranslator {
         }
         return new Order(result);
     }
+    public String toString(){
+       return "FilterTranslator: " + c;
+    }
 }
