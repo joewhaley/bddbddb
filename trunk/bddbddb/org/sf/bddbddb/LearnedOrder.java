@@ -6,6 +6,16 @@
  */
 package org.sf.bddbddb;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
@@ -15,18 +25,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.StringTokenizer;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -39,7 +37,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
 import org.sf.bddbddb.OrderClassifier.MyAttribute;
 import org.sf.bddbddb.OrderClassifier.MyInstance;
 import org.sf.bddbddb.dataflow.PartialOrder.BeforeConstraint;
@@ -48,7 +45,6 @@ import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import org.sf.bddbddb.dataflow.PartialOrder.InterleavedConstraint;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.IndexMap;
-import org.sf.bddbddb.util.LinearSet;
 import org.sf.bddbddb.util.Pair;
 import org.sf.bddbddb.util.PermutationGenerator;
 import org.sf.javabdd.BDD;
@@ -58,13 +54,6 @@ import org.sf.javabdd.JFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
-
-import weka.clusterers.Clusterer;
-import weka.clusterers.EM;
-import weka.core.Attribute;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
 
 /**
  * LearnedOrder

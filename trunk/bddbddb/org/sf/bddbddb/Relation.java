@@ -3,9 +3,9 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.io.IOException;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
 
 /**
@@ -76,7 +76,7 @@ public abstract class Relation {
     public abstract void initialize();
 
     /**
-     * Load this relation from disk.
+     * Load this relation from disk in its native format.
      * 
      * @throws IOException
      */
@@ -90,18 +90,19 @@ public abstract class Relation {
     public abstract void loadTuples() throws IOException;
 
     /**
-     * Save the current value of this relation to disk. 
+     * Load this relation in tuple form from the given file.
+     * 
+     * @param filename  the file to load
+     * @throws IOException
+     */
+    public abstract void loadTuples(String filename) throws IOException;
+    
+    /**
+     * Save the current value of this relation to disk in its native format.
      * 
      * @throws IOException
      */
     public abstract void save() throws IOException;
-
-    /**
-     * Save the current negated value of this relation to disk. 
-     * 
-     * @throws IOException
-     */
-    public abstract void saveNegated() throws IOException;
 
     /**
      * Save the current value of this relation to disk in tuple form.
@@ -111,12 +112,13 @@ public abstract class Relation {
     public abstract void saveTuples() throws IOException;
 
     /**
-     * Save the current negated value of this relation to disk in tuple form.
+     * Save the value of this relation in tuple form to the given file.
      * 
+     * @param filename  name of file to save
      * @throws IOException
      */
-    public abstract void saveNegatedTuples() throws IOException;
-
+    public abstract void saveTuples(String filename) throws IOException;
+    
     /**
      * Make a copy of this relation.  The new relation will have the same attributes
      * and a derived name.

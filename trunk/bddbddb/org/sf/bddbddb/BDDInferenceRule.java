@@ -202,7 +202,13 @@ public class BDDInferenceRule extends InferenceRule {
             variableSet[i] = currentVariableSet;
             currentVariableSet = new LinkedList(currentVariableSet);
         }
-        learnedOrder.initialize();
+        try {
+            learnedOrder.initialize();
+        } catch (NoClassDefFoundError e) {
+            // weka is not in classpath.
+            learnedOrder = null;
+            //System.out.println("weka.jar is not in classpath, machine learning disabled.");
+        }
         isInitialized = true;
     }
 
@@ -360,12 +366,11 @@ public class BDDInferenceRule extends InferenceRule {
            
        BDD result = evalRelations(solver.bdd,relationValues,canQuantifyAfter,time);
        long thisTime = System.currentTimeMillis() - time;
-       if(thisTime > longestTime){
+       if(learnedOrder != null && thisTime > longestTime){
            longestTime = thisTime;
            longestIteration = updateCount;
            Assert._assert(oldRelationValues != null && canQuantifyAfter != null, Boolean.toString(incrementalize));
            learnedOrder.saveBddsToLoad(oldRelationValues, canQuantifyAfter);
-           
        }
        if(result == null) return false;
        if (TRACE_FULL) solver.out.println(" = " + result.toStringWithDomains());
@@ -851,6 +856,7 @@ public class BDDInferenceRule extends InferenceRule {
     public LearnedOrder getLearnedOrder(){ 
         return learnedOrder;
     }
+    
     /*
      * (non-Javadoc)
      * 
