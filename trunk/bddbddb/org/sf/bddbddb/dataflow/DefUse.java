@@ -20,9 +20,7 @@ import org.sf.bddbddb.util.BitString.BitStringIterator;
  * @version $Id$
  */
 public class DefUse extends OperationProblem {
-
     boolean TRACE = false;
-    
     // Global information.
     BitString[] defs; /* <Relation,Operation> */
     BitString[] uses; /* <Relation,Operation> */
@@ -33,7 +31,7 @@ public class DefUse extends OperationProblem {
         this.ir = ir;
         int numRelations = ir.getNumberOfRelations();
         int numOperations = Operation.getNumberOfOperations();
-        if (TRACE) System.out.println(numRelations+" relations, "+numOperations+" operations");
+        if (TRACE) System.out.println(numRelations + " relations, " + numOperations + " operations");
         this.defs = new BitString[numRelations];
         for (int i = 0; i < defs.length; ++i) {
             defs[i] = new BitString(numOperations);
@@ -55,8 +53,7 @@ public class DefUse extends OperationProblem {
                 Operation op = (Operation) o;
                 opMap[op.id] = op;
                 Relation def = op.getRelationDest();
-                if (def != null)
-                    defs[def.id].set(op.id);
+                if (def != null) defs[def.id].set(op.id);
                 Collection use = op.getSrcs();
                 for (Iterator j = use.iterator(); j.hasNext();) {
                     Relation r = (Relation) j.next();
@@ -73,11 +70,9 @@ public class DefUse extends OperationProblem {
     public OperationSet getUses(Relation r) {
         return new OperationSet(uses[r.id]);
     }
-
     public class OperationSet extends AbstractSet {
-
         BitString s;
-        
+
         /**
          * @param s
          */
@@ -115,13 +110,10 @@ public class DefUse extends OperationProblem {
         public int size() {
             return s.numberOfOnes();
         }
-
     }
-
     public class OperationIterator implements Iterator {
-
         BitStringIterator i;
-        
+
         /**
          * @param s
          */
@@ -156,40 +148,41 @@ public class DefUse extends OperationProblem {
         public void remove() {
             throw new UnsupportedOperationException();
         }
-
     }
-
     public class DefUseFact extends UnionBitVectorFact implements OperationFact {
-        
         Operation op;
-        
+
         /**
          * @param setSize
          */
         public DefUseFact(int setSize) {
             super(setSize);
         }
-        
+
         /**
          * @param s
          */
         public DefUseFact(BitString s) {
             super(s);
         }
-        
-        /* (non-Javadoc)
+
+        /*
+         * (non-Javadoc)
+         * 
          * @see org.sf.bddbddb.dataflow.UnionBitVectorFact#create(org.sf.bddbddb.util.BitString)
          */
         public UnionBitVectorFact create(BitString s) {
             return new DefUseFact(s);
         }
-        
-        /* (non-Javadoc)
+
+        /*
+         * (non-Javadoc)
+         * 
          * @see java.lang.Object#toString()
          */
         public String toString() {
             StringBuffer sb = new StringBuffer();
-            for (BitStringIterator i = fact.iterator(); i.hasNext(); ) {
+            for (BitStringIterator i = fact.iterator(); i.hasNext();) {
                 sb.append(opMap[i.nextIndex()]);
                 sb.append(" ");
             }
@@ -205,14 +198,14 @@ public class DefUse extends OperationProblem {
             bs.and(defs[r.id]);
             return new OperationSet(bs);
         }
-        
+
         /**
          * @param rs
          * @return
          */
         public OperationSet getReachingDefs(Collection rs) {
             BitString bs = new BitString(fact.size());
-            for (Iterator i = rs.iterator(); i.hasNext(); ) {
+            for (Iterator i = rs.iterator(); i.hasNext();) {
                 Relation r = (Relation) i.next();
                 bs.or(defs[r.id]);
             }
@@ -220,35 +213,41 @@ public class DefUse extends OperationProblem {
             return new OperationSet(bs);
         }
 
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
+         * 
          * @see org.sf.bddbddb.dataflow.OperationProblem.OperationFact#getOperation()
          */
         public Operation getOperation() {
             return op;
         }
-        
+
         public void setLocation(IterationList list) {
         }
-        
+
         public Fact copy(IterationList list) {
             return create(fact);
         }
     }
-    
-    /* (non-Javadoc)
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.dataflow.Problem#direction()
      */
-    public boolean direction() { return true; }
-    
-    /* (non-Javadoc)
+    public boolean direction() {
+        return true;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.sf.bddbddb.dataflow.Problem#getTransferFunction(org.sf.bddbddb.ir.Operation)
      */
     public TransferFunction getTransferFunction(Operation op) {
         return new DefUseTransferFunction(op);
     }
-    
     public class DefUseTransferFunction extends OperationTransferFunction {
-        
         Operation op;
 
         DefUseTransferFunction(Operation op) {
@@ -269,7 +268,6 @@ public class DefUse extends OperationProblem {
             setFact(op, newFact);
             return newFact;
         }
-
     }
 
     /*

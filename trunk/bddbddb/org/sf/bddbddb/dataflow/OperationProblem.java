@@ -15,17 +15,16 @@ import org.sf.bddbddb.util.Assert;
  * @version $Id$
  */
 public abstract class OperationProblem extends Problem {
-    
-    Map/*<Operation,OperationFact>*/ operationFacts;
-    
+    Map/* <Operation,OperationFact> */operationFacts;
+
     public OperationProblem() {
         this.initialize();
     }
-    
+
     public void initialize() {
         operationFacts = new HashMap();
     }
-    
+
     public OperationFact getFact(Operation o) {
         return (OperationFact) operationFacts.get(o);
     }
@@ -37,13 +36,9 @@ public abstract class OperationProblem extends Problem {
     }
 
     public abstract boolean direction();
-
     public static interface OperationFact extends Fact {
         public Operation getOperation();
     }
-    
     public abstract class OperationTransferFunction extends TransferFunction {
-
     }
-
 }

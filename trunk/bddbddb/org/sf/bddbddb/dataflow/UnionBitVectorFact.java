@@ -23,11 +23,11 @@ public class UnionBitVectorFact extends BitVectorFact {
     public UnionBitVectorFact(BitString s) {
         super(s);
     }
-    
+
     public UnionBitVectorFact create(BitString s) {
         return new UnionBitVectorFact(s);
     }
-    
+
     public Fact join(Fact that) {
         BitString thatS = ((BitVectorFact) that).fact;
         BitString newS = new BitString(this.fact.size());
