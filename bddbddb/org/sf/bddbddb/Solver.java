@@ -20,8 +20,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.URL;
 import java.text.DecimalFormat;
@@ -31,6 +29,7 @@ import jwutil.collections.IndexMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
 import jwutil.io.SystemProperties;
+import jwutil.reflect.Reflect;
 import jwutil.strings.MyStringTokenizer;
 import jwutil.util.Assert;
 import org.sf.bddbddb.InferenceRule.DependenceNavigator;
@@ -1676,7 +1675,7 @@ public abstract class Solver {
         } catch (ClassNotFoundException x) {
             ClassLoader cl = addBDDLibraryToClasspath(args);
             // Reflective invocation under the new class loader.
-            invoke(cl, Solver.class.getName(), "main2", new Class[] {String[].class}, new Object[] {args});
+            Reflect.invoke(cl, Solver.class.getName(), "main2", new Class[] {String[].class}, new Object[] {args});
             return;
         }
         // Just call it directly.
@@ -1699,77 +1698,6 @@ public abstract class Solver {
         System.out.println("Adding "+url+" to classpath.");
         URL url2 = new File(".").toURL();
         return new HijackingClassLoader(new URL[] {url, url2});
-    }
-    
-    /**
-     * Helper function for reflective invocation.
-     * 
-     * @param cl  class loader
-     * @param className  class name
-     * @param methodName  method name
-     * @param argTypes  arg types (optional)
-     * @param args  arguments
-     * @return  return value from invoked method
-     */
-    public static Object invoke(ClassLoader cl, String className,
-        String methodName, Class[] argTypes, Object[] args) {
-        Class c;
-        try {
-            c = Class.forName(className, true, cl);
-        } catch (ClassNotFoundException e0) {
-            System.err.println("Cannot load "+className);
-            e0.printStackTrace();
-            return null;
-        }
-        Method m;
-        try {
-            if (argTypes != null) {
-                m = c.getMethod(methodName, argTypes);
-            } else {
-                m = null;
-                Method[] ms = c.getDeclaredMethods();
-                for (int i = 0; i < ms.length; ++i) {
-                    if (ms[i].getName().equals(methodName)) {
-                        m = ms[i];
-                        break;
-                    }
-                }
-                if (m == null) {
-                    System.err.println("Can't find "+className+"."+methodName);
-                    return null;
-                }
-            }
-            m.setAccessible(true);
-        } catch (SecurityException e1) {
-            System.err.println("Cannot access "+className+"."+methodName);
-            e1.printStackTrace();
-            return null;
-        } catch (NoSuchMethodException e1) {
-            System.err.println("Can't find "+className+"."+methodName);
-            e1.printStackTrace();
-            return null;
-        }
-        Object result;
-        try {
-            result = m.invoke(null, args);
-        } catch (IllegalArgumentException e2) {
-            System.err.println("Illegal argument exception: "+e2.getCause());
-            e2.printStackTrace();
-            return null;
-        } catch (IllegalAccessException e2) {
-            System.err.println("Illegal access exception: "+e2.getCause());
-            e2.printStackTrace();
-            return null;
-        } catch (InvocationTargetException e2) {
-            if (e2.getCause() instanceof RuntimeException)
-                throw (RuntimeException) e2.getCause();
-            if (e2.getCause() instanceof Error)
-                throw (Error) e2.getCause();
-            System.err.println("Unexpected exception thrown! "+e2.getCause());
-            e2.getCause().printStackTrace();
-            return null;
-        }
-        return result;
     }
     
 }
