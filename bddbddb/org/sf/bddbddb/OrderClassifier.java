@@ -6,9 +6,6 @@
  */
 package org.sf.bddbddb;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -21,14 +18,14 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
-
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.GenericMultiMap;
-import org.sf.bddbddb.util.LinearSet;
 import org.sf.bddbddb.util.MultiMap;
 import org.sf.bddbddb.util.Pair;
 import org.sf.javabdd.BDDDomain;
-
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.Id3;
 import weka.clusterers.Clusterer;

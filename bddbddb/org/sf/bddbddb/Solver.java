@@ -90,9 +90,7 @@ public abstract class Solver {
     Collection/*<Relation>*/ relationsToLoad;
     Collection/*<Relation>*/ relationsToLoadTuples;
     Collection/*<Relation>*/ relationsToDump;
-    Collection/*<Relation>*/ relationsToDumpNegated;
     Collection/*<Relation>*/ relationsToDumpTuples;
-    Collection/*<Relation>*/ relationsToDumpNegatedTuples;
     Collection/*<Relation>*/ relationsToPrintTuples;
     Collection/*<Relation>*/ relationsToPrintSize;
     Collection/*<Dot>*/ dotGraphsToDump;
@@ -183,9 +181,7 @@ public abstract class Solver {
         relationsToLoad = new LinkedList();
         relationsToLoadTuples = new LinkedList();
         relationsToDump = new LinkedList();
-        relationsToDumpNegated = new LinkedList();
         relationsToDumpTuples = new LinkedList();
-        relationsToDumpNegatedTuples = new LinkedList();
         relationsToPrintTuples = new LinkedList();
         relationsToPrintSize = new LinkedList();
         dotGraphsToDump = new LinkedList();
@@ -848,12 +844,8 @@ public abstract class Solver {
             Matcher constraintMatcher = constraintPattern.matcher(option);
             if (option.equals("output")) {
                 relationsToDump.add(r);
-            } else if (option.equals("outputnot")) {
-                relationsToDumpNegated.add(r);
             } else if (option.equals("outputtuples")) {
                 relationsToDumpTuples.add(r);
-            } else if (option.equals("outputnottuples")) {
-                relationsToDumpNegatedTuples.add(r);
             } else if (option.equals("input")) {
                 relationsToLoad.add(r);
             } else if (option.equals("inputtuples")) {
@@ -869,7 +861,9 @@ public abstract class Solver {
                 throw new IllegalArgumentException();
             }
         }
-        r.constraints.satisfy();
+        if (!r.constraints.isEmpty()) {
+            r.constraints.satisfy();
+        }
         return r;
     }
 
@@ -914,9 +908,7 @@ public abstract class Solver {
      */
     void deleteRelation(Relation r) {
         relationsToDump.remove(r);
-        relationsToDumpNegated.remove(r);
         relationsToDumpTuples.remove(r);
-        relationsToDumpNegatedTuples.remove(r);
         relationsToLoad.remove(r);
         relationsToLoadTuples.remove(r);
         relationsToPrintSize.remove(r);
@@ -1528,20 +1520,10 @@ public abstract class Solver {
             if (NOISY) out.println("Dumping BDD for " + r);
             r.save();
         }
-        for (Iterator i = relationsToDumpNegated.iterator(); i.hasNext();) {
-            Relation r = (Relation) i.next();
-            if (NOISY) out.println("Dumping negated BDD for " + r);
-            r.saveNegated();
-        }
         for (Iterator i = relationsToDumpTuples.iterator(); i.hasNext();) {
             Relation r = (Relation) i.next();
             if (NOISY) out.println("Dumping tuples for " + r);
             r.saveTuples();
-        }
-        for (Iterator i = relationsToDumpNegatedTuples.iterator(); i.hasNext();) {
-            Relation r = (Relation) i.next();
-            if (NOISY) out.println("Dumping negated tuples for " + r);
-            r.saveNegatedTuples();
         }
         for (Iterator i = dotGraphsToDump.iterator(); i.hasNext();) {
             Dot dot = (Dot) i.next();

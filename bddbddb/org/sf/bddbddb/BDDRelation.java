@@ -29,6 +29,11 @@ import org.sf.javabdd.BDD.BDDIterator;
  */
 public class BDDRelation extends Relation {
     
+    public static String BDD_INPUT_SUFFIX = System.getProperty("bddinputsuffix", ".bdd");
+    public static String BDD_OUTPUT_SUFFIX = System.getProperty("bddoutputsuffix", ".bdd");
+    public static String TUPLES_INPUT_SUFFIX = System.getProperty("tuplesinputsuffix", ".tuples");
+    public static String TUPLES_OUTPUT_SUFFIX = System.getProperty("tuplesoutputsuffix", ".tuples");
+    
     /**
      * Link to solver.
      */
@@ -175,9 +180,9 @@ public class BDDRelation extends Relation {
             if (is_equiv) {
                 b = d1.buildEquals(d2);
             } else if (is_lt) {
-                b = buildLessThan(d1,d2);
+                b = buildLessThan(d1, d2);
             } else {
-                b = buildLessThan(d2,d1);
+                b = buildLessThan(d2, d1);
             }
             
             relation = b;
@@ -190,10 +195,11 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * build d1 < d2
-     * @param d1
-     * @param d2
-     * @return
+     * Build a BDD representing d1 < d2.
+     * 
+     * @param d1 first domain
+     * @param d2 second domain
+     * @return BDD that is true iff d1 < d2.
      */
     private BDD buildLessThan(BDDDomain d1, BDDDomain d2) {
         BDD leftwardBitsEqual = solver.bdd.one();
@@ -205,28 +211,6 @@ public class BDDRelation extends Relation {
             leftwardBitsEqual.andWith(v1.biimp(v2));
         }        
         return result;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Relation#load()
-     */
-    public void load() throws IOException {
-        load(solver.basedir + name + ".bdd");
-        if (solver.NOISY) solver.out.println("Loaded BDD from file: " + name + ".bdd " + relation.nodeCount() + " nodes, " + dsize() + " elements.");
-        if (solver.NOISY) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Relation#loadTuples()
-     */
-    public void loadTuples() throws IOException {
-        loadTuples(solver.basedir + name + ".tuples");
-        if (solver.NOISY) solver.out.println("Loaded tuples from file: " + name + ".tuples");
-        if (solver.NOISY) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
     }
 
     /**
@@ -241,6 +225,44 @@ public class BDDRelation extends Relation {
     }
 
     /**
+     * Verify that the domains for this BDD are correct.
+     * 
+     * @return  whether the domains are correct
+     */
+    public boolean verify() {
+        return verify(relation);
+    }
+    
+    /**
+     * Verify that the domains for the given BDD match this relation.
+     * 
+     * @param r  the given BDD
+     * @return  whether the domains match
+     */
+    public boolean verify(BDD r) {
+        BDD s = r.support();
+        calculateDomainSet();
+        BDD t = domainSet.and(s);
+        s.free();
+        boolean result = t.equals(domainSet);
+        if (!result) {
+            System.out.println("Warning, domains for " + this + " don't match BDD: " + activeDomains(r) + " vs " + domains);
+        }
+        return result;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.sf.bddbddb.Relation#load()
+     */
+    public void load() throws IOException {
+        load(solver.basedir + name + ".bdd");
+        if (solver.NOISY) solver.out.println("Loaded BDD from file: " + name + ".bdd " + relation.nodeCount() + " nodes, " + dsize() + " elements.");
+        if (solver.NOISY) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
+    }
+
+    /**
      * Load this relation from the given file.
      * 
      * @param filename  the file to load
@@ -248,20 +270,65 @@ public class BDDRelation extends Relation {
      */
     public void load(String filename) throws IOException {
         Assert._assert(isInitialized);
-        BDD r2 = solver.bdd.load(filename);
+        BDD r2;
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new FileReader(filename));
+            String s = in.readLine();
+            if (s != null && s.startsWith("# ")) {
+                // Parse BDD information.
+                checkInfoLine(filename, s, true);
+                in.mark(4096);
+                for (Iterator i = domains.iterator(); i.hasNext(); ) {
+                    BDDDomain d = (BDDDomain) i.next();
+                    String s2 = in.readLine();
+                    if (!s2.startsWith("# ")) {
+                        System.err.println("BDD file \""+filename+"\" is missing variable assignment line for "+d);
+                        in.reset();
+                        break;
+                    }
+                    StringTokenizer st = new StringTokenizer(s2.substring(2));
+                    if (!st.hasMoreTokens()) {
+                        String msg = "BDD file \""+filename+"\" has an invalid BDD information line";
+                        throw new IOException(msg);
+                    }
+                    String dName = st.nextToken();
+                    if (!dName.equals(d.getName())) {
+                        String msg = "in file \""+filename+"\", domain "+dName+" does not match expected domain "+d;
+                        throw new IOException(msg);
+                    }
+                    int[] vars = d.vars();
+                    for (int j = 0; j < vars.length; ++j) {
+                        if (!st.hasMoreTokens()) {
+                            String msg = "in file \""+filename+"\", not enough bits for domain "+dName;
+                            throw new IOException(msg);
+                        }
+                        int k = Integer.parseInt(st.nextToken());
+                        if (vars[j] != k) {
+                            String msg = "in file \""+filename+"\", bit "+j+" for domain "+dName+" ("+k+") does not match expected ("+vars[j]+")";
+                            throw new IOException(msg);
+                        }
+                    }
+                    if (st.hasMoreTokens()) {
+                        String msg = "in file \""+filename+"\", too many bits for domain "+dName;
+                        throw new IOException(msg);
+                    }
+                }
+                r2 = solver.bdd.load(in);
+            } else {
+                System.err.println("BDD file \""+filename+"\" is missing header line.");
+                r2 = solver.bdd.load(filename);
+            }
+        } finally {
+            if (in != null) try { in.close(); } catch (IOException _) { }
+        }
         if (r2 != null) {
             if (r2.isZero()) {
                 System.out.println("Warning: " + filename + " is zero.");
             } else if (r2.isOne()) {
                 System.out.println("Warning: " + filename + " is one.");
             } else {
-                BDD s = r2.support();
-                calculateDomainSet();
-                BDD t = domainSet.and(s);
-                s.free();
-                boolean b = !t.equals(domainSet);
-                t.free();
-                if (b) {
+                if (!verify(r2)) {
                     throw new IOException("Expected domains for loaded BDD " + filename + " to be " + domains + ", but found " + activeDomains(r2)
                         + " instead");
                 }
@@ -272,61 +339,106 @@ public class BDDRelation extends Relation {
         updateNegated();
     }
 
-    /**
-     * Verify that the domains for this BDD are correct.
+    /*
+     * (non-Javadoc)
      * 
-     * @return  whether the domains are correct
+     * @see org.sf.bddbddb.Relation#loadTuples()
      */
-    public boolean verify() {
-        BDD s = relation.support();
-        calculateDomainSet();
-        BDD t = domainSet.and(s);
-        s.free();
-        boolean result = t.equals(domainSet);
-        if (!result) {
-            System.out.println("Warning, domains for " + this + " don't match BDD: " + activeDomains(relation) + " vs " + domains);
-        }
-        return result;
+    public void loadTuples() throws IOException {
+        loadTuples(solver.basedir + name + ".tuples");
+        if (solver.NOISY) solver.out.println("Loaded tuples from file: " + name + ".tuples");
+        if (solver.NOISY) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
     }
 
     /**
-     * Load this relation in tuple form from the given file.
+     * Makes a domain info line for this relation.
      * 
-     * @param filename  the file to load
+     * @return  domain info line
+     */
+    String makeInfoLine() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("#");
+        for (Iterator i = domains.iterator(); i.hasNext();) {
+            BDDDomain d = (BDDDomain) i.next();
+            sb.append(' ');
+            sb.append(d.toString());
+            sb.append(':');
+            sb.append(d.varNum());
+        }
+        return sb.toString();
+    }
+    
+    String makeBDDVarInfoLine(BDDDomain d) {
+        StringBuffer sb = new StringBuffer();
+        sb.append("#");
+        int[] vars = d.vars();
+        for (int i = 0; i < vars.length; ++i) {
+            sb.append(' ');
+            sb.append(vars[i]);
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * Checks that the given domain info line matches this relation.
+     * 
+     * @param filename  filename to use in error message
+     * @param s  domain info line
+     * @param ex  true if we want to throw an exception, false if we just want to print to stderr
      * @throws IOException
+     */
+    void checkInfoLine(String filename, String s, boolean ex) throws IOException {
+        StringTokenizer st = new StringTokenizer(s.substring(2));
+        Iterator i = domains.iterator();
+        while (st.hasMoreTokens()) {
+            String msg = null;
+            String dname = st.nextToken(":");
+            int dbits = Integer.parseInt(st.nextToken());
+            BDDDomain d = (BDDDomain) i.next();
+            if (d.getName().equals(dname)) {
+                msg = "in file \""+filename+"\", domain "+dname+" does not match expected domain "+d;
+            } else if (d.varNum() != dbits) {
+                msg = "in file \""+filename+"\", number of bits for domain "+dname+" ("+dbits +") does not match expected ("+d.varNum()+")";
+            }
+            if (msg != null) {
+                if (ex) throw new IOException(msg);
+                else System.err.println("WARNING: "+msg);
+            }
+        }
+        if (i.hasNext()) {
+            StringBuffer sb = new StringBuffer();
+            sb.append("file \""+filename+"\" is missing domains:");
+            do {
+                sb.append(" "+i.next());
+            } while (i.hasNext());
+            String msg = sb.toString();
+            if (ex) throw new IOException(msg);
+            else System.err.println("WARNING: "+msg); 
+        }
+    }
+
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.Relation#loadTuples(java.lang.String)
      */
     public void loadTuples(String filename) throws IOException {
         Assert._assert(isInitialized);
         BufferedReader in = null;
         try {
             in = new BufferedReader(new FileReader(filename));
+            // Load the header line.
+            String s = in.readLine();
+            if (s == null) return;
+            if (!s.startsWith("# ")) {
+                System.err.println("Tuple file \""+filename+"\" is missing header line, using default.");
+            } else {
+                checkInfoLine(filename, s, false);
+            }
             for (;;) {
-                String s = in.readLine();
+                s = in.readLine();
                 if (s == null) break;
                 if (s.length() == 0) continue;
                 if (s.startsWith("#")) continue;
-                StringTokenizer st = new StringTokenizer(s);
-                BDD b = solver.bdd.one();
-                for (int i = 0; i < domains.size(); ++i) {
-                    BDDDomain d = (BDDDomain) domains.get(i);
-                    String v = st.nextToken();
-                    if (v.equals("*")) {
-                        b.andWith(d.domain());
-                    } else {
-                        int x = v.indexOf('-');
-                        if (x < 0) {
-                            long l = Long.parseLong(v);
-                            b.andWith(d.ithVar(l));
-                            if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + ", ");
-                        } else {
-                            long l = Long.parseLong(v.substring(0, x));
-                            long m = Long.parseLong(v.substring(x + 1));
-                            b.andWith(d.varRange(l, m));
-                            if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + "-" + m + ", ");
-                        }
-                    }
-                }
-                if (solver.TRACE_FULL) solver.out.println();
+                BDD b = parseTuple(s);
                 relation.orWith(b);
             }
         } finally {
@@ -335,13 +447,45 @@ public class BDDRelation extends Relation {
         updateNegated();
     }
 
+    /**
+     * Parse the given tuple string and return a BDD corresponding to it.
+     * 
+     * @param s  tuple string
+     * @return  BDD form of tuple
+     */
+    BDD parseTuple(String s) {
+        StringTokenizer st = new StringTokenizer(s);
+        BDD b = solver.bdd.one();
+        for (int i = 0; i < domains.size(); ++i) {
+            BDDDomain d = (BDDDomain) domains.get(i);
+            String v = st.nextToken();
+            if (v.equals("*")) {
+                b.andWith(d.domain());
+            } else {
+                int x = v.indexOf('-');
+                if (x < 0) {
+                    long l = Long.parseLong(v);
+                    b.andWith(d.ithVar(l));
+                    if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + ", ");
+                } else {
+                    long l = Long.parseLong(v.substring(0, x));
+                    long m = Long.parseLong(v.substring(x + 1));
+                    b.andWith(d.varRange(l, m));
+                    if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + "-" + m + ", ");
+                }
+            }
+        }
+        if (solver.TRACE_FULL) solver.out.println();
+        return b;
+    }
+    
     /*
      * (non-Javadoc)
      * 
      * @see org.sf.bddbddb.Relation#save()
      */
     public void save() throws IOException {
-        save(solver.basedir + name + ".rbdd");
+        save(solver.basedir + name + ".bdd");
     }
 
     /**
@@ -353,18 +497,20 @@ public class BDDRelation extends Relation {
     public void save(String filename) throws IOException {
         Assert._assert(isInitialized);
         System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
-        solver.bdd.save(filename, relation);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Relation#saveNegated()
-     */
-    public void saveNegated() throws IOException {
-        Assert._assert(isInitialized);
-        System.out.println("Relation " + this + ": " + relation.not().nodeCount() + " nodes");
-        solver.bdd.save(solver.basedir + "not" + name + ".rbdd", relation.not());
+        BufferedWriter out = null;
+        try {
+            out = new BufferedWriter(new FileWriter(filename));
+            out.write(makeInfoLine());
+            out.write('\n');
+            for (Iterator i = domains.iterator(); i.hasNext(); ) {
+                BDDDomain d = (BDDDomain) i.next();
+                out.write(makeBDDVarInfoLine(d));
+                out.write('\n');
+            }
+            solver.bdd.save(out, relation);
+        } finally {
+            if (out != null) try { out.close(); } catch (IOException x) { }
+        }
     }
 
     /*
@@ -373,7 +519,7 @@ public class BDDRelation extends Relation {
      * @see org.sf.bddbddb.Relation#saveTuples()
      */
     public void saveTuples() throws IOException {
-        saveTuples(solver.basedir + name + ".rtuples", relation);
+        saveTuples(solver.basedir + name + ".tuples");
     }
 
     /**
@@ -384,17 +530,7 @@ public class BDDRelation extends Relation {
      */
     public void saveTuples(String filename) throws IOException {
         System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
-        saveTuples(solver.basedir + name + ".rtuples", relation);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sf.bddbddb.Relation#saveNegatedTuples()
-     */
-    public void saveNegatedTuples() throws IOException {
-        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes");
-        saveTuples(solver.basedir + "not" + name + ".rtuples", relation.not());
+        saveTuples(solver.basedir + name + ".tuples", relation);
     }
 
     /**
@@ -464,12 +600,12 @@ public class BDDRelation extends Relation {
     /**
      * Return a string representation of the active domains of the given relation.
      * 
-     * @param relation  relation to check
+     * @param r  relation to check
      * @return  string representation of the active domains
      */
-    public static String activeDomains(BDD relation) {
-        BDDFactory bdd = relation.getFactory();
-        BDD s = relation.support();
+    public static String activeDomains(BDD r) {
+        BDDFactory bdd = r.getFactory();
+        BDD s = r.support();
         int[] a = s.scanSetDomains();
         s.free();
         if (a == null) return "(none)";
@@ -647,9 +783,15 @@ public class BDDRelation extends Relation {
         return (BDDDomain) domains.get(i);
     }
     
-    public Attribute getAttribute(BDDDomain d){
+    /**
+     * Get the attribute that is assigned to the given BDDDomain.
+     * 
+     * @param d  BDD domain
+     * @return attribute
+     */
+    public Attribute getAttribute(BDDDomain d) {
        int i = domains.indexOf(d);
-       if(i == -1) return null;
+       if (i == -1) return null;
        return (Attribute) attributes.get(i);
     }
 

@@ -13,8 +13,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
-
-import org.sf.bddbddb.LearnedOrder.OrderGenerator;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
 import org.sf.bddbddb.dataflow.PartialOrder.ConstraintGraph;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraints;
