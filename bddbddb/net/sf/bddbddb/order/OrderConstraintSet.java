@@ -346,17 +346,20 @@ public class OrderConstraintSet {
         return earliest;
     }
     
+    static final double LOG2 = Math.log(2);
+    
     public int approxNumOrders(int n) {
         if (n == 0) return 0;
-        BigInteger result = Distributions.recurrenceA000670(n);
-        int nc = set.size();
-        int maxc = n * (n+1) / 2;
-        BigInteger result2 = result.subtract(result.subtract(BigInteger.ONE).multiply(BigInteger.valueOf(n)).divide(BigInteger.valueOf(maxc)));
-        BigInteger max = BigInteger.valueOf(Integer.MAX_VALUE);
-        if (result2.compareTo(max) > 0)
-            return Integer.MAX_VALUE;
-        else
-            return result2.intValue();
+        if (n == 1) return 1;
+        double result = Distributions.recurrenceA000670(n).doubleValue();
+        double nc = Math.log(set.size()) / LOG2;
+        if (nc < 0) nc = 0;
+        double maxc = Math.log(n * (n+1) / 2) / LOG2;
+        if (maxc < 1) maxc = 1;
+        double result2 = result - ((result - 1) * nc / maxc);
+        double max = (double) Integer.MAX_VALUE;
+        if (result2 > max) return Integer.MAX_VALUE;
+        else return (int) result2;
     }
     
     public BigInteger countAllOrders(Collection vars) {
@@ -402,7 +405,7 @@ public class OrderConstraintSet {
         return result;
     }
     
-    static Random random = new Random();
+    static Random random = new Random(System.currentTimeMillis());
     public Order generateRandomOrder(Collection vars) {
         Set done = new HashSet(vars.size());
         ArrayList input = new ArrayList(vars);
