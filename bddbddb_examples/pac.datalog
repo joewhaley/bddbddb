@@ -1,4 +1,8 @@
 
+### Java context-insensitive inclusion-based pointer analysis
+### This version includes ordering constraints on the relations.
+### Author: John Whaley
+
 .basedir "pa.joeq"
 
 ### Domains
