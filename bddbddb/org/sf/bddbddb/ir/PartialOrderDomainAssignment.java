@@ -36,11 +36,15 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
      * @param s
      */
     public PartialOrderDomainAssignment(Solver s, Constraints[] constraintMap) {
-        super(s, constraintMap);
-        beforeConstraints = new LinkedList();
-        ileavedConstraints = new LinkedList();
+        super(s, constraintMap); // super() calls initialize() for us.
     }
 
+    void initialize() {
+        beforeConstraints = new LinkedList();
+        ileavedConstraints = new LinkedList();
+        super.initialize();
+    }
+    
     public void doAssignment() {
         super.doAssignment();
         setTotalOrder();
@@ -221,11 +225,39 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
         super.saveDomainAssignment(out);
         for (Iterator it = beforeConstraints.iterator(); it.hasNext();) {
             Pair c = (Pair) it.next();
-            out.writeBytes(c.left+" < "+c.right+"\n");
+            String left;
+            if (c.left instanceof Pair) {
+                Pair p = (Pair) c.left;
+                left = p.left+" "+p.right;
+            } else {
+                left = c.left.toString();
+            }
+            String right;
+            if (c.right instanceof Pair) {
+                Pair p = (Pair) c.right;
+                right = p.left+" "+p.right;
+            } else {
+                right = c.right.toString();
+            }
+            out.writeBytes(left+" < "+right+"\n");
         }
         for (Iterator it = ileavedConstraints.iterator(); it.hasNext();) {
             Pair c = (Pair) it.next();
-            out.writeBytes(c.left+" ~ "+c.right+"\n");
+            String left;
+            if (c.left instanceof Pair) {
+                Pair p = (Pair) c.left;
+                left = p.left+" "+p.right;
+            } else {
+                left = c.left.toString();
+            }
+            String right;
+            if (c.right instanceof Pair) {
+                Pair p = (Pair) c.right;
+                right = p.left+" "+p.right;
+            } else {
+                right = c.right.toString();
+            }
+            out.writeBytes(left+" ~ "+right+"\n");
         }
     }
 }

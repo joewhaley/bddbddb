@@ -60,7 +60,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     Solver solver;
     MultiMap/* <Domain,Attribute> */domainToAttributes;
     List inserted;
-    boolean TRACE = false;
+    boolean TRACE = true;
     ListIterator currentBlock;
     Map/*Relation,Constraints*/constraintMap;
 
