@@ -232,6 +232,8 @@ public class PAFly {
     static Collection stringNodes = new LinkedList();
     
     static void addToVP0(int V_i, Node h) {
+        if (FILTER_NULL && isNullConstant(h))
+            return;
         int oldSize = Hmap.size();
         int H_i = Hmap.get(h.toString());
         if (H_i >= oldSize) {
