@@ -452,6 +452,8 @@ public abstract class Solver {
             try {
                 dis = new DataInputStream(new FileInputStream(basedir + mapName));
                 fd.loadMap(dis);
+            } catch (IOException x) {
+                System.err.println("WARNING: Cannot load mapfile \""+basedir + mapName+"\", skipping.");
             } finally {
                 if (dis != null) dis.close();
             }
