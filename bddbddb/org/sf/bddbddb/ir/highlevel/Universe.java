@@ -14,14 +14,14 @@ import org.sf.bddbddb.Relation;
  * @version $Id$
  */
 public class Universe extends HighLevelOperation {
-    Relation r;
+    Relation r0;
 
     /**
-     * @param r
+     * @param r0
      */
-    public Universe(Relation r) {
+    public Universe(Relation r0) {
         super();
-        this.r = r;
+        this.r0 = r0;
     }
 
     /*
@@ -39,7 +39,7 @@ public class Universe extends HighLevelOperation {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return r.toString() + " = universe()";
+        return r0.toString() + " = universe()";
     }
 
     /*
@@ -57,7 +57,7 @@ public class Universe extends HighLevelOperation {
      * @see org.sf.bddbddb.ir.Operation#getDest()
      */
     public Relation getRelationDest() {
-        return r;
+        return r0;
     }
 
     /*
@@ -67,5 +67,18 @@ public class Universe extends HighLevelOperation {
      */
     public List getSrcs() {
         return Collections.EMPTY_LIST;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+     */
+    public void replaceSrc(Relation r_old, Relation r_new) {
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
+     */
+    public void setRelationDest(Relation r0) {
+        this.r0 = r0;
     }
 }

@@ -44,6 +44,7 @@ public class IR {
     boolean FREE_DEAD = ALL_OPTS || !System.getProperty("freedead", "no").equals("no");
     boolean CONSTANTPROP = ALL_OPTS || !System.getProperty("constantprop", "no").equals("no");
     boolean DEFUSE = ALL_OPTS || !System.getProperty("defuse", "no").equals("no");
+    boolean DOMAIN_ASSIGNMENT = !System.getProperty("domainassign", "no").equals("no");
 
     boolean TRACE = false;
 
@@ -173,7 +174,12 @@ public class IR {
             List srcs = new LinkedList();
             doLiveness(list, srcs, problem);
         }
-
+        if (DOMAIN_ASSIGNMENT) {
+            DomainAssignment ass = new UFDomainAssignment(solver);
+            IterationList list = graph.getIterationList();
+            ass.addConstraints(list);
+            ass.doAssignment();
+        }
     }
 
     void doLiveness(IterationList list, List srcs, Liveness p) {

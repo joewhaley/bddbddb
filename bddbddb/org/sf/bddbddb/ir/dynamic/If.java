@@ -93,4 +93,16 @@ public class If extends Operation {
     public IterationList getBlock() {
         return block;
     }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+     */
+    public void replaceSrc(Relation r_old, Relation r_new) {
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
+     */
+    public void setRelationDest(Relation r0) {
+    }
 }

@@ -45,8 +45,19 @@ public abstract class Operation implements IterationElement {
     /**
      * @return
      */
+    public abstract void setRelationDest(Relation r0);
+
+    /**
+     * @return
+     */
     public abstract List/* <Relation> */getSrcs();
 
+    /**
+     * @param r_old
+     * @param r_new
+     */
+    public abstract void replaceSrc(Relation r_old, Relation r_new);
+    
     /**
      * @return
      */

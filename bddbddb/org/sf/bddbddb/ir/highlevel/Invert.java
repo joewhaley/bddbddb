@@ -77,4 +77,18 @@ public class Invert extends HighLevelOperation {
     public Relation getSrc() {
         return r1;
     }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+     */
+    public void replaceSrc(Relation r_old, Relation r_new) {
+        if (r1 == r_old) r1 = r_new;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
+     */
+    public void setRelationDest(Relation r0) {
+        this.r0 = r0;
+    }
 }

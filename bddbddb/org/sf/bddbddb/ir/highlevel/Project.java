@@ -17,7 +17,7 @@ import org.sf.bddbddb.Relation;
 public class Project extends HighLevelOperation {
     Relation r0, r1;
 
-    List/* <Attribute> */attributes;
+    List/*<Attribute>*/ attributes;
 
     /**
      * @param r0
@@ -86,8 +86,21 @@ public class Project extends HighLevelOperation {
     /**
      * @return
      */
-    public List/* <Attribute> */getAttributes() {
+    public List/*<Attribute>*/ getAttributes() {
         return attributes;
     }
 
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#replaceSrc(org.sf.bddbddb.Relation, org.sf.bddbddb.Relation)
+     */
+    public void replaceSrc(Relation r_old, Relation r_new) {
+        if (r1 == r_old) r1 = r_new;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sf.bddbddb.ir.Operation#setRelationDest(org.sf.bddbddb.Relation)
+     */
+    public void setRelationDest(Relation r0) {
+        this.r0 = r0;
+    }
 }

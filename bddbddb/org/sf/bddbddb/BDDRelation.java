@@ -5,6 +5,7 @@ package org.sf.bddbddb;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import org.sf.bddbddb.util.Assert;
 import org.sf.javabdd.BDD;
 import org.sf.javabdd.BDDDomain;
 import org.sf.javabdd.BDDFactory;
@@ -27,7 +29,7 @@ import org.sf.javabdd.BDDFactory;
 public class BDDRelation extends Relation {
     BDDSolver solver;
     BDD relation;
-    List/* <BDDDomain> */domains;
+    List/*<BDDDomain>*/ domains;
     BDD domainSet;
 
     /**
@@ -577,5 +579,15 @@ public class BDDRelation extends Relation {
             domainSet.free();
             domainSet = null;
         }
+    }
+    
+    public void setDomainAssignment(List newdom) {
+        Assert._assert(newdom.size() == attributes.size());
+        Assert._assert(new HashSet(newdom).size() == newdom.size());
+        for (int i = 0; i < newdom.size(); ++i) {
+            Domain d = ((Attribute) attributes.get(i)).getDomain();
+            Assert._assert(solver.getBDDDomains(d).contains(newdom.get(i)));
+        }
+        this.domains = newdom;
     }
 }
