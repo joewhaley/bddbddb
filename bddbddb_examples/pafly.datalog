@@ -190,6 +190,8 @@ leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_append(
 leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,1,v1), IE(i2,m), sb2_append(m), actual(i2,2,v2).
 leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_toString(m), actual(i2,1,v2).
 
+leadsToForName(v2,i) :- leadsToForName(v1,i), L(v3,f,v1), vP(v3,h3), vP(v4,h3), S(v4,f,v2).
+
 lhs (v:V0)
 lhs(v) :- A(v,_).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb_append(m).
@@ -200,6 +202,8 @@ lhs(v) :- actual(i2,0,v), IE(i2,m), sb_init(m).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb2_append(m).
 lhs(v) :- actual(i2,1,v), IE(i2,m), sb2_append(m).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb2_toString(m).
+
+lhs(v) :- L(v3,f,v), vP(v3,h3), vP(v4,h3), S(v4,f,_).
 
 typeString (v:V0)
 typeString(v) :- vP(v,h), stringToType(h,_).

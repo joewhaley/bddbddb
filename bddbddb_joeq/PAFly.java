@@ -229,7 +229,7 @@ public class PAFly {
         for (int i = 0; i < f.length; ++i) {
             if (f[i].getType() != BDDRelation.class) continue;
             BDDRelation r = (BDDRelation) s.getRelation(f[i].getName());
-            r.save();
+            if (r != null) r.save();
         }
         saveMaps(s);
     }
