@@ -55,6 +55,7 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
     /**
      * The action has been activated. The argument of the method represents the
      * 'real' action sitting in the workbench UI.
+     * @throws 
      * 
      * @see IWorkbenchWindowActionDelegate#run
      */
@@ -78,7 +79,11 @@ public class GenerifyAction implements IWorkbenchWindowActionDelegate {
                 showDialog("Relations must be generated before the source can be transformed!");
                 return;
             }
-            st.test();
+            try {
+                st.run();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         else {
             showDialog("Unrecognized action!");
