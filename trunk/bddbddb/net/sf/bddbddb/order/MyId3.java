@@ -130,6 +130,8 @@ public class MyId3 extends Classifier {
             m_Attribute = null;
             m_ClassValue = Instance.missingValue();
             m_Distribution = new double[data.numClasses()];
+            double sum = 0;
+            laplaceSmooth(m_Distribution, sum, data.numClasses());
             return;
         }
         // Compute attribute with maximum information gain.
@@ -165,7 +167,7 @@ public class MyId3 extends Classifier {
             while (instEnum.hasMoreElements()) {
                 Instance inst = (Instance) instEnum.nextElement();
                 m_Distribution[(int) inst.classValue()]++;
-                sum += 1;
+                sum += inst.weight();
             }
             //laplace smooth the distribution instead
             laplaceSmooth(m_Distribution, sum, data.numClasses());

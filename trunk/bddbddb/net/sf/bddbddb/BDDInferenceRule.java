@@ -1049,10 +1049,11 @@ public class BDDInferenceRule extends InferenceRule {
         System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
         
         int count = FBO_TRIALS;
+        boolean first = true;
         long bestTime = Long.MAX_VALUE;
         while (--count >= 0) {
             //Order o = fbdo.tryNewGoodOrder(tc, allVars, t);
-            TrialGuess guess = fbdo.tryNewGoodOrder(tc, allVars, this);
+            TrialGuess guess = fbdo.tryNewGoodOrder(tc, allVars, this, first);
             if (guess == null || guess.order == null) break;
             Order o = guess.order;
             String vOrder = o.toVarOrderString(variableToBDDDomain);
@@ -1066,6 +1067,7 @@ public class BDDInferenceRule extends InferenceRule {
    
             if (time >= LONG_TIME)
                 fbdo.neverTryAgain(this, o);
+            first = false;
         }
         fbo.cleanup();
         

@@ -50,6 +50,7 @@ public class BaggedId3 extends ClassProbabilityEstimator {
         numClasses = data.classAttribute().numValues();
         for(int i = 0; i < NUM_TREES; ++i){
          Instances newData = data.resample(random);  //random sample with replacement
+         newData.setClassIndex(data.classIndex());
          trees[i] = new MyId3();
          trees[i].buildClassifier(newData);
         }
@@ -87,7 +88,7 @@ public class BaggedId3 extends ClassProbabilityEstimator {
             sum += weights[i];
         }
         Assert._assert(sum != 0, "Sum of Weights is zero");
-        for(int i = 0; i < NUM_TREES; ++i)
+        for(int i = 0; i < numClasses; ++i)
             distribution[i] /= sum;
         
         return distribution;
