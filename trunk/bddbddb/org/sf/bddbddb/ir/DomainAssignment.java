@@ -136,16 +136,6 @@ public abstract class DomainAssignment implements OperationVisitor {
     void initialize() {
         BDDSolver s = (BDDSolver) solver;
         
-        String domainFile = System.getProperty("domainfile", "domainfile");
-        DataInputStream in = null;
-        try {
-            in = new DataInputStream(new FileInputStream(domainFile));
-            loadDomainAssignment(in);
-        } catch (IOException x) {
-        } finally {
-            if (in != null) try { in.close(); } catch (IOException _) { }
-        }
-        
         // Attributes of the same relation must be assigned to different
         // domains.
         for (int i = 0; i < solver.getNumberOfRelations(); ++i) {
@@ -164,6 +154,17 @@ public abstract class DomainAssignment implements OperationVisitor {
             BDDRelation r = (BDDRelation) i.next();
             forceEqual(new Pair(r, r.getAttribute(0)), r.getBDDDomain(0));
             forceEqual(new Pair(r, r.getAttribute(1)), r.getBDDDomain(1));
+        }
+        
+        // Add constraints from file.
+        String domainFile = System.getProperty("domainfile", "domainfile");
+        DataInputStream in = null;
+        try {
+            in = new DataInputStream(new FileInputStream(domainFile));
+            loadDomainAssignment(in);
+        } catch (IOException x) {
+        } finally {
+            if (in != null) try { in.close(); } catch (IOException _) { }
         }
     }
 
