@@ -64,7 +64,7 @@ public class BDDSolver extends Solver {
      * Initial size of BDD operation cache.
      * You can set this with "-Dbddcache=xxx"
      */
-    int BDDCACHE = Integer.parseInt(System.getProperty("bddcache", "100000"));
+    int BDDCACHE = Integer.parseInt(System.getProperty("bddcache", "200000"));
     
     /**
      * BDD minimum free parameter.  This tells the BDD library when to grow the
@@ -78,6 +78,8 @@ public class BDDSolver extends Solver {
     public String VARORDER = System.getProperty("bddvarorder", null);
 
     public String TRIALFILE = System.getProperty("trialfile", null);
+    
+    public String BDDREORDER = System.getProperty("bddreorder", null);
     
     /**
      * Constructs a new BDD solver.  Also initializes the BDD library.
@@ -183,6 +185,23 @@ public class BDDSolver extends Solver {
             System.out.println("done.");
             // Grow variable table after setting var order.
             bdd.setNodeTableSize(BDDNODES);
+        }
+        if (BDDREORDER != null) {
+            try {
+                BDDFactory.ReorderMethod m;
+                java.lang.reflect.Field f = BDDFactory.class.getDeclaredField(BDDREORDER);
+                m = (BDDFactory.ReorderMethod) f.get(null);
+                System.out.print("Setting dynamic reordering heuristic to " + BDDREORDER + ", ");
+                bdd.autoReorder(m);
+                bdd.enableReorder();
+                bdd.reorderVerbose(1);
+            } catch (NoSuchFieldException x) {
+                System.err.println("Error: no such reordering method \""+BDDREORDER+"\"");
+            } catch (IllegalArgumentException e) {
+                System.err.println("Error: "+e+" on reordering method \""+BDDREORDER+"\"");
+            } catch (IllegalAccessException e) {
+                System.err.println("Error: "+e+" on reordering method \""+BDDREORDER+"\"");
+            }
         }
     }
 

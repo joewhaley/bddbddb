@@ -233,8 +233,9 @@ public abstract class Solver {
     /**
      * Stratify the rules.
      */
-    public void stratify() {
+    public void stratify(boolean noisy) {
         stratify = new Stratify(this);
+        stratify.NOISY = noisy;
         stratify.stratify();
         
         if (USE_IR) {
@@ -377,7 +378,7 @@ public abstract class Solver {
         if (NOISY) out.println("done. (" + time + " ms)");
         out.println("Stratifying: ");
         time = System.currentTimeMillis();
-        stratify();
+        stratify(true);
         time = System.currentTimeMillis() - time;
         out.println("done. (" + time + " ms)");
         out.println("Solving: ");
