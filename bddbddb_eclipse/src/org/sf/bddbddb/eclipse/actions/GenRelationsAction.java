@@ -78,9 +78,9 @@ public class GenRelationsAction implements IWorkbenchWindowActionDelegate {
                             addPackageFragment(classes, libs, pf[j]);
                         }
                     }
-                    else if (o instanceof IMember){
+                    /*else if (o instanceof IMember){
                         classes.add(((IMember) o).getCompilationUnit());
-                    }
+                    }*/
                     else if (o instanceof IPackageFragment) {
                         addPackageFragment(classes, libs, (IPackageFragment)o);
                     }
