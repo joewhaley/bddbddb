@@ -892,15 +892,29 @@ public class FindBestDomainOrder {
          * @return  -1, 0, or 1 if this OrderInfo is less than, equal to, or greater than the other
          */
         public int compareTo(OrderInfo that) {
-            int result = (int) Math.signum(this.score - that.score);
+            int result = signum(this.score - that.score);
             if (result == 0) {
-                result = (int) Math.signum(this.confidence - that.confidence);
+                result = (int) signum(this.confidence - that.confidence);
                 if (result == 0) {
                     result = this.order.compareTo(that.order);
                 }
             }
             return result;
         }
+    }
+    
+    // Only present in JDK1.5
+    static int signum(long d) {
+        if (d < 0) return -1;
+        if (d > 0) return 1;
+        return 0;
+    }
+    
+    // Only present in JDK1.5
+    static int signum(double d) {
+        if (d < 0) return -1;
+        if (d > 0) return 1;
+        return 0;
     }
     
     /**
@@ -952,7 +966,7 @@ public class FindBestDomainOrder {
          * @return  -1, 0, or 1 if this TrialInfo is less than, equal to, or greater than the other
          */
         public int compareTo(TrialInfo that) {
-            int result = Long.signum(this.cost - that.cost);
+            int result = signum(this.cost - that.cost);
             if (result == 0) {
                 result = this.order.compareTo(that.order);
             }
@@ -1539,7 +1553,7 @@ public class FindBestDomainOrder {
             
             Map.Entry[] sortedGoodSim = (Map.Entry[]) goodSim.entrySet().toArray(new Map.Entry[goodSim.size()]);
             Arrays.sort(sortedGoodSim, EntryValueComparator.INSTANCE);
-            if (TRACE > 0) out.println(this+": similarities of good set: "+Arrays.toString(sortedGoodSim));
+            if (TRACE > 0) out.println(this+": similarities of good set: "+Arrays.asList(sortedGoodSim));
             if (TRACE > 0) out.println(this+": similarities of bad set: "+badSim);
             
             if (goodCharacteristics == null) goodCharacteristics = new LinkedList();
