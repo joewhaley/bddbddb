@@ -782,7 +782,7 @@ public class FindBestDomainOrder {
         vData = vDataGroup.getTrialInstances();
         aData = aDataGroup.getTrialInstances();
         dData = dDataGroup.getTrialInstances();
- 
+/* 
         TrialInstances vTest = dataRepository.buildVarInstances(ir, allVars);
 
         Assert._assert(vData.numInstances() == vTest.numInstances(),"vGot " + vData.numInstances() + " Wanted: " + vTest.numInstances());
@@ -793,17 +793,17 @@ public class FindBestDomainOrder {
         TrialInstances dTest =dataRepository.buildDomainInstances(ir, allVars);
       
         Assert._assert(dData.numInstances() == dTest.numInstances(), "dGot: " + dData.numInstances() + " Wanted: " + dTest.numInstances());
-        /*
         System.out.println(aData);
         System.out.println(vData);
         System.out.println(dData);
-        */
+*/
         // Readjust the weights using an exponential decay factor.
         adjustWeights(vData, aData, dData);
         Discretization vDis = null, aDis = null, dDis = null;
 
+        /*
        // Discretize the experimental data.  null if there is no data.
- /*       if (DISCRETIZE1) vDis = vData.discretize(.5);
+        if (DISCRETIZE1) vDis = vData.discretize(.5);
         if (DISCRETIZE2) aDis = aData.discretize(.25);
         if (DISCRETIZE3) dDis = dData.threshold(DOMAIN_THRESHOLD);
  */
@@ -1676,7 +1676,7 @@ public class FindBestDomainOrder {
                Collection invalidConstraints = new LinkedList();
                if(TRACE > 3) out.println("Adding constraints: " + constraints);
                boolean worked = newElem.ocs.constrain(constraints, invalidConstraints);
-               newElem.pathCost += invalidConstraints.size()  * (rule.totalTime) / constraintScore;
+               newElem.pathCost += (rule.totalTime * constraintScore) * (1 + invalidConstraints.size() / constraints.size()) ;
                newElem.pathScore = newElem.pathCost;
                
                //if(!worked) continue;//newElem.ocs = backupOcs;
