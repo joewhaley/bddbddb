@@ -5,6 +5,7 @@ package org.sf.bddbddb;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -20,6 +21,7 @@ import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
+import org.sf.bddbddb.InferenceRule.DependenceNavigator;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.IndexMap;
@@ -476,9 +478,11 @@ public abstract class Solver {
             return true;
         } else if (s.indexOf("?") > 0) {
             // query
-            InferenceRule ir = parseQuery(lineNum, s);
-            if (TRACE) out.println("Parsed query " + ir);
-            rules.add(ir);
+            List/*<InferenceRule>*/ ir = parseQuery(lineNum, s);
+            if (ir != null) {
+                if (TRACE) out.println("Parsed query " + ir);
+                rules.addAll(ir);
+            }
             return true;
         } else {
             // relation
@@ -1015,6 +1019,114 @@ public abstract class Solver {
         return var;
     }
 
+    private void addToVarMap(Map varMap, RuleTerm rt) {
+        for (Iterator i = rt.variables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            if (v.name.equals("_")) continue;
+            String name;
+            if (v instanceof Constant) {
+                name = rt.relation.getAttribute(rt.variables.indexOf(v)).attributeName;
+            } else {
+                name = v.toString();
+            }
+            varMap.put(v, name);
+        }
+    }
+    
+    /**
+     * @param rt
+     * @return
+     */
+    List/*<InferenceRule>*/ comeFromQuery(RuleTerm rt) {
+        List newRules = new LinkedList();
+        
+        Relation r = rt.relation;
+        Relation r2 = createRelation(r.name+"_q", r.attributes);
+        
+        RuleTerm my_rt = new RuleTerm(rt.variables, r2);
+        InferenceRule my_ir = createInferenceRule(Collections.singletonList(rt), my_rt);
+        System.out.println("Adding rule: "+my_ir);
+        newRules.add(my_ir);
+        
+        DependenceNavigator nav = new DependenceNavigator(rules);
+        Map/*<Relation,Relation>*/ toQueryRelation = new HashMap();
+        LinkedList worklist = new LinkedList();
+        toQueryRelation.put(r, r2);
+        worklist.add(r);
+        while (!worklist.isEmpty()) {
+            // r: the relation we want to query.
+            r = (Relation) worklist.removeFirst();
+            // r2: the tuples in the relation that contribute to the answer.
+            r2 = (Relation) toQueryRelation.get(r);
+            System.out.println("Finding contributions in relation "+r+": "+r2);
+            
+            // Visit each rule that can add tuples to "r".
+            Collection rules = nav.prev(r);
+            for (Iterator i = rules.iterator(); i.hasNext(); ) {
+                InferenceRule ir = (InferenceRule) i.next();
+                System.out.println("This rule can contribute: "+ir);
+                Assert._assert(ir.bottom.relation == r);
+                
+                // Build up a new query that consists of "r2" and all of the subgoals.
+                List/*<RuleTerm>*/ terms = new LinkedList();
+                Map varMap = new LinkedHashMap();
+                RuleTerm rt2 = new RuleTerm(ir.bottom.variables, r2);
+                terms.add(rt2);
+                addToVarMap(varMap, rt2);
+                for (Iterator j = ir.top.iterator(); j.hasNext(); ) {
+                    RuleTerm rt3 = (RuleTerm) j.next();
+                    terms.add(rt3);
+                    addToVarMap(varMap, rt3);
+                    Relation r3 = rt3.relation;
+                    Relation r4 = (Relation) toQueryRelation.get(r3);
+                    if (r4 == null) {
+                        // New relation, visit it.
+                        worklist.add(r3);
+                        r4 = createRelation(r3.name+"_q", r3.attributes);
+                        toQueryRelation.put(r3, r4);
+                        System.out.println("Adding contribution relation "+r3+": "+r4);
+                    }
+                }
+                List vars = new ArrayList(varMap.keySet());
+                List attributes = new ArrayList(vars.size());
+                for (Iterator k = varMap.entrySet().iterator(); k.hasNext(); ) {
+                    Map.Entry e = (Map.Entry) k.next();
+                    Variable v = (Variable) e.getKey();
+                    String name = (String) e.getValue();
+                    attributes.add(new Attribute(name, v.getDomain(), ""));
+                }
+                Relation bottomr = createRelation(r.name+"_q"+ir.id, attributes);
+                RuleTerm bottom = new RuleTerm(vars, bottomr);
+                InferenceRule newrule = createInferenceRule(terms, bottom);
+                System.out.println("Adding rule: "+newrule);
+                newRules.add(newrule);
+                
+                // Now bottomr contains assignments to all of the variables.
+                
+                // For each subgoal, build a new rule that adds to the contribute relations
+                // for that subgoal.
+                List terms2 = Collections.singletonList(bottom);
+                for (Iterator j = ir.top.iterator(); j.hasNext(); ) {
+                    RuleTerm rt3 = (RuleTerm) j.next();
+                    Relation r3 = rt3.relation;
+                    Relation r4 = (Relation) toQueryRelation.get(r3);
+                    Assert._assert(r4 != null, "no mapping for "+r3);
+                    RuleTerm rt4 = new RuleTerm(rt3.variables, r4);
+                    InferenceRule newrule2 = createInferenceRule(terms2, rt4);
+                    System.out.println("Adding rule: "+newrule2);
+                    newRules.add(newrule2);
+                }
+            }
+        }
+        
+        for (Iterator i = toQueryRelation.values().iterator(); i.hasNext(); ) {
+            Relation r4 = (Relation) i.next();
+            relationsToPrintTuples.add(r4);
+        }
+        
+        return newRules;
+    }
+    
     /**
      * Parse a query.
      * 
@@ -1022,13 +1134,18 @@ public abstract class Solver {
      * @param s
      * @return
      */
-    InferenceRule parseQuery(int lineNum, String s) {
+    List/*<InferenceRule>*/ parseQuery(int lineNum, String s) {
         MyStringTokenizer st = new MyStringTokenizer(s, " \t(,/).=!?", true);
         Map/*<String,Variable>*/ nameToVar = new HashMap();
         
         if (s.indexOf(":-") > 0) {
-            // TODO.
-            return null;
+            RuleTerm rt = parseRuleTerm(lineNum, s, nameToVar, st);
+            String sep = nextToken(st);
+            if (!sep.equals(":-")) {
+                outputError(lineNum, st.getPosition(), s, "Expected \":-\", got \"" + sep + "\"");
+                throw new IllegalArgumentException();
+            }
+            return comeFromQuery(rt);
         }
         List/*<RuleTerm>*/ terms = new LinkedList();
         Map varMap = new LinkedHashMap();
@@ -1067,7 +1184,7 @@ public abstract class Solver {
         InferenceRule ir = createInferenceRule(terms, bottom);
         ir = parseRuleOptions(lineNum, s, ir, st);
         relationsToPrintTuples.add(r);
-        return ir;
+        return Collections.singletonList(ir);
     }
     
     /**

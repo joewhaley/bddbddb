@@ -345,7 +345,7 @@ public abstract class InferenceRule implements IterationElement {
         MultiMap relationToUsingRule;
         MultiMap relationToDefiningRule;
 
-        public DependenceNavigator(Collection/* <InferenceRule> */rules) {
+        public DependenceNavigator(Collection/*<InferenceRule>*/ rules) {
             this(getRelationToUsingRule(rules), getRelationToDefiningRule(rules));
         }
 
