@@ -6,3 +6,4 @@ libbuddy.so
 *.class
 target
 velocity.log
+maven.log
