@@ -6,8 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import org.sf.bddbddb.BDDRelation;
 import org.sf.bddbddb.IterationFlowGraph;
@@ -146,9 +146,9 @@ public class IR {
             IterationList list = graph.getIterationList();
             ass.addConstraints(list);
             ass.doAssignment();
-            DataOutputStream dos = null;
+            BufferedWriter dos = null;
             try {
-                dos = new DataOutputStream(new FileOutputStream("domainassign.gen"));
+                dos = new BufferedWriter(new FileWriter("domainassign.gen"));
                 ass.saveDomainAssignment(dos);
             } catch (IOException x) {
                 x.printStackTrace(System.err);

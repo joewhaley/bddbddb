@@ -7,9 +7,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 
@@ -136,16 +135,16 @@ public class DumpDotGraph {
     }
 
     public void dump(String filename) throws IOException {
-        DataOutputStream dos = null;
+        BufferedWriter dos = null;
         try {
-            dos = new DataOutputStream(new FileOutputStream(filename));
+            dos = new BufferedWriter(new FileWriter(filename));
             dump(dos);
         } finally {
             if (dos != null) dos.close();
         }
     }
 
-    void dumpNodes(DataOutput dos, IndexMap m, Object cluster)
+    void dumpNodes(BufferedWriter dos, IndexMap m, Object cluster)
         throws IOException {
         if (TRACE) out.println("Dumping nodes for cluster " + cluster);
         for (Iterator i = nodes.iterator(); i.hasNext();) {
@@ -157,42 +156,42 @@ public class DumpDotGraph {
                 if (!c.equals(cluster)) continue;
             }
             Object nodeid = (m != null) ? ("n" + m.get(o)) : "\"" + o + "\"";
-            dos.writeBytes("  " + nodeid);
+            dos.write("  " + nodeid);
             boolean open = false;
             if (nodeLabels != null) {
                 Object label = nodeLabels.map(o);
                 if (label != null) {
                     open = true;
-                    dos.writeBytes(" [label=\"" + label + "\"");
+                    dos.write(" [label=\"" + label + "\"");
                 }
             }
             if (nodeStyles != null) {
                 Object label = nodeStyles.map(o);
                 if (label != null) {
-                    if (!open) dos.writeBytes(" [");
-                    else dos.writeBytes(",");
+                    if (!open) dos.write(" [");
+                    else dos.write(",");
                     open = true;
-                    dos.writeBytes("style=" + label);
+                    dos.write("style=" + label);
                 }
             }
             if (nodeColors != null) {
                 Object label = nodeColors.map(o);
                 if (label != null) {
-                    if (!open) dos.writeBytes(" [");
-                    else dos.writeBytes(",");
+                    if (!open) dos.write(" [");
+                    else dos.write(",");
                     open = true;
-                    dos.writeBytes("color=" + label);
+                    dos.write("color=" + label);
                 }
             }
-            if (open) dos.writeBytes("]");
-            dos.writeBytes(";\n");
+            if (open) dos.write("]");
+            dos.write(";\n");
         }
     }
 
-    void dumpCluster(DataOutput dos, IndexMap m, Set visitedClusters, Object c)
+    void dumpCluster(BufferedWriter dos, IndexMap m, Set visitedClusters, Object c)
         throws IOException {
         if (!visitedClusters.add(c)) return;
-        dos.writeBytes("  subgraph cluster" + visitedClusters.size() + " {\n");
+        dos.write("  subgraph cluster" + visitedClusters.size() + " {\n");
         dumpNodes(dos, m, c);
         if (clusterNavigator != null) {
             Collection subClusters = clusterNavigator.next(c);
@@ -202,17 +201,17 @@ public class DumpDotGraph {
                 dumpCluster(dos, m, visitedClusters, subC);
             }
         }
-        dos.writeBytes("  }\n");
+        dos.write("  }\n");
     }
 
-    public void dump(DataOutput dos) throws IOException {
+    public void dump(BufferedWriter dos) throws IOException {
         computeClusters();
-        dos.writeBytes("digraph {\n");
-        dos.writeBytes("  size=\"10,7.5\";\n");
-        dos.writeBytes("  rotate=90;\n");
-        if (concentrate) dos.writeBytes("  concentrate=true;\n");
-        dos.writeBytes("  ratio=fill;\n");
-        dos.writeBytes("\n");
+        dos.write("digraph {\n");
+        dos.write("  size=\"10,7.5\";\n");
+        dos.write("  rotate=90;\n");
+        if (concentrate) dos.write("  concentrate=true;\n");
+        dos.write("  ratio=fill;\n");
+        dos.write("\n");
         IndexMap m;
         if (nodeLabels != null) {
             m = new IndexMap("NodeID");
@@ -236,36 +235,36 @@ public class DumpDotGraph {
                 if (!nodes.contains(n2)) continue;
                 Object node2id = (m != null) ? ("n" + m.get(n2)) : "\"" + n2
                     + "\"";
-                dos.writeBytes("  " + node1id + " -> " + node2id);
+                dos.write("  " + node1id + " -> " + node2id);
                 boolean open = false;
                 if (edgeLabels != null) {
                     Object label = edgeLabels.getLabel(n1, n2);
                     if (label != null) {
                         open = true;
-                        dos.writeBytes(" [label=\"" + label + "\"]");
+                        dos.write(" [label=\"" + label + "\"]");
                     }
                 }
                 if (edgeStyles != null) {
                     Object label = edgeStyles.getLabel(n1, n2);
                     if (label != null) {
-                        if (!open) dos.writeBytes(" [");
-                        else dos.writeBytes(",");
+                        if (!open) dos.write(" [");
+                        else dos.write(",");
                         open = true;
-                        dos.writeBytes("style=" + label);
+                        dos.write("style=" + label);
                     }
                 }
                 if (edgeColors != null) {
                     Object label = edgeColors.getLabel(n1, n2);
                     if (label != null) {
-                        if (!open) dos.writeBytes(" [");
-                        else dos.writeBytes(",");
+                        if (!open) dos.write(" [");
+                        else dos.write(",");
                         open = true;
-                        dos.writeBytes("color=" + label);
+                        dos.write("color=" + label);
                     }
                 }
-                dos.writeBytes(";\n");
+                dos.write(";\n");
             }
         }
-        dos.writeBytes("}\n");
+        dos.write("}\n");
     }
 }

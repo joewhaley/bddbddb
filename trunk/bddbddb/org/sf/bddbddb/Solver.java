@@ -3,14 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.io.PrintStream;
-import java.math.BigInteger;
-import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,6 +11,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.io.PrintStream;
+import java.math.BigInteger;
+import java.text.DecimalFormat;
 import org.sf.bddbddb.dataflow.PartialOrder.Constraint;
 import org.sf.bddbddb.util.Assert;
 import org.sf.bddbddb.util.IndexMap;
@@ -582,9 +581,9 @@ public abstract class Solver {
         Domain fd = new Domain(name, size);
         if (st.hasMoreTokens()) {
             String mapName = nextToken(st);
-            DataInputStream dis = null;
+            BufferedReader dis = null;
             try {
-                dis = new DataInputStream(new FileInputStream(basedir + mapName));
+                dis = new BufferedReader(new FileReader(basedir + mapName));
                 fd.loadMap(dis);
             } catch (IOException x) {
                 System.err.println("WARNING: Cannot load mapfile \"" + basedir + mapName + "\", skipping.");

@@ -11,10 +11,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.FileInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.IOException;
 import org.sf.bddbddb.Attribute;
 import org.sf.bddbddb.BDDRelation;
@@ -172,9 +171,9 @@ public abstract class DomainAssignment implements OperationVisitor {
         }
         // Add constraints from file.
         String domainFile = System.getProperty("domainfile", "domainfile");
-        DataInputStream in = null;
+        BufferedReader in = null;
         try {
-            in = new DataInputStream(new FileInputStream(domainFile));
+            in = new BufferedReader(new FileReader(domainFile));
             loadDomainAssignment(in);
         } catch (IOException x) {
         } finally {
@@ -582,9 +581,9 @@ public abstract class DomainAssignment implements OperationVisitor {
         return null;
     }
 
-    public abstract void saveDomainAssignment(DataOutput out) throws IOException;
+    public abstract void saveDomainAssignment(BufferedWriter out) throws IOException;
 
-    public void loadDomainAssignment(DataInput in) throws IOException {
+    public void loadDomainAssignment(BufferedReader in) throws IOException {
         BDDSolver bs = (BDDSolver) solver;
         int count = 0;
         for (;;) {

@@ -3,7 +3,7 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package org.sf.bddbddb;
 
-import java.io.DataInput;
+import java.io.BufferedReader;
 import java.io.IOException;
 import org.sf.bddbddb.util.IndexMap;
 import org.sf.bddbddb.util.IndexedMap;
@@ -29,7 +29,7 @@ public class Domain {
         this.size = size;
     }
 
-    public void loadMap(DataInput in) throws IOException {
+    public void loadMap(BufferedReader in) throws IOException {
         //map = IndexMap.load(name, in);
         map = IndexMap.loadStringMap(name, in);
     }
