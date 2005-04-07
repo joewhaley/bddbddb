@@ -859,9 +859,9 @@ public abstract class Solver {
         MyStringTokenizer st = new MyStringTokenizer(s);
         String name = nextToken(st);
         String num = nextToken(st);
-        long size;
+        BigInteger size;
         try {
-            size = Long.parseLong(num);
+            size = new BigInteger(num);
         } catch (NumberFormatException x) {
             outputError(lineNum, st.getPosition(), s, "Expected a number, got \"" + num + "\"");
             throw new IllegalArgumentException();

@@ -25,7 +25,7 @@ public class Domain {
     /**
      * Number of elements in domain.
      */
-    protected long size;
+    protected BigInteger size;
     
     /**
      * Optional map from element numbers to string representations.
@@ -39,7 +39,7 @@ public class Domain {
      * @param name  name of domain
      * @param size  size of domain
      */
-    Domain(String name, long size) {
+    Domain(String name, BigInteger size) {
         super();
         this.name = name;
         this.size = size;
@@ -63,6 +63,24 @@ public class Domain {
         return name;
     }
 
+    /**
+     * Returns the size of this domain.
+     * 
+     * @return  size of domain
+     */
+    public BigInteger getSize() {
+        return size;
+    }
+    
+    /**
+     * Sets the size of this domain.
+     * 
+     * @param size  new size
+     */
+    public void setSize(BigInteger size) {
+        this.size = size;
+    }
+    
     /**
      * Returns the string representation of the given element in this domain.
      * 

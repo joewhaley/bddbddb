@@ -2,28 +2,19 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import jwutil.collections.AppendIterator;
+import jwutil.collections.LinearMap;
 import jwutil.util.Assert;
-import net.sf.bddbddb.order.Order;
-import net.sf.bddbddb.order.EpisodeCollection;
-import net.sf.bddbddb.order.TrialGuess;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.BDDPairing;
-import net.sf.javabdd.FindBestOrder;
 
 /**
  * An implementation of InferenceRule that uses BDDs.
@@ -233,7 +224,7 @@ public class BDDInferenceRule extends InferenceRule {
     private BDDPairing calculateRenames(RuleTerm rt, boolean direction) {
         BDDRelation r = (BDDRelation) rt.relation;
         if (TRACE) solver.out.println("Calculating renames for " + r);
-        BDDPairing pairing = null;
+        Map pairing = null;
         for (int j = 0; j < rt.variables.size(); ++j) {
             Variable v = (Variable) rt.variables.get(j);
             if (unnecessaryVariables.contains(v)) continue;
@@ -247,11 +238,12 @@ public class BDDInferenceRule extends InferenceRule {
                     d = d3;
                 }
                 if (TRACE) solver.out.println(rt + " variable " + v + ": replacing " + d + " -> " + d2);
-                if (pairing == null) pairing = solver.bdd.makePair();
-                pairing.set(d, d2);
+                if (pairing == null) pairing = new LinearMap(solver.bdd.numberOfDomains());
+                Object foo = pairing.put(d, d2);
+                Assert._assert(foo == null);
             }
         }
-        return pairing;
+        return pairing != null ? solver.getPairing(pairing) : null;
     }
 
     void doPreUpdate(BDD oldValue) {
