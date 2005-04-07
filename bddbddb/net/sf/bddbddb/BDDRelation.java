@@ -3,12 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -16,11 +10,17 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
-
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.math.BigInteger;
 import jwutil.util.Assert;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
+import net.sf.javabdd.BDDPairing;
 import net.sf.javabdd.BDD.BDDIterator;
 
 /**
@@ -238,28 +238,30 @@ public class BDDRelation extends Relation {
      */
     private BDD buildMap(Domain a1, BDDDomain d1, Domain a2, BDDDomain d2) {
         if (solver.NOISY) solver.out.print("Building "+this+": ");
-        long index, size;
-        index = (a2.map != null) ? a2.map.size() : a2.size;
-        size = (a1.map != null) ? a1.map.size() : a1.size;
-        if (index + size > d2.size().longValue()) {
+        BigInteger index, size;
+        index = (a2.map != null) ? BigInteger.valueOf(a2.map.size()) : a2.size;
+        size = (a1.map != null) ? BigInteger.valueOf(a1.map.size()) : a1.size;
+        BigInteger total = index.add(size);
+        if (total.compareTo(d2.size()) > 0) {
             throw new IllegalArgumentException("Domain "+a2+" (current size="+index+", max size="+d2.size()+") is not large enough to contain mapping from "+a1+" (size "+size+")");
         }
         int bits = Math.min(d1.varNum(), d2.varNum());
-        BDD b = d1.buildAdd(d2, bits, index);
-        b.andWith(d1.varRange(0, size-1));
+        BDD b = d1.buildAdd(d2, bits, index.longValue());
+        b.andWith(d1.varRange(BigInteger.ZERO, size.subtract(BigInteger.ONE)));
         if (a2.map != null) {
             if (a1.map != null) {
                 a2.map.addAll(a1.map);
             } else {
-                for (int i = 0; i < size; ++i) {
+                int v = size.intValue();
+                for (int i = 0; i < v; ++i) {
                     a2.map.get(a1+"_"+i);
                 }
             }
-            Assert._assert(a2.map.size() == index + size, a1.map.size()+" != "+(index+size));
+            Assert._assert(a2.map.size() == total.intValue(), a1.map.size()+" != "+total);
         } else {
-            a2.size += size;
+            a2.size = a2.size.add(size);
         }
-        if (solver.NOISY) solver.out.println(a1+" ("+d1+") 0.."+(size-1)+" maps to "+a2+" ("+d2+") "+index+".."+(index+size-1));
+        if (solver.NOISY) solver.out.println(a1+" ("+d1+") 0.."+(size.subtract(BigInteger.ONE))+" maps to "+a2+" ("+d2+") "+index+".."+(total.subtract(BigInteger.ONE)));
         return b;
     }
     
@@ -314,6 +316,8 @@ public class BDDRelation extends Relation {
         if (solver.TRACE) solver.out.println("Domains of loaded relation:" + activeDomains(relation));
     }
 
+    public static boolean SMART_LOAD = true;
+    
     /**
      * Load this relation from the given file.
      * 
@@ -332,6 +336,8 @@ public class BDDRelation extends Relation {
                 List fileDomains = checkInfoLine(filename, s, false, true);
                 in.mark(4096);
                 List fileDomainList = new ArrayList(fileDomains.size());
+                BDDPairing rename = null;
+                BDD mask = null;
                 for (Iterator i = fileDomains.iterator(); i.hasNext(); ) {
                     BDDDomain d = (BDDDomain) i.next();
                     String s2 = in.readLine();
@@ -346,23 +352,56 @@ public class BDDRelation extends Relation {
                         throw new IOException(msg);
                     }
                     int[] vars = d.vars();
-                    for (int j = 0; j < vars.length; ++j) {
+                    int j;
+                    for (j = 0; j < vars.length; ++j) {
                         if (!st.hasMoreTokens()) {
-                            String msg = "in file \""+filename+"\", not enough bits for domain "+d;
-                            throw new IOException(msg);
+                            if (!SMART_LOAD) {
+                                String msg = "in file \""+filename+"\", not enough bits for domain "+d;
+                                throw new IOException(msg);
+                            }
+                            if (mask == null) mask = solver.bdd.nithVar(vars[j]);
+                            else mask.andWith(solver.bdd.nithVar(vars[j]));
+                            continue;
                         }
                         int k = Integer.parseInt(st.nextToken());
                         if (vars[j] != k) {
-                            String msg = "in file \""+filename+"\", bit "+j+" for domain "+d+" ("+k+") does not match expected ("+vars[j]+")";
-                            throw new IOException(msg);
+                            if (!SMART_LOAD) {
+                                String msg = "in file \""+filename+"\", bit "+j+" for domain "+d+" ("+k+") does not match expected ("+vars[j]+")";
+                                throw new IOException(msg);
+                            }
+                            if (k >= solver.bdd.varNum())
+                                solver.bdd.setVarNum(k+1);
+                            if (rename == null) rename = solver.bdd.makePair();
+                            System.out.println("Rename "+k+" to "+vars[j]);
+                            rename.set(k, vars[j]);
                         }
                     }
-                    if (st.hasMoreTokens()) {
-                        String msg = "in file \""+filename+"\", too many bits for domain "+d;
-                        throw new IOException(msg);
+                    while (st.hasMoreTokens()) {
+                        if (!SMART_LOAD) {
+                            String msg = "in file \""+filename+"\", too many bits for domain "+d;
+                            throw new IOException(msg);
+                        }
+                        int k = Integer.parseInt(st.nextToken());
+                        Domain dd = getAttribute(d).getDomain();
+                        solver.ensureCapacity(dd, d.size().shiftLeft(1));
+                        if (k >= solver.bdd.varNum())
+                            solver.bdd.setVarNum(k+1);
+                        if (rename == null) rename = solver.bdd.makePair();
+                        System.out.println("Rename "+k+" to "+d.vars()[j]);
+                        rename.set(k, d.vars()[j]);
+                        ++j;
                     }
                 }
                 r2 = solver.bdd.load(in);
+                if (rename != null) {
+                    System.out.println(r2.support());
+                    r2.replaceWith(rename);
+                    System.out.println(r2.support());
+                    rename.reset();
+                }
+                if (mask != null) {
+                    r2.andWith(mask);
+                }
             } else {
                 System.err.println("BDD file \""+filename+"\" has no header line.");
                 r2 = solver.bdd.load(filename);
@@ -462,7 +501,7 @@ public class BDDRelation extends Relation {
                 } else if (!domains.contains(d)) {
                     msg = "domain "+dname+" is not in domain set "+domains;
                 }
-                if (msg == null && d.varNum() != dbits) {
+                if (msg == null && !SMART_LOAD && d.varNum() != dbits) {
                     msg = "number of bits for domain "+dname+" ("+dbits +") does not match expected ("+d.varNum()+")";
                 }
                 if (d != null) domainList.add(d);
@@ -534,12 +573,16 @@ public class BDDRelation extends Relation {
             } else {
                 int x = v.indexOf('-');
                 if (x < 0) {
-                    long l = Long.parseLong(v);
+                    BigInteger l = new BigInteger(v);
+                    Domain dd = getAttribute(i).getDomain();
+                    solver.ensureCapacity(dd, l);
                     b.andWith(d.ithVar(l));
                     if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + ", ");
                 } else {
-                    long l = Long.parseLong(v.substring(0, x));
-                    long m = Long.parseLong(v.substring(x + 1));
+                    BigInteger l = new BigInteger(v.substring(0, x));
+                    BigInteger m = new BigInteger(v.substring(x + 1));
+                    Domain dd = getAttribute(i).getDomain();
+                    solver.ensureCapacity(dd, m);
                     b.andWith(d.varRange(l, m));
                     if (solver.TRACE_FULL) solver.out.print(attributes.get(i) + ": " + l + "-" + m + ", ");
                 }
@@ -806,14 +849,20 @@ public class BDDRelation extends Relation {
     
     public boolean add(int a) {
         BDDDomain d0 = (BDDDomain) domains.get(0);
+        Domain dd0 = getAttribute(0).getDomain();
+        solver.ensureCapacity(dd0, a);
         BDD val = d0.ithVar(a);
         return add(val);
     }
     
     public boolean add(int a, int b) {
         BDDDomain d0 = (BDDDomain) domains.get(0);
+        Domain dd0 = getAttribute(0).getDomain();
+        solver.ensureCapacity(dd0, a);
         BDD val = d0.ithVar(a);
         BDDDomain d1 = (BDDDomain) domains.get(1);
+        Domain dd1 = getAttribute(1).getDomain();
+        solver.ensureCapacity(dd1, b);
         val.andWith(d1.ithVar(b));
         return add(val);
     }
@@ -821,9 +870,15 @@ public class BDDRelation extends Relation {
     public boolean add(int a, int b, int c) {
         BDDDomain d0 = (BDDDomain) domains.get(0);
         BDD val = d0.ithVar(a);
+        Domain dd0 = getAttribute(0).getDomain();
+        solver.ensureCapacity(dd0, a);
         BDDDomain d1 = (BDDDomain) domains.get(1);
+        Domain dd1 = getAttribute(1).getDomain();
+        solver.ensureCapacity(dd1, b);
         val.andWith(d1.ithVar(b));
         BDDDomain d2 = (BDDDomain) domains.get(2);
+        Domain dd2 = getAttribute(2).getDomain();
+        solver.ensureCapacity(dd2, c);
         val.andWith(d2.ithVar(c));
         return add(val);
     }
@@ -835,6 +890,8 @@ public class BDDRelation extends Relation {
         BDD val = solver.bdd.one();
         for (int i = 0; i < tuple.length; ++i) {
             final BDDDomain d = (BDDDomain) domains.get(i);
+            Domain dd = getAttribute(i).getDomain();
+            solver.ensureCapacity(dd, tuple[i]);
             val.andWith(d.ithVar(tuple[i]));
         }
         return add(val);

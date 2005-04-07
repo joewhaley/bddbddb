@@ -3,31 +3,31 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringTokenizer;
-
 import jwutil.collections.FlattenedCollection;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.ListFactory;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
 import jwutil.util.Assert;
-import net.sf.bddbddb.Learner.IndividualRuleLearner;
 import net.sf.bddbddb.ir.BDDInterpreter;
-import net.sf.bddbddb.ir.IR;
 import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraintSet;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
+import net.sf.javabdd.BDDPairing;
 
 /**
  * An implementation of Solver that uses BDDs.
@@ -52,6 +52,69 @@ public class BDDSolver extends Solver {
      * Map from a field domain to the set of BDD domains we have allocated for that field domain.
      */
     MultiMap fielddomainsToBDDdomains;
+    
+    Map bddPairings;
+    
+    public BDDPairing getPairing(Map map) {
+        if (bddPairings == null) bddPairings = new HashMap();
+        BDDPairing p = (BDDPairing) bddPairings.get(map);
+        if (p == null) {
+            p = bdd.makePair();
+            for (Iterator i = map.entrySet().iterator(); i.hasNext(); ) {
+                Map.Entry e = (Map.Entry) i.next();
+                p.set((BDDDomain) e.getKey(), (BDDDomain) e.getValue());
+            }
+            bddPairings.put(map, p);
+        }
+        return p;
+    }
+    
+    public void ensureCapacity(Domain d, long v) {
+        ensureCapacity(d, BigInteger.valueOf(v));
+    }
+    
+    // TODO: fix this.
+    public void ensureCapacity(Domain d, BigInteger range) {
+        if (d.getSize().compareTo(range) < 0) {
+            d.setSize(range);
+            for (Iterator i = this.getBDDDomains(d).iterator(); i.hasNext(); ) {
+                ensureCapacity((BDDDomain) i.next(), range);
+            }
+        }
+    }
+    
+    private void ensureCapacity(BDDDomain d, BigInteger range) {
+        int oldSize = d.varNum();
+        int newSize = d.ensureCapacity(range);
+        if (oldSize != newSize) {
+            System.out.println("Growing BDD domain "+d+" to "+newSize+" bits.");
+            for (Iterator i = bddPairings.entrySet().iterator(); i.hasNext(); ) {
+                Map.Entry e = (Map.Entry) i.next();
+                Map map = (Map) e.getKey();
+                BDDPairing p = (BDDPairing) e.getValue();
+                boolean change = false;
+                for (Iterator j = map.entrySet().iterator(); j.hasNext(); ) {
+                    Map.Entry e2 = (Map.Entry) j.next();
+                    if (d == e2.getKey()) {
+                        ensureCapacity((BDDDomain) e2.getValue(), range);
+                        change = true;
+                    }
+                    if (d == e2.getValue()) {
+                        ensureCapacity((BDDDomain) e2.getKey(), range);
+                        change = true;
+                    }
+                }
+                if (change) {
+                    System.out.println("Pair "+map+" matches, rebuilding.");
+                    p.reset();
+                    for (Iterator j = map.entrySet().iterator(); j.hasNext(); ) {
+                        Map.Entry e2 = (Map.Entry) j.next();
+                        p.set((BDDDomain) e2.getKey(), (BDDDomain) e2.getValue());
+                    }
+                }
+            }
+        }
+    }
     
     FindBestDomainOrder fbo;
     
@@ -383,7 +446,7 @@ public class BDDSolver extends Solver {
      */
     public BDDDomain allocateBDDDomain(Domain dom) {
         int version = getBDDDomains(dom).size();
-        int bits = BigInteger.valueOf(dom.size - 1).bitLength();
+        int bits = dom.size.subtract(BigInteger.ONE).bitLength();
         BDDDomain d = makeDomain(dom.name + version, bits);
         if (TRACE) out.println("Allocated BDD domain " + d + ", size " + dom.size + ", " + bits + " bits.");
         fielddomainsToBDDdomains.add(dom, d);
