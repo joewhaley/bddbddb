@@ -372,31 +372,39 @@ public class BDDRelation extends Relation {
                             if (k >= solver.bdd.varNum())
                                 solver.bdd.setVarNum(k+1);
                             if (rename == null) rename = solver.bdd.makePair();
-                            System.out.println("Rename "+k+" to "+vars[j]);
+                            if (solver.TRACE) solver.out.println("Rename "+k+" to "+vars[j]);
                             rename.set(k, vars[j]);
                         }
                     }
-                    while (st.hasMoreTokens()) {
+                    if (st.hasMoreTokens()) {
                         if (!SMART_LOAD) {
                             String msg = "in file \""+filename+"\", too many bits for domain "+d;
                             throw new IOException(msg);
                         }
-                        int k = Integer.parseInt(st.nextToken());
+                        int num = 0;
+                        for (StringTokenizer st2 = new StringTokenizer(s2.substring(2)); st2.hasMoreTokens(); st2.nextToken(), ++num) ;
+                        int extra = num - vars.length;
                         Domain dd = getAttribute(d).getDomain();
-                        solver.ensureCapacity(dd, d.size().shiftLeft(1));
-                        if (k >= solver.bdd.varNum())
-                            solver.bdd.setVarNum(k+1);
-                        if (rename == null) rename = solver.bdd.makePair();
-                        System.out.println("Rename "+k+" to "+d.vars()[j]);
-                        rename.set(k, d.vars()[j]);
-                        ++j;
+                        final boolean ALL_AT_ONCE = false;
+                        if (ALL_AT_ONCE)
+                            solver.ensureCapacity(dd, BigInteger.ONE.shiftLeft(num));
+                        while (--extra >= 0) {
+                            if (!ALL_AT_ONCE)
+                                solver.ensureCapacity(dd, BigInteger.ONE.shiftLeft(d.varNum()+1));
+                            int k = Integer.parseInt(st.nextToken());
+                            if (k >= solver.bdd.varNum())
+                                solver.bdd.setVarNum(k+1);
+                            if (rename == null) rename = solver.bdd.makePair();
+                            if (solver.TRACE) solver.out.println("Rename "+k+" to "+d.vars()[j]);
+                            rename.set(k, d.vars()[j]);
+                            ++j;
+                        }
+                        Assert._assert(!st.hasMoreTokens());
                     }
                 }
                 r2 = solver.bdd.load(in);
                 if (rename != null) {
-                    System.out.println(r2.support());
                     r2.replaceWith(rename);
-                    System.out.println(r2.support());
                     rename.reset();
                 }
                 if (mask != null) {
