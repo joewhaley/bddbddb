@@ -73,44 +73,58 @@ public class BDDSolver extends Solver {
         ensureCapacity(d, BigInteger.valueOf(v));
     }
     
-    // TODO: fix this.
     public void ensureCapacity(Domain d, BigInteger range) {
         if (d.getSize().compareTo(range) < 0) {
             d.setSize(range);
+            boolean any = false;
             for (Iterator i = this.getBDDDomains(d).iterator(); i.hasNext(); ) {
-                ensureCapacity((BDDDomain) i.next(), range);
+                if (ensureCapacity((BDDDomain) i.next(), range)) any = true;
+            }
+            if (any) {
+                for (Iterator i = this.getBDDDomains(d).iterator(); i.hasNext(); ) {
+                    redoPairings((BDDDomain) i.next(), range);
+                }
+                for (Iterator i = this.getRelations().iterator(); i.hasNext(); ) {
+                    BDDRelation r = (BDDRelation) i.next();
+                    r.calculateDomainSet();
+                }
             }
         }
     }
     
-    private void ensureCapacity(BDDDomain d, BigInteger range) {
+    private boolean ensureCapacity(BDDDomain d, BigInteger range) {
         int oldSize = d.varNum();
         int newSize = d.ensureCapacity(range);
         if (oldSize != newSize) {
-            System.out.println("Growing BDD domain "+d+" to "+newSize+" bits.");
-            for (Iterator i = bddPairings.entrySet().iterator(); i.hasNext(); ) {
-                Map.Entry e = (Map.Entry) i.next();
-                Map map = (Map) e.getKey();
-                BDDPairing p = (BDDPairing) e.getValue();
-                boolean change = false;
+            if (TRACE) out.println("Growing BDD domain "+d+" to "+newSize+" bits.");
+            return true;
+        }
+        return false;
+    }
+    
+    private void redoPairings(BDDDomain d, BigInteger range) {
+        for (Iterator i = bddPairings.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry e = (Map.Entry) i.next();
+            Map map = (Map) e.getKey();
+            BDDPairing p = (BDDPairing) e.getValue();
+            boolean change = false;
+            for (Iterator j = map.entrySet().iterator(); j.hasNext(); ) {
+                Map.Entry e2 = (Map.Entry) j.next();
+                if (d == e2.getKey()) {
+                    ensureCapacity((BDDDomain) e2.getValue(), range);
+                    change = true;
+                }
+                if (d == e2.getValue()) {
+                    ensureCapacity((BDDDomain) e2.getKey(), range);
+                    change = true;
+                }
+            }
+            if (change) {
+                //System.out.println("Pair "+map+" matches, rebuilding.");
+                p.reset();
                 for (Iterator j = map.entrySet().iterator(); j.hasNext(); ) {
                     Map.Entry e2 = (Map.Entry) j.next();
-                    if (d == e2.getKey()) {
-                        ensureCapacity((BDDDomain) e2.getValue(), range);
-                        change = true;
-                    }
-                    if (d == e2.getValue()) {
-                        ensureCapacity((BDDDomain) e2.getKey(), range);
-                        change = true;
-                    }
-                }
-                if (change) {
-                    System.out.println("Pair "+map+" matches, rebuilding.");
-                    p.reset();
-                    for (Iterator j = map.entrySet().iterator(); j.hasNext(); ) {
-                        Map.Entry e2 = (Map.Entry) j.next();
-                        p.set((BDDDomain) e2.getKey(), (BDDDomain) e2.getValue());
-                    }
+                    p.set((BDDDomain) e2.getKey(), (BDDDomain) e2.getValue());
                 }
             }
         }
