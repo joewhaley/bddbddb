@@ -103,7 +103,7 @@ public class LSRelation extends Relation {
         int k = 0;
         for (Iterator i = attributes.iterator(); i.hasNext(); ++k) {
             Attribute a = (Attribute) i.next();
-            bits[k] = BigInteger.valueOf(a.attributeDomain.size).bitLength();
+            bits[k] = a.attributeDomain.size.bitLength();
             totalBits += bits[k];
         }
         if (totalBits < 32) intSet = new SortedIntArraySet();
@@ -214,7 +214,7 @@ public class LSRelation extends Relation {
         if (v.equals("*")) {
             Attribute a = (Attribute) attributes.get(i);
             l = BigInteger.ZERO;
-            m = BigInteger.valueOf(a.attributeDomain.size-1);
+            m = a.attributeDomain.size.subtract(BigInteger.ONE);
         } else {
             int x = v.indexOf('-');
             if (x < 0) {
