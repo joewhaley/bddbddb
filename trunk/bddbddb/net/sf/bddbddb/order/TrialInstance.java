@@ -7,11 +7,9 @@
 package net.sf.bddbddb.order;
 
 import java.util.Iterator;
-
 import jwutil.util.Assert;
 import net.sf.bddbddb.BDDInferenceRule;
 import net.sf.bddbddb.FindBestDomainOrder;
-import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;
 import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
 import net.sf.bddbddb.order.WekaInterface.OrderInstance;
 import weka.core.Instance;

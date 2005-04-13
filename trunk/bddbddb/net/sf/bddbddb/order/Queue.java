@@ -79,7 +79,6 @@ package net.sf.bddbddb.order;
  */
 
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
 
