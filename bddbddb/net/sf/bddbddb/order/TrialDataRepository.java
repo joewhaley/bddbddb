@@ -6,7 +6,6 @@
  */
 package net.sf.bddbddb.order;
 
-import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,7 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.io.PrintStream;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.util.Assert;
@@ -24,7 +23,6 @@ import net.sf.bddbddb.FindBestDomainOrder;
 import net.sf.bddbddb.InferenceRule;
 import weka.classifiers.Classifier;
 import weka.core.FastVector;
-import weka.core.Instances;
 
 /**
  * @author Administrator

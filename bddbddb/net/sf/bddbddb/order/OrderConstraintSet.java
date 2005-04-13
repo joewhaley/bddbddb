@@ -3,10 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.order;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,13 +16,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
-
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.math.BigInteger;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.math.CombinationGenerator;
 import jwutil.math.Distributions;
 import jwutil.util.Assert;
-import net.sf.bddbddb.dataflow.PartialOrder.InterleavedConstraint;
 import net.sf.bddbddb.order.OrderConstraint.AfterConstraint;
 import net.sf.bddbddb.order.OrderConstraint.BeforeConstraint;
 import net.sf.bddbddb.order.OrderConstraint.InterleaveConstraint;

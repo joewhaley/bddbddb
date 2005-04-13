@@ -5,8 +5,6 @@ package net.sf.bddbddb.order;
 
 import java.util.Enumeration;
 import java.util.Vector;
-
-import jwutil.util.Assert;
 import weka.core.Instances;
 import weka.core.Option;
 import weka.core.Utils;

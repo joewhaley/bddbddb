@@ -71,7 +71,6 @@ import jwutil.util.Assert;
  * @since 1.5
  * @version 1.6, 06/11/04
  * @author Josh Bloch
- * @param <E> the type of elements held in this collection
  */
 public class PriorityQueue extends AbstractCollection implements Queue, java.io.Serializable {
 
