@@ -152,7 +152,7 @@ public class BDDRelation extends Relation {
             BDDRelation bddn = (BDDRelation) negated;
             bddn.relation = solver.bdd.one();
             bddn.domains = this.domains;
-            bddn.domainSet = this.domainSet;
+            bddn.domainSet = this.domainSet.id();
             bddn.isInitialized = true;
         }
     }
@@ -163,7 +163,9 @@ public class BDDRelation extends Relation {
      * @return  the domain set
      */
     BDD calculateDomainSet() {
-        if (domainSet != null) domainSet.free();
+        if (domainSet != null) {
+            domainSet.free();
+        }
         this.domainSet = solver.bdd.one();
         for (Iterator i = domains.iterator(); i.hasNext();) {
             BDDDomain d = (BDDDomain) i.next();
@@ -615,7 +617,7 @@ public class BDDRelation extends Relation {
      */
     public void save(String filename) throws IOException {
         Assert._assert(isInitialized);
-        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
+        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements ("+activeDomains(relation)+")");
         BufferedWriter out = null;
         try {
             out = new BufferedWriter(new FileWriter(filename));
@@ -646,7 +648,7 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void saveTuples(String filename) throws IOException {
-        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements");
+        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements ("+activeDomains(relation)+")");
         saveTuples(solver.basedir + name + ".tuples", relation);
     }
 
@@ -686,9 +688,9 @@ public class BDDRelation extends Relation {
                 return;
             }
             
-           calculateDomainSet();
-           int lines = 0;
-           BDDIterator i = relation.iterator(domainSet);
+            calculateDomainSet();
+            int lines = 0;
+            BDDIterator i = relation.iterator(domainSet);
             while (i.hasNext()) {
                 BDD sat = (BDD) i.next();
                 BigInteger[] v = sat.scanAllVar();
@@ -877,9 +879,9 @@ public class BDDRelation extends Relation {
     
     public boolean add(int a, int b, int c) {
         BDDDomain d0 = (BDDDomain) domains.get(0);
-        BDD val = d0.ithVar(a);
         Domain dd0 = getAttribute(0).getDomain();
         solver.ensureCapacity(dd0, a);
+        BDD val = d0.ithVar(a);
         BDDDomain d1 = (BDDDomain) domains.get(1);
         Domain dd1 = getAttribute(1).getDomain();
         solver.ensureCapacity(dd1, b);

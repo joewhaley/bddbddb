@@ -11,7 +11,6 @@ import java.util.Map;
 import java.io.IOException;
 import java.math.BigInteger;
 import net.sf.bddbddb.dataflow.PartialOrder.Constraints;
-import net.sf.javabdd.BDD;
 import org.jdom.Element;
 
 /**
