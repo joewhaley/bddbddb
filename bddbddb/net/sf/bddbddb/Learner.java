@@ -17,7 +17,6 @@ import jwutil.collections.UnionFind;
 import jwutil.util.Assert;
 import net.sf.bddbddb.dataflow.PartialOrder.Constraint;
 import net.sf.bddbddb.dataflow.PartialOrder.ConstraintGraph;
-import net.sf.bddbddb.dataflow.PartialOrder.Constraints;
 import net.sf.bddbddb.ir.PartialOrderDomainAssignment;
 import net.sf.javabdd.BDDDomain;
 

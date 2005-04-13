@@ -167,19 +167,15 @@ public class BDDInferenceRule extends InferenceRule {
         }
         if (bottomRename != null) bottomRename.reset();
         bottomRename = calculateRenames(bottom, false);
-        if (canQuantifyAfter == null) {
-            canQuantifyAfter = new BDD[top.size()];
-        }
+        initializeQuantifySet();
         if (variableSet == null) {
             variableSet = new Collection[top.size()];
         }
         Collection currentVariableSet = new LinkedList();
         for (int i = 0; i < top.size(); ++i) {
             RuleTerm rt = (RuleTerm) top.get(i);
-            if (canQuantifyAfter[i] != null) canQuantifyAfter[i].free();
-            canQuantifyAfter[i] = solver.bdd.one();
-            if (TRACE) solver.out.println("Calculating quantifiable variables for "+rt);
             currentVariableSet.addAll(rt.variables);
+            if (TRACE) solver.out.println("Calculating quantifiable variables for "+rt);
             outer : for (Iterator k = rt.variables.iterator(); k.hasNext();) {
                 Variable v = (Variable) k.next();
                 if (bottom.variables.contains(v)) continue;
@@ -187,13 +183,11 @@ public class BDDInferenceRule extends InferenceRule {
                     RuleTerm rt2 = (RuleTerm) top.get(j);
                     if (rt2.variables.contains(v)) continue outer;
                 }
-                currentVariableSet.remove(v);
                 if (TRACE) solver.out.println("Can quantify "+v);
-                BDDDomain d2 = (BDDDomain) variableToBDDDomain.get(v);
-                canQuantifyAfter[i].andWith(d2.set());
+                currentVariableSet.remove(v);
             }
             variableSet[i] = currentVariableSet;
-            if (TRACE) solver.out.println("Variable set="+variableSet[i]);
+            if (TRACE) solver.out.println("Variable set["+i+"]="+variableSet[i]);
             currentVariableSet = new LinkedList(currentVariableSet);
         }
         isInitialized = true;
@@ -209,6 +203,27 @@ public class BDDInferenceRule extends InferenceRule {
         }
     }
 
+    void initializeQuantifySet() {
+        if (canQuantifyAfter == null) {
+            canQuantifyAfter = new BDD[top.size()];
+        }
+        for (int i = 0; i < top.size(); ++i) {
+            RuleTerm rt = (RuleTerm) top.get(i);
+            if (canQuantifyAfter[i] != null) canQuantifyAfter[i].free();
+            canQuantifyAfter[i] = solver.bdd.one();
+            outer : for (Iterator k = rt.variables.iterator(); k.hasNext();) {
+                Variable v = (Variable) k.next();
+                if (bottom.variables.contains(v)) continue;
+                for (int j = i + 1; j < top.size(); ++j) {
+                    RuleTerm rt2 = (RuleTerm) top.get(j);
+                    if (rt2.variables.contains(v)) continue outer;
+                }
+                BDDDomain d2 = (BDDDomain) variableToBDDDomain.get(v);
+                canQuantifyAfter[i].andWith(d2.set());
+            }
+        }
+    }
+    
     /**
      * Calculate the rename operations that are needed for the given term.
      * The direction flag determines the desired direction of the renames.
@@ -422,7 +437,8 @@ public class BDDInferenceRule extends InferenceRule {
         }
         r.relation.orWith(result);
         if (TRACE) {
-            solver.out.print(r.relation.nodeCount() + " nodes, " + r.dsize() + " elements.");
+            solver.out.print(r.relation.nodeCount() + " nodes, ");
+            solver.out.print(r.dsize() + " elements.");
             solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
         }
         if (TRACE_FULL) solver.out.println("Relation " + r + " is now: " + r.relation.toStringWithDomains());

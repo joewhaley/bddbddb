@@ -3,15 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,13 +20,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URL;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import jwutil.collections.FlattenedCollection;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
 import jwutil.util.Assert;
-import net.sf.bddbddb.BDDInferenceRule.VarOrderComparator;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
 import net.sf.bddbddb.order.CandidateSampler;
 import net.sf.bddbddb.order.ConstraintInfo;
@@ -65,11 +63,9 @@ import net.sf.bddbddb.order.WekaInterface.OrderInstance;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.FindBestOrder;
-
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
-
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -248,8 +244,10 @@ public class FindBestDomainOrder {
     /**
      * Starts a new trial collection and returns it.
      * 
-     * @param id  name of trial collection
+     * @param rule  inference rule of trial collection
+     * @param opNumber  operation number of trial collection
      * @param timeStamp  time of trial collection
+     * @param newCollection  whether to always return a new collection
      * @return new trial collection
      */
     public Episode getNewEpisode(BDDInferenceRule rule, int opNumber, long timeStamp, boolean newCollection) {
@@ -1221,7 +1219,7 @@ public class FindBestDomainOrder {
      * (including those in previous runs).
      * 
      * @param rule
-     * @return
+     * @return  collection of tried orders
      */
     Collection getTriedOrders(BDDInferenceRule rule, int opNumber){
         Collection triedOrders = new LinkedList();

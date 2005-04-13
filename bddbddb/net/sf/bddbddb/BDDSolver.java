@@ -74,19 +74,26 @@ public class BDDSolver extends Solver {
     }
     
     public void ensureCapacity(Domain d, BigInteger range) {
-        if (d.getSize().compareTo(range) < 0) {
+        if (d.getSize().compareTo(range) <= 0) {
             d.setSize(range);
             boolean any = false;
             for (Iterator i = this.getBDDDomains(d).iterator(); i.hasNext(); ) {
                 if (ensureCapacity((BDDDomain) i.next(), range)) any = true;
             }
             if (any) {
+                System.out.println("Growing domain "+d+" to "+d.getSize());
                 for (Iterator i = this.getBDDDomains(d).iterator(); i.hasNext(); ) {
                     redoPairings((BDDDomain) i.next(), range);
                 }
                 for (Iterator i = this.getRelations().iterator(); i.hasNext(); ) {
                     BDDRelation r = (BDDRelation) i.next();
                     r.calculateDomainSet();
+                    if (!r.relation.isZero())
+                        System.out.println("Relation "+r+" domains "+BDDRelation.activeDomains(r.relation));
+                }
+                for (Iterator i = this.getRules().iterator(); i.hasNext(); ) {
+                    BDDInferenceRule r = (BDDInferenceRule) i.next();
+                    r.initializeQuantifySet();                    
                 }
             }
         }
