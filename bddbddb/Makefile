@@ -100,11 +100,11 @@ wc:
 source_list:
 	@echo Building source list...
 	@echo $(ALLJAVA) | xargs -n 1 echo > .source_list
-#	@find $(PACKAGES) -name "*.java" > .source_list
+#	@find $(MODULES) -name "*.java" > .source_list
 
 class_list: javac
 	@echo Building class list...
-	@find $(PACKAGES) -name "*.class" > .class_list
+	@find $(MODULES) -name "*.class" > .class_list
 
 %.class: %.java #javac
 	$(JAVAC) -g -source $(CLASSFILE_VERSION) -target $(CLASSFILE_VERSION) -classpath $(BUILD_CLASSPATH) $<
