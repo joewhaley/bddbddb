@@ -1,7 +1,6 @@
 // PAFly.java, created Mar 15, 2005 1:08:07 AM 2005 by jwhaley
 // Copyright (C) 2005 John Whaley <jwhaley@alum.mit.edu>
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.io.BufferedReader;
@@ -284,6 +284,7 @@ public class PAFly {
         if (TRACE) System.out.println("Relation "+r+" new values: "+newValues.satCount(r.getDomainSet()));
         Attribute a = r.getAttribute("method");
         BDDDomain M = r.getBDDDomain(a);
+        List newMethods = new LinkedList();
         for (BDDIterator i = newValues.iterator(r.getDomainSet()); i.hasNext(); ) {
             BDD b = (BDD) i.next();
             BigInteger M_i = b.scanVar(M);
@@ -291,13 +292,20 @@ public class PAFly {
             System.out.println("NEW REACHABLE METHOD: "+methodName);
             jq_Method m = (jq_Method) jq_Member.parseMember(methodName);
             if (m != null) {
-                visitMethod(m);
+                // Don't call visitMethod here, as it may increase domain sizes
+                // which will screw up our iterator.  Instead, we add it to a list
+                // for later processing.
+                newMethods.add(m);
             } else {
                 System.out.println("Warning: Cannot find "+methodName);
             }
             b.free();
         }
         newValues.free();
+        for (Iterator i = newMethods.iterator(); i.hasNext(); ) {
+            jq_Method m = (jq_Method) i.next();
+            visitMethod(m);
+        }
         prev = r.getBDD().id();
     }
     
@@ -312,15 +320,23 @@ public class PAFly {
         }
         Attribute a = r.getAttribute("i");
         BDDDomain I = r.getBDDDomain(a);
+        List invokes = new LinkedList();
         for (BDDIterator i = newValues.iterator(r.getDomainSet()); i.hasNext(); ) {
             BDD b = (BDD) i.next();
             BigInteger I_i = b.scanVar(I);
-            String invokeName = a.getDomain().toString(I_i);
-            System.out.println("NEW INVOKE TO ADD TO HEAP: "+invokeName);
-            int H_i = Hmap.get(invokeName);
-            if (true) out.println("Adding to mapIH: "+I_i+","+H_i);
-            mapIH.add(I_i.intValue(), H_i);
             b.free();
+            // Don't add to mapIH here, as it may increase domain sizes
+            // which will screw up our iterator.  Instead, we add it to a list
+            // for later processing.
+            invokes.add(I_i);
+        }
+        for (Iterator i = invokes.iterator(); i.hasNext(); ) {
+            BigInteger I_i = (BigInteger) i.next();
+            String invokeName = a.getDomain().toString(I_i);
+            if (TRACE) System.out.println("NEW INVOKE TO ADD TO HEAP: "+invokeName);
+            int H_i = Hmap.get(invokeName);
+            if (TRACE) out.println("Adding to mapIH: "+I_i+","+H_i);
+            mapIH.add(I_i.intValue(), H_i);
         }
         newValues.free();
         prevH = r.getBDD().id();
@@ -341,21 +357,29 @@ public class PAFly {
         a = r.getAttribute("type");
         BDDDomain T = r.getBDDDomain(a);
         BDD Tset = T.set();
+        List types = new LinkedList();
         for (BDDIterator i = newValues.iterator(Tset); i.hasNext(); ) {
             BDD b = (BDD) i.next();
             BigInteger T_i = b.scanVar(T);
             b.free();
             String T_s = a.getDomain().toString(T_i);
-            System.out.println("NEW CLASS OBJECT: "+T_s);
+            if (TRACE) System.out.println("NEW CLASS OBJECT: "+T_s);
             if (T_s != null && !T_s.equals("null") && !T_s.equals("NULL_TYPE")) {
                 jq_Reference t = (jq_Reference) jq_Type.parseType(T_s);
-                if (t instanceof jq_Class) {
-                    jq_Class c = (jq_Class) t;
-                    addClassInitializer(c);
-                }
+                // Don't call addClassInitializer here, as it may increase domain sizes
+                // which will screw up our iterator.  Instead, we add it to a list
+                // for later processing.
+                types.add(t);
             }
         }
         Tset.free();
+        for (Iterator i = types.iterator(); i.hasNext(); ) {
+            jq_Reference t = (jq_Reference) i.next();
+            if (t instanceof jq_Class) {
+                jq_Class c = (jq_Class) t;
+                addClassInitializer(c);
+            }
+        }
         prevC = r.getBDD().exist(Hset);
         Hset.free();
     }
