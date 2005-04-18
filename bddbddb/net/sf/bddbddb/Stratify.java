@@ -13,12 +13,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.io.IOException;
 import java.io.PrintStream;
 import jwutil.collections.BinHeapPriorityQueue;
-import jwutil.collections.EntryValueComparator;
 import jwutil.collections.Filter;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.HashWorklist;
@@ -238,7 +235,7 @@ public class Stratify {
             }
         }
         if (roots.isEmpty()) {
-            Assert.UNREACHABLE("No roots! " + sccs);
+            Assert.UNREACHABLE("Cannot stratify! " + sccs +" You need to specify one or more relations as \"output\", \"printsize\", etc.");
         }
         // Topologically-sort SCCs.
         SCCTopSortedGraph sccGraph = SCCTopSortedGraph.topSort(roots);
