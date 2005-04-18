@@ -6,6 +6,7 @@ package net.sf.bddbddb;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -93,6 +94,11 @@ public abstract class InferenceRule implements IterationElement {
      * Flag specifying whether to limit the generated tuples to a single one.
      */
     boolean single;
+    
+    /**
+     * The priority of this rule, used in determining iteration order.
+     */
+    int priority = 1;
     
     /**
      * Trace flags to control output of trace information about this rule.
@@ -399,6 +405,7 @@ public abstract class InferenceRule implements IterationElement {
             String relationName = bottom.relation.name + "_" + myIndex + "_" + count;
             if (TRACE) solver.out.println("New attributes: " + attributes);
             Relation newRelation = solver.createRelation(relationName, attributes);
+            //newRelation.priority = bottom.relation.priority;
             if (TRACE) solver.out.println("New relation: " + newRelation);
             RuleTerm newBottom = new RuleTerm(newRelation, newVariables);
             InferenceRule newRule = solver.createInferenceRule(newTop, newBottom);
@@ -484,6 +491,7 @@ public abstract class InferenceRule implements IterationElement {
         this.TRACE_FULL = that.TRACE_FULL;
         this.incrementalize = that.incrementalize;
         this.cache_before_rename = that.cache_before_rename;
+        //this.priority = that.priority;
     }
     
     /**
@@ -1167,4 +1175,5 @@ public abstract class InferenceRule implements IterationElement {
         }
         return e;
     }
+    
 }

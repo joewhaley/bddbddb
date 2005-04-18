@@ -42,6 +42,11 @@ public abstract class Relation {
     protected Relation negated;
     
     /**
+     * Priority of this relation, used in determining iteration order.
+     */
+    int priority = 2;
+    
+    /**
      * Unique id number for this relation.
      */
     public final int id;
