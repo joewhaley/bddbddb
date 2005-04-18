@@ -1,5 +1,5 @@
 initialPointsTo (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2)
-pointsTo (c2:C1, v2:V1 , v2fd:FD1 , c3:C2, v3:V2 , v3fd:FD2) 
+pointsTo (c2:C1, v2:V1 , v2fd:FD1 , c3:C2, v3:V2 , v3fd:FD2)
 pointsToAbstract (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2)
 assign (v1:V0 , v1fd:FD0 , v2:V1 , v2fd:FD1)
 stores (o_ptr:V1 , p_ptr:FD1 , o_src:V0 , p_src:FD0, p_store:FD3) input 

@@ -68,7 +68,7 @@ pathsAfterLargestField(p,p_after) :- fieldsFollowingPath(p,p_after), !subPath(p,
 pathsAfterLargestField(p,p_after) :- canonicalPath(p_l,p), remainingFields(p_l,p_after), remainingFields(p_after,p_l).
 
 copyPair(o_cpy:V2,c1:C0,o_dst:V0,p_dst:FD0,c2:C1,o_src:V1,p_src:FD1)
-copyPair(o_cpy,c_dst,o_dst,p_dst,c_src,o_src,p_src) :- copyDst(o_cpy,o_dstptr,1), copySrc(o_cpy,o_srcptr,1), mergePointsTo(c,o_dstptr,1,c_dst,o_dst,p_dst), mergePointsTo(c,o_srcptr,1,c_src,o_src,p_src).
+copyPair(o_cpy,c_dst,o_dst,p_dst,c_src,o_src,p_src) :- copyDst(o_cpy,o_dstptr,1), copySrc(o_cpy,o_srcptr,1), mergePointsTo(c,o_dstptr,1,c_dst,o_dst,p_dst), mergePointsTo(c,o_srcptr,1,c_src,o_src,p_src). pri=-1
 
 interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(o_cpy,c1,o_dst,p_dst,c2,o_src,p_src), subPath(p_dst,p_sub,p_dst2), subPath(p_src,p_sub,p_src2). split
 interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(o_cpy,c1,o_dst,p_dst,c2,o_src,p_src), p_dst != 0, subPath(p_dst,p_sub,p_dst2), CONS_subPath(p_src,p_sub,p_src2). split
