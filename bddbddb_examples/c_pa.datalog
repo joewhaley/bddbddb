@@ -43,7 +43,7 @@ mergePointsTo(o,p1,o_h,p_h) :- pointsTo(o,p1,o_h,p_h).
 #TBD: this is actually slightly incorrect, since it should also exclude fields which are coincident with fields in the
 #remainingFields sets
 
-mergePointsTo(o,p1,o_h,p_h) :- pointsTo(o,p2,o_h,p_h), !remainingFields(p1,p2), !remainingFields(p2,p1), canonicalPath(p1,_).
+mergePointsTo(o,p1,o_h,p_h) :- pointsTo(o,p2,o_h,p_h), !remainingFields(p1,p2), !remainingFields(p2,p1), canonicalPath(p1,_). pri=-10
 #mergePointsTo_for_assign (v2:V1 , v2fd:FD1 , v3:V2 , v3fd:FD2)
 #mergePointsTo_for_assign(o,p1,o_h,p_h) :- assign(_,_,o,p1), pointsTo(o,p2,o_h,p_h), !remainingFields(p1,p2), !remainingFields(p2,p1). 
 #mergePointsTo(o,p1,o_h,p_h) :- mergeLoc(o,p1), pointsTo(o,p2,_,_), !remainingFields(p1,p2), !remainingFields(p2,p1), pointsTo(o,p2,o_h,p_h). split
@@ -80,7 +80,7 @@ CONS_subPath(i,j,k) :- !subPathCombines(i,j), canonicalPath(k,i), canonicalPath(
 
 pointsTo(o_d,p_d,o_h,p_h) :- pointsToAbstract(o_d,p_d,o_h,p_h).
 
-pointsTo(o_d,p_d,o_h,p_h) :- assign(o_d,p_d,o_s,p_s), mergePointsTo(o_s,p_s,o_h,p_h).
+pointsTo(o_d,p_d,o_h,p_h) :- assign(o_d,p_d,o_s,p_s), mergePointsTo(o_s,p_s,o_h,p_h). pri=-1
 #pointsTo(o_d,p_d,o_h,p_h) :- assign(o_d,p_d,o_s,p_s), mergePointsTo(o_s,p_s,o_h,p_h).
 #mergePointsTo(o,p1,o_h,p_h) :- pointsTo(o,p2,o_h,p_h), !remainingFields(p1,p2), !remainingFields(p2,p1).
 
