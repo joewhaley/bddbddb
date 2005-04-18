@@ -111,7 +111,8 @@ public class Domain {
      * @return  index
      */
     public int namedConstant(String constant) {
-        if (map == null) throw new IllegalArgumentException("No constant map for Domain " + name + " in which to look up constant " + constant);
+        if (false && map == null) throw new IllegalArgumentException("No constant map for Domain " + name + " in which to look up constant " + constant);
+        if (map == null) map = new IndexMap(name);
         if (!map.contains(constant)) System.err.println("Warning: Constant " + constant + " not found in map for relation " + name);
         return map.get(constant);
     }

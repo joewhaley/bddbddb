@@ -93,7 +93,7 @@ public class BDDSolver extends Solver {
                 }
                 for (Iterator i = this.getRules().iterator(); i.hasNext(); ) {
                     BDDInferenceRule r = (BDDInferenceRule) i.next();
-                    r.initializeQuantifySet();                    
+                    r.initializeQuantifySet();
                 }
             }
         }
@@ -126,7 +126,7 @@ public class BDDSolver extends Solver {
                     change = true;
                 }
             }
-            if (change) {
+            if (true) {
                 //System.out.println("Pair "+map+" matches, rebuilding.");
                 p.reset();
                 for (Iterator j = map.entrySet().iterator(); j.hasNext(); ) {
