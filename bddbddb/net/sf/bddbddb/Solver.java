@@ -973,6 +973,10 @@ public abstract class Solver {
                 relationsToPrintTuples.add(r);
             } else if (option.equals("printsize")) {
                 relationsToPrintSize.add(r);
+            } else if (option.startsWith("pri")) {
+                String num = option.substring(4);
+                int pri = Integer.parseInt(num);
+                r.priority = pri;
             } else if (option.equals("{")) {
                 String s2 = nextToken(st);
                 StringBuffer sb = new StringBuffer();
@@ -1120,6 +1124,11 @@ public abstract class Solver {
                 BDDInferenceRule r = (BDDInferenceRule) ir;
                 r.TRACE = true;
                 r.TRACE_FULL = true;
+            } else if (option.equals("pri")) {
+                String num = nextToken(st);
+                if (num.equals("=")) num = nextToken(st);
+                int pri = Integer.parseInt(num);
+                ir.priority = pri;
             } else if (option.equals("pre") || option.equals("post") || option.equals("{")) {
                 StringBuffer sb = new StringBuffer();
                 String s2 = nextToken(st);
@@ -1167,7 +1176,7 @@ public abstract class Solver {
                     ir.extraDefines.add(r);
                 }
             } else {
-                // todo: pri=#, maxiter=#
+                // todo: maxiter=#
                 outputError(lineNum, st.getPosition(), s, "Unknown rule option \"" + option + "\"");
                 throw new IllegalArgumentException();
             }

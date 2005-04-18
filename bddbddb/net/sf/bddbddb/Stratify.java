@@ -13,8 +13,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.io.IOException;
 import java.io.PrintStream;
+import jwutil.collections.BinHeapPriorityQueue;
+import jwutil.collections.EntryValueComparator;
 import jwutil.collections.Filter;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.HashWorklist;
@@ -285,17 +289,26 @@ public class Stratify {
         } else {
             // find longest path.
             Set visited = new HashSet();
-            List queue = new LinkedList();
-            queue.add(entry);
+            BinHeapPriorityQueue queue = new BinHeapPriorityQueue();
+            int priority = getPriority(entry);
+            queue.insert(entry, priority);
             visited.add(entry);
-            Object last = null;
+            Object last = null; int min = Integer.MAX_VALUE;
             while (!queue.isEmpty()) {
-                last = queue.remove(0);
-                for (Iterator i = depNav.next(last).iterator(); i.hasNext();) {
+                Object o = queue.peekMax();
+                priority = queue.getPriority(o);
+                queue.deleteMax();
+                if (TRACE_FULL) out.println("Element " + o + " priority " + priority);
+                boolean any = false;
+                for (Iterator i = depNav.next(o).iterator(); i.hasNext();) {
                     Object q = i.next();
                     if (visited.add(q)) {
-                        queue.add(q);
+                        queue.insert(q, priority+getPriority(q));
+                        any = true;
                     }
+                }
+                if (!any && priority <= min) {
+                    last = o; min = priority;
                 }
             }
             if (TRACE_FULL) out.println("Last element in SCC: " + last);
@@ -313,6 +326,14 @@ public class Stratify {
             depNav.removeEdge(last, last_next);
         }
     }
+    
+    public static int getPriority(Object o) {
+        if (o instanceof InferenceRule)
+            return ((InferenceRule) o).priority-2;
+        else
+            return ((Relation) o).priority-2;
+    }
+    
     boolean again;
     int MAX_ITERATIONS = 128;
 
@@ -487,4 +508,5 @@ public class Stratify {
             x.printStackTrace();
         }
     }
+    
 }
