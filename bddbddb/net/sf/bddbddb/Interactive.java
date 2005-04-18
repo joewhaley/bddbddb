@@ -31,6 +31,8 @@ import net.sf.bddbddb.Solver.MyReader;
  */
 public class Interactive {
     
+    public static boolean IGNORE_OUTPUT = !System.getProperty("ignoreoutput", "yes").equals("no");
+    
     /**
      * Solver we are using.
      */
@@ -69,7 +71,7 @@ public class Interactive {
             dis.readDatalogProgram(in);
             in.close();
         }
-        if (true) {
+        if (IGNORE_OUTPUT) {
             dis.relationsToDump.clear();
             dis.relationsToDumpTuples.clear();
             dis.relationsToPrintSize.clear();
@@ -332,6 +334,22 @@ public class Interactive {
                 if (solver.NOISY) solver.out.println("done. (" + time + " ms)");
                 loadedRelations.addAll(solver.relationsToLoad);
                 loadedRelations.addAll(solver.relationsToLoadTuples);
+            }
+            if (solver.relationsToDump.isEmpty() &&
+                solver.relationsToDumpTuples.isEmpty() &&
+                solver.relationsToPrintSize.isEmpty() &&
+                solver.relationsToPrintTuples.isEmpty() &&
+                solver.dotGraphsToDump.isEmpty()) {
+                solver.out.println("No relations marked as output!  ");
+                if (IGNORE_OUTPUT)
+                    System.out.println("(By default, the interactive driver ignores output keywords in the initial datalog.)");
+                solver.out.println("You need to specify at least one relation as one of the following:");
+                solver.out.println("    output");
+                solver.out.println("    outputtuples");
+                solver.out.println("    printsize");
+                solver.out.println("    printtuples");
+                solver.out.println("Alternatively, use a query like \"A(x,y)?\" rather than \"solve\".");
+                return;
             }
             if (solver.NOISY) solver.out.println("Stratifying: ");
             long time = System.currentTimeMillis();
