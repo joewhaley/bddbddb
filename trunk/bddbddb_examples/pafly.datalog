@@ -39,13 +39,13 @@ IE (invoke:I0, target:M0) output
 vP(v,h) :- vP0(v,h).
 IE(i,m) :- IE0(i,m).
 vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
-vP(v1,h) :- A(v1,v2), vP(v2,h), vPfilter(v1,h).
-hP(h1,f,h2) :- S(v1,f,v2), vP(v1,h1), vP(v2,h2).
-vP(v2,h2) :- L(v1,f,v2), vP(v1,h1), hP(h1,f,h2), vPfilter(v2,h2). split
+vP(v1,h) :- A(v1,v2), vP(v2,h), vPfilter(v1,h). pri=10
+hP(h1,f,h2) :- S(v1,f,v2), vP(v1,h1), vP(v2,h2). pri=10
+vP(v2,h2) :- L(v1,f,v2), vP(v1,h1), hP(h1,f,h2), vPfilter(v2,h2). split pri=10
 A(v1,v2) :- formal(m,z,v1), IE(i,m), actual(i,z,v2).
 A(v2,v1) :- Mret(m,v1), IE(i,m), Iret(i,v2).
 A(v2,v1) :- Mthr(m,v1), IE(i,m), Ithr(i,v2).
-IE(i,m2) :- mI(m,i,n), actual(i,0,v), vP(v,h), hT(h,t), cha(t,n,m2). split
+IE(i,m2) :- mI(m,i,n), actual(i,0,v), vP(v,h), hT(h,t), cha(t,n,m2). split pri=5
 
 reachable (method:M0) output { \
     PAFly.addToReachable(reachable); \
@@ -172,7 +172,7 @@ hP(h,f,h2) :- constructorObjectType(h,_), f = "null", h = h2.
 usedInNewInstance(i,i2) :- newInstance2(m), IE(i,m), actual(i,0,vc), vP(vc,hc), mapIH(i3,hc), usedInGetConstructor(i3,i2).
 
 fieldObject (h:H0, f:F0) outputtuples
-fieldObject(h,f) :- getField(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToField(hc,f).
+fieldObject(h,f) :- getField(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToField(hc,f). split
 S(v1,f,v2) :- IE(i,"java.lang.reflect.Field.set (Ljava/lang/Object;Ljava/lang/Object;)V"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
               actual(i,1,v1), actual(i,2,v2).
 L(v1,f,v2) :- IE(i,"java.lang.reflect.Field.get (Ljava/lang/Object;)Ljava/lang/Object;"), actual(i,0,v), vP(v,h), fieldObject(h,f), \
@@ -182,11 +182,11 @@ methodObject (h:H0, m:M0) outputtuples
 methodObject(h,m) :- getMethod(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToMethod(hc,m).
 
 resolvedInvoke (i:I0, m:M0) outputtuples
-resolvedInvoke(i,m) :- IE(i,m2), invoke(m2), actual(i,0,v), vP(v,h), methodObject(h,m).
+resolvedInvoke(i,m) :- IE(i,m2), invoke(m2), actual(i,0,v), vP(v,h), methodObject(h,m). split
 # Param #0
 A(v1,v2) :- resolvedInvoke(i,m), formal(m,0,v1), actual(i,1,v2).
 # Other params
-vP(v,h) :- resolvedInvoke(i,m), formal(m,z,v), z > 0, actual(i,2,v2), vP(v2,h2), hP(h2,"null",h).
+vP(v,h) :- resolvedInvoke(i,m), formal(m,z,v), z > 0, actual(i,2,v2), vP(v2,h2), hP(h2,"null",h). split
 # Return values
 A(v1,v2) :- resolvedInvoke(i,m), Iret(i,v1), Mret(m,v2).
 
@@ -204,7 +204,7 @@ leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_append(
 leadsToForName(v2,i) :- leadsToForName(v1,i), actual(i2,1,v1), IE(i2,m), sb2_append(m), actual(i2,2,v2).
 leadsToForName(v2,i) :- leadsToForName(v1,i), Iret(i2,v1), IE(i2,m), sb2_toString(m), actual(i2,1,v2).
 
-leadsToForName(v2,i) :- leadsToForName(v1,i), L(v3,f,v1), vP(v3,h3), vP(v4,h3), S(v4,f,v2).
+leadsToForName(v2,i) :- leadsToForName(v1,i), L(v3,f,v1), vP(v3,h3), vP(v4,h3), S(v4,f,v2). split
 
 lhs (v:V0)
 lhs(v) :- A(v,_).
@@ -217,7 +217,7 @@ lhs(v) :- Iret(i2,v), IE(i2,m), sb2_append(m).
 lhs(v) :- actual(i2,1,v), IE(i2,m), sb2_append(m).
 lhs(v) :- Iret(i2,v), IE(i2,m), sb2_toString(m).
 
-lhs(v) :- L(v3,f,v), vP(v3,h3), vP(v4,h3), S(v4,f,_).
+lhs(v) :- L(v3,f,v), vP(v3,h3), vP(v4,h3), S(v4,f,_). split
 
 typeString (v:V0)
 typeString(v) :- vP(v,h), stringToType(h,_).
