@@ -14,7 +14,7 @@
 
 vP0 (v:V0, h:H0) input
 vP (v:V0, h:H0) output
-A (dest:V0, source:V1) input
+A (dest:V0, source:V1) input output
 hP0 (ha:H0, field:F0, hb:H1) input
 hP (ha:H0, field:F0, hb:H1) output
 S (base:V0, field:F0, src:V1) input
@@ -24,11 +24,11 @@ hT (heap:H0, type:T1) input output
 aT (type:T0, type:T1) input output
 vPfilter (v:V0, h:H0)
 cha (type:T1, name:N0, method:M0) input output
-actual (invoke:I0, num:Z0, actualparam:V1) input
+actual (invoke:I0, num:Z0, actualparam:V1) input output
 formal (method:M0, num:Z0, formalparam:V0) input
 Mret (method:M0, v:V1) input
 Mthr (method:M0, v:V1) input
-Iret (invoke:I0, v:V0) input
+Iret (invoke:I0, v:V0) input output
 Ithr (invoke:I0, v:V0) input
 mI (method:M0, invoke:I0, name:N0) input
 IE0 (invoke:I0, target:M0) input
@@ -67,7 +67,8 @@ getClass (method:M0)
 getClass("java.lang.Object.getClass ()Ljava/lang/Class;").
 newInstance (method:M0)
 newInstance("java.lang.Class.newInstance ()Ljava/lang/Object;").
-newInstance("java.lang.reflect.Constructor.newInstance ([Ljava/lang/Object;)Ljava/lang/Object;").
+newInstance2 (method:M0)
+newInstance2("java.lang.reflect.Constructor.newInstance ([Ljava/lang/Object;)Ljava/lang/Object;").
 getConstructor (method:M0)
 getConstructor("java.lang.Class.getConstructor ([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;").
 getConstructor("java.lang.Class.getDeclaredConstructor ([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;").
@@ -85,17 +86,20 @@ sb_init (m:M0)
 sb_init("java.lang.StringBuffer.<init> (Ljava/lang/String;)V").
 sb_append (m:M0)
 sb_append("java.lang.StringBuffer.append (Ljava/lang/String;)Ljava/lang/StringBuffer;").
+sb_append("java.lang.StringBuffer.append (Ljava/lang/StringBuffer;)Ljava/lang/StringBuffer;").
 sb_append("java.lang.StringBuffer.append (Ljava/lang/Object;)Ljava/lang/StringBuffer;").
 sb_toString (m:M0)
 sb_toString("java.lang.StringBuffer.toString ()Ljava/lang/String;").
-invoke (m:M0)
-invoke("java.lang.reflect.Method.invoke (Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;").
 
 sb2_append (m:M0)
 sb2_append("MyMockLib.MyStringBuffer.append (Ljava/lang/StringBuffer;Ljava/lang/String;)Ljava/lang/StringBuffer;").
+sb2_append("MyMockLib.MyStringBuffer.append (Ljava/lang/StringBuffer;Ljava/lang/StringBuffer;)Ljava/lang/StringBuffer;").
 sb2_append("MyMockLib.MyStringBuffer.append (Ljava/lang/StringBuffer;Ljava/lang/Object;)Ljava/lang/StringBuffer;").
 sb2_toString (m:M0)
 sb2_toString("MyMockLib.MyStringBuffer.toString (Ljava/lang/StringBuffer;)Ljava/lang/String;").
+
+invoke (m:M0)
+invoke("java.lang.reflect.Method.invoke (Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;").
 
 skipMethod (m:M0) printsize
 skipMethod(m) :- forName(m).
@@ -105,13 +109,14 @@ skipMethod(m) :- getConstructors(m).
 skipMethod(m) :- getField(m).
 skipMethod(m) :- getMethod(m).
 skipMethod(m) :- newInstance(m).
+skipMethod(m) :- newInstance2(m).
 skipMethod(m) :- sb_append(m).
 skipMethod(m) :- sb_toString(m).
 skipMethod(m) :- sb2_append(m).
 skipMethod(m) :- sb2_toString(m).
 skipMethod(m) :- invoke(m).
 
-mapIH (i:I0, h:H0)
+mapIH (i:I0, h:H0) output
 
 returnNewObject (i:I0) outputtuples { \
     PAFly.addToHDomain(returnNewObject); \
@@ -132,6 +137,7 @@ hT(h,t) :- IE(i,m), getField(m), Iret(i,v), mapIH(i,h), vT(v,t).
 returnNewObject(i) :- IE(i,m), getMethod(m). modifies mapIH
 hT(h,t) :- IE(i,m), getMethod(m), Iret(i,v), mapIH(i,h), vT(v,t).
 returnNewObject(i) :- IE(i,m), newInstance(m). modifies mapIH
+returnNewObject(i) :- IE(i,m), newInstance2(m). modifies mapIH
 
 classObjectType (heap:H0, type:T0) outputtuples { \
     PAFly.addToClassObjectType(classObjectType); \
@@ -145,17 +151,25 @@ hT(h,t) :- resolvedNewInstance(i,t), mapIH(i,h).
 IE(i,m) :- resolvedNewInstance(i,t), defaultConstructor(t,m).
 vP(v,h) :- resolvedNewInstance(i,t), mapIH(i,h), defaultConstructor(t,m), formal(m,0,v).
 
+usedInNewInstance (i:I0, i:I1) outputtuples
+usedInNewInstance(i,i2) :- newInstance(m), IE(i,m), actual(i,0,vc), vP(vc,hc), mapIH(i2,hc).
+
+usedInGetConstructor (i:I0, i:I1) outputtuples
+usedInGetConstructor(i,i2) :- getConstructor(m), IE(i,m), actual(i,0,vc), vP(vc,hc), mapIH(i2,hc).
+
 constructorObjectType (h:H0, t:T0) outputtuples
 constructorObjectType(h,t) :- getConstructor(cm), IE(i,cm), mapIH(i,h), actual(i,0,v), vP(v,hc), classObjectType(hc,t).
 
 resolvedNewInstance2 (i:I0, t:T0) outputtuples
-resolvedNewInstance2(i,t) :- newInstance(m), IE(i,m), actual(i,0,vc), vP(vc,hc), constructorObjectType(hc,t).
+resolvedNewInstance2(i,t) :- newInstance2(m), IE(i,m), actual(i,0,vc), vP(vc,hc), constructorObjectType(hc,t).
 hT(h,t) :- resolvedNewInstance2(i,t), mapIH(i,h).
 IE(i,m) :- resolvedNewInstance2(i,t), allConstructors(t,m).
 vP(v,h) :- resolvedNewInstance2(i,t), mapIH(i,h), allConstructors(t,m), formal(m,0,v).
 
 constructorObjectType(h,t) :- getConstructors(cm), IE(i,cm), mapIH(i,h), actual(i,0,v), vP(v,hc), classObjectType(hc,t).
 hP(h,f,h2) :- constructorObjectType(h,_), f = "null", h = h2.
+
+usedInNewInstance(i,i2) :- newInstance2(m), IE(i,m), actual(i,0,vc), vP(vc,hc), mapIH(i3,hc), usedInGetConstructor(i3,i2).
 
 fieldObject (h:H0, f:F0) outputtuples
 fieldObject(h,f) :- getField(cm), IE(i,cm), mapIH(i,h), actual(i,1,v), vP(v,hc), stringToField(hc,f).
@@ -208,8 +222,16 @@ lhs(v) :- L(v3,f,v), vP(v3,h3), vP(v4,h3), S(v4,f,_).
 typeString (v:V0)
 typeString(v) :- vP(v,h), stringToType(h,_).
 
-deadEndForName (v:V0,i:I0) outputtuples
-deadEndForName(v,i) :- leadsToForName(v,i), !lhs(v), !typeString(v).
+constForName (i:I0,t:T0) outputtuples
+constForName(i,t) :- classObjectType(h,t), mapIH(i,h), IE(i,m), forName(m).
+
+constNewInstance (i:I0,t:T0) outputtuples
+constNewInstance(i,t) :- resolvedNewInstance(i,t).
+constNewInstance(i,t) :- resolvedNewInstance2(i,t).
 
 castNewInstance (i:I0,t:T0) outputtuples
 castNewInstance(i,t1) :- newInstance(m), IE(i,m), Iret(i,v2), A(v1,v2), vT(v1,t1), vT(v2,t2), t1!=t2.
+castNewInstance(i,t1) :- newInstance2(m), IE(i,m), Iret(i,v2), A(v1,v2), vT(v1,t1), vT(v2,t2), t1!=t2.
+
+deadEndForName (v:V0,i:I0) outputtuples
+deadEndForName(v,i) :- leadsToForName(v,i), !lhs(v), !typeString(v).
