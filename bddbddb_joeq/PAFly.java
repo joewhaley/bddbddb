@@ -258,6 +258,16 @@ public class PAFly {
         w = new BufferedWriter(new FileWriter(s.getBaseDir()+"name.map"));
         Nmap.dumpStrings(w);
         w.close();
+        w = new BufferedWriter(new FileWriter(s.getBaseDir()+"fielddomains.pa"));
+        w.write("V "+s.getDomain("V").getSize()+" var.map\n");
+        w.write("H "+s.getDomain("H").getSize()+" heap.map\n");
+        w.write("T "+s.getDomain("T").getSize()+" type.map\n");
+        w.write("F "+s.getDomain("F").getSize()+" field.map\n");
+        w.write("I "+s.getDomain("I").getSize()+" invoke.map\n");
+        w.write("Z "+s.getDomain("Z").getSize()+"\n");
+        w.write("N "+s.getDomain("N").getSize()+" name.map\n");
+        w.write("M "+s.getDomain("M").getSize()+" method.map\n");
+        w.close();
         System.out.println("done.");
     }
     
@@ -1052,6 +1062,7 @@ public class PAFly {
         }
         
         BDDSolver solver = new BDDSolver();
+        initDefaultFiles(solver);
         solver.load("pafly.datalog");
         initialize(solver);
         visitNode(GlobalNode.GLOBAL);
@@ -1065,6 +1076,35 @@ public class PAFly {
         }
         
         saveAll(solver);
+    }
+    
+    static void initDefaultFiles(BDDSolver solver) throws IOException {
+        String sep = System.getProperty("file.separator");
+        String basedir = solver.getBaseDir();
+        if (basedir.length() > 0 && !basedir.endsWith(sep) && !basedir.endsWith("/")) {
+            basedir += sep;
+        }
+        File f = new File(basedir);
+        if (!f.exists()) {
+            f.mkdirs();
+        }
+        f = new File(basedir+"fielddomains.pa");
+        if (!f.exists()) {
+            BufferedWriter w = null;
+            try {
+                w = new BufferedWriter(new FileWriter(f));
+                w.write("V 1024 var.map\n");
+                w.write("H 512 heap.map\n");
+                w.write("T 256 type.map\n");
+                w.write("F 256 field.map\n");
+                w.write("I 512 invoke.map\n");
+                w.write("Z 32\n");
+                w.write("N 256 name.map\n");
+                w.write("M 512 method.map\n");
+            } finally {
+                if (w != null) w.close();
+            }
+        }
     }
     
     static void dumpCallGraph(String filename) throws IOException {
