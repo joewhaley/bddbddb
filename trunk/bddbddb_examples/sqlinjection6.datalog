@@ -1,0 +1,147 @@
+# -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+# Generated datalog file
+.basedir "sqlinjection.personalblog"
+.include "fielddomains.pa"
+#.bddvarorder N0_F0_I0_M1_M0_V1xV0_V2_T0_Z0_T1_H0_H1
+#.bddvarorder VC1_VC0_BOOL0_N0_F0_I0_M1_M0_V1xV0_V2_T0_Z1_Z0_T1_H0_H1
+.bddvarorder N0_F0_I0_M1_M0_V1xV0_VC1xVC0_T0_Z0_T1_H0_H1
+
+### Found by findbestorder:
+# 33s
+#.bddvarorder N0_F0_I0_M1_M0_V1xV0_V2_VC1xVC0_T0_Z0_T1_H0_H1
+# 34s
+#.bddvarorder N0_F0_I0_M1_M0_V2_V1xV0_VC1xVC0_T0_Z0_T1_H0_H1
+
+#########################################################
+#             Relation declarations
+#########################################################
+### boolean type
+
+### Relations from the pointer analysis
+vP (c : VC0, v:V0, h:H0) input
+#hP (ha:H0, field:F0, hb:H1) input
+#L (base:V0, field:F0, dest:V1) input
+#S (base:V0, field:F0, src:V1) input
+#vT (var:V0, type:T0) input
+#hT (heap:H0, type:T1) input
+#aT (type:T0, type:T1) input
+#A (vcdest:VC0, dest:V0, vcsrc:VC1, source:V1) input
+actual (invoke:I0, num:Z0, actualparam:V1) input
+#formal (method:M0, num:Z0, formalparam:V0) input
+#IE (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0) input
+#mI (method:M0, invoke:I0, name:N0) input
+IE (ccaller:VC1, invoke:I0, ccallee:VC0, target:M0) input
+Iret ( invoke:I0, v:V0) input
+
+StringCalls(m : M0) input printsize
+appendCalls(m : M0) input printsize
+constructorCalls(m : M0) input printsize
+allCalls(i : I0) printsize outputtuples
+
+### Source/sink section
+#source(v : V0)  printsize outputtuples
+#sink(v : V0)    printsize outputtuples
+#source(v) :- IE(_, invoke, _, "StringPropTest$MyClass.toString ()Ljava/lang/String;"), Iret(invoke, v).
+#sink(w)   :- IE(_, invoke, _, "StringPropTest.sinkMethod (Ljava/lang/String;)V"),      actual(invoke, 1, w)
+####
+source(v : V0)  input
+sink(v : V0) input
+
+reached(v : V0, w : V1) outputtuples printsize
+
+################
+forwardSlice(v : V0, v1 : V1, wC : VC0) printsize
+backwardSlice(v : V0, v1 : V1, vC : VC0) printsize
+#slice(i : I0) outputtuples printsize
+StringProp(vc0 : VC0, v : V0, vc1 : VC1, v1 : V1, i : I0) printsize 
+
+#firstRound(v : V0) outputtuples
+#secondRound(v : V0) outputtuples
+#thirdRound(v : V0) outputtuples
+
+#firstRound(w) :- source(v), StringProp(_, v, _, w, _).
+#firstRound(w) :- source(v), vP(_, v, h), vP(_, w, h).
+
+#secondRound(w):- firstRound(v), StringProp(_, v, _, w, _).
+#secondRound(w):- firstRound(v), vP(_, v, h), vP( _, w, h).
+
+#thirdRound(w) :- secondRound(v), StringProp(_, v, _, w, _).
+#thirdRound(w) :- secondRound(v), vP(_, v, h), vP( _, w, h).
+
+forwardSlice(v, w, wC) :- forwardSlice(v, temp, tempC), vP(tempC, temp, h), vP(wC, w, h).
+forwardSlice(v, w, wC) :- forwardSlice(v, temp, tempC), StringProp(tempC, temp, wC, w, _).
+forwardSlice(v, w, wC) :- source(v), v = w.
+forwardSlice(v, w, wC) :- source(v), vP(_, v, h), vP(wC, w, h).
+reached(v, w) :- forwardSlice(v, w, _), sink(w).
+
+backwardSlice(v, w, vC) :- sink(w), v = w.
+backwardSlice(v, w, vC) :- sink(w), vP(vC, v, h), vP(_, w, h).
+backwardSlice(v, w, vC) :- backwardSlice(temp, w, tempC), vP(vC, w, h), vP(tempC, temp, h).
+backwardSlice(v, w, vC) :- backwardSlice(temp, w, tempC), StringProp(vC, v, tempC, temp, _).
+
+forwardSliceI(wC : VC0, v : V0, i : I0) printsize 
+forwardSliceI(wC, v, invoke) :- forwardSlice(v, temp, tempC), StringProp(tempC, temp, wC, w, invoke).
+
+forwardSliceM(m : M0) printsize outputtuples
+forwardSliceM(m) :- forwardSliceI(_, _, invoke), IE( _, invoke, _, m).
+
+backwardSliceI(i : I0, vC : VC0, w : V0) printsize 
+backwardSliceI(invoke, vC, w) :- backwardSlice(temp, w, tempC), StringProp(vC, v, tempC, temp, invoke).
+
+slice(i : I0) printsize outputtuples
+slice(i) :- forwardSliceI(_, _, i), backwardSliceI(i, _, _).
+
+#slice(i) :- forwardSliceI(v, i), backwardSliceI(i, w).
+
+# Subquery "StringProp"
+#isValid(x), isValid($), 
+StringProp(vc0, x,  vc1, $, invoke) :- \
+            constructorCalls(method), \
+            IE(vc0, invoke, vc1, method ), \
+            actual(invoke, 1, x), \
+            actual(invoke, 0, $).
+
+#StringProp(vc0, x,  vc1, $, invoke) :-  \
+#            IE( vc0, invoke, vc1, 
+#            actual(invoke, 0, x), \
+#            Iret(invoke, $).
+
+
+StringProp(vc0, x,  vc1, $, invoke) :-  \
+            StringCalls(method), \
+            IE( vc0, invoke, vc1, method ), \
+            actual(invoke, 0, x), \
+            Iret(invoke, $).
+
+# Subquery "StringProp"
+#    $ = x.append(...)
+#sValid(x), isValid($), 
+StringProp(vc0, x,  vc1, $, invoke) :-  \
+            StringCalls(method), \
+            IE( vc0, invoke, vc1, method ), \
+            actual(invoke, 0, x), \
+            Iret(invoke, $).
+
+
+# Subquery "StringProp"
+#    $.append(x)
+#isValid(x), isValid($), 
+#            IE( vc0, invoke, vc1, method ), \
+#            mI( method, invoke, _ ), \
+StringProp(vc0, x,  vc1, $, invoke) :-  \
+            appendCalls(method), \
+            IE( vc0, invoke, vc1, method ), \
+            actual(invoke, 1, x), \
+            actual(invoke, 0, $).
+StringProp(vc0, x,  vc1, $, invoke) :-  \
+            appendCalls(method), \
+            IE( vc0, invoke, vc1, method ), \
+            actual(invoke, 1, x), \
+            Iret(invoke, $).
+
+allCalls(invoke) :- appendCalls(method),       IE(_, invoke, _, method).
+allCalls(invoke) :- StringCalls(method),       IE(_, invoke, _, method).
+allCalls(invoke) :- constructorCalls(method),  IE(_, invoke, _, method).
+
+#allCalls(invoke) :- IE( _, invoke, _, "java.lang.StringBuffer.append (Ljava/lang/String;)Ljava/lang/StringBuffer;" ).
+#allCalls(invoke) :- IE( _, invoke, _, "java.lang.StringBuffer.toString ()Ljava/lang/String;" ).
