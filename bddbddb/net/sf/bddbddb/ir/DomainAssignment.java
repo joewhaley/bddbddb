@@ -3,10 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.ir;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -15,10 +11,14 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.StringTokenizer;
-
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.IOException;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
@@ -69,7 +69,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     public abstract void doAssignment();
 
     private void addConstraints(List loops, int loopDepth, IterationList list) {
-        if (TRACE) System.out.println("Entering: " + list);
+        if (TRACE) solver.out.println("Entering: " + list);
         List s;
         if (loopDepth >= loops.size()) {
             loops.add(s = new LinkedList());
@@ -93,10 +93,10 @@ public abstract class DomainAssignment implements OperationVisitor {
         while (!loops.isEmpty()) {
             int index = loops.size() - 1;
             List s = (List) loops.remove(index);
-            if (TRACE) System.out.println("Doing loop depth " + index);
+            if (TRACE) solver.out.println("Doing loop depth " + index);
             for (Iterator j = s.iterator(); j.hasNext();) {
                 list = (IterationList) j.next();
-                if (TRACE) System.out.println("Doing " + list);
+                if (TRACE) solver.out.println("Doing " + list);
                 //add constraints for relprods first
                 for (ListIterator i = list.iterator(); i.hasNext();) {
                     Object o = i.next();
@@ -173,7 +173,7 @@ public abstract class DomainAssignment implements OperationVisitor {
             }
         }
         // Add constraints from file.
-        String domainFile = System.getProperty("domainfile", "domainfile");
+        String domainFile = SystemProperties.getProperty("domainfile", "domainfile");
         BufferedReader in = null;
         try {
             in = new BufferedReader(new FileReader(domainFile));
@@ -206,7 +206,7 @@ public abstract class DomainAssignment implements OperationVisitor {
         //Assert._assert(cons != null, "Constraints for " + r + " are null");
         if (cons != null) {
             Collection bcons = cons.getBeforeConstraints();
-            if (TRACE && bcons.size() == 0) System.out.println("No before constraints for " + r);
+            if (TRACE && bcons.size() == 0) solver.out.println("No before constraints for " + r);
             for (Iterator it = bcons.iterator(); it.hasNext();) {
                 Constraint c = (Constraint) it.next();
                 forceBefore(c.getLeftRelation(), c.getLeftAttribute(),
@@ -251,7 +251,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     }
 
     void insertBefore(Operation op) {
-        if (TRACE) System.out.println("Inserting before current operation: " + op);
+        if (TRACE) solver.out.println("Inserting before current operation: " + op);
         inserted.add(op);
         currentBlock.previous();
         currentBlock.add(op);
@@ -259,7 +259,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     }
 
     void insertAfter(Operation op) {
-        if (TRACE) System.out.println("Inserting after current operation: " + op);
+        if (TRACE) solver.out.println("Inserting after current operation: " + op);
         inserted.add(op);
         currentBlock.add(op);
     }
@@ -285,7 +285,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     }
 
     Object visitUnaryOp(Operation op, Relation r0, Relation r1) {
-        if (TRACE) System.out.println("Unary op: " + op);
+        if (TRACE) solver.out.println("Unary op: " + op);
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
             Attribute a1 = (Attribute) i.next();
             if (r0.getAttributes().contains(a1)) {
@@ -309,7 +309,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     }
 
     Object visitBooleanOp(Operation op, Relation r0, Relation r1, Relation r2) {
-        if (TRACE) System.out.println("Boolean op: " + op);
+        if (TRACE) solver.out.println("Boolean op: " + op);
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
             Attribute a1 = (Attribute) i.next();
             for (Iterator j = r2.getAttributes().iterator(); j.hasNext();) {
@@ -396,7 +396,7 @@ public abstract class DomainAssignment implements OperationVisitor {
      * @see net.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor#visit(net.sf.bddbddb.ir.highlevel.Rename)
      */
     public Object visit(Rename op) {
-        if (TRACE) System.out.println("Rename op: " + op);
+        if (TRACE) solver.out.println("Rename op: " + op);
         Relation r0 = op.getRelationDest();
         Relation r1 = op.getSrc();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
@@ -520,7 +520,7 @@ public abstract class DomainAssignment implements OperationVisitor {
      * @see net.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor#visit(net.sf.bddbddb.ir.highlevel.Load)
      */
     public Object visit(Load op) {
-        if (TRACE) System.out.println("Load op: " + op);
+        if (TRACE) solver.out.println("Load op: " + op);
         Relation r0 = op.getRelationDest();
         for (Iterator i = r0.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
@@ -544,7 +544,7 @@ public abstract class DomainAssignment implements OperationVisitor {
      * @see net.sf.bddbddb.ir.highlevel.HighLevelOperationVisitor#visit(net.sf.bddbddb.ir.highlevel.Save)
      */
     public Object visit(Save op) {
-        if (TRACE) System.out.println("Save op: " + op);
+        if (TRACE) solver.out.println("Save op: " + op);
         Relation r1 = op.getSrc();
         for (Iterator i = r1.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
@@ -597,7 +597,7 @@ public abstract class DomainAssignment implements OperationVisitor {
     public void loadDomainAssignment(BufferedReader in) throws IOException {
         BDDSolver bs = (BDDSolver) solver;
         int count = 0;
-        System.out.println("Loading domain assignment from file...");
+        solver.out.println("Loading domain assignment from file...");
         for (;;) {
             String s = in.readLine();
             if (s == null) break;
@@ -650,13 +650,13 @@ public abstract class DomainAssignment implements OperationVisitor {
                     }
                 }
                 if (!success) {
-                    if(TRACE) System.out.println("Cannot add constraint: " + s);
+                    if(TRACE) solver.out.println("Cannot add constraint: " + s);
                 } else {
                     ++count;
                 }
             }
         }
-        System.out.println("Incorporated " + count + " constraints from file.");
+        solver.out.println("Incorporated " + count + " constraints from file.");
     }
     
     public abstract void setVariableOrdering();

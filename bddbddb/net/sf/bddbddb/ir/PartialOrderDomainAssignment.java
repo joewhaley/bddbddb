@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
@@ -56,7 +57,7 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
         List path = new LinkedList();
         ConstraintGraph graph = new ConstraintGraph(beforeConstraints);
         if (graph.isPath(a1, a2, path) || graph.isPath(a2, a1, path)) {
-            if (TRACE) System.out.println("Cannot,rep cycle detected: " + path);
+            if (TRACE) solver.out.println("Cannot,rep cycle detected: " + path);
             return false;
         }
         return true;
@@ -68,17 +69,17 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
         Object rep2 = uf.find(o2);
         Pair tempConstraint = new Pair(rep1, rep2);
         if (beforeConstraints.contains(tempConstraint)) {
-            if (TRACE) System.out.println(o1 + " already before " + o2);
+            if (TRACE) solver.out.println(o1 + " already before " + o2);
             return true;
         }
         beforeConstraints.add(tempConstraint);
         List cycle = new LinkedList();
         if (!constraintsSatisfied(cycle)) {
-            if (TRACE) System.out.println("rep cycle detected: " + cycle);
+            if (TRACE) solver.out.println("rep cycle detected: " + cycle);
             beforeConstraints.remove(tempConstraint);
             return false;
         }
-        if (TRACE) System.out.println("adding before constraint: " + tempConstraint);
+        if (TRACE) solver.out.println("adding before constraint: " + tempConstraint);
         return true;
     }
 
@@ -92,18 +93,18 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
     }
 
     boolean forceInterleaved(Object o1, Object o2) {
-        if (TRACE) System.out.println("Forcing " + o1 + " interleaved " + o2);
+        if (TRACE) solver.out.println("Forcing " + o1 + " interleaved " + o2);
         //update constraint reps
         ileavedConstraints = updateConstraints(ileavedConstraints);
         Object rep1 = uf.find(o1);
         Object rep2 = uf.find(o2);
         Pair newConstraint = new Pair(rep1, rep2);
         if (ileavedConstraints.contains(newConstraint)) {
-            if (TRACE) System.out.println(o1 + " already interleaved with " + o2);
+            if (TRACE) solver.out.println(o1 + " already interleaved with " + o2);
             return true;
         }
         ileavedConstraints.add(newConstraint);
-        if (TRACE) System.out.println("adding interleaved constraint: " + newConstraint);
+        if (TRACE) solver.out.println("adding interleaved constraint: " + newConstraint);
         return true;
     }
 
@@ -117,9 +118,9 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
     }
 
     boolean constraintsSatisfied(List cycle) {
-        if (TRACE) System.out.println("Before Constraints: " + beforeConstraints);
+        if (TRACE) solver.out.println("Before Constraints: " + beforeConstraints);
         ConstraintGraph graph = new ConstraintGraph(beforeConstraints);
-        if (TRACE) System.out.println("Before graph: " + graph);
+        if (TRACE) solver.out.println("Before graph: " + graph);
         return !graph.isCycle(cycle);
     }
 
@@ -146,12 +147,12 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
     public void setVariableOrdering() {
         TRACE = true;
         if (beforeConstraints.size() == 0 && ileavedConstraints.size() == 0) {
-            if (TRACE) System.out.println("No constraints specified using default ordering");
+            if (TRACE) solver.out.println("No constraints specified using default ordering");
             super.setVariableOrdering();
         }
-      //  System.out.println("beforeConstraints: " + beforeConstraints);
-        if (TRACE) System.out.println("Interleaved constraints: " + ileavedConstraints);
-        //System.out.println("physical domains: " + physicalDomains);
+      //  solver.out.println("beforeConstraints: " + beforeConstraints);
+        if (TRACE) solver.out.println("Interleaved constraints: " + ileavedConstraints);
+        //solver.out.println("physical domains: " + physicalDomains);
         MultiMap ileavedDomains = new GenericMultiMap();
         Collection nodes = new LinkedHashSet(physicalDomains.keySet());
         
@@ -160,16 +161,16 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
             Pair c = (Pair) it.next();
             Object rep1 = uf.find(c.left);
             Object rep2 = uf.find(c.right);
-            if (TRACE) System.out.println("interleave constraint: " + c);
-            if (TRACE) System.out.println(c.left + " rep = " + rep1);
-            if (TRACE) System.out.println(c.right + " rep = " + rep2);
+            if (TRACE) solver.out.println("interleave constraint: " + c);
+            if (TRACE) solver.out.println(c.left + " rep = " + rep1);
+            if (TRACE) solver.out.println(c.right + " rep = " + rep2);
             if (rep1.equals(rep2)) continue;
             nodes.remove(rep1);
             nodes.remove(rep2);
             uf.union(rep1, rep2);
             Object newRep = uf.find(rep1);
             nodes.add(newRep);
-            if (TRACE) System.out.println("New rep: " + newRep);
+            if (TRACE) solver.out.println("New rep: " + newRep);
             List domains = new LinkedList();
             Object d1 = ileavedDomains.get(rep1);
             if (d1 != null) {
@@ -184,7 +185,7 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
             } else {
                 domains.add(physicalDomains.get(rep2));
             }
-            if (TRACE) System.out.println("interleaved: " + domains);
+            if (TRACE) solver.out.println("interleaved: " + domains);
             ileavedDomains.addAll(newRep, domains);
         }
         beforeConstraints = updateConstraints(beforeConstraints);
@@ -193,8 +194,8 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
       //  beforeConstraints = (SortedSet) cons.getBeforeConstraints();
         ConstraintGraph graph = new ConstraintGraph(nodes, beforeConstraints);
         
-        if (TRACE) System.out.println("Nodes: " + nodes);
-        if (TRACE) System.out.println("Constraints: " + beforeConstraints);
+        if (TRACE) solver.out.println("Nodes: " + nodes);
+        if (TRACE) solver.out.println("Constraints: " + beforeConstraints);
         String order = graphToOrder(TRACE, graph, uf, ileavedDomains, physicalDomains);
         BDDSolver s = (BDDSolver) solver;
         s.VARORDER = order;
@@ -203,13 +204,14 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
 
     public static String graphToOrder(boolean trace, ConstraintGraph graph, UnionFind uf, MultiMap ileavedDomains, Map domainMap){
         
+        PrintStream out = System.out;
         Set visited = new HashSet();
         int i = 0;
-       if (trace) System.out.println("Order graph: " + graph);
+        if (trace) out.println("Order graph: " + graph);
         StringBuffer sb = new StringBuffer();
         for (Collection roots = graph.getRoots(); !roots.isEmpty();) {
-            System.out.println("Nodes left: " + graph.getNodes());
-            if (trace) System.out.println("Roots: " + roots);
+            if (trace) out.println("Nodes left: " + graph.getNodes());
+            if (trace) out.println("Roots: " + roots);
             for (Iterator it = roots.iterator(); it.hasNext();) {
                 Object root = it.next();
                 Object rep = uf.find(root);
@@ -217,11 +219,11 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
                     sb.append((i != 0) ? "_" : "");
                     i++;
                     visited.add(rep);
-                    if (trace) System.out.println("root: " + rep);
+                    if (trace) out.println("root: " + rep);
                     Collection ileaved = ileavedDomains.getValues(rep);
                     if (ileaved != null && ileaved.size() != 0) {
                         
-                        if (trace) System.out.println("interleaved");
+                        if (trace) out.println("interleaved");
                         Iterator jt = ileaved.iterator();
                         sb.append(jt.next());
                         while (jt.hasNext())

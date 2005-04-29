@@ -16,6 +16,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
@@ -31,10 +32,10 @@ import net.sf.javabdd.BDD.BDDIterator;
  */
 public class BDDRelation extends Relation {
     
-    public static String BDD_INPUT_SUFFIX = System.getProperty("bddinputsuffix", ".bdd");
-    public static String BDD_OUTPUT_SUFFIX = System.getProperty("bddoutputsuffix", ".bdd");
-    public static String TUPLES_INPUT_SUFFIX = System.getProperty("tuplesinputsuffix", ".tuples");
-    public static String TUPLES_OUTPUT_SUFFIX = System.getProperty("tuplesoutputsuffix", ".tuples");
+    public static String BDD_INPUT_SUFFIX = SystemProperties.getProperty("bddinputsuffix", ".bdd");
+    public static String BDD_OUTPUT_SUFFIX = SystemProperties.getProperty("bddoutputsuffix", ".bdd");
+    public static String TUPLES_INPUT_SUFFIX = SystemProperties.getProperty("tuplesinputsuffix", ".tuples");
+    public static String TUPLES_OUTPUT_SUFFIX = SystemProperties.getProperty("tuplesoutputsuffix", ".tuples");
     
     /**
      * Link to solver.
@@ -110,7 +111,7 @@ public class BDDRelation extends Relation {
                         BDDDomain dom = (BDDDomain) j.next();
                         if (dom.getName().equals(option)) {
                             if (domains.contains(dom)) {
-                                System.out.println("Cannot assign " + dom + " to attribute " + a + ": " + dom + " is already assigned");
+                                solver.out.println("Cannot assign " + dom + " to attribute " + a + ": " + dom + " is already assigned");
                                 option = "";
                                 break;
                             } else {
@@ -299,11 +300,11 @@ public class BDDRelation extends Relation {
         calculateDomainSet();
         BDD t = domainSet.and(s);
         s.free();
-        //System.out.println("Relation domains: " + domains + " BDD domains:" + activeDomains(r));
+        //solver.out.println("Relation domains: " + domains + " BDD domains:" + activeDomains(r));
         
         boolean result = t.equals(domainSet);
         if (!result) {
-            System.out.println("Warning, domains for " + this + " don't match BDD: " + activeDomains(r) + " vs " + domains);
+            solver.out.println("Warning, domains for " + this + " don't match BDD: " + activeDomains(r) + " vs " + domains);
         }
         return result;
     }
@@ -344,7 +345,7 @@ public class BDDRelation extends Relation {
                     BDDDomain d = (BDDDomain) i.next();
                     String s2 = in.readLine();
                     if (!s2.startsWith("# ")) {
-                        System.err.println("BDD file \""+filename+"\" has no variable assignment line for "+d);
+                        solver.err.println("BDD file \""+filename+"\" has no variable assignment line for "+d);
                         in.reset();
                         break;
                     }
@@ -413,7 +414,7 @@ public class BDDRelation extends Relation {
                     r2.andWith(mask);
                 }
             } else {
-                System.err.println("BDD file \""+filename+"\" has no header line.");
+                solver.err.println("BDD file \""+filename+"\" has no header line.");
                 r2 = solver.bdd.load(filename);
             }
         } finally {
@@ -421,9 +422,9 @@ public class BDDRelation extends Relation {
         }
         if (r2 != null) {
             if (r2.isZero()) {
-                System.out.println("Warning: " + filename + " is zero.");
+                solver.out.println("Warning: " + filename + " is zero.");
             } else if (r2.isOne()) {
-                System.out.println("Warning: " + filename + " is one.");
+                solver.out.println("Warning: " + filename + " is one.");
             } else {
                 if (!verify(r2)) {
                     throw new IOException("Expected domains for loaded BDD " + filename + " to be " + domains + ", but found " + activeDomains(r2)
@@ -518,7 +519,7 @@ public class BDDRelation extends Relation {
             }
             if (msg != null) {
                 if (ex) throw new IOException("in file \""+filename+"\", "+msg);
-                else System.err.println("WARNING: in file \""+filename+"\", "+msg);
+                else solver.err.println("WARNING: in file \""+filename+"\", "+msg);
             }
         }
         if (domainList.size() != domains.size()) {
@@ -531,7 +532,7 @@ public class BDDRelation extends Relation {
             }
             String msg = sb.toString();
             if (ex) throw new IOException(msg);
-            else System.err.println("WARNING: "+msg); 
+            else solver.err.println("WARNING: "+msg); 
         }
         return domainList;
     }
@@ -548,7 +549,7 @@ public class BDDRelation extends Relation {
             String s = in.readLine();
             if (s == null) return;
             if (!s.startsWith("# ")) {
-                System.err.println("Tuple file \""+filename+"\" is missing header line, using default.");
+                solver.err.println("Tuple file \""+filename+"\" is missing header line, using default.");
             } else {
                 checkInfoLine(filename, s, true, true);
             }
@@ -617,7 +618,7 @@ public class BDDRelation extends Relation {
      */
     public void save(String filename) throws IOException {
         Assert._assert(isInitialized);
-        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements ("+activeDomains(relation)+")");
+        solver.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements ("+activeDomains(relation)+")");
         BufferedWriter out = null;
         try {
             out = new BufferedWriter(new FileWriter(filename));
@@ -648,7 +649,7 @@ public class BDDRelation extends Relation {
      * @throws IOException
      */
     public void saveTuples(String filename) throws IOException {
-        System.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements ("+activeDomains(relation)+")");
+        solver.out.println("Relation " + this + ": " + relation.nodeCount() + " nodes, " + dsize() + " elements ("+activeDomains(relation)+")");
         saveTuples(solver.basedir + name + ".tuples", relation);
     }
 
@@ -669,17 +670,17 @@ public class BDDRelation extends Relation {
             }
             BDD allDomains = solver.bdd.one();
             dos.write("#");
-            System.out.print(fileName + " domains {");
+            solver.out.print(fileName + " domains {");
             int[] domIndices = new int[domains.size()];
             int k = -1;
             for (Iterator i = domains.iterator(); i.hasNext();) {
                 BDDDomain d = (BDDDomain) i.next();
-                System.out.print(" " + d.toString());
+                solver.out.print(" " + d.toString());
                 dos.write(" " + d.toString() + ":" + d.varNum());
                 domIndices[++k] = d.getIndex();
             }
             dos.write("\n");
-            System.out.println(" } = " + relation.nodeCount() + " nodes, " + dsize() + " elements");
+            solver.out.println(" } = " + relation.nodeCount() + " nodes, " + dsize() + " elements");
             if (relation.isOne()) {
                 for (k = 0; k < domIndices.length; ++k) {
                     dos.write("* ");
@@ -710,7 +711,7 @@ public class BDDRelation extends Relation {
                 dos.write("\n");
                 ++lines;
             }
-            System.out.println("Done writing " + lines + " lines.");
+            solver.out.println("Done writing " + lines + " lines.");
         } finally {
             if (dos != null) dos.close();
         }

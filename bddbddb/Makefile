@@ -1,6 +1,7 @@
 MODULES = net
 SUPPORT_LIBS = javabdd.jar weka.jar jwutil-1.0.jar jdom.jar
 JAR_NAME = bddbddb.jar
+FULL_JAR_NAME = bddbddb-full.jar
 
 ifeq (${OS},Windows_NT)
   CLASSPATH_SEP = \;
@@ -49,10 +50,10 @@ _javac:
 ### RULES TO CLEAN
 #
 clean:
-	find $(MODULES) -name "*.class" | xargs rm -f $(JAR_NAME)
+	find $(MODULES) -name "*.class" | xargs rm -f $(JAR_NAME) $(FULL_JAR_NAME)
 
 veryclean:
-	find $(MODULES) -name "*.class" | xargs rm -f $(JAR_NAME) .source_list .class_list
+	find $(MODULES) -name "*.class" | xargs rm -f $(JAR_NAME) $(FULL_JAR_NAME) .source_list .class_list
 
 
 ### RULES TO ACCESS CVS
@@ -77,6 +78,8 @@ jar: $(JAR_NAME)
 $(JAR_NAME): class_list
 	$(JAR) cfm $(JAR_NAME) bddbddbManifest @.class_list
 
+fulljar: $(JAR_NAME) $(SUPPORT_LIBS) bddbddb.pro
+	java -jar proguard.jar @bddbddb.pro
 
 ### RULES TO RUN TEST CASES
 #

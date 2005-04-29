@@ -17,6 +17,7 @@ import jwutil.collections.GenericMultiMap;
 import jwutil.collections.LinearMap;
 import jwutil.collections.MultiMap;
 import jwutil.graphs.Navigator;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.bddbddb.ir.highlevel.Copy;
 import net.sf.bddbddb.ir.highlevel.Difference;
@@ -107,7 +108,7 @@ public abstract class InferenceRule implements IterationElement {
     /**
      * Flag specifying whether or not to incrementalize computation of this rule.
      */
-    boolean incrementalize = !System.getProperty("incremental", "yes").equals("no");
+    boolean incrementalize = !SystemProperties.getProperty("incremental", "yes").equals("no");
     
     /**
      * Flag specifying whether to cache values before or after renaming.

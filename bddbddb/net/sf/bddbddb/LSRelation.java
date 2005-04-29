@@ -175,7 +175,7 @@ public class LSRelation extends Relation {
             String s = in.readLine();
             if (s == null) return;
             if (!s.startsWith("# ")) {
-                System.err.println("Tuple file \""+filename+"\" is missing header line, using default.");
+                solver.err.println("Tuple file \""+filename+"\" is missing header line, using default.");
             } else {
                 checkInfoLine(filename, s, true, true);
             }

@@ -9,11 +9,12 @@
 </sealing>
 </manifest>
 <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.dataflow"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.highlevel"/>
+<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb"/>
 <javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.lowlevel"/>
 <javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.dynamic"/>
-<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb"/>
+<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.dataflow"/>
 <javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir"/>
+<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.order"/>
+<javaElement handleIdentifier="=bddbddb/&lt;net.sf.bddbddb.ir.highlevel"/>
 </selectedElements>
 </jardesc>

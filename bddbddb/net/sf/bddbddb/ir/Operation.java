@@ -5,6 +5,7 @@ package net.sf.bddbddb.ir;
 
 import java.util.Iterator;
 import java.util.List;
+import jwutil.io.SystemProperties;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.IterationElement;
@@ -30,7 +31,7 @@ public abstract class Operation implements IterationElement {
     /**
      * Boolean for verbose tracing of operations
      */
-    public static boolean TRACE_VERBOSE = System.getProperty("traceinterpreter", "no").equals("verbose");
+    public static boolean TRACE_VERBOSE = SystemProperties.getProperty("traceinterpreter", "no").equals("verbose");
     /**
      * Unique ID number for this operation.
      */

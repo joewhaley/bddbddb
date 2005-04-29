@@ -14,8 +14,11 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.PrintStream;
+import jwutil.io.SystemProperties;
 import net.sf.bddbddb.Solver.MyReader;
 
 /**
@@ -31,7 +34,11 @@ import net.sf.bddbddb.Solver.MyReader;
  */
 public class Interactive {
     
-    public static boolean IGNORE_OUTPUT = !System.getProperty("ignoreoutput", "yes").equals("no");
+    public static InputStream in = System.in;
+    public static PrintStream out = System.out;
+    public static PrintStream err = System.err;
+    
+    public static boolean IGNORE_OUTPUT = !SystemProperties.getProperty("ignoreoutput", "yes").equals("no");
     
     /**
      * Solver we are using.
@@ -45,6 +52,8 @@ public class Interactive {
      */
     public Interactive(Solver s) {
         this.solver = s;
+        this.solver.out = out;
+        this.solver.err = err;
     }
     
     /**
@@ -57,7 +66,7 @@ public class Interactive {
      * @throws IOException
      */
     public static void main(String[] args) throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException {
-        String solverName = System.getProperty("solver", "net.sf.bddbddb.BDDSolver");
+        String solverName = SystemProperties.getProperty("solver", "net.sf.bddbddb.BDDSolver");
         Solver dis = (Solver) Class.forName(solverName).newInstance();
         String file = "";
         if (args.length > 0) {
@@ -67,7 +76,7 @@ public class Interactive {
         Interactive a = new Interactive(dis);
         if (file.length() > 0) {
             MyReader in = new MyReader(new LineNumberReader(new FileReader(file)));
-            System.out.println("Reading "+file+"...");
+            out.println("Reading "+file+"...");
             dis.readDatalogProgram(in);
             in.close();
         }
@@ -77,6 +86,8 @@ public class Interactive {
             dis.relationsToPrintSize.clear();
             dis.relationsToPrintTuples.clear();
         }
+        out.println("Welcome to the interactive bddbddb Datalog solver!");
+        out.println("Type a Datalog rule or query, or \"help\" for help.");
         a.interactive();
     }
     
@@ -128,26 +139,57 @@ public class Interactive {
         }
     }
     
+    public static void printHelp() {
+        out.println("Using Datalog:");
+        out.println();
+        /////////////12345678901234567890123456789012345678901234567890123456789012345678901234567890
+        out.println(" To specify a domain:  \t<domain> <size> {<map-file-name>}");
+        out.println("    Example:\tV 1024");
+        out.println(" To specify a relation:\t<relation> (<attrib>:<domain>{,<attrib>:<domain>}*)");
+        out.println("    Example:\tR (v1:V, v2:V, h:H)");
+        out.println(" To specify a rule:    \t<relation>(<var>{,<var>}*) :- {<relation>(<var>{,<var>}*),}*.");
+        out.println("    Example:\tR(a,b,c) :- R(b,a,c), Q(c).");
+        out.println("    Example:\tX(a,b,c) :- a!=b, b<c, Y(c).");
+        out.println(" To perform a query:   \t<relation>(<var>{,<var>}*) {,<relation>(<var>{,<var>}*)}*?");
+        out.println("    Example:\tR(x,y,z), Q(z)?");
+        out.println();
+        out.println("Other commands:");
+        out.println();
+        out.println("  relations\t: list relations");
+        out.println("  rules    \t: list rules");
+        out.println("  help     \t: show this message");
+        out.println("  deleterule #{,#}*\t: delete rule(s)");
+        out.println("  save <relation>{,<relation>}\t: save relations");
+        out.println("  solve    \t: solve current set of rules/relations");
+        out.println("  dumplog  \t: dump the command log to a file");
+        out.println("  .include <file>\t: include (interpret) a file");
+    }
+    
     /**
      * Invoke the interactive solver.
      */
     public void interactive() {
         log = new LinkedList();
-        LineNumberReader lin = new LineNumberReader(new InputStreamReader(System.in));
+        LineNumberReader lin = new LineNumberReader(new InputStreamReader(in));
         MyReader in = new MyReader(lin);
         outer:
         for (;;) {
             try {
-                System.out.print("> ");
+                out.print("> ");
                 String s = readLine(in);
                 if (s == null) break;
                 if (s.equalsIgnoreCase("exit") || s.equalsIgnoreCase("quit")) {
+                    out.println("Exiting.");
                     return;
                 }
                 log.add(s);
+                if (s.equalsIgnoreCase("help")) {
+                    printHelp();
+                    continue;
+                }
                 if (s.equalsIgnoreCase("dumplog")) {
                     dumpLog();
-                    System.out.println("Log dumped. ("+log.size()+" lines)");
+                    out.println("Log dumped. ("+log.size()+" lines)");
                     continue;
                 }
                 if (s.equalsIgnoreCase("solve")) {
@@ -165,7 +207,7 @@ public class Interactive {
                 }
                 if (s.startsWith("deleterule")) {
                     if (s.length() <= 11) {
-                        System.out.println("Usage: deleterule #{,#}");
+                        out.println("Usage: deleterule #{,#}");
                     } else {
                         List rules = parseRules(s.substring(11).trim());
                         if (rules != null && !rules.isEmpty()) {
@@ -176,7 +218,7 @@ public class Interactive {
                 }
                 if (s.startsWith("save")) {
                     if (s.length() <= 5) {
-                        System.out.println("Usage: save <relation>{,<relation}>");
+                        out.println("Usage: save <relation>{,<relation>}");
                     } else {
                         List relations = parseRelations(s.substring(5).trim());
                         if (relations != null && !relations.isEmpty()) {
@@ -204,13 +246,13 @@ public class Interactive {
                     }
                 }
             } catch (NoSuchElementException x) {
-                System.out.println("Invalid command.");
+                out.println("Invalid command.");
                 log.remove(log.size()-1);
             } catch (IllegalArgumentException x) {
-                System.out.println("Invalid command.");
+                out.println("Invalid command.");
                 log.remove(log.size()-1);
             } catch (IOException x) {
-                System.out.println("IO Exception occurred: "+x);
+                out.println("IO Exception occurred: "+x);
             }
         }
     }
@@ -230,7 +272,7 @@ public class Interactive {
             else relationName = s.substring(0, i);
             Relation r = solver.getRelation(relationName);
             if (r == null) {
-                System.out.println("Unknown relation \""+relationName+"\"");
+                out.println("Unknown relation \""+relationName+"\"");
                 return null;
             }
             relations.add(r);
@@ -256,7 +298,7 @@ public class Interactive {
                 else ruleNum = s.substring(0, i);
                 int k = Integer.parseInt(ruleNum);
                 if (k < 1 || k > solver.rules.size()) {
-                    System.out.println("Rule number out of range: "+k);
+                    out.println("Rule number out of range: "+k);
                     return null;
                 }
                 rules.add(solver.rules.get(k-1));
@@ -265,7 +307,7 @@ public class Interactive {
             }
             return rules;
         } catch (NumberFormatException x) {
-            System.out.println("Not a number: \""+ruleNum+"\"");
+            out.println("Not a number: \""+ruleNum+"\"");
         }
         return null;
     }
@@ -274,7 +316,7 @@ public class Interactive {
      * List the relations the solver knows about.
      */
     void listRelations() {
-        System.out.println(solver.nameToRelation.keySet());
+        out.println(solver.nameToRelation.keySet());
     }
     
     /**
@@ -282,10 +324,15 @@ public class Interactive {
      */
     void listRules() {
         int k = 0;
-        for (Iterator i = solver.rules.iterator(); i.hasNext(); ) {
-            InferenceRule r = (InferenceRule) i.next();
-            ++k;
-            System.out.println(k+": "+r);
+        Iterator i = solver.rules.iterator();
+        if (!i.hasNext()) {
+            out.println("No rules defined.");
+        } else {
+            while (i.hasNext()) {
+                InferenceRule r = (InferenceRule) i.next();
+                ++k;
+                out.println(k+": "+r);
+            }
         }
     }
     
@@ -317,7 +364,7 @@ public class Interactive {
                     try {
                         r.load();
                     } catch (IOException x) {
-                        System.out.println("WARNING: Cannot load bdd " + r + ": " + x.toString());
+                        out.println("WARNING: Cannot load bdd " + r + ": " + x.toString());
                     }
                 }
                 newRelationsToLoad = new HashSet(solver.relationsToLoadTuples);
@@ -327,7 +374,7 @@ public class Interactive {
                     try {
                         r.loadTuples();
                     } catch (IOException x) {
-                        System.out.println("WARNING: Cannot load tuples " + r + ": " + x.toString());
+                        out.println("WARNING: Cannot load tuples " + r + ": " + x.toString());
                     }
                 }
                 time = System.currentTimeMillis() - time;
@@ -342,7 +389,7 @@ public class Interactive {
                 solver.dotGraphsToDump.isEmpty()) {
                 solver.out.println("No relations marked as output!  ");
                 if (IGNORE_OUTPUT)
-                    System.out.println("(By default, the interactive driver ignores output keywords in the initial datalog.)");
+                    out.println("(By default, the interactive driver ignores output keywords in the initial datalog.)");
                 solver.out.println("You need to specify at least one relation as one of the following:");
                 solver.out.println("    output");
                 solver.out.println("    outputtuples");

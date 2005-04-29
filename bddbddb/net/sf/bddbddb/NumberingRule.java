@@ -15,6 +15,7 @@ import java.math.BigInteger;
 import jwutil.graphs.GlobalPathNumbering;
 import jwutil.graphs.PathNumbering;
 import jwutil.graphs.SCCPathNumbering;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
@@ -44,7 +45,7 @@ public class NumberingRule extends InferenceRule {
     /**
      * Trace output stream.
      */
-    PrintStream out = System.out;
+    PrintStream out;
     
     /**
      * Graph of relation.
@@ -64,9 +65,9 @@ public class NumberingRule extends InferenceRule {
     /**
      * Flag to control the dumping of the numbering of the graph in dot format.
      */
-    static boolean DUMP_DOTGRAPH = !System.getProperty("dumpnumberinggraph", "no").equals("no");
+    static boolean DUMP_DOTGRAPH = !SystemProperties.getProperty("dumpnumberinggraph", "no").equals("no");
 
-    String numberingType = System.getProperty("numberingtype", "scc");
+    String numberingType = SystemProperties.getProperty("numberingtype", "scc");
     
     /**
      * Construct a new NumberingRule.
@@ -78,6 +79,7 @@ public class NumberingRule extends InferenceRule {
     NumberingRule(Solver s, InferenceRule ir) {
         super(s, ir.top, ir.bottom, ir.id);
         Assert._assert(ir.top.size() > 1);
+        out = s.out;
     }
 
     /* (non-Javadoc)
@@ -181,7 +183,7 @@ public class NumberingRule extends InferenceRule {
                 dos = new BufferedWriter(new FileWriter(solver.basedir + bottom.relation.name + ".dot"));
                 pn.dotGraph(dos, rg.getRoots(), rg.getNavigator());
             } catch (IOException x) {
-                System.err.println("Error while dumping dot graph.");
+                solver.err.println("Error while dumping dot graph.");
                 x.printStackTrace();
             } finally {
                 if (dos != null) try {
@@ -241,7 +243,7 @@ public class NumberingRule extends InferenceRule {
      * @see net.sf.bddbddb.InferenceRule#reportStats()
      */
     public void reportStats() {
-        System.out.println("Rule " + this);
-        System.out.println("   Time: " + totalTime + " ms");
+        out.println("Rule " + this);
+        out.println("   Time: " + totalTime + " ms");
     }
 }
