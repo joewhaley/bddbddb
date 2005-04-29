@@ -260,11 +260,6 @@ public class BDDSolver extends Solver {
             BDDRelation r = (BDDRelation) i.next();
             r.initialize2();
         }
-        Collection domains = new FlattenedCollection(getBDDDomains().values());
-        out.println("BDD Domains: "+domains);
-        OrderConstraintSet ocs = new OrderConstraintSet();
-        Order o = ocs.generateRandomOrder(domains);
-        out.println("Random order: "+o.toVarOrderString(null));
     }
 
     /**
