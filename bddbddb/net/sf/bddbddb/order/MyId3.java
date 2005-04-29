@@ -31,6 +31,11 @@ import weka.core.Utils;
  * @version $Revision$
  */
 public class MyId3 extends Classifier {
+    /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 3258129154733322289L;
+    
     /** The node's successors. */
     private MyId3[] m_Successors;
     /** Attribute used for splitting. */

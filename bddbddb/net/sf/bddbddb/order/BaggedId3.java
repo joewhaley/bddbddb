@@ -23,6 +23,11 @@ import weka.core.Utils;
  */
 public class BaggedId3 extends ClassProbabilityEstimator {
 
+    /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 3256726195109115186L;
+    
     public final static int NUM_TREES = 10;
     MyId3 [] trees;
     double [] weights;

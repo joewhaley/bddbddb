@@ -516,6 +516,11 @@ public class OrderClassifier {
         return attributes;
     }
     static class MyAttribute extends weka.core.Attribute{
+        /**
+         * Version ID for serialization.
+         */
+        private static final long serialVersionUID = 3546927987002716980L;
+        
         Pair pair;
         /*
         public MyAttribute(Pair pair, FastVector options, int index){
@@ -531,6 +536,11 @@ public class OrderClassifier {
     }
     
     class MyInstance extends Instance implements Comparable{
+        /**
+         * Version ID for serialization.
+         */
+        private static final long serialVersionUID = 3257006536231237427L;
+        
         private long time;
         private String order;
         public MyInstance(int numAttributes){

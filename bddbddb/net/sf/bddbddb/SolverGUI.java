@@ -28,6 +28,11 @@ import javax.swing.filechooser.FileFilter;
  * @version $Id$
  */
 public class SolverGUI extends JFrame {
+    /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 4049917160464004665L;
+    
     private javax.swing.JPanel jContentPane = null;
     private JMenuBar jJMenuBar = null;
     private JMenu jFileMenu = null;

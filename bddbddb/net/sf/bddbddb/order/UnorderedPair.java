@@ -17,6 +17,11 @@ import jwutil.collections.Pair;
 public class UnorderedPair extends Pair {
     
     /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 3258135756147798328L;
+    
+    /**
      * @param left
      * @param right
      */
