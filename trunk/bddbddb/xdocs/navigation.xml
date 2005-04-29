@@ -22,10 +22,10 @@
             href="http://cvs.sourceforge.net/viewcvs.py/bddbddb/bddbddb_examples/"/>
     </menu>
     <menu name="Download">
-      <item img="images/new.gif" name="Applet version!"
-            href="http://bddbddb.sf.net/applet.html"/>
+      <item name="NEW! Applet version"
+            href="http://bddbddb.sourceforge.net/applet.html"/>
       <item name="Download JAR file"
-            href="http://bddbddb.sf.net/bddbddb-full.jar"/>
+            href="http://bddbddb.sourceforge.net/bddbddb-full.jar"/>
     </menu>
   </body>
 </project>
