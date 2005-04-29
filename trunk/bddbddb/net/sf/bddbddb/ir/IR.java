@@ -3,9 +3,6 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb.ir;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -13,8 +10,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import jwutil.collections.MultiMap;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
@@ -58,16 +58,16 @@ import net.sf.javabdd.BDDFactory.BDDOp;
 public class IR {
     public Solver solver;
     public IterationFlowGraph graph;
-    boolean ALL_OPTS = !System.getProperty("allopts", "no").equals("no");
-    boolean FREE_DEAD = ALL_OPTS && !System.getProperty("freedead", "yes").equals("no") || !System.getProperty("freedead", "no").equals("no");
-    boolean CONSTANTPROP = ALL_OPTS && !System.getProperty("constantprop", "yes").equals("no")
-        || !System.getProperty("constantprop", "no").equals("no");
-    boolean DEFUSE = ALL_OPTS && !System.getProperty("defuse", "yes").equals("no") || !System.getProperty("defuse", "no").equals("no");
-    boolean PRE = ALL_OPTS && !System.getProperty("pre", "yes").equals("no") || !System.getProperty("pre", "no").equals("no");
-    boolean COPYPROP = ALL_OPTS && !System.getProperty("copyprop", "yes").equals("no") || !System.getProperty("copyprop", "no").equals("no");
-    boolean DEAD_CODE = ALL_OPTS && !System.getProperty("deadcode", "yes").equals("no") || !System.getProperty("deadcode", "no").equals("no");
-    boolean DOMAIN_ASSIGNMENT = ALL_OPTS && !System.getProperty("domainassign", "yes").equals("no")
-        || !System.getProperty("domainassign", "no").equals("no");
+    boolean ALL_OPTS = !SystemProperties.getProperty("allopts", "no").equals("no");
+    boolean FREE_DEAD = ALL_OPTS && !SystemProperties.getProperty("freedead", "yes").equals("no") || !SystemProperties.getProperty("freedead", "no").equals("no");
+    boolean CONSTANTPROP = ALL_OPTS && !SystemProperties.getProperty("constantprop", "yes").equals("no")
+        || !SystemProperties.getProperty("constantprop", "no").equals("no");
+    boolean DEFUSE = ALL_OPTS && !SystemProperties.getProperty("defuse", "yes").equals("no") || !SystemProperties.getProperty("defuse", "no").equals("no");
+    boolean PRE = ALL_OPTS && !SystemProperties.getProperty("pre", "yes").equals("no") || !SystemProperties.getProperty("pre", "no").equals("no");
+    boolean COPYPROP = ALL_OPTS && !SystemProperties.getProperty("copyprop", "yes").equals("no") || !SystemProperties.getProperty("copyprop", "no").equals("no");
+    boolean DEAD_CODE = ALL_OPTS && !SystemProperties.getProperty("deadcode", "yes").equals("no") || !SystemProperties.getProperty("deadcode", "no").equals("no");
+    boolean DOMAIN_ASSIGNMENT = ALL_OPTS && !SystemProperties.getProperty("domainassign", "yes").equals("no")
+        || !SystemProperties.getProperty("domainassign", "no").equals("no");
     boolean TRACE = false;
 
     public static IR create(Stratify s) {
@@ -107,7 +107,7 @@ public class IR {
     public void optimize() {
 
         if (CONSTANTPROP) {
-            System.out.print("Running ConstantProp...");
+            solver.out.print("Running ConstantProp...");
             long time = System.currentTimeMillis();
             DataflowSolver df_solver = new DataflowSolver();
             Problem problem = new ConstantProp();
@@ -116,13 +116,13 @@ public class IR {
             DataflowIterator di = df_solver.getIterator(problem, graph);
             while (di.hasNext()) {
                 Object o = di.next();
-                if (TRACE) System.out.println("Next: " + o);
+                if (TRACE) solver.out.println("Next: " + o);
                 if (o instanceof Operation) {
                     Operation op = (Operation) o;
                     ConstantPropFacts f = (ConstantPropFacts) di.getFact();
                     Operation op2 = ((ConstantProp) problem).simplify(op, f);
                     if (op != op2) {
-                        if (TRACE) System.out.println("Replacing " + op + " with " + op2);
+                        if (TRACE) solver.out.println("Replacing " + op + " with " + op2);
                         di.set(op2);
                     }
                 } else {
@@ -130,26 +130,26 @@ public class IR {
                     di.enter(b);
                 }
             }
-            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+            solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
         if (DEFUSE) {
-            if (TRACE) System.out.print("Running Def Use...");
+            if (TRACE) solver.out.print("Running Def Use...");
             long time = System.currentTimeMillis();
             boolean changed = false;
             while (doDefUse())
                 changed = true;
-            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
-            if (TRACE && changed) System.out.println("IR Changed after Defuse");
+            solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+            if (TRACE && changed) solver.out.println("IR Changed after Defuse");
         }
         if (true) {
-            System.out.print("Running Peephole...");
+            solver.out.print("Running Peephole...");
             long time = System.currentTimeMillis();
             doPeephole(graph.getIterationList());
-            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+            solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
         //printIR();
         if (DOMAIN_ASSIGNMENT) {
-            System.out.print("Running DomainAssignment...");
+            solver.out.print("Running DomainAssignment...");
             long time = System.currentTimeMillis();
           /*  DataflowSolver solver = new DataflowSolver();
             PartialOrder p = new PartialOrder(this);
@@ -172,16 +172,16 @@ public class IR {
                 dos = new BufferedWriter(new FileWriter("domainassign.gen"));
                 ass.saveDomainAssignment(dos);
             } catch (IOException x) {
-                x.printStackTrace(System.err);
+                x.printStackTrace();
             } finally {
                 if (dos != null) try {
                     dos.close();
                 } catch (IOException x) {
                 }
             }
-            System.out.println("cleaning up");
+            solver.out.println("cleaning up");
             cleanUpAfterAssignment(list);
-            System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+            solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
         //printIR();
       
@@ -189,30 +189,30 @@ public class IR {
         
             boolean changed = false;
             if (false && PRE) {
-                if (TRACE) System.out.print("Running Partial Redundancy...");
+                if (TRACE) solver.out.print("Running Partial Redundancy...");
                 long time = System.currentTimeMillis();
                 IRPass pre = new PartialRedundancy(this);
                 boolean b = pre.run();
-                if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
-                if (TRACE && b) System.out.println("IR changed after partial redundancy");
+                if (TRACE) solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+                if (TRACE && b) solver.out.println("IR changed after partial redundancy");
                 changed |= b;
             }
             if (COPYPROP) {
-                if (TRACE) System.out.print("Running Copy Propagation...");
+                if (TRACE) solver.out.print("Running Copy Propagation...");
                 long time = System.currentTimeMillis();
                 IRPass copy = new CopyProp(this);
                 boolean b = copy.run();
-                if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
-                if (TRACE && b) System.out.println("IR changed after copy propagation");
+                if (TRACE) solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+                if (TRACE && b) solver.out.println("IR changed after copy propagation");
                 changed |= b;
             }
             if (DEAD_CODE) {
-                if (TRACE) System.out.print("Running Dead Code Elimination...");
+                if (TRACE) solver.out.print("Running Dead Code Elimination...");
                 long time = System.currentTimeMillis();
                 IRPass deadCode = new DeadCode(this);
                 boolean b = deadCode.run();
-                if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
-                if (TRACE && b) System.out.println("IR Changed after dead code elimination");
+                if (TRACE) solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+                if (TRACE && b) solver.out.println("IR Changed after dead code elimination");
                 changed |= b;
             }
             if (!changed) break;
@@ -220,11 +220,11 @@ public class IR {
         }
         
         if (FREE_DEAD) {
-            if (TRACE) System.out.print("Running Liveness Analysis...");
+            if (TRACE) solver.out.print("Running Liveness Analysis...");
             long time = System.currentTimeMillis();
             IRPass liveness = new Liveness(this);
             liveness.run();
-            if (TRACE) System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+            if (TRACE) solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         }
     }
 
@@ -242,12 +242,12 @@ public class IR {
             BDDDomain d1 = ((BDDRelation) r1).getBDDDomain(a1);
             BDDDomain d0 = ((BDDRelation) r0).getBDDDomain(a0);
             if( d1 != d0 ){
-                System.out.println(r);
-                System.out.println("src attributes: " + r1.getAttributes()+ " domains: " + ((BDDRelation) r1).getBDDDomains() +
+                solver.out.println(r);
+                solver.out.println("src attributes: " + r1.getAttributes()+ " domains: " + ((BDDRelation) r1).getBDDDomains() +
                         " dest attributes: " + r0.getAttributes() + "domains: " + ((BDDRelation) r0).getBDDDomains() +
                         Operation.getRenames((BDDRelation) r0, (BDDRelation) r1));
-                System.out.println( "a0: " + a0 + "  d0: " + d0 + "  a1: " + a1 +" d1: " + d1);
-                System.out.println("rename map: " + renameMap);
+                solver.out.println( "a0: " + a0 + "  d0: " + d0 + "  a1: " + a1 +" d1: " + d1);
+                solver.out.println("rename map: " + renameMap);
                 Assert.UNREACHABLE();
             }
         }
@@ -301,7 +301,7 @@ public class IR {
     }
 
     boolean doDefUse() {
-        System.out.print("Running DefUse...");
+        solver.out.print("Running DefUse...");
         long time = System.currentTimeMillis();
         boolean change = false;
         DataflowSolver df_solver = new DataflowSolver();
@@ -312,15 +312,15 @@ public class IR {
         List to_remove = new LinkedList();
         outer : while (di.hasNext()) {
             Object o = di.next();
-            if (TRACE) System.out.println("Next: " + o);
+            if (TRACE) solver.out.println("Next: " + o);
             if (o instanceof Operation) {
                 Operation op = (Operation) o;
                 DefUseFact f = (DefUseFact) di.getFact();
                 if (op.getRelationDest() != null) {
                     Collection uses = problem.getUses(op.getRelationDest());
-                    if (TRACE) System.out.println("Uses: " + uses);
+                    if (TRACE) solver.out.println("Uses: " + uses);
                     if (uses.size() == 0) {
-                        if (TRACE) System.out.println("Removing: " + op);
+                        if (TRACE) solver.out.println("Removing: " + op);
                         di.remove();
                         change = true;
                         continue;
@@ -330,7 +330,7 @@ public class IR {
                     Project p = (Project) op;
                     Relation src = p.getSrc();
                     Set defs = f.getReachingDefs(src);
-                    if (TRACE) System.out.println("Defs: " + defs);
+                    if (TRACE) solver.out.println("Defs: " + defs);
                     if (defs.size() == 1) {
                         Operation op2 = (Operation) defs.iterator().next();
                         if (op2 instanceof BooleanOperation) {
@@ -338,7 +338,7 @@ public class IR {
                             // check if this specific def reaches any other
                             // uses.
                             Set uses = problem.getUses(src);
-                            if (TRACE) System.out.println("Uses of " + src + ": " + uses);
+                            if (TRACE) solver.out.println("Uses of " + src + ": " + uses);
                             for (Iterator i = uses.iterator(); i.hasNext();) {
                                 Operation other = (Operation) i.next();
                                 if (other == p) continue;
@@ -350,9 +350,9 @@ public class IR {
                             BDDOp bddop = boolop.getBDDOp();
                             ApplyEx new_op = new ApplyEx((BDDRelation) p.getRelationDest(), (BDDRelation) boolop.getSrc1(), bddop,
                                 (BDDRelation) boolop.getSrc2());
-                            if (TRACE) System.out.println("Replacing " + op + " with " + new_op);
+                            if (TRACE) solver.out.println("Replacing " + op + " with " + new_op);
                             di.set(new_op);
-                            if (TRACE) System.out.println("Marking " + boolop + " for deletion.");
+                            if (TRACE) solver.out.println("Marking " + boolop + " for deletion.");
                             to_remove.add(boolop);
                         }
                     }
@@ -366,7 +366,7 @@ public class IR {
             list.removeElements(to_remove);
             change = true;
         }
-        System.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
+        solver.out.println(((System.currentTimeMillis() - time) / 1000.) + "s");
         return change;
     }
 
@@ -395,11 +395,11 @@ public class IR {
     }
 
     public void printIR(IterationList list, String space) {
-        System.out.println(space + list + ":");
+        solver.out.println(space + list + ":");
         for (Iterator it = list.iterator(); it.hasNext();) {
             Object o = it.next();
             if (o instanceof Operation) {
-                System.out.println(space + "  " + o + "    " + getRenames((Operation) o));
+                solver.out.println(space + "  " + o + "    " + getRenames((Operation) o));
             } else {
                 printIR((IterationList) o, space + "  ");
             }

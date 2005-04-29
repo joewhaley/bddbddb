@@ -42,7 +42,7 @@ public interface Learner {
          * @see net.sf.bddbddb.Learner#Learner(net.sf.bddbddb.BDDSolver)
          */
         public void learn(){
-            System.out.println("learning pass");
+            solver.out.println("learning pass");
             List rulesToLearn = solver.rulesToLearn();
             TreeSet constraints = new TreeSet();
             for(Iterator it = rulesToLearn.iterator(); it.hasNext(); ){
@@ -50,7 +50,7 @@ public interface Learner {
                 BDDInferenceRule rule = (BDDInferenceRule) it.next();
                 
                 Assert._assert(rule != null);
-                System.out.println("Learning: " + rule);
+                solver.out.println("Learning: " + rule);
       /*          rule.learn();
                 Assert._assert(rule.getLearnedOrder() != null);
                 Constraints ruleCons = rule.getLearnedOrder().getConstraints();
@@ -59,12 +59,12 @@ public interface Learner {
                 rule.getLearnedOrder().saveConstraints();
         */
              }
-            System.out.println("all learned constraints: " + constraints);
+            solver.out.println("all learned constraints: " + constraints);
             ConstraintGraph graph = new ConstraintGraph();
             UnionFind uf = new UnionFind(4096);
             MultiMap domainMap = solver.getBDDDomains();
             graph.addNodes(domainMap.values());
-            System.out.println("nodes: " + graph.getNodes());
+            solver.out.println("nodes: " + graph.getNodes());
             List dummyCycle = new LinkedList();
             for(Iterator it = constraints.iterator(); it.hasNext(); ){   
                 Constraint con = (Constraint) it.next();
@@ -81,18 +81,18 @@ public interface Learner {
                         graph.removeEdge(leftRep, rightRep);
                    
                 }else if(con.getType() == Constraint.INTERLEAVED){
-                    System.out.println("before nodes: " + graph.getNodes() + " constraint: " + con);
+                    solver.out.println("before nodes: " + graph.getNodes() + " constraint: " + con);
                     
                     ConstraintGraph testGraph = new ConstraintGraph(graph);
                     uf.union(leftRep,rightRep);
                     testGraph.update(uf);
                     if(!testGraph.isCycle(dummyCycle))
                         graph = testGraph;
-                    System.out.println("after nodes: " + graph.getNodes());
+                    solver.out.println("after nodes: " + graph.getNodes());
                 }
               
             }
-            System.out.println("learned constraint graph: " + graph);
+            solver.out.println("learned constraint graph: " + graph);
             MultiMap interleaves = new GenericMultiMap();
             Map domainReflect = new HashMap();
             for(Iterator it = domainMap.values().iterator(); it.hasNext(); ){
@@ -107,8 +107,8 @@ public interface Learner {
                     it.remove();
             }
             
-            System.out.println("interleaves: " + interleaves);
-            System.out.println("domain reflect:" + domainReflect);
+            solver.out.println("interleaves: " + interleaves);
+            solver.out.println("domain reflect:" + domainReflect);
             String order = PartialOrderDomainAssignment.graphToOrder(true,graph,uf,interleaves,domainReflect);
           solver.VARORDER = order;
           solver.setVariableOrdering();

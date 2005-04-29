@@ -4,9 +4,9 @@
 package net.sf.bddbddb;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -50,33 +50,34 @@ public abstract class Solver {
     }
     
     /** Print rules as they are triggered. */
-    boolean NOISY = !System.getProperty("noisy", "yes").equals("no");
+    boolean NOISY = !SystemProperties.getProperty("noisy", "yes").equals("no");
     /** Split all rules. */
-    boolean SPLIT_ALL_RULES = !System.getProperty("split_all_rules", "no").equals("no");
+    boolean SPLIT_ALL_RULES = !SystemProperties.getProperty("split_all_rules", "no").equals("no");
     /** Split no rules, even if they have a "split" keyword. */
-    boolean SPLIT_NO_RULES = !System.getProperty("split_no_rules", "no").equals("no");
+    boolean SPLIT_NO_RULES = !SystemProperties.getProperty("split_no_rules", "no").equals("no");
     /** Report the stats for each rule at the end. */
     boolean REPORT_STATS = true;
     /** Trace the solver. */
-    boolean TRACE = System.getProperty("tracesolve") != null;
+    boolean TRACE = SystemProperties.getProperty("tracesolve") != null;
     /** Do a full trace, even dumping the contents of relations. */
-    boolean TRACE_FULL = System.getProperty("fulltracesolve") != null;
+    boolean TRACE_FULL = SystemProperties.getProperty("fulltracesolve") != null;
     /** Use the IR rather than the rules. */
-    boolean USE_IR = !System.getProperty("useir", "no").equals("no");
+    boolean USE_IR = !SystemProperties.getProperty("useir", "no").equals("no");
     /** Print the IR before interpreting it. */
-    boolean PRINT_IR = System.getProperty("printir") != null;
+    boolean PRINT_IR = SystemProperties.getProperty("printir") != null;
     
-    boolean LEARN_ALL_RULES = !System.getProperty("learnbestorder", "no").equals("no");
-    boolean LEARN_BEST_ORDER = !System.getProperty("learnbestorder", "no").equals("no");
+    boolean LEARN_ALL_RULES = !SystemProperties.getProperty("learnbestorder", "no").equals("no");
+    boolean LEARN_BEST_ORDER = !SystemProperties.getProperty("learnbestorder", "no").equals("no");
     /** Trace output stream. */
-    PrintStream out = System.out;
+    public PrintStream out = System.out;
+    public PrintStream err = System.err;
     
     /** Input Datalog filename. */
     String inputFilename;
     /** Base directory where to load/save files. */
-    String basedir = System.getProperty("basedir");
+    String basedir = SystemProperties.getProperty("basedir");
     /** Include directories. */
-    String includedirs = System.getProperty("includedirs");
+    String includedirs = SystemProperties.getProperty("includedirs");
     /** List of paths to search when loading files. */
     List/*<String>*/ includePaths;
     /** Map between id numbers and relations. */
@@ -332,7 +333,7 @@ public abstract class Solver {
      * @param inputFilename  input Datalog filename
      */
     void initializeBasedir(String inputFilename) {
-        String sep = System.getProperty("file.separator");
+        String sep = SystemProperties.getProperty("file.separator");
         if (basedir == null) {
             int i = inputFilename.lastIndexOf(sep);
             if (i >= 0) {
@@ -397,7 +398,7 @@ public abstract class Solver {
         
         finish();
         if (REPORT_STATS) {
-            System.out.println("SOLVE_TIME=" + solveTime);
+            out.println("SOLVE_TIME=" + solveTime);
             reportStats();
         }
     }
@@ -435,13 +436,13 @@ public abstract class Solver {
      * @throws ClassNotFoundException
      */
     public static void main2(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
-        String inputFilename = System.getProperty("datalog");
+        String inputFilename = SystemProperties.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
         if (inputFilename == null) {
             printUsage();
             return;
         }
-        String solverName = System.getProperty("solver", "net.sf.bddbddb.BDDSolver");
+        String solverName = SystemProperties.getProperty("solver", "net.sf.bddbddb.BDDSolver");
         Solver dis;
         dis = (Solver) Class.forName(solverName).newInstance();
         dis.load(inputFilename);
@@ -647,7 +648,7 @@ public abstract class Solver {
                     Domain fd = parseDomain(lineNum, s);
                     if (TRACE) out.println("Parsed field domain " + fd + " size " + fd.size);
                     if (nameToDomain.containsKey(fd.name)) {
-                        System.err.println("Error, field domain " + fd.name + " redefined on line " + in.getLineNumber() + ", ignoring.");
+                        err.println("Error, field domain " + fd.name + " redefined on line " + in.getLineNumber() + ", ignoring.");
                     } else {
                         nameToDomain.put(fd.name, fd);
                     }
@@ -689,12 +690,12 @@ public abstract class Solver {
      * @param msg  error message
      */
     void outputError(int linenum, int colnum, String line, String msg) {
-        System.err.println("Error on line " + linenum + ":");
-        System.err.println(line);
+        err.println("Error on line " + linenum + ":");
+        err.println(line);
         while (--colnum >= 0)
-            System.err.print(' ');
-        System.err.println("^");
-        System.err.println(msg);
+            err.print(' ');
+        err.println("^");
+        err.println(msg);
     }
 
     /**
@@ -717,10 +718,10 @@ public abstract class Solver {
                 fileName = fileName.substring(1, fileName.length() - 1);
             }
             if (!fileName.startsWith("/")) {
-                String[] dirs = includedirs.split(System.getProperty("path.separator"));
+                String[] dirs = includedirs.split(SystemProperties.getProperty("path.separator"));
                 for (int i=0; i<dirs.length; i++) {
                     if ((new File(dirs[i],fileName)).exists()) {
-                        fileName = dirs[i]+System.getProperty("file.separator")+fileName;
+                        fileName = dirs[i]+SystemProperties.getProperty("file.separator")+fileName;
                         break;
                     }
                 }
@@ -759,43 +760,43 @@ public abstract class Solver {
             }
             TRACE = b;
         } else if (s.startsWith(".bddvarorder")) {
-            if (System.getProperty("bddvarorder") == null) {
+            if (SystemProperties.getProperty("bddvarorder") == null) {
                 int index = ".bddvarorder".length() + 1;
                 String varOrder = s.substring(index).trim();
                 if (this instanceof BDDSolver) {
                     ((BDDSolver) this).VARORDER = varOrder;
                 } else {
-                    System.err.println("Ignoring .bddvarorder "+varOrder);
+                    err.println("Ignoring .bddvarorder "+varOrder);
                 }
             }
         } else if (s.startsWith(".bddnodes")) {
-            if (System.getProperty("bddnodes") == null) {
+            if (SystemProperties.getProperty("bddnodes") == null) {
                 int index = ".bddnodes".length() + 1;
                 int n = Integer.parseInt(s.substring(index).trim());
                 if (this instanceof BDDSolver) {
                     ((BDDSolver) this).BDDNODES = n;
                 } else {
-                    System.err.println("Ignoring .bddnodes "+n);
+                    err.println("Ignoring .bddnodes "+n);
                 }
             }
         } else if (s.startsWith(".bddcache")) {
-            if (System.getProperty("bddcache") == null) {
+            if (SystemProperties.getProperty("bddcache") == null) {
                 int index = ".bddcache".length() + 1;
                 int n = Integer.parseInt(s.substring(index).trim());
                 if (this instanceof BDDSolver) {
                     ((BDDSolver) this).BDDCACHE = n;
                 } else {
-                    System.err.println("Ignoring .bddcache "+n);
+                    err.println("Ignoring .bddcache "+n);
                 }
             }
         } else if (s.startsWith(".bddminfree")) {
-            if (System.getProperty("bddminfree") == null) {
+            if (SystemProperties.getProperty("bddminfree") == null) {
                 int index = ".bddminfree".length() + 1;
                 double n = Double.parseDouble(s.substring(index).trim());
                 if (this instanceof BDDSolver) {
                     ((BDDSolver) this).BDDMINFREE = n;
                 } else {
-                    System.err.println("Ignoring .bddminfree "+n);
+                    err.println("Ignoring .bddminfree "+n);
                 }
             }
         } else if (s.startsWith(".findbestorder")) {
@@ -827,20 +828,20 @@ public abstract class Solver {
             lnr.close();
             dotGraphsToDump.add(dot);
         } else if (s.startsWith(".basedir")) {
-            if (System.getProperty("basedir") == null) {
+            if (SystemProperties.getProperty("basedir") == null) {
                 int index = ".basedir".length() + 1;
                 String dirName = s.substring(index).trim();
                 if (dirName.startsWith("\"") && dirName.endsWith("\"")) {
                     dirName = dirName.substring(1, dirName.length() - 1);
                 }
                 basedir += dirName;
-                String sep = System.getProperty("file.separator");
+                String sep = SystemProperties.getProperty("file.separator");
                 if (!basedir.endsWith(sep) && !basedir.endsWith("/")) {
                     basedir += sep;
                 }
                 if (TRACE) out.println("Base directory is now \"" + basedir + "\"");
                 Assert._assert(includedirs != null);
-                includedirs += System.getProperty("path.separator") + basedir;
+                includedirs += SystemProperties.getProperty("path.separator") + basedir;
             }
         } else {
             outputError(lineNum, 0, s, "Unknown directive \"" + s + "\"");
@@ -874,7 +875,7 @@ public abstract class Solver {
                 dis = new BufferedReader(new FileReader(basedir + mapName));
                 fd.loadMap(dis);
             } catch (IOException x) {
-                System.err.println("WARNING: Cannot load mapfile \"" + basedir + mapName + "\", skipping.");
+                err.println("WARNING: Cannot load mapfile \"" + basedir + mapName + "\", skipping.");
             } finally {
                 if (dis != null) try { dis.close(); } catch (IOException x) { }
             }
@@ -953,7 +954,7 @@ public abstract class Solver {
             }
         }
         if (nameToRelation.containsKey(name)) {
-            System.err.println("Error, relation " + name + " redefined on line " + lineNum + ", ignoring.");
+            err.println("Error, relation " + name + " redefined on line " + lineNum + ", ignoring.");
             return null;
         }
         Relation r = createRelation(name, attributes);
@@ -1023,16 +1024,16 @@ public abstract class Solver {
                 if (a.attributeName.equals(rightAttr)) right = a;
             }
             if (left == null) {
-                System.out.println("Specified Attribute not found: " + leftAttr);
+                out.println("Specified Attribute not found: " + leftAttr);
                 throw new IllegalArgumentException();
             } else if (right == null) {
-                System.out.println("Specified Attribute not found: " + rightAttr);
+                out.println("Specified Attribute not found: " + rightAttr);
                 throw new IllegalArgumentException();
             }
             
             if (type.equals("=")) r.constraints.addInterleavedConstraint(new InterleavedConstraint(r,left,r,right,10));
             else if (type.equals("<")) r.constraints.addBeforeConstraint(new BeforeConstraint(r,left,r,right,10));
-            if (TRACE) System.out.println("parsed constraint: " + leftAttr + " " + type + " " + rightAttr);
+            if (TRACE) out.println("parsed constraint: " + leftAttr + " " + type + " " + rightAttr);
         } else {
             //handle error
         }
@@ -1351,7 +1352,7 @@ public abstract class Solver {
     }
 
     boolean includeRelationInComeFromQuery(Relation r, boolean includeDerivations) {
-        String comeFromIncludes = System.getProperty("comeFromRelations");
+        String comeFromIncludes = SystemProperties.getProperty("comeFromRelations");
         if (comeFromIncludes == null) return true;
         String[] names = comeFromIncludes.split(":");
         boolean include = false;
@@ -1376,7 +1377,7 @@ public abstract class Solver {
         List newRules = new LinkedList();
         
         boolean oldTRACE = TRACE;
-        TRACE = TRACE || (System.getProperty("traceComeFromQuery") != null);
+        TRACE = TRACE || (SystemProperties.getProperty("traceComeFromQuery") != null);
 
         Relation r = rt.relation;
         Relation r2 = createRelation(r.name+"_q", r.attributes);
@@ -1731,7 +1732,7 @@ public abstract class Solver {
             try {
                 r.load();
             } catch (IOException x) {
-                System.out.println("WARNING: Cannot load bdd " + r + ": " + x.toString());
+                out.println("WARNING: Cannot load bdd " + r + ": " + x.toString());
             }
         }
         for (Iterator i = relationsToLoadTuples.iterator(); i.hasNext();) {
@@ -1739,7 +1740,7 @@ public abstract class Solver {
             try {
                 r.loadTuples();
             } catch (IOException x) {
-                System.out.println("WARNING: Cannot load tuples " + r + ": " + x.toString());
+                out.println("WARNING: Cannot load tuples " + r + ": " + x.toString());
             }
         }
     }
@@ -1887,7 +1888,7 @@ class RuleSorter implements Comparator {
     public InferenceRule getRule(int i) {
         InferenceRule ir = (InferenceRule) rules.get(i);
         if (ir.id == i) return ir;
-        System.out.println("Id "+i+" doesn't match id "+ir.id+": "+ir);
+        out.println("Id "+i+" doesn't match id "+ir.id+": "+ir);
         for (Iterator j = rules.iterator(); j.hasNext(); ) {
             ir = (InferenceRule) j.next();
             if (ir.id == i) return ir;
@@ -1970,7 +1971,7 @@ class RuleSorter implements Comparator {
         URL url;
         url = HijackingClassLoader.getFileURL("javabdd.jar");
         if (url == null) {
-            String sep = System.getProperty("file.separator");
+            String sep = SystemProperties.getProperty("file.separator");
             url = HijackingClassLoader.getFileURL(".."+sep+"JavaBDD");
         }
         if (url == null) {

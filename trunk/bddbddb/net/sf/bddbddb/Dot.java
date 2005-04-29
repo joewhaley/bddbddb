@@ -94,7 +94,7 @@ public class Dot {
         solver = s;
         String currentLine = in.readLine();
         while (currentLine != null) {
-            System.out.println("Parsing " + currentLine);
+            solver.out.println("Parsing " + currentLine);
             MyStringTokenizer st = new MyStringTokenizer(currentLine, " \t,()");
             parseLine(st);
             currentLine = in.readLine();

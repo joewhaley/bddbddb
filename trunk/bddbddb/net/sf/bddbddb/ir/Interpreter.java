@@ -5,6 +5,7 @@ package net.sf.bddbddb.ir;
 
 import java.util.Collection;
 import java.util.Map;
+import jwutil.io.SystemProperties;
 
 /**
  * Interpreter
@@ -13,7 +14,7 @@ import java.util.Map;
  * @version $Id$
  */
 public abstract class Interpreter {
-    boolean TRACE = System.getProperty("traceinterpreter") != null;
+    boolean TRACE = SystemProperties.getProperty("traceinterpreter") != null;
     IR ir;
     OperationInterpreter opInterpreter;
     Map/*<Relation,RelationStats>*/ relationStats;

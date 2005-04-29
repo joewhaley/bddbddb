@@ -24,6 +24,7 @@ import jwutil.graphs.DumpDotGraph;
 import jwutil.graphs.Navigator;
 import jwutil.graphs.SCCTopSortedGraph;
 import jwutil.graphs.SCComponent;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 
 /**
@@ -36,7 +37,7 @@ public class Stratify {
     boolean USE_NESTED_SCCS = true;
     boolean NOISY;
     boolean TRACE;
-    boolean TRACE_FULL = System.getProperty("tracestratify") != null;
+    boolean TRACE_FULL = SystemProperties.getProperty("tracestratify") != null;
     PrintStream out;
     public Solver solver;
     public List/*<SCComponent>*/ firstSCCs;
@@ -68,9 +69,9 @@ public class Stratify {
         unnecessary.addAll(solver.rules);
         unnecessary.removeAll(necessary);
         if (NOISY && !unnecessary.isEmpty()) {
-            System.out.println("Note: the following rules/relations are unused:");
+            solver.out.println("Note: the following rules/relations are unused:");
             for (Iterator i = unnecessary.iterator(); i.hasNext();) {
-                System.out.println("    " + i.next());
+                solver.out.println("    " + i.next());
             }
         }
         // Ignore all edges to/from unnecessary stuff.
@@ -127,9 +128,9 @@ public class Stratify {
             Set s = new HashSet();
             s.addAll(depNav.relationToDefiningRule.keySet());
             s.addAll(depNav.relationToUsingRule.keySet());
-            System.out.println("ERROR: The following relations are necessary, but not present in any strata:");
-            System.out.println("    " + s);
-            System.out.println("You may be using one of these relations without defining it.");
+            solver.out.println("ERROR: The following relations are necessary, but not present in any strata:");
+            solver.out.println("    " + s);
+            solver.out.println("You may be using one of these relations without defining it.");
             throw new IllegalArgumentException();
         }
         if (DUMP_DOTGRAPH) {
@@ -419,7 +420,7 @@ public class Stratify {
             }
         }
     }
-    static boolean DUMP_DOTGRAPH = !System.getProperty("dumprulegraph", "no").equals("no");
+    static boolean DUMP_DOTGRAPH = !SystemProperties.getProperty("dumprulegraph", "no").equals("no");
 
     void buildNodeToSCCMap(Map node2scc, SCComponent scc) {
         Collection c = innerSCCs.getValues(scc);
@@ -501,7 +502,7 @@ public class Stratify {
         try {
             ddg.dump("rules.dot");
         } catch (IOException x) {
-            System.err.println("Error outputting rules.dot");
+            solver.err.println("Error outputting rules.dot");
             x.printStackTrace();
         }
     }

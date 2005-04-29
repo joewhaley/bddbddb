@@ -33,6 +33,7 @@ import jwutil.collections.FlattenedCollection;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
 import net.sf.bddbddb.order.CandidateSampler;
@@ -106,8 +107,8 @@ public class FindBestDomainOrder {
 
     public static int TRACE = 2;
 
-    public static PrintStream out = System.out;
-    public static PrintStream out_t = null;
+    public static PrintStream out;
+    public static PrintStream out_t;
 
     public static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMdd-HHmmss");
 
@@ -148,6 +149,7 @@ public class FindBestDomainOrder {
             solver = (BDDSolver) s;
             dataRepository = new TrialDataRepository(allTrials, solver);
         }
+        out = solver.out;
     }
         
 
@@ -159,6 +161,7 @@ public class FindBestDomainOrder {
         allTrials = new LinkedList();
         if (c.solver instanceof BDDSolver)
             solver = (BDDSolver) c.solver;
+        out = solver.out;
     }
 
     /**
@@ -187,7 +190,7 @@ public class FindBestDomainOrder {
                 }
                 allTrials.addAll(list);
             } catch (Exception e) {
-                System.err.println("Error occurred loading " + filename + ": " + e);
+                solver.err.println("Error occurred loading " + filename + ": " + e);
                 e.printStackTrace();
             }
         }
@@ -226,7 +229,7 @@ public class FindBestDomainOrder {
         for (Iterator i = set.iterator(); i.hasNext();) {
             Map.Entry e = (Map.Entry) i.next();
             OrderConstraint ir = (OrderConstraint) e.getKey();
-            System.out.println("Order feature: " + ir);
+            out.println("Order feature: " + ir);
             ConstraintInfo info = (ConstraintInfo) e.getValue();
             info.dump();
         }
@@ -729,7 +732,7 @@ public class FindBestDomainOrder {
             w.write(c.toString());
             w.write("\n");
         } catch (IOException x) { 
-            System.err.println("IO Exception occurred writing \""+name+"\": "+x);
+            solver.err.println("IO Exception occurred writing \""+name+"\": "+x);
         } finally {
             if (w != null) try { w.close(); } catch (IOException _) { }
         }
@@ -742,7 +745,7 @@ public class FindBestDomainOrder {
             w.write("Classifier \"name\":\n");
             w.write("\n");
         } catch (IOException x) { 
-            System.err.println("IO Exception occurred writing \""+name+"\": "+x);
+            solver.err.println("IO Exception occurred writing \""+name+"\": "+x);
         } finally {
             if (w != null) try { w.close(); } catch (IOException _) { }
         }
@@ -770,7 +773,7 @@ public class FindBestDomainOrder {
             Order chosenOne,
             boolean returnBest) {
 
-        System.out.println("Variables: " + allVars);
+        out.println("Variables: " + allVars);
         TrialDataGroup vDataGroup = this.dataRepository.getVariableDataGroup(ir, allVars);
         TrialDataGroup aDataGroup = dataRepository.getAttribDataGroup(ir,allVars);
         TrialDataGroup dDataGroup = dataRepository.getDomainDataGroup(ir,allVars);
@@ -791,9 +794,9 @@ public class FindBestDomainOrder {
         TrialInstances dTest =dataRepository.buildDomainInstances(ir, allVars);
       
         Assert._assert(dData.numInstances() == dTest.numInstances(), "dGot: " + dData.numInstances() + " Wanted: " + dTest.numInstances());
-        System.out.println(aData);
-        System.out.println(vData);
-        System.out.println(dData);
+        out.println(aData);
+        out.println(vData);
+        out.println(dData);
 */
         // Readjust the weights using an exponential decay factor.
         adjustWeights(vData, aData, dData);
@@ -878,7 +881,7 @@ public class FindBestDomainOrder {
             try {
                 out_t = new PrintStream(new FileOutputStream(baseName+"_trials"));
             } catch (IOException x) {
-                System.err.println("Error while opening file: "+x);
+                solver.err.println("Error while opening file: "+x);
             }
         } else {
             out_t = null;
@@ -1192,9 +1195,9 @@ public class FindBestDomainOrder {
         
         return candidates;
     }
-    public static int CANDIDATE_SET_SIZE = Integer.parseInt(System.getProperty("candidateset", "500"));
+    public static int CANDIDATE_SET_SIZE = Integer.parseInt(SystemProperties.getProperty("candidateset", "500"));
     public static int SAMPLE_SIZE = 1;
-    public static double UNCERTAINTY_THRESHOLD = Double.parseDouble(System.getProperty("uncertainty", ".25"));
+    public static double UNCERTAINTY_THRESHOLD = Double.parseDouble(SystemProperties.getProperty("uncertainty", ".25"));
     public static boolean WEIGHT_UNCERTAINTY_SAMPLE = false;
     public static double VCENT = .5, ACENT = .5, DCENT = 1;
     static CandidateSampler candidateSetSampler = new UncertaintySampler(SAMPLE_SIZE, UNCERTAINTY_THRESHOLD, VCENT, ACENT, DCENT);
@@ -1344,7 +1347,7 @@ public class FindBestDomainOrder {
                 if (out_t != null) out_t.println("Using order "+best);
                 return genGuess(best, score, vClass, aClass, dClass, vDis, aDis, dDis);
             } else {
-                if (out_t != null) System.out.println("We have already tried order "+best);
+                if (out_t != null) out.println("We have already tried order "+best);
             }
             if (exhaustive) {
                 List orders = ocs.generateAllOrders(allVars);
@@ -1689,7 +1692,7 @@ public class FindBestDomainOrder {
                queue.offer(it.previous());   
              
        }
-       System.out.println("Max queue size:  " + maxQueueSize + " Nodes expanded: " + nodes);
+       out.println("Max queue size:  " + maxQueueSize + " Nodes expanded: " + nodes);
     }
 
    void printBestBDDOrders(StringBuffer sb, double score, Collection domains, OrderConstraintSet ocs,
@@ -1824,12 +1827,12 @@ public class FindBestDomainOrder {
         sortedRules.addAll(filterRules(solver.rules));
         ArrayList list = new ArrayList(sortedRules);
         Collection domains = new FlattenedCollection(solver.getBDDDomains().values());
-        System.out.println("BDD Domains: "+domains);
+        out.println("BDD Domains: "+domains);
         OrderConstraintSet ocs = new OrderConstraintSet();
         StringBuffer sb = new StringBuffer();
      //   printBestBDDOrders(sb, 0, domains, ocs, ruleToTrials, list);
         myPrintBestBDDOrders(sb, domains, list);
-        System.out.println(sb);
+        out.println(sb);
     }
     
     static Collection filterRules(Collection rules){
@@ -1968,12 +1971,12 @@ public class FindBestDomainOrder {
     }
 
     public static void main(String[] args) throws Exception {
-        String inputFilename = System.getProperty("datalog");
+        String inputFilename = SystemProperties.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
         if (inputFilename == null) {
             return;
         }
-        String solverName = System.getProperty("solver", "net.sf.bddbddb.BDDSolver");
+        String solverName = SystemProperties.getProperty("solver", "net.sf.bddbddb.BDDSolver");
         Solver s;
         s = (Solver) Class.forName(solverName).newInstance();
         s.load(inputFilename);
@@ -1985,15 +1988,15 @@ public class FindBestDomainOrder {
         for (Iterator i = s.rules.iterator(); i.hasNext();) {
             InferenceRule ir = (InferenceRule) i.next();
             if (ir.necessaryVariables == null) continue;
-            System.out.println("Computing for rule " + ir);
+            out.println("Computing for rule " + ir);
 
             List allVars = new LinkedList();
             allVars.addAll(ir.necessaryVariables);
-            System.out.println("Variables = " + allVars);
+            out.println("Variables = " + allVars);
 
             TrialGuess guess = dis.tryNewGoodOrder(null, allVars, ir, false);
 
-            System.out.println("Resulting guess: "+guess);
+            out.println("Resulting guess: "+guess);
         }
 */
         //printTrialsDistro(dis.allTrials, s);
@@ -2025,21 +2028,21 @@ public class FindBestDomainOrder {
         
         FindBestDomainOrder fbdo = solver.fbo;
         if (!fbdo.hasOrdersToTry(allVars, rule)) {
-            System.out.println("No more orders to try, skipping find best order for "+vars1+","+vars2);
+            out.println("No more orders to try, skipping find best order for "+vars1+","+vars2);
             return;
         }
-        System.out.println("Finding best order for "+vars1+","+vars2);
+        out.println("Finding best order for "+vars1+","+vars2);
         long time = System.currentTimeMillis();
         Episode ep = fbdo.getNewEpisode(rule, opNum, time, true);
         FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
         try {
             fbo.init(b1, b2, b3, BDDFactory.and);
         } catch (IOException x) {
-            System.err.println("IO Exception occurred: " + x);
+            solver.err.println("IO Exception occurred: " + x);
             fbo.cleanup();
             return;
         }
-        System.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
+        out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
         int count = BDDInferenceRule.MAX_FBO_TRIALS;
         boolean first = true;
         long bestTime = Long.MAX_VALUE;
@@ -2049,9 +2052,9 @@ public class FindBestDomainOrder {
             if (guess == null || guess.order == null) break;
             Order o = guess.order;
             String vOrder = o.toVarOrderString(rule.variableToBDDDomain);
-            System.out.println("Trying order "+vOrder);
+            out.println("Trying order "+vOrder);
             vOrder = solver.fixVarOrder(vOrder, false);
-            System.out.println("Complete order "+vOrder);
+            out.println("Complete order "+vOrder);
             time = fbo.tryOrder(true, vOrder);
             time = Math.min(time, BDDInferenceRule.LONG_TIME);
             bestTime = Math.min(time, bestTime);

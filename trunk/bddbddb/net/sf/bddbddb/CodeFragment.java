@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import jwutil.io.InputStreamGobbler;
+import jwutil.io.SystemProperties;
 import net.sf.javabdd.BDD;
 
 /**
@@ -51,8 +52,8 @@ public class CodeFragment {
      */
     public static File findWritablePath() {
         // Find a place for a temp file in classpath.
-        String cp = System.getProperty("java.class.path");
-        StringTokenizer st = new StringTokenizer(cp, System.getProperty("path.separator"));
+        String cp = SystemProperties.getProperty("java.class.path");
+        StringTokenizer st = new StringTokenizer(cp, SystemProperties.getProperty("path.separator"));
         while (st.hasMoreTokens()) {
             String p = st.nextToken();
             File f = new File(p);
@@ -70,7 +71,7 @@ public class CodeFragment {
      * @return path to javac executable, or null
      */
     static String searchForJavac(String path, String[] dirs) {
-        String sep = System.getProperty("file.separator");
+        String sep = SystemProperties.getProperty("file.separator");
         for (int i = 0; i < dirs.length; ++i) {
             File f2 = new File(path+sep+dirs[i]+sep+"bin"+sep+"javac");
             if (f2.exists()) return f2.getAbsolutePath();
@@ -104,8 +105,8 @@ public class CodeFragment {
         }
         
         // Try harder.
-        String path = System.getProperty("java.home");
-        String sep = System.getProperty("file.separator");
+        String path = SystemProperties.getProperty("java.home");
+        String sep = SystemProperties.getProperty("file.separator");
         FilenameFilter filter = new FilenameFilter() {
             public boolean accept(File dir, String name) {
                 if (name.startsWith("jdk")) return true;
@@ -191,7 +192,7 @@ public class CodeFragment {
             out.write("\n    }\n}\n");
             out.close();
             
-            String cp = System.getProperty("java.class.path");
+            String cp = SystemProperties.getProperty("java.class.path");
             Process javac = Runtime.getRuntime().exec(
                 new String[] { javacName, "-source", "1.3", "-target", "1.3",
                     "-classpath", cp, className+".java" }, null, path);

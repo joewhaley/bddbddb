@@ -21,6 +21,7 @@ import jwutil.collections.GenericMultiMap;
 import jwutil.collections.ListFactory;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.bddbddb.ir.BDDInterpreter;
 import net.sf.bddbddb.order.Order;
@@ -41,7 +42,7 @@ public class BDDSolver extends Solver {
      * Filename for BDD domain info file.
      * The BDD domain info file contains the list of domains that are allocated
      */
-    public static String bddDomainInfoFileName = System.getProperty("bddinfo", "bddinfo");
+    public static String bddDomainInfoFileName = SystemProperties.getProperty("bddinfo", "bddinfo");
     
     /**
      * Link to the BDD factory we use.
@@ -81,7 +82,7 @@ public class BDDSolver extends Solver {
                 if (ensureCapacity((BDDDomain) i.next(), range)) any = true;
             }
             if (any) {
-                System.out.println("Growing domain "+d+" to "+d.getSize());
+                out.println("Growing domain "+d+" to "+d.getSize());
                 for (Iterator i = this.getBDDDomains(d).iterator(); i.hasNext(); ) {
                     redoPairings((BDDDomain) i.next(), range);
                 }
@@ -89,7 +90,7 @@ public class BDDSolver extends Solver {
                     BDDRelation r = (BDDRelation) i.next();
                     r.calculateDomainSet();
                     if (!r.relation.isZero())
-                        System.out.println("Relation "+r+" domains "+BDDRelation.activeDomains(r.relation));
+                        out.println("Relation "+r+" domains "+BDDRelation.activeDomains(r.relation));
                 }
                 for (Iterator i = this.getRules().iterator(); i.hasNext(); ) {
                     BDDInferenceRule r = (BDDInferenceRule) i.next();
@@ -127,7 +128,7 @@ public class BDDSolver extends Solver {
                 }
             }
             if (true) {
-                //System.out.println("Pair "+map+" matches, rebuilding.");
+                //out.println("Pair "+map+" matches, rebuilding.");
                 p.reset();
                 for (Iterator j = map.entrySet().iterator(); j.hasNext(); ) {
                     Map.Entry e2 = (Map.Entry) j.next();
@@ -143,28 +144,28 @@ public class BDDSolver extends Solver {
      * Initial size of BDD node table.
      * You can set this with "-Dbddnodes=xxx"
      */
-    int BDDNODES = Integer.parseInt(System.getProperty("bddnodes", "5000000"));
+    int BDDNODES = Integer.parseInt(SystemProperties.getProperty("bddnodes", "500000"));
     
     /**
      * Initial size of BDD operation cache.
      * You can set this with "-Dbddcache=xxx"
      */
-    int BDDCACHE = Integer.parseInt(System.getProperty("bddcache", "0"));
+    int BDDCACHE = Integer.parseInt(SystemProperties.getProperty("bddcache", "0"));
     
     /**
      * BDD minimum free parameter.  This tells the BDD library when to grow the
      * node table.  You can set this with "-Dbddminfree=xxx"
      */
-    double BDDMINFREE = Double.parseDouble(System.getProperty("bddminfree", ".20"));
+    double BDDMINFREE = Double.parseDouble(SystemProperties.getProperty("bddminfree", ".20"));
     
     /**
      * BDD variable ordering.
      */
-    public String VARORDER = System.getProperty("bddvarorder", null);
+    public String VARORDER = SystemProperties.getProperty("bddvarorder", null);
 
-    public String TRIALFILE = System.getProperty("trialfile", null);
+    public String TRIALFILE = SystemProperties.getProperty("trialfile", null);
     
-    public String BDDREORDER = System.getProperty("bddreorder", null);
+    public String BDDREORDER = SystemProperties.getProperty("bddreorder", null);
     
     /**
      * Constructs a new BDD solver.  Also initializes the BDD library.
@@ -172,15 +173,15 @@ public class BDDSolver extends Solver {
     public BDDSolver() {
         super();
         if (BDDCACHE == 0) BDDCACHE = BDDNODES / 4;
-        System.out.println("Initializing BDD library (" + BDDNODES + " nodes, cache size " + BDDCACHE + ", min free " + BDDMINFREE + "%)");
+        out.println("Initializing BDD library (" + BDDNODES + " nodes, cache size " + BDDCACHE + ", min free " + BDDMINFREE + "%)");
         bdd = BDDFactory.init(1000, BDDCACHE);
-        System.out.println("Using BDD library "+bdd.getVersion());
+        out.println("Using BDD library "+bdd.getVersion());
         fielddomainsToBDDdomains = new GenericMultiMap(ListFactory.linkedListFactory);
         bdd.setMinFreeNodes(BDDMINFREE);
         try {
             fbo = new FindBestDomainOrder(this);
         } catch (NoClassDefFoundError x) {
-            System.out.println("No machine learning library found, learning disabled.");
+            out.println("No machine learning library found, learning disabled.");
         }
     }
 
@@ -200,7 +201,7 @@ public class BDDSolver extends Solver {
         isInitialized = true;
         
         if (TRIALFILE == null && inputFilename != null) {
-            String sep = System.getProperty("file.separator");
+            String sep = SystemProperties.getProperty("file.separator");
             int index1 = inputFilename.lastIndexOf(sep) + 1;
             if (index1 == 0) index1 = inputFilename.lastIndexOf('/') + 1;
             int index2 = inputFilename.lastIndexOf('.');
@@ -212,7 +213,7 @@ public class BDDSolver extends Solver {
 
     public String getBaseName() {
         if (inputFilename == null) return null;
-        String sep = System.getProperty("file.separator");
+        String sep = SystemProperties.getProperty("file.separator");
         int index1 = inputFilename.lastIndexOf(sep) + 1;
         if (index1 == 0) index1 = inputFilename.lastIndexOf('/') + 1;
         int index2 = inputFilename.lastIndexOf('.');
@@ -258,10 +259,10 @@ public class BDDSolver extends Solver {
             r.initialize2();
         }
         Collection domains = new FlattenedCollection(getBDDDomains().values());
-        System.out.println("BDD Domains: "+domains);
+        out.println("BDD Domains: "+domains);
         OrderConstraintSet ocs = new OrderConstraintSet();
         Order o = ocs.generateRandomOrder(domains);
-        System.out.println("Random order: "+o.toVarOrderString(null));
+        out.println("Random order: "+o.toVarOrderString(null));
     }
 
     /**
@@ -270,15 +271,15 @@ public class BDDSolver extends Solver {
     public void setVariableOrdering() {
         if (VARORDER != null) {
             VARORDER = fixVarOrder(VARORDER, true);
-            System.out.print("Setting variable ordering to " + VARORDER + ", ");
+            out.print("Setting variable ordering to " + VARORDER + ", ");
             int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
             bdd.setVarOrder(varOrder);
-            System.out.println("done.");
+            out.println("done.");
             // Grow variable table after setting var order.
             try {
                 bdd.setNodeTableSize(BDDNODES);
             } catch (OutOfMemoryError x) {
-                System.out.println("Not enough memory, cannot grow node table size.");
+                out.println("Not enough memory, cannot grow node table size.");
                 bdd.setCacheSize(bdd.getNodeTableSize());
                 bdd.setCacheRatio(0.25);
             }
@@ -290,16 +291,16 @@ public class BDDSolver extends Solver {
                 BDDFactory.ReorderMethod m;
                 java.lang.reflect.Field f = BDDFactory.class.getDeclaredField(BDDREORDER);
                 m = (BDDFactory.ReorderMethod) f.get(null);
-                System.out.print("Setting dynamic reordering heuristic to " + BDDREORDER + ", ");
+                out.print("Setting dynamic reordering heuristic to " + BDDREORDER + ", ");
                 bdd.autoReorder(m);
                 bdd.enableReorder();
                 bdd.reorderVerbose(1);
             } catch (NoSuchFieldException x) {
-                System.err.println("Error: no such reordering method \""+BDDREORDER+"\"");
+                err.println("Error: no such reordering method \""+BDDREORDER+"\"");
             } catch (IllegalArgumentException e) {
-                System.err.println("Error: "+e+" on reordering method \""+BDDREORDER+"\"");
+                err.println("Error: "+e+" on reordering method \""+BDDREORDER+"\"");
             } catch (IllegalAccessException e) {
-                System.err.println("Error: "+e+" on reordering method \""+BDDREORDER+"\"");
+                err.println("Error: "+e+" on reordering method \""+BDDREORDER+"\"");
             }
         }
     }
@@ -321,7 +322,7 @@ public class BDDSolver extends Solver {
                 domains.remove(dName);
                 continue;
             }
-            if (trace) System.out.println("Adding missing domain \"" + dName + "\" to bddvarorder.");
+            if (trace) out.println("Adding missing domain \"" + dName + "\" to bddvarorder.");
             String baseName = dName;
             for (;;) {
                 char c = baseName.charAt(baseName.length() - 1);
@@ -338,7 +339,7 @@ public class BDDSolver extends Solver {
         }
         for (Iterator i = domains.iterator(); i.hasNext();) {
             String dName = (String) i.next();
-            if (trace) System.out.println("Eliminating unused domain \"" + dName + "\" from bddvarorder.");
+            if (trace) out.println("Eliminating unused domain \"" + dName + "\" from bddvarorder.");
             int index = varOrder.indexOf(dName);
             if (index == 0) {
                 if (varOrder.length() <= dName.length() + 1) {
@@ -370,13 +371,13 @@ public class BDDSolver extends Solver {
             //stratify.solve();
         } else {
             IterationList list = ifg.getIterationList();
-            //System.out.println(list);
+            //out.println(list);
             BDDInterpreter interpreter = new BDDInterpreter(null);
             long time = System.currentTimeMillis();
             interpreter.interpret(list);
   /*          if (LEARN_BEST_ORDER) {
                 time = System.currentTimeMillis() - time;
-                System.out.println("SOLVE_TIME: " + time);
+                out.println("SOLVE_TIME: " + time);
                 reportStats();
                 Learner learner = new IndividualRuleLearner(this, stratify);
                 learner.learn();
@@ -416,7 +417,7 @@ public class BDDSolver extends Solver {
     public void cleanup() {
         BDDFactory.CacheStats s = bdd.getCacheStats();
         if (s.uniqueAccess > 0) {
-            System.out.println(s);
+            out.println(s);
         }
         bdd.done();
     }
@@ -615,16 +616,16 @@ public class BDDSolver extends Solver {
      * @see net.sf.bddbddb.Solver#reportStats()
      */
     public void reportStats() {
-        boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
-        boolean print_best_order = !System.getProperty("printbestorder", "no").equals("no");
+        boolean find_best_order = !SystemProperties.getProperty("findbestorder", "no").equals("no");
+        boolean print_best_order = !SystemProperties.getProperty("printbestorder", "no").equals("no");
         if(find_best_order || print_best_order){
             fbo.printBestBDDOrders();
             return;
         }
         int final_node_size = bdd.getNodeNum();
         int final_table_size = bdd.getNodeTableSize();
-        System.out.println("MAX_NODES=" + final_table_size);
-        System.out.println("FINAL_NODES=" + final_node_size);
+        out.println("MAX_NODES=" + final_table_size);
+        out.println("FINAL_NODES=" + final_node_size);
         super.reportStats();
     }
 
@@ -637,6 +638,4 @@ public class BDDSolver extends Solver {
         return this.bdd;
     }
 
-
-    
 }

@@ -1,9 +1,9 @@
 -injars C:\workspace\bddbddb\bddbddb.jar(!**.java)
 -injars C:\workspace\bddbddb\jwutil-1.0.jar(!**.java)
 -injars C:\workspace\bddbddb\javabdd.jar(!**.java,net/sf/javabdd/JFactory*,net/sf/javabdd/BuDDyFactory*,net/sf/javabdd/BDDFactory*,!net/sf/javabdd/*Factory*)
--outjars C:\workspace\bddbddb\bddbddb-opt.jar
+-outjars C:\workspace\bddbddb\bddbddb-full.jar
 
--libraryjars 'C:\Program Files\Java\jre1.5.0_02/lib/rt.jar'
+-libraryjars C:\jdk1.3.1_15\jre\lib\rt.jar
 
 -dontoptimize
 -dontobfuscate

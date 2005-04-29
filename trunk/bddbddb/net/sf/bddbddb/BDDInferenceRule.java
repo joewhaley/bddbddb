@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import jwutil.collections.LinearMap;
+import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
@@ -74,10 +75,10 @@ public class BDDInferenceRule extends InferenceRule {
     /**
      * Whether we should attempt to find the best order for this rule.
      */
-    boolean find_best_order = !System.getProperty("findbestorder", "no").equals("no");
+    boolean find_best_order = !SystemProperties.getProperty("findbestorder", "no").equals("no");
     
-    long FBO_CUTOFF = Long.parseLong(System.getProperty("fbocutoff", "90"));
-    boolean learn_best_order = !System.getProperty("learnbestorder", "no").equals("no");  
+    long FBO_CUTOFF = Long.parseLong(SystemProperties.getProperty("fbocutoff", "90"));
+    boolean learn_best_order = !SystemProperties.getProperty("learnbestorder", "no").equals("no");  
     
     /**
      * Construct a new BDDInferenceRule.
@@ -1006,7 +1007,7 @@ public class BDDInferenceRule extends InferenceRule {
     }
     
     public static final long LONG_TIME = 10000000;
-    public static int MAX_FBO_TRIALS = Integer.parseInt(System.getProperty("fbotrials", "50"));
+    public static int MAX_FBO_TRIALS = Integer.parseInt(SystemProperties.getProperty("fbotrials", "50"));
     
     int lastTrialNum = -1;
 }
