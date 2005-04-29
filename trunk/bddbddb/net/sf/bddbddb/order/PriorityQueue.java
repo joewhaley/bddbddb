@@ -14,7 +14,6 @@ import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import jwutil.util.Assert;
 
 /**
@@ -554,19 +553,21 @@ public class PriorityQueue extends AbstractCollection implements Queue, java.io.
     }
 
 
+    /* (non-Javadoc)
+     * @see net.sf.bddbddb.order.Queue#remove()
+     */
     public Object remove() {
         Object val = poll();
-        if(val == null) throw new NoSuchElementException();
+        if (val == null) throw new NoSuchElementException();
         return val;
     }
 
     /* (non-Javadoc)
-     * @see java.util.Queue#element()
+     * @see net.sf.bddbddb.order.Queue#element()
      */
     public Object element() {
         Object val = peek();
-        if(val == null) throw new NoSuchElementException();
-        
+        if (val == null) throw new NoSuchElementException();
         return val;
     }
 
