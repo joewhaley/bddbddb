@@ -16,8 +16,16 @@
             href="links.html"/>
       <item name="PLDI'04 paper"
             href="http://www.stanford.edu/~jwhaley/papers/pldi04.pdf"/>
+      <item name="PODS'05 paper"
+            href="http://www.stanford.edu/~jwhaley/papers/pods05.pdf"/>
       <item name="Datalog examples"
             href="http://cvs.sourceforge.net/viewcvs.py/bddbddb/bddbddb_examples/"/>
+    </menu>
+    <menu name="Download">
+      <item img="images/new.gif" name="Applet version!"
+            href="http://bddbddb.sf.net/applet.html"/>
+      <item name="Download JAR file"
+            href="http://bddbddb.sf.net/bddbddb-full.jar"/>
     </menu>
   </body>
 </project>
