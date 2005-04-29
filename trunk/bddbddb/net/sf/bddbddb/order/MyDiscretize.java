@@ -33,6 +33,11 @@ import weka.filters.unsupervised.attribute.Discretize;
  */
 public class MyDiscretize extends Discretize {
 
+    /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 3833183631698114354L;
+    
     double power;
     
     public MyDiscretize() {

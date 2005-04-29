@@ -22,6 +22,11 @@ import weka.filters.unsupervised.attribute.Discretize;
 public class TrialInstances extends Instances {
 
     /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 4049922649398589241L;
+
+    /**
      * @param name
      * @param attInfo
      * @param capacity

@@ -12,6 +12,11 @@ import java.util.Stack;
 
 public class StackQueue extends Stack implements Queue{
 
+    /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 3257001047263425073L;
+
     /* (non-Javadoc)
      * @see java.util.Queue#offer(java.lang.Object)
      */

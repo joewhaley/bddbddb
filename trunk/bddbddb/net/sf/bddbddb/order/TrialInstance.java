@@ -17,6 +17,11 @@ import weka.core.Instance;
 
 public class TrialInstance extends OrderInstance implements Comparable {
 
+    /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 3689626995428701492L;
+
     public static TrialInstance construct(TrialInfo ti, Order o, double cost, TrialInstances dataSet) {
         return construct(ti, o, cost, dataSet, 1);
     }

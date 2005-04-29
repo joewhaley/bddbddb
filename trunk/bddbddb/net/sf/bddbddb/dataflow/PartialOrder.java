@@ -498,6 +498,11 @@ public class PartialOrder extends OperationProblem {
     public static class InterleavedConstraint extends Constraint{
         
         /**
+         * Version ID for serialization.
+         */
+        private static final long serialVersionUID = 3257003254876616756L;
+        
+        /**
          * @param leftRel
          * @param leftAttr
          * @param rightRel
@@ -525,6 +530,11 @@ public class PartialOrder extends OperationProblem {
     }
     
     public static class BeforeConstraint extends Constraint{
+        
+        /**
+         * Version ID for serialization.
+         */
+        private static final long serialVersionUID = 3835158341730514996L;
         
         /**
          * @param leftRel

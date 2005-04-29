@@ -52,6 +52,11 @@ public abstract class WekaInterface {
     }
     
     public static class OrderAttribute extends weka.core.Attribute {
+        /**
+         * Version ID for serialization.
+         */
+        private static final long serialVersionUID = 3257291339690555447L;
+
         Object a, b;
         
         static FastVector my_nominal_values = new FastVector(3);
@@ -248,6 +253,11 @@ public abstract class WekaInterface {
 
     public static class OrderInstance extends Instance {
         
+        /**
+         * Version ID for serialization.
+         */
+        private static final long serialVersionUID = 3258412811553093939L;
+
         public static OrderInstance construct(Order o, Instances dataSet) {
             return construct(o, dataSet, 1);
         }
