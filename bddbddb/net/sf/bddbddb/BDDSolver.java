@@ -16,6 +16,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.AccessControlException;
 import jwutil.collections.FlattenedCollection;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.ListFactory;
@@ -242,6 +243,7 @@ public class BDDSolver extends Solver {
                 allocateBDDDomain(fd);
             }
         } catch (IOException x) {
+        } catch (AccessControlException x) {
         } finally {
             if (in != null) try {
                 in.close();
