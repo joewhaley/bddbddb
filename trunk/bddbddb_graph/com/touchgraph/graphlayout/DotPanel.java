@@ -20,6 +20,11 @@ import java.io.Reader;
  */
 public class DotPanel extends GLPanel {
     
+    /**
+     * Version ID for serialization.
+     */
+    private static final long serialVersionUID = 3258135760342495544L;
+
     DotPanel(Reader r) {
         super();
         initialize2(r);
