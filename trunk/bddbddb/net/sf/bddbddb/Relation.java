@@ -261,6 +261,23 @@ public abstract class Relation {
      */
      public abstract String verboseToString();
     
+     public String elementsToString() {
+         TupleIterator i = this.iterator();
+         StringBuffer sb = new StringBuffer("[");
+         while (i.hasNext()) {
+             BigInteger t[] = i.nextTuple();
+             sb.append('<');
+             for (int k = 0; k < t.length; ++k) {
+                 if (k > 0) sb.append(',');
+                 sb.append(this.getAttribute(k).getDomain().toString(t[k]));
+             }
+             sb.append('>');
+             if (i.hasNext()) sb.append(",\n");
+         }
+         sb.append(']');
+         return sb.toString();
+     }
+     
     /**
      * Returns the list of attributes of this relation.
      * 
