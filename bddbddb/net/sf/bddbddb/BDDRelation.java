@@ -550,6 +550,8 @@ public class BDDRelation extends Relation {
             if (s == null) return;
             if (!s.startsWith("# ")) {
                 solver.err.println("Tuple file \""+filename+"\" is missing header line, using default.");
+                BDD b = parseTuple(s);
+                relation.orWith(b);
             } else {
                 checkInfoLine(filename, s, true, true);
             }
