@@ -1,11 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry excluding="target/**" kind="src" path=""/>
-	<classpathentry sourcepath="weka-src.jar" kind="lib" path="weka.jar"/>
-	<classpathentry kind="lib" path="jdom.jar"/>
-	<classpathentry kind="src" path="/jwutil"/>
-	<classpathentry kind="src" path="/JavaBDD"/>
-	<classpathentry kind="src" path="/joeq_core"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+		</attributes>
+	</classpathentry>
+	<classpathentry excluding="target/**" kind="src" path="">
+		<attributes>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="weka-src.jar" kind="lib" path="weka.jar">
+		<attributes>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="jdom.jar">
+		<attributes>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/jwutil">
+		<attributes>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/JavaBDD">
+		<attributes>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="jwutil-1.0.jar">
+		<attributes>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="javabdd-1.0b2.jar">
+		<attributes>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path=""/>
 </classpath>
