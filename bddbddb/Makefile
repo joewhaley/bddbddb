@@ -1,5 +1,5 @@
 MODULES = net
-SUPPORT_LIBS = javabdd.jar weka.jar jwutil-1.0.jar jdom.jar
+SUPPORT_LIBS = javabdd-1.0b2.jar jwutil-1.0.jar weka.jar jdom.jar
 JAR_NAME = bddbddb.jar
 FULL_JAR_NAME = bddbddb-full.jar
 
