@@ -266,9 +266,18 @@ public class BDDSolver extends Solver {
         if (VARORDER != null) {
             VARORDER = fixVarOrder(VARORDER, true);
             out.print("Setting variable ordering to " + VARORDER + ", ");
-            int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
-            bdd.setVarOrder(varOrder);
+            if (false && bdd instanceof net.sf.javabdd.JFactory) {
+                net.sf.javabdd.JFactory jbdd = (net.sf.javabdd.JFactory) bdd;
+                jbdd.setVarOrder(VARORDER);
+                jbdd.reverseAllDomains();
+            } else {
+                int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
+                bdd.setVarOrder(varOrder);
+            }
             out.println("done.");
+            int[] varOrder = bdd.getVarOrder();
+            for (int i = 0; i < varOrder.length; ++i) System.out.print(varOrder[i]+",");
+            System.out.println();
             // Grow variable table after setting var order.
             try {
                 bdd.setNodeTableSize(BDDNODES);
