@@ -131,7 +131,7 @@ public class CodeFragment {
         if (f.exists()) return f.getAbsolutePath();
         f = new File("/usr/java");
         s = f.list(filter);
-        s2 = searchForJavac("/usr/java", s);
+        if (s != null) s2 = searchForJavac("/usr/java", s);
         if (s2 != null) return s2;
         
         // Give up!
