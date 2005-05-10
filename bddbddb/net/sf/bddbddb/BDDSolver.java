@@ -266,10 +266,15 @@ public class BDDSolver extends Solver {
         if (VARORDER != null) {
             VARORDER = fixVarOrder(VARORDER, true);
             out.print("Setting variable ordering to " + VARORDER + ", ");
-            if (false && bdd instanceof net.sf.javabdd.JFactory) {
+            if (bdd instanceof net.sf.javabdd.JFactory && BDDREORDER != null) {
+                System.out.println("Target var order:");
+                int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
+                for (int i = 0; i < varOrder.length; ++i) System.out.print(varOrder[i]+",");
+                System.out.println();
+                
                 net.sf.javabdd.JFactory jbdd = (net.sf.javabdd.JFactory) bdd;
-                jbdd.setVarOrder(VARORDER);
                 jbdd.reverseAllDomains();
+                jbdd.setVarOrder(VARORDER);
             } else {
                 int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
                 bdd.setVarOrder(varOrder);
@@ -292,12 +297,13 @@ public class BDDSolver extends Solver {
         if (BDDREORDER != null) {
             try {
                 BDDFactory.ReorderMethod m;
-                java.lang.reflect.Field f = BDDFactory.class.getDeclaredField(BDDREORDER);
+                java.lang.reflect.Field f = BDDFactory.class.getDeclaredField("REORDER_"+BDDREORDER);
                 m = (BDDFactory.ReorderMethod) f.get(null);
                 out.print("Setting dynamic reordering heuristic to " + BDDREORDER + ", ");
                 bdd.autoReorder(m);
                 bdd.enableReorder();
                 bdd.reorderVerbose(1);
+                out.println("done.");
             } catch (NoSuchFieldException x) {
                 err.println("Error: no such reordering method \""+BDDREORDER+"\"");
             } catch (IllegalArgumentException e) {
