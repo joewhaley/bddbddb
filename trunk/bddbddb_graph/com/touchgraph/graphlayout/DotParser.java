@@ -184,13 +184,10 @@ public class DotParser {
             try {
                 nodeID(tk);
                 int nodeindex = m_nodes.indexOf(new GraphNode(tk.sval, null));
-                System.err.println("Found node "+tk.sval);
                 tk.nextToken();
                 if (tk.ttype == '[') nodeStmt(tk, nodeindex);
                 else if (tk.ttype == '-') edgeStmt(tk, nodeindex);
                 else tk.pushBack();
-//                else System.err.println("error at lineno " + tk.lineno()
-//                    + " in stmt: expected '[' or '-', got:" + tk.sval);
             } catch (Exception ex) {
                 System.err.println("error at lineno " + tk.lineno()
                     + " in stmtException");
