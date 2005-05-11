@@ -278,6 +278,9 @@ public class BDDSolver extends Solver {
             } else {
                 int[] varOrder = bdd.makeVarOrdering(true, VARORDER);
                 bdd.setVarOrder(varOrder);
+                if (BDDREORDER != null) {
+                    bdd.varBlockAll();
+                }
             }
             out.println("done.");
             int[] varOrder = bdd.getVarOrder();
@@ -301,8 +304,8 @@ public class BDDSolver extends Solver {
                 m = (BDDFactory.ReorderMethod) f.get(null);
                 out.print("Setting dynamic reordering heuristic to " + BDDREORDER + ", ");
                 bdd.autoReorder(m);
-                bdd.enableReorder();
-                bdd.reorderVerbose(1);
+                //bdd.enableReorder();
+                bdd.reorderVerbose(2);
                 out.println("done.");
             } catch (NoSuchFieldException x) {
                 err.println("Error: no such reordering method \""+BDDREORDER+"\"");
