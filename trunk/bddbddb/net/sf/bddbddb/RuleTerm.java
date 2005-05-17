@@ -31,13 +31,13 @@ public class RuleTerm {
     /**
      * Create a new RuleTerm with the given relation and list of variables.
      * 
-     * @param variables
      * @param relation
+     * @param variables
      */
     public RuleTerm(Relation relation, List variables) {
         super();
-        this.variables = variables;
         this.relation = relation;
+        this.variables = variables;
     }
 
     /*

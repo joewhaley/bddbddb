@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import jwutil.io.InputStreamGobbler;
@@ -90,8 +91,8 @@ public class CodeFragment {
         // First, check to see if it is in the normal path.
         try {
             Process p = Runtime.getRuntime().exec("javac");
-            new InputStreamGobbler(p.getInputStream()).start();
-            new InputStreamGobbler(p.getErrorStream()).start();
+            new InputStreamGobbler(p.getInputStream(), (OutputStream)null).start();
+            new InputStreamGobbler(p.getErrorStream(), (OutputStream)null).start();
             int c = p.waitFor();
             return "javac";
         } catch (IOException e) {
@@ -99,8 +100,8 @@ public class CodeFragment {
         }
         try {
             Process p = Runtime.getRuntime().exec("jikes");
-            new InputStreamGobbler(p.getInputStream()).start();
-            new InputStreamGobbler(p.getErrorStream()).start();
+            new InputStreamGobbler(p.getInputStream(), (OutputStream)null).start();
+            new InputStreamGobbler(p.getErrorStream(), (OutputStream)null).start();
             int c = p.waitFor();
             return "jikes";
         } catch (IOException e) {

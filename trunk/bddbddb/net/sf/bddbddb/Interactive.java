@@ -46,6 +46,11 @@ public class Interactive {
     protected Solver solver;
     
     /**
+     * Datalog parser.
+     */
+    protected DatalogParser parser;
+    
+    /**
      * Construct a new interactive solver.
      * 
      * @param s  solver to use
@@ -77,7 +82,8 @@ public class Interactive {
         if (file.length() > 0) {
             MyReader in = new MyReader(new LineNumberReader(new FileReader(file)));
             out.println("Reading "+file+"...");
-            dis.readDatalogProgram(in);
+            a.parser = new DatalogParser(dis);
+            a.parser.readDatalogProgram(in);
             in.close();
         }
         if (IGNORE_OUTPUT) {
@@ -229,7 +235,7 @@ public class Interactive {
                     }
                     continue;
                 }
-                Object result = solver.parseDatalogLine(s, in);
+                Object result = parser.parseDatalogLine(s, in);
                 if (result != null) {
                     changed = true;
                     if (s.indexOf('?') >= 0 && result instanceof Collection) {

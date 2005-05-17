@@ -940,14 +940,15 @@ public class BDDRelation extends Relation {
     }
 
     /**
-     * Get the BDDDomain that matches the given attribute.
+     * Get the BDDDomain that matches the given attribute, or
+     * null if the attribute hasn't been assigned one yet.
      * 
      * @param a  attribute
      * @return  BDDDomain that matches that attribute
      */
     public BDDDomain getBDDDomain(Attribute a) {
         int i = attributes.indexOf(a);
-        if (i == -1) return null;
+        if (i == -1 || domains == null) return null;
         return (BDDDomain) domains.get(i);
     }
     
@@ -1030,21 +1031,28 @@ public class BDDRelation extends Relation {
         this.domains = newdom;
     }
     
+    /* (non-Javadoc)
+     * @see net.sf.bddbddb.Relation#verboseToString()
+     */
     public String verboseToString(){
         StringBuffer sb = new StringBuffer();
         sb.append(super.toString());
-        sb.append("[");
+        sb.append('[');
         boolean any = false;
-        for(Iterator it = getAttributes().iterator(); it.hasNext(); ){
+        for (Iterator it = getAttributes().iterator(); it.hasNext(); ){
             any = true;
             Attribute a = (Attribute) it.next();
-            sb.append(a + ":" + getBDDDomain(a) + ",");
+            sb.append(a + ":");
+            if (domains != null)
+                sb.append(getBDDDomain(a));
+            else
+                sb.append(a.attributeDomain.toString());
+            sb.append(',');
         }
-        if(any)
+        if (any)
             sb.deleteCharAt(sb.length() - 1);
-        sb.append("]");
+        sb.append(']');
        
         return sb.toString();
     }
 }
-

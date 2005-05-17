@@ -31,7 +31,8 @@ public class BuildEquivalenceRelation {
         BDDDomain targetDomain;
         
         BDDSolver s = new BDDSolver();
-        s.readDatalogProgram(s.basedir+"fielddomains.pa");
+        DatalogParser parser = new DatalogParser(s);
+        parser.readDatalogProgram(s.basedir+"fielddomains.pa");
         System.out.println("Domains: "+s.nameToDomain);
         s.loadBDDDomainInfo();
         s.setVariableOrdering();
