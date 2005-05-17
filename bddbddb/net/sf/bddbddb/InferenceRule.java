@@ -251,6 +251,21 @@ public abstract class InferenceRule implements IterationElement {
     }
 
     /**
+     * Checks to see if there are any variables that only appear once.
+     */
+    public Variable checkUniversalVariables() {
+        calculateNecessaryVariables();
+        for (Iterator i = unnecessaryVariables.iterator(); i.hasNext(); ) {
+            Variable v = (Variable) i.next();
+            if (v instanceof Constant) continue;
+            if (!"_".equals(v.name)) {
+                return v;
+            }
+        }
+        return null;
+    }
+    
+    /**
      * Update the head relation of this rule based on the subgoal relations.
      * Returns true if the head relation changed.
      * 
