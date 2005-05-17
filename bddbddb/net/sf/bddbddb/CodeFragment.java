@@ -90,7 +90,7 @@ public class CodeFragment {
         // First, check to see if it is in the normal path.
         try {
             Process p = Runtime.getRuntime().exec("javac");
-            new InputStreamGobbler(p.getInputStream());
+            new InputStreamGobbler(p.getInputStream()).start();
             int c = p.waitFor();
             return "javac";
         } catch (IOException e) {
