@@ -26,20 +26,25 @@ vT (var:V0, type:T0) input
 hT (heap:H0, type:T1) input
 aT (type:T0, type:T1) input
 vPfilter (v:V0, h:H0)
-cha (type:T1, name:N0, method:M0) input
+#cha (type:T1, name:N0, method:M0) input
 actual (invoke:I0, num:Z0, actualparam:V1) input
 formal (method:M0, num:Z0, formalparam:V0) input
 Mret (method:M0, v:V1) input
 Mthr (method:M0, v:V1) input
 Iret (invoke:I0, v:V0) input
 Ithr (invoke:I0, v:V0) input
-mI (method:M0, invoke:I0, name:N0) input
+#mI (method:M0, invoke:I0, name:N0) input
 IE0 (invoke:I0, target:M0) input
 IE (invoke:I0, target:M0) output
+
+# Expected elements: vP 4523260
+# Expected elements: hP 1294129
+# Expected elements: IE 27453
 
 ### Rules
 
 vP(v,h) :- vP0(v,h).
+hP(h,f,h2) :- hP0(h,f,h2).
 IE(i,m) :- IE0(i,m).
 vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
 vP(v1,h) :- A(v1,v2), vP(v2,h), vPfilter(v1,h).
