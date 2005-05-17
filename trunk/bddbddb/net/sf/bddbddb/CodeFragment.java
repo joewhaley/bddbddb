@@ -91,6 +91,7 @@ public class CodeFragment {
         try {
             Process p = Runtime.getRuntime().exec("javac");
             new InputStreamGobbler(p.getInputStream()).start();
+            new InputStreamGobbler(p.getErrorStream()).start();
             int c = p.waitFor();
             return "javac";
         } catch (IOException e) {
@@ -98,6 +99,8 @@ public class CodeFragment {
         }
         try {
             Process p = Runtime.getRuntime().exec("jikes");
+            new InputStreamGobbler(p.getInputStream()).start();
+            new InputStreamGobbler(p.getErrorStream()).start();
             int c = p.waitFor();
             return "jikes";
         } catch (IOException e) {
