@@ -3,6 +3,15 @@
 // Licensed under the terms of the GNU LGPL; see COPYING for details.
 package net.sf.bddbddb;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URL;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,26 +24,18 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
+
 import jwutil.collections.FlattenedCollection;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
 import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
+import net.sf.bddbddb.BDDInferenceRule.VarOrderComparator;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
 import net.sf.bddbddb.order.CandidateSampler;
 import net.sf.bddbddb.order.ConstraintInfo;
@@ -46,8 +47,8 @@ import net.sf.bddbddb.order.Order;
 import net.sf.bddbddb.order.OrderConstraint;
 import net.sf.bddbddb.order.OrderConstraintSet;
 import net.sf.bddbddb.order.OrderTranslator;
-import net.sf.bddbddb.order.PriorityQueue;
 import net.sf.bddbddb.order.Queue;
+import net.sf.bddbddb.order.StackQueue;
 import net.sf.bddbddb.order.TrialDataRepository;
 import net.sf.bddbddb.order.TrialGuess;
 import net.sf.bddbddb.order.TrialInfo;
@@ -64,9 +65,11 @@ import net.sf.bddbddb.order.WekaInterface.OrderInstance;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.FindBestOrder;
+
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
+
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -257,12 +260,10 @@ public class FindBestDomainOrder {
         EpisodeCollection c = newCollection ? findEpisodeCollection(rule, opNumber) : null;
 
         if(c == null){
-           c = new EpisodeCollection(rule, opNumber, timeStamp);
+           c = new EpisodeCollection(rule, opNumber);
            allTrials.add(c);
-       }else
-           c.setTimeStamp(timeStamp);
-
-       return c.startNewEpisode();
+       }
+       return c.startNewEpisode(timeStamp);
     }
    
     
@@ -752,9 +753,9 @@ public class FindBestDomainOrder {
     }
 
     
-    private void addTrial(InferenceRule rule, List variables, Episode ep, Order o, TrialPrediction prediction, long time) {
+    private void addTrial(InferenceRule rule, List variables, Episode ep, Order o, TrialPrediction prediction, long time, long timestamp) {
         
-        TrialInfo info = new TrialInfo(o,prediction,time, ep);
+        TrialInfo info = new TrialInfo(o,prediction,time,ep, timestamp);
       /*  tc.addTrial(o,guess.prediction, time);
        */
         ep.addTrial(info);
@@ -1557,7 +1558,7 @@ public class FindBestDomainOrder {
             if(true){
                 if(TRACE > 1) out.println("Finding Constraints for: " + rule);
             OrderTranslator t = new MapBasedTranslator(rule.variableToBDDDomain);
-            EpisodeCollection tc = new EpisodeCollection(rule, 0, -2);
+            EpisodeCollection tc = new EpisodeCollection(rule, 0);
             
             boolean initialized = false;
             /* put these in backwards, so we can a stack */
@@ -1574,7 +1575,7 @@ public class FindBestDomainOrder {
                 newOcs.constrain(t.translate(tg.order), null);
                 cachedConstraints[ruleNum][i] = newOcs;
                 cachedScores[ruleNum][i] = tg.prediction.score; // * (rule.totalTime+1) / 1000;
-                tc.addTrial(tg.order, null, 0);
+                tc.addTrial(tg.order, null, 0, System.currentTimeMillis());
             }
         }else{
                 MultiMap a2v, d2v;
@@ -1610,17 +1611,22 @@ public class FindBestDomainOrder {
                 }
         }
     }
+    
+    static String MAX_CON_ORDERS = System.getProperty("considertrials");
     static int MAX_GEN_ORDERS = 100;
     static final int NUM_BEST_ORDERS_PER_RULE = 3;
     void myPrintBestBDDOrders(StringBuffer sb, Collection domains,List rules) {
        if(rules.size() == 0) return;
-       
+       Collection visitedElems = new LinkedList();
        double [][] cachedScores = new double[rules.size()][] ;
        OrderConstraintSet [][] cachedConstraints = new OrderConstraintSet[rules.size()][];
-       Queue queue = new PriorityQueue(); //new StackQueue(); 
+       Queue queue = new StackQueue(); // PriorityQueue(); 
        int numPrintedOrders = 0;
        int nodes = 0, maxQueueSize = 0;
        long allRulesTime = 0;
+       TrialDataRepository repository = MAX_CON_ORDERS == null ? 
+         dataRepository : dataRepository.reduceByNumTrials(Integer.parseInt(MAX_CON_ORDERS));
+       
        for(Iterator it = rules.iterator(); it.hasNext(); )
            allRulesTime += ((BDDInferenceRule) it.next()).totalTime;
        
@@ -1651,11 +1657,12 @@ public class FindBestDomainOrder {
                  sb.append("Score "+format(elem.pathScore, 5)+": "+o.toVarOrderString(null));
                  sb.append('\n');
              }
+             sb.append("-\n");
              numPrintedOrders += orders.size();
              continue;
            }
            ++nodes;
-           LinkedList elems = new LinkedList();
+          // LinkedList elems = new LinkedList();
            if(TRACE > 3) out.println("Expanding: " + elem);
            
            BDDInferenceRule rule = (BDDInferenceRule) rules.get(elem.nextRule);
@@ -1667,8 +1674,8 @@ public class FindBestDomainOrder {
                if(constraints == null){
                    if(i == 0) {
                        ++newElem.nextRule;
-                       //queue.offer(newElem);
-                       elems.add(elem);
+                       queue.offer(newElem);
+                       //elems.add(elem);
                    }
                    break;
                }
@@ -1677,20 +1684,21 @@ public class FindBestDomainOrder {
                Collection invalidConstraints = new LinkedList();
                if(TRACE > 3) out.println("Adding constraints: " + constraints);
                boolean worked = newElem.ocs.constrain(constraints, invalidConstraints);
-               newElem.pathCost += (rule.totalTime * constraintScore) * (1 + invalidConstraints.size() / constraints.size()) ;
+               //newElem.pathCost += (rule.totalTime * constraintScore) * (1 + invalidConstraints.size() / constraints.size()) ;
+               newElem.pathCost +=  invalidConstraints.size() * (rule.totalTime / constraintScore) ;
                newElem.pathScore = newElem.pathCost;
                
                //if(!worked) continue;//newElem.ocs = backupOcs;
                if(TRACE > 3)  out.println("Couldn't add: " + invalidConstraints);
-               //queue.offer(newElem);
-               elems.add(newElem);
+               queue.offer(newElem);
+               //elems.add(newElem);
            
            }
            /*if we're using the stack, push them in reverse priority */
-           if(elems.size() > 0)
+      /*     if(elems.size() > 0)
            for(ListIterator it = elems.listIterator(elems.size() - 1);  it.hasPrevious();  )
                queue.offer(it.previous());   
-             
+        */     
        }
        out.println("Max queue size:  " + maxQueueSize + " Nodes expanded: " + nodes);
     }
@@ -1728,7 +1736,7 @@ public class FindBestDomainOrder {
                     out.println("Total rule run time: " + bddir.totalTime);
                 }
                 OrderTranslator t = new MapBasedTranslator(bddir.variableToBDDDomain);
-                EpisodeCollection tc = new EpisodeCollection(bddir, 0, -2);
+                EpisodeCollection tc = new EpisodeCollection(bddir, 0);
                 for (int i = 0; i < 5; ++i) {
                     TrialGuess tg = tryNewGoodOrder(tc, new ArrayList(bddir.necessaryVariables), bddir, -2, null, true);
                     if (tg == null) break;
@@ -1751,7 +1759,7 @@ public class FindBestDomainOrder {
                     }else{
                         out.println("Couldn't add constraints: " + invalidConstraints);
                     }
-                    tc.addTrial(tg.order, null, 0);
+                    tc.addTrial(tg.order, null, 0, System.currentTimeMillis());
                 
                 }
             } else {
@@ -2058,7 +2066,7 @@ public class FindBestDomainOrder {
             time = fbo.tryOrder(true, vOrder);
             time = Math.min(time, BDDInferenceRule.LONG_TIME);
             bestTime = Math.min(time, bestTime);
-            fbdo.addTrial(rule, allVars,ep, o,guess.prediction, time);
+            fbdo.addTrial(rule, allVars,ep, o,guess.prediction, time, System.currentTimeMillis());
             
             if (time >= BDDInferenceRule.LONG_TIME)
                 fbdo.neverTryAgain(rule, o);
