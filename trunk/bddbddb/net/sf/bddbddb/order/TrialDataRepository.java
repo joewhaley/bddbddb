@@ -6,7 +6,9 @@
  */
 package net.sf.bddbddb.order;
 
+import java.io.PrintStream;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,9 +16,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.io.PrintStream;
+
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
+import jwutil.collections.SortedArraySet;
+import jwutil.collections.SortedArraySet.SortedArraySetFactory;
 import jwutil.util.Assert;
 import net.sf.bddbddb.BDDSolver;
 import net.sf.bddbddb.FindBestDomainOrder;
@@ -224,6 +228,25 @@ public class TrialDataRepository {
        
         return changed;
     }
+    
+    public TrialDataRepository reduceByNumTrials(int numTrials){
+        Collection newAllTrials = new LinkedList();
+        numTrials = Math.min(allTrials.size(), numTrials);
+        SortedArraySet sortedTrials = (SortedArraySet) SortedArraySet.FACTORY.makeSet(
+                new Comparator(){
+                    public int compare(Object o1, Object o2) {
+                        TrialInfo t1 = (TrialInfo) o1;
+                        TrialInfo t2 = (TrialInfo) o2;
+                        return FindBestDomainOrder.signum(t1.timestamp  - t2.timestamp);
+                    }
+                });
+        sortedTrials.addAll(allTrials);
+        newAllTrials.addAll(sortedTrials.subList(0, numTrials - 1));
+        return new TrialDataRepository(newAllTrials, this.solver);
+    }
+    
+        
+        
     public abstract static class TrialDataGroup{
 
         public static String CLASSIFIER = "net.sf.bddbddb.order.MyId3";

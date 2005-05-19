@@ -42,6 +42,7 @@ public class TrialInfo implements Comparable {
      */
     public TrialPrediction pred;
 
+    public long timestamp;
     /**
      * Construct a new TrialInfo.
      * 
@@ -49,11 +50,12 @@ public class TrialInfo implements Comparable {
      * @param p predict value for this trial
      * @param c  cost
      */
-    public TrialInfo(Order o, TrialPrediction p, long c, Episode ep) {
+    public TrialInfo(Order o, TrialPrediction p, long c, Episode ep, long timestamp) {
         this.order = o;
         this.pred = p;
         this.cost = c;
         this.episode = ep;
+        this.timestamp = timestamp;
     }
 
     /**
@@ -90,6 +92,9 @@ public class TrialInfo implements Comparable {
         if (result == 0) {
             result = this.order.compareTo(that.order);
         }
+        if(result == 0){
+            result = FindBestDomainOrder.signum(this.timestamp - that.timestamp);
+        }
         return result;
     }
 
@@ -110,6 +115,7 @@ public class TrialInfo implements Comparable {
         Element dis = new Element("trialInfo");
         dis.setAttribute("order", order.toString());
         dis.setAttribute("cost", Long.toString(cost));
+        dis.setAttribute("timestamp", Long.toString(timestamp));
         dis.setAttribute("var" + PREDICTION_VAR1, Double.toString(pred.getVarLowerBound()));
         dis.setAttribute("var" + PREDICTION_VAR2, Double.toString(pred.getVarUpperBound()));
         dis.setAttribute("attr" + PREDICTION_VAR1, Double.toString(pred.getAttrLowerBound()));
@@ -125,7 +131,7 @@ public class TrialInfo implements Comparable {
         Order o = Order.parse(o_str, nameToVar);
         
         long c = Long.parseLong(e.getAttributeValue("cost"));
-
+        long timestamp = Long.parseLong(e.getAttributeValue("timestamp"));
         String score1 = e.getAttributeValue("score");
         double score = score1 == null ? 0 : Double.parseDouble(score1);
         String var1 = e.getAttributeValue("var" + PREDICTION_VAR1);
@@ -140,6 +146,6 @@ public class TrialInfo implements Comparable {
         var2 = e.getAttributeValue("dom" + PREDICTION_VAR2);
         double dVar1 = var1 == null ? 0 : Double.parseDouble(var1);
         double dVar2 = var2 == null ? Double.MAX_VALUE : Double.parseDouble(var2);
-        return new TrialInfo(o, new TrialPrediction(score, vVar1, vVar2, aVar1, aVar2, dVar1, dVar2), c, ep);
+        return new TrialInfo(o, new TrialPrediction(score, vVar1, vVar2, aVar1, aVar2, dVar1, dVar2), c, ep, timestamp);
     }
 }
