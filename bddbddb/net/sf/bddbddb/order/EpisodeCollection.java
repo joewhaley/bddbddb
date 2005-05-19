@@ -8,7 +8,6 @@ package net.sf.bddbddb.order;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -38,7 +37,7 @@ public class EpisodeCollection {
     /**
      * Time of the test.
      */
-    long timeStamp;
+    //long timeStamp;
     
     public static String RULE_CONST = "rule";
     public static String SPACER = "_";
@@ -64,31 +63,28 @@ public class EpisodeCollection {
     /**
      * Construct a new collection of trials.
      * 
-     * @param rule  rule that we are collecting for
-     * @param opNum  operation number
-     * @param ts  time stamp
+     * @param n  test name
      */
-    public EpisodeCollection(BDDInferenceRule rule, int opNum, long ts) {
+    public EpisodeCollection(BDDInferenceRule rule, int opNum) {
         name = RULE_CONST + rule.id + SPACER + UPDATE_CONST + rule.updateCount + SPACER + OP_CONST + opNum;     
-        timeStamp = ts;
         trials = new LinkedHashMap();
         sorted = null;
         episodes = new LinkedList();
     }
 
-    EpisodeCollection(String n, long ts){
+    EpisodeCollection(String n){
         name = n;     
-        timeStamp = ts;
         trials = new LinkedHashMap();
         sorted = null;
         episodes = new LinkedList();
     }
     
     /* TODO stamp episodes instead of the collection */
-    public void setTimeStamp(long stamp){
+/*    public void setTimeStamp(long stamp){
         timeStamp = stamp;
     }
-    /**
+*/
+        /**
      * Add the information about a trial to this collection.
      * 
      * @param i  trial info
@@ -109,11 +105,11 @@ public class EpisodeCollection {
      * @param p predicted value for this trial
      * @param cost  cost of operation
      */
-    public void addTrial(Order o, TrialPrediction p, long cost) {
+    public void addTrial(Order o, TrialPrediction p, long cost, long timestamp) {
         Episode ep = getCurrEpisode();
-        if(ep == null) ep = startNewEpisode();
+        if(ep == null) ep = startNewEpisode(System.currentTimeMillis());
         
-        addTrial(new TrialInfo(o, p, cost, ep));
+        addTrial(new TrialInfo(o, p, cost, ep, timestamp));
     }
     
     
@@ -237,7 +233,8 @@ public class EpisodeCollection {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return name + "@" + FindBestDomainOrder.dateFormat.format(new Date(timeStamp));
+        return name;
+        /*+ "@" + FindBestDomainOrder.dateFormat.format(new Date(timeStamp));*/
     }
 
     /**
@@ -248,7 +245,7 @@ public class EpisodeCollection {
     public Element toXMLElement() {
         Element dis = new Element("episodeCollection");
         dis.setAttribute("name", name);
-        dis.setAttribute("timeStamp", Long.toString(timeStamp));
+        /* dis.setAttribute("timeStamp", Long.toString(timeStamp));*/
         for(Iterator it = episodes.iterator(); it.hasNext(); ){
             Episode ep = (Episode) it.next();
             dis.addContent(ep.toXMLElement());
@@ -300,19 +297,20 @@ public class EpisodeCollection {
         String name = e.getAttributeValue("name");
         InferenceRule rule = parseRule(solver, name);
         Map nameToVar = rule.getVarNameMap();
-        long timeStamp;
+  /*      long timeStamp;
         try {
             timeStamp = Long.parseLong(e.getAttributeValue("timeStamp"));
         } catch (NumberFormatException _) {
             timeStamp = 0L;
         }
-       
-        EpisodeCollection tc = new EpisodeCollection(name, timeStamp);
+    */   
+        EpisodeCollection ec = new EpisodeCollection(name);
         /* backwards compatible: try to parse out trial info's and if it fails
          * parse episodes instead.
          */
         try{
-            Episode ep = tc.startNewEpisode();;
+            long timestamp = Long.parseLong(e.getAttributeValue("timestamp"));
+            Episode ep = ec.startNewEpisode(timestamp);
             for (Iterator i = e.getContent().iterator(); i.hasNext();) {
                 Object e2 = i.next();
                 if (e2 instanceof Element) {
@@ -321,19 +319,19 @@ public class EpisodeCollection {
                 }
             }
         }catch(IllegalArgumentException ex){
-            tc.episodes.clear();
+            ec.episodes.clear();
             for(Iterator it = e.getContent().iterator(); it.hasNext(); ){
                 Object elem2 = it.next();
                 if(elem2 instanceof Element)
-                    episodeFromXMLElement((Element) elem2,nameToVar, tc);
+                    episodeFromXMLElement((Element) elem2,nameToVar, ec);
             }
         }
       
-        return tc;
+        return ec;
     }
     public Collection getOrders(){ return trials.keySet(); }
-    public Episode startNewEpisode(){
-        Episode ep = new Episode();
+    public Episode startNewEpisode(long timestamp){
+        Episode ep = new Episode(timestamp);
         episodes.add(ep);
         return ep;
     }
@@ -344,7 +342,9 @@ public class EpisodeCollection {
     }
     /* has side effects on trialcollection */
     public static Episode episodeFromXMLElement(Element elem1, Map nameToVar, EpisodeCollection tc){
-        Episode ep = tc.startNewEpisode();
+        
+        long timestamp = Long.parseLong(elem1.getAttributeValue("timestamp"));
+        Episode ep = tc.startNewEpisode(timestamp);
         for (Iterator i = elem1.getContent().iterator(); i.hasNext();) {
             Object elem2 = i.next();
             if (elem2 instanceof Element) {
@@ -360,7 +360,9 @@ public class EpisodeCollection {
     public class Episode{
       Map trials;
       TrialInfo best;
-      public Episode(){
+      long timestamp;
+      public Episode(long timestamp){
+          this.timestamp = timestamp;
           trials = new LinkedHashMap();
       }
       public void addTrial(TrialInfo ti){
@@ -370,9 +372,11 @@ public class EpisodeCollection {
           }
           EpisodeCollection.this.addTrial(ti);
       }
+      
       public Element toXMLElement(){
           Element e = new Element("episode");
-          for (Iterator i = trials.values().iterator(); i.hasNext();) {
+          e.setAttribute("timestamp", Long.toString(timestamp));
+         for (Iterator i = trials.values().iterator(); i.hasNext();) {
               TrialInfo info = (TrialInfo) i.next();
               e.addContent(info.toXMLElement());
           }
