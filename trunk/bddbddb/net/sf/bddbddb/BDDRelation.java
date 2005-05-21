@@ -863,6 +863,12 @@ public class BDDRelation extends Relation {
         return result;
     }
     
+    /**
+     * Add a single to this relation.
+     * 
+     * @param a  first attribute
+     * @return  whether this relation changed
+     */
     public boolean add(int a) {
         BDDDomain d0 = (BDDDomain) domains.get(0);
         Domain dd0 = getAttribute(0).getDomain();
@@ -871,6 +877,13 @@ public class BDDRelation extends Relation {
         return add(val);
     }
     
+    /**
+     * Add a double to this relation.
+     * 
+     * @param a  first attribute
+     * @param b  second attribute
+     * @return  whether this relation changed
+     */
     public boolean add(int a, int b) {
         BDDDomain d0 = (BDDDomain) domains.get(0);
         Domain dd0 = getAttribute(0).getDomain();
@@ -883,6 +896,14 @@ public class BDDRelation extends Relation {
         return add(val);
     }
     
+    /**
+     * Add a triple to this relation.
+     * 
+     * @param a  first attribute
+     * @param b  second attribute
+     * @param c  third attribute
+     * @return  whether this relation changed
+     */
     public boolean add(int a, int b, int c) {
         BDDDomain d0 = (BDDDomain) domains.get(0);
         Domain dd0 = getAttribute(0).getDomain();
@@ -1015,6 +1036,11 @@ public class BDDRelation extends Relation {
         }
     }
     
+    /**
+     * Get the solver object.
+     * 
+     * @return  solver object
+     */
     public BDDSolver getSolver() {
         return solver;
     }
