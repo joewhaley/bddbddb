@@ -697,6 +697,7 @@ public class BDDRelation extends Relation {
             while (i.hasNext()) {
                 BDD sat = (BDD) i.next();
                 BigInteger[] v = sat.scanAllVar();
+                sat.free();
                 for (k = 0; k < domIndices.length; ++k) {
                     BigInteger val = v[domIndices[k]];
                     if (val.equals(BigInteger.ZERO)) {
@@ -772,6 +773,7 @@ public class BDDRelation extends Relation {
             BDD b = (BDD) i.next();
             BigInteger[] r = new BigInteger[domains.size()];
             BigInteger[] q = b.scanAllVar();
+            b.free();
             int j = 0;
             for (Iterator k = domains.iterator(); k.hasNext(); ++j) {
                 BDDDomain d = (BDDDomain) k.next();
@@ -800,6 +802,7 @@ public class BDDRelation extends Relation {
             public BigInteger[] nextTuple() {
                 BDD b = (BDD) i.next();
                 BigInteger v = b.scanVar(d);
+                b.free();
                 return new BigInteger[]{v};
             }
 
