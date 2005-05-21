@@ -695,9 +695,7 @@ public class BDDRelation extends Relation {
             int lines = 0;
             BDDIterator i = relation.iterator(domainSet);
             while (i.hasNext()) {
-                BDD sat = (BDD) i.next();
-                BigInteger[] v = sat.scanAllVar();
-                sat.free();
+                BigInteger[] v = i.nextTuple();
                 for (k = 0; k < domIndices.length; ++k) {
                     BigInteger val = v[domIndices[k]];
                     if (val.equals(BigInteger.ZERO)) {
