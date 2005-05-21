@@ -751,7 +751,7 @@ public class BDDRelation extends Relation {
      */
     public TupleIterator iterator() {
         calculateDomainSet();
-        final Iterator i = relation.iterator(domainSet);
+        final BDDIterator i = relation.iterator(domainSet);
         return new MyTupleIterator(i, domains);
     }
     
@@ -759,19 +759,17 @@ public class BDDRelation extends Relation {
      * Implementation of TupleIterator for BDDs.
      */
     static class MyTupleIterator extends TupleIterator {
-        protected Iterator i;
+        protected BDDIterator i;
         protected List domains;
 
-        protected MyTupleIterator(Iterator i, List domains) {
+        protected MyTupleIterator(BDDIterator i, List domains) {
             this.i = i;
             this.domains = domains;
         }
 
         public BigInteger[] nextTuple() {
-            BDD b = (BDD) i.next();
+            BigInteger[] q = i.nextTuple();
             BigInteger[] r = new BigInteger[domains.size()];
-            BigInteger[] q = b.scanAllVar();
-            b.free();
             int j = 0;
             for (Iterator k = domains.iterator(); k.hasNext(); ++j) {
                 BDDDomain d = (BDDDomain) k.next();
@@ -795,12 +793,10 @@ public class BDDRelation extends Relation {
     public TupleIterator iterator(int k) {
         final BDDDomain d = (BDDDomain) domains.get(k);
         BDD s = d.set();
-        final Iterator i = relation.iterator(s);
+        final BDDIterator i = relation.iterator(s);
         return new TupleIterator() {
             public BigInteger[] nextTuple() {
-                BDD b = (BDD) i.next();
-                BigInteger v = b.scanVar(d);
-                b.free();
+                BigInteger v = i.nextValue(d);
                 return new BigInteger[]{v};
             }
 
@@ -822,7 +818,7 @@ public class BDDRelation extends Relation {
         BDD val = d.ithVar(j);
         val.andWith(relation.id());
         calculateDomainSet();
-        final Iterator i = val.iterator(domainSet);
+        final BDDIterator i = val.iterator(domainSet);
         return new MyTupleIterator(i, domains);
     }
 
@@ -837,7 +833,7 @@ public class BDDRelation extends Relation {
             val.andWith(d.ithVar(j[i]));
         }
         calculateDomainSet();
-        final Iterator i = val.iterator(domainSet);
+        final BDDIterator i = val.iterator(domainSet);
         return new MyTupleIterator(i, domains);
     }
 
