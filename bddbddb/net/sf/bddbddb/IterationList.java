@@ -152,6 +152,28 @@ public class IterationList implements IterationElement {
         return (isLoop() ? "(loop) " : "") + elements.toString();
     }
 
+    public String dump() {
+        return dump(0);
+    }
+    
+    public String dump(int indent) {
+        StringBuffer sb = new StringBuffer();
+        for (int z=0; z<indent; ++z) sb.append(' ');
+        sb.append(toString());
+        sb.append(":\n");
+        for (Iterator i=elements.iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (o instanceof IterationList) {
+                sb.append(((IterationList)o).dump(indent+2));
+            } else {
+                for (int z=0; z<indent+2; ++z) sb.append(' ');
+                sb.append(o.toString());
+                sb.append('\n');
+            }
+        }
+        return sb.toString();
+    }
+    
     public boolean contains(IterationElement elem) {
         return getAllNestedElements().contains(elem);
     }

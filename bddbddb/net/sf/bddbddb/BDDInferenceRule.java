@@ -591,8 +591,10 @@ public class BDDInferenceRule extends InferenceRule {
             for (int i = 0; i < allRelationValues.length; ++i) {
                 if (!allRelationValues[i].equals(oldRelationValues[i])) {
                     if (TRACE) {
-                        solver.out.print("Diff relation #" + i + ": (" + allRelationValues[i].nodeCount() + "x" + oldRelationValues[i].nodeCount()
+                        Relation r = ((RuleTerm) top.get(i)).relation;
+                        solver.out.print("Diff relation #" + i + " ("+r+") : (" + allRelationValues[i].nodeCount() + "x" + oldRelationValues[i].nodeCount()
                             + "=");
+                        solver.out.println(oldRelationValues[i]);
                         ttime = System.currentTimeMillis();
                     }
                     newRelationValues[i] = allRelationValues[i].apply(oldRelationValues[i], BDDFactory.diff);

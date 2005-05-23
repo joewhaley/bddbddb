@@ -71,11 +71,11 @@ public class IR {
     boolean TRACE = false;
 
     public static IR create(Stratify s) {
-        return create(s.solver, s.firstSCCs, s.innerSCCs);
+        return create(s.solver, s.strata, s.innerSccs);
     }
 
-    public static IR create(Solver solver, List firstSCCs, MultiMap innerSCCs) {
-        IterationFlowGraph ifg = new IterationFlowGraph(solver.getRules(), firstSCCs, innerSCCs);
+    public static IR create(Solver solver, List strata, Map innerSccs) {
+        IterationFlowGraph ifg = new IterationFlowGraph(solver.getRules(), strata, innerSccs);
         IterationList list = ifg.expand();
         // Add load operations.
         if (!solver.getRelationsToLoad().isEmpty()) {
