@@ -70,8 +70,8 @@ pathsAfterLargestField(p,p_after) :- canonicalPath(p_l,p), remainingFields(p_l,p
 copyPair(o_cpy:V2,c1:C0,o_dst:V0,p_dst:FD0,c2:C1,o_src:V1,p_src:FD1)
 copyPair(o_cpy,c_dst,o_dst,p_dst,c_src,o_src,p_src) :- copyDst(o_cpy,o_dstptr,1), copySrc(o_cpy,o_srcptr,1), mergePointsTo(c,o_dstptr,1,c_dst,o_dst,p_dst), mergePointsTo(c,o_srcptr,1,c_src,o_src,p_src). pri=-1
 
-interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(o_cpy,c1,o_dst,p_dst,c2,o_src,p_src), subPath(p_dst,p_sub,p_dst2), subPath(p_src,p_sub,p_src2). split
-interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(o_cpy,c1,o_dst,p_dst,c2,o_src,p_src), p_dst != 0, subPath(p_dst,p_sub,p_dst2), CONS_subPath(p_src,p_sub,p_src2). split
+interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(_,c1,o_dst,p_dst,c2,o_src,p_src), subPath(p_dst,p_sub,p_dst2), subPath(p_src,p_sub,p_src2). split
+interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(_,c1,o_dst,p_dst,c2,o_src,p_src), p_dst != 0, subPath(p_dst,p_sub,p_dst2), CONS_subPath(p_src,p_sub,p_src2). split
 
 interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(_,c1,o_dst,p_dst,c2,o_src,p_src), subPath(p_dst,p_sub,p_dst2),!subPathCombines(p_src,p_sub), pathsAfterLargestField(p_src,p_src2).
 interContextAssign(c1,o_dst,p_dst2,c2,o_src,p_src2) :- copyPair(_,c1,o_dst,p_dst,c2,o_src,p_src), pathsAfterLargestField(p_dst,p_dst2), pathsAfterLargestField(p_src,p_src2).
@@ -104,14 +104,14 @@ remainderArrayPath(p, size) :- arrayPaths(_,size,p).
 #TBD: shouldn't all increments potentially go past upper bound, unless we precisely know it is a single increment
 # and the base address was the first elem?
 badPtrIncrBase(c_dst:C0, o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3)
-badPtrIncrBase(c_src,o_dst,p_dst,o_h,p_h,size) :- ptrIncr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h), !initialArrayPath(p_h,size). split
-pointsTo(c_dst,o_dst,p_dst,c_h,o_h,p_h2) :- badPtrIncrBase(c_dst,o_dst,p_dst,o_h,p_h1,_), remainingPaths(p_h1,p_h2). split
+badPtrIncrBase(c_src,o_dst,p_dst,o_h,p_h,size) :- ptrIncr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,_,o_h,p_h), !initialArrayPath(p_h,size). split
+pointsTo(c_dst,o_dst,p_dst,_,o_h,p_h2) :- badPtrIncrBase(c_dst,o_dst,p_dst,o_h,p_h1,_), remainingPaths(p_h1,p_h2). split
 
 #includes lowerbound and bad non-lowerbound decrements:
 #TBD: shouldn't all decrements be considered to go past lowerbound, unless we precisely know it is a single decr?
 badPtrDecrBase(c_dst:C0, o_dst:V0 , p_dst:FD0 , o_src:V1 , p_src:FD1, size:FD3)
-badPtrDecrBase(c_src,o_dst,p_dst,o_h,p_h,size) :- ptrDecr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,c_h,o_h,p_h), !remainderArrayPath(p_h,size). split
-pointsTo(c_dst,o_dst,p_dst,c_h,o_h,p_h2) :- badPtrDecrBase(c_dst,o_dst,p_dst,o_h,p_h1,_), remainingPaths(p_h2,p_h1). split
+badPtrDecrBase(c_src,o_dst,p_dst,o_h,p_h,size) :- ptrDecr(o_dst,p_dst,o_src,p_src,size), mergePointsTo(c_src,o_src,p_src,_,o_h,p_h), !remainderArrayPath(p_h,size). split
+pointsTo(c_dst,o_dst,p_dst,_,o_h,p_h2) :- badPtrDecrBase(c_dst,o_dst,p_dst,o_h,p_h1,_), remainingPaths(p_h2,p_h1). split
 
 #TBD: handle bad intIncrs and intDecrs
 

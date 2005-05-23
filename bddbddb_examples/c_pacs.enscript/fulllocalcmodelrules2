@@ -29,10 +29,10 @@ procCopyToArg0(proc) :- modeledProc(proc,"snprintf").
 procCopyToArg0(proc) :- modeledProc(proc,"vsprintf").
 procCopyToArg0(proc) :- modeledProc(proc,"vsnprintf").
 
-copyDst(o_cpy,o_dst,1) :- callsProc(c,fp,proc), procCopyToArg0(proc), actualArg(fp,0,o_dst), tempForCopyToArg0(fp,o_cpy). 
+copyDst(o_cpy,o_dst,1) :- callsProc(_,fp,proc), procCopyToArg0(proc), actualArg(fp,0,o_dst), tempForCopyToArg0(fp,o_cpy). 
 
-copyDst(o_cpy,o_dst,1) :- callsProc(c,fp,proc), modeledProc(proc,"bcopy"), actualArg(fp,1,o_dst), tempForCopyToArg1(fp,o_cpy). 
-copyDst(o_cpy,o_dst,1) :- callsProc(c,fp,proc), modeledProc(proc,"strdup"  ), callDestination(fp,o_dst,_), tempForCopyToDest(fp,o_cpy). 
+copyDst(o_cpy,o_dst,1) :- callsProc(_,fp,proc), modeledProc(proc,"bcopy"), actualArg(fp,1,o_dst), tempForCopyToArg1(fp,o_cpy). 
+copyDst(o_cpy,o_dst,1) :- callsProc(_,fp,proc), modeledProc(proc,"strdup"  ), callDestination(fp,o_dst,_), tempForCopyToDest(fp,o_cpy). 
 
 
 procCopyArg1ToArg0(proc:V0)
@@ -45,21 +45,21 @@ procCopyArg1ToArg0(proc) :- modeledProc(proc,"strncat").
 procCopyArg1ToArg0(proc) :- modeledProc(proc,"strcat").
 procCopyArg1ToArg0(proc) :- modeledProc(proc,"vsprintf").
 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), procCopyArg1ToArg0(proc), actualArg(fp,1,o_src), tempForCopyToArg0(fp,o_cpy). 
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), procCopyArg1ToArg0(proc), actualArg(fp,1,o_src), tempForCopyToArg0(fp,o_cpy). 
 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"bcopy"  ), actualArg(fp,0,o_src), tempForCopyToArg1(fp,o_cpy). 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strdup"  ), actualArg(fp,0,o_src), tempForCopyToDest(fp,o_cpy). 
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"bcopy"  ), actualArg(fp,0,o_src), tempForCopyToArg1(fp,o_cpy). 
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"strdup"  ), actualArg(fp,0,o_src), tempForCopyToDest(fp,o_cpy). 
 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"sprintf" ), pointerArg(fp,n,o_src), notZero(n), tempForCopyToArg0(fp,o_cpy).
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"sprintf" ), pointerArg(fp,n,o_src), notZero(n), tempForCopyToArg0(fp,o_cpy).
 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"snprintf" ), notZeroOrOne(n), pointerArg(fp,n,o_src), tempForCopyToArg0(fp,o_cpy).
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"snprintf" ), notZeroOrOne(n), pointerArg(fp,n,o_src), tempForCopyToArg0(fp,o_cpy).
 
 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsprintf"), varArgsPtrFromArg2(fp,o_src), tempForCopyToArg0(fp,o_cpy).
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"vsprintf"), varArgsPtrFromArg2(fp,o_src), tempForCopyToArg0(fp,o_cpy).
 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsnprintf"), actualArg(fp,2,o_src), tempForCopyToArg0(fp,o_cpy).
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"vsnprintf"), actualArg(fp,2,o_src), tempForCopyToArg0(fp,o_cpy).
 
-copySrc(o_cpy,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsnprintf"), varArgsPtrFromArg3(fp,o_src), tempForCopyToArg0(fp,o_cpy).
+copySrc(o_cpy,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"vsnprintf"), varArgsPtrFromArg3(fp,o_src), tempForCopyToArg0(fp,o_cpy).
 
 procStringManipArg0(proc:V0)
 procStringManipArg0(proc) :- modeledProc(proc,"__builtin_memcpy").
@@ -75,8 +75,8 @@ procStringManipArg1(proc) :- modeledProc(proc,"memmove").
 procStringManipArg1(proc) :- modeledProc(proc,"strncpy").
 procStringManipArg1(proc) :- modeledProc(proc,"strcpy").
 
-externStringManip(o_ptr) :- callsProc(c,fp,proc), procStringManipArg0(proc), actualArg(fp,0,o_ptr). 
-externStringManip(o_ptr) :- callsProc(c,fp,proc), procStringManipArg1(proc), actualArg(fp,1,o_ptr). 
+externStringManip(o_ptr) :- callsProc(_,fp,proc), procStringManipArg0(proc), actualArg(fp,0,o_ptr). 
+externStringManip(o_ptr) :- callsProc(_,fp,proc), procStringManipArg1(proc), actualArg(fp,1,o_ptr). 
 
 procStringManipArg0(proc) :- modeledProc(proc,"memcmp").
 procStringManipArg1(proc) :- modeledProc(proc,"memcmp").
@@ -94,13 +94,13 @@ procReturnArgPtr(proc,0) :- modeledProc(proc,"gets").
 procReturnArgPtr(proc,0) :- modeledProc(proc,"fgets").
 procReturnArgPtr(proc,3) :- modeledProc(proc,"catgets").
 
-assign(o_dst,1,o_src,1) :- callsProc(c,fp,proc), procReturnArgPtr(proc,argn), callDestination(fp,o_dst,_), actualArg(fp,argn,o_src).
+assign(o_dst,1,o_src,1) :- callsProc(_,fp,proc), procReturnArgPtr(proc,argn), callDestination(fp,o_dst,_), actualArg(fp,argn,o_src).
 
-#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"gets"), actualArg(fp,0,o), callerProc(fp,proc), pathInCharStr(p_load).
-#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"fgets"), actualArg(fp,0,o), callerProc(fp,proc), pathInCharStr(p_load).
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(_,fp,proc), modeledProc(proc,"gets"), actualArg(fp,0,o), callerProc(fp,proc), pathInCharStr(p_load).
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(_,fp,proc), modeledProc(proc,"fgets"), actualArg(fp,0,o), callerProc(fp,proc), pathInCharStr(p_load).
 
-#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"recv"), actualArg(fp,1,o), callerProc(fp,proc), pathInCharStr(p_load).
-#addLoadedToMods(proc,o,1,p_load) :- callsProc(c,fp,proc), modeledProc(proc,"recvfrom"), actualArg(fp,1,o), callerProc(fp,proc), pathInCharStr(p_load).
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(_,fp,proc), modeledProc(proc,"recv"), actualArg(fp,1,o), callerProc(fp,proc), pathInCharStr(p_load).
+#addLoadedToMods(proc,o,1,p_load) :- callsProc(_,fp,proc), modeledProc(proc,"recvfrom"), actualArg(fp,1,o), callerProc(fp,proc), pathInCharStr(p_load).
 
 procStoresFromModelLoc(proc:V0, o_src:V2, argn:FD3)
 procStoresFromModelLoc(proc,o_src,1) :- modeledProc(proc,"stat"), specialModelLoc("stat_struct",o_src).
@@ -118,19 +118,19 @@ procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__xstat64"), specialMo
 procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__lxstat64"), specialModelLoc("stat64_struct",o_src).
 procStoresFromModelLoc(proc,o_src,2) :- modeledProc(proc,"__fxstat64"), specialModelLoc("stat64_struct",o_src).
 
-stores(o_ptr,1,o_src,p_src,p_store) :- callsProc(c,fp,proc), procStoresFromModelLoc(proc,o_src,argn), actualArg(fp,argn,o_ptr), pathInArgPointee(fp,argn,p_store),p_src = p_store.
+stores(o_ptr,1,o_src,p_src,p_store) :- callsProc(_,fp,proc), procStoresFromModelLoc(proc,o_src,argn), actualArg(fp,argn,o_ptr), pathInArgPointee(fp,argn,p_store),p_src = p_store.
 
 pointsTo(c,o_ptr,1,0,o_ptee,0) :- callsProc(c,fp,proc), modeledProc(proc,"getaddrinfo"), specialModelLoc("getaddrinfo_socket",o_ptee), tempForStoreToArg3(fp,o_ptr).
-stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"getaddrinfo"), actualArg(fp,3,o_ptr), tempForStoreToArg3(fp,o_src).
+stores(o_ptr,1,o_src,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"getaddrinfo"), actualArg(fp,3,o_ptr), tempForStoreToArg3(fp,o_src).
 
 # "strsep": *arg0 = temp1; temp1 = temp2 + 1; temp2 = *arg0; dest = temp2 = *arg0;
-#stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), strsepTemp1(fp,o_src).
-#ptrIncr(o_dst,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), strsepTemp1(fp,o_dst), strsepTemp2(fp,o_src).
-#loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), strsepTemp2(fp,o_dst).
-#assign(o_dst,p_dst,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), callDestination(fp,o_dst,p_dst), strsepTemp2(fp,o_src).
+#stores(o_ptr,1,o_src,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), strsepTemp1(fp,o_src).
+#ptrIncr(o_dst,1,o_src,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"strsep"), strsepTemp1(fp,o_dst), strsepTemp2(fp,o_src).
+#loads(o_dst,1,o_ptr,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), strsepTemp2(fp,o_dst).
+#assign(o_dst,p_dst,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"strsep"), callDestination(fp,o_dst,p_dst), strsepTemp2(fp,o_src).
 
 #TBD: replace this with previous rules after comparison
-loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), callDestination(fp,o_dst,_).
+loads(o_dst,1,o_ptr,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"strsep"), actualArg(fp,0,o_ptr), callDestination(fp,o_dst,_).
 
 procStringManipArg0(proc) :- modeledProc(proc,"strncat").
 procStringManipArg1(proc) :- modeledProc(proc,"strncat").
@@ -141,9 +141,9 @@ procStringManipArg1(proc) :- modeledProc(proc,"strcat").
 procReturnArgPtr(proc,0) :- modeledProc(proc,"strcat").
 
 
-loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsprintf"), actualArg(fp,2,o_ptr), varArgsPtrFromArg2(fp,o_dst).
+loads(o_dst,1,o_ptr,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"vsprintf"), actualArg(fp,2,o_ptr), varArgsPtrFromArg2(fp,o_dst).
 
-loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"vsnprintf"), actualArg(fp,3,o_ptr), varArgsPtrFromArg3(fp,o_dst).
+loads(o_dst,1,o_ptr,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"vsnprintf"), actualArg(fp,3,o_ptr), varArgsPtrFromArg3(fp,o_dst).
 
 # "strto[d/f/l/ll/ld]": *arg1 = temp1; temp1 = arg0 + 1; temp1 = arg0; 
 procStrToNumeric(proc:V0)
@@ -153,12 +153,12 @@ procStrToNumeric(proc) :- modeledProc(proc,"strtol").
 procStrToNumeric(proc) :- modeledProc(proc,"strtoul").
 procStrToNumeric(proc) :- modeledProc(proc,"strtoll").
 procStrToNumeric(proc) :- modeledProc(proc,"strtold").
-#stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), tempForStoreToArg1(fp,o_src).
-#ptrIncr(o_dst,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), tempForStoreToArg1(fp,o_dst), actualArg(fp,0,o_src).
-#stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), actualArg(fp,0,o_src).
+#stores(o_ptr,1,o_src,1,1) :- callsProc(_,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), tempForStoreToArg1(fp,o_src).
+#ptrIncr(o_dst,1,o_src,1,1) :- callsProc(_,fp,proc), procStrToNumeric(proc), tempForStoreToArg1(fp,o_dst), actualArg(fp,0,o_src).
+#stores(o_ptr,1,o_src,1,1) :- callsProc(_,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), actualArg(fp,0,o_src).
 
 #TBD: replace with previous rules after comparison
-stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), actualArg(fp,0,o_src).
+stores(o_ptr,1,o_src,1,1) :- callsProc(_,fp,proc), procStrToNumeric(proc), actualArg(fp,1,o_ptr), actualArg(fp,0,o_src).
 
 procReturnArgPtr(proc,0) :- modeledProc(proc,"getcwd").
 
@@ -219,14 +219,14 @@ procStringManipArg0(proc) :- modeledProc(proc,"rindex").
 
 
 # "strtok": strtok_arg = arg0; dest = strtok_arg;
-assign(o_dst,1,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok"), specialModelLoc("strtok_initial_non-null_arg",o_dst), actualArg(fp,0,o_src).
-assign(o_dst,1,o_src,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok"), callDestination(fp,o_dst,_), specialModelLoc("strtok_initial_non-null_arg",o_src).
+assign(o_dst,1,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"strtok"), specialModelLoc("strtok_initial_non-null_arg",o_dst), actualArg(fp,0,o_src).
+assign(o_dst,1,o_src,1) :- callsProc(_,fp,proc), modeledProc(proc,"strtok"), callDestination(fp,o_dst,_), specialModelLoc("strtok_initial_non-null_arg",o_src).
 procStringManipArg0(proc) :- modeledProc(proc,"strtok").
 procStringManipArg1(proc) :- modeledProc(proc,"strtok").
 
 # "strtok_r": *arg2 = arg0; dest = *arg2;
-stores(o_ptr,1,o_src,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok_r"), actualArg(fp,2,o_ptr), actualArg(fp,0,o_src).
-loads(o_dst,1,o_ptr,1,1) :- callsProc(c,fp,proc), modeledProc(proc,"strtok_r"), callDestination(fp,o_dst,_), actualArg(fp,2,o_ptr).
+stores(o_ptr,1,o_src,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"strtok_r"), actualArg(fp,2,o_ptr), actualArg(fp,0,o_src).
+loads(o_dst,1,o_ptr,1,1) :- callsProc(_,fp,proc), modeledProc(proc,"strtok_r"), callDestination(fp,o_dst,_), actualArg(fp,2,o_ptr).
 procStringManipArg0(proc) :- modeledProc(proc,"strtok_r").
 procStringManipArg1(proc) :- modeledProc(proc,"strtok_r").
 
