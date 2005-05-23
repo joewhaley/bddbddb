@@ -383,7 +383,7 @@ public class BDDSolver extends Solver {
             //stratify.solve();
         } else {
             IterationList list = ifg.getIterationList();
-            //out.println(list);
+            System.out.println(list.dump());
             BDDInterpreter interpreter = new BDDInterpreter(null);
             long time = System.currentTimeMillis();
             interpreter.interpret(list);

@@ -7,11 +7,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.HashWorklist;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
 import jwutil.graphs.SCComponent;
+import net.sf.bddbddb.Stratify.PDGRuleNode;
 
 /**
  * IterationFlowGraph
@@ -21,18 +23,18 @@ import jwutil.graphs.SCComponent;
  */
 public class IterationFlowGraph {
     IterationList iterationElements;
-    MultiMap innerSCCs;
-    List firstSCCs, rules, loops;
+    Map innerSccs;
+    List strata, rules, loops;
     MultiMap containedBy;
     MultiMap dependencies;
 
     public IterationFlowGraph(List rules, Stratify strat) {
-        this(rules, strat.firstSCCs, strat.innerSCCs);
+        this(rules, strat.strata, strat.innerSccs);
     }
     
-    public IterationFlowGraph(List rules, List firstSCCs, MultiMap innerSCCs) {
-        this.firstSCCs = firstSCCs;
-        this.innerSCCs = innerSCCs;
+    public IterationFlowGraph(List rules, List strata, Map innerSccs) {
+        this.strata = strata;
+        this.innerSccs = innerSccs;
         this.rules = rules;
         dependencies = new GenericMultiMap();
         loops = new LinkedList();
@@ -43,9 +45,10 @@ public class IterationFlowGraph {
     }
 
     private void constructStrataLoops() {
-        for (Iterator it = firstSCCs.iterator(); it.hasNext();) {
-            SCComponent scc = (SCComponent) it.next();
-            IterationList loop = buildIterationList(scc, scc.isLoop());
+        int k = 0;
+        for (Iterator it = strata.iterator(); it.hasNext(); ) {
+            List stratum = (List) it.next();
+            IterationList loop = buildIterationList(stratum, false);
             iterationElements.addElement(loop);
         }
     }
@@ -99,34 +102,39 @@ public class IterationFlowGraph {
         }
     }
 
-    IterationList buildIterationList(SCComponent scc, boolean isLoop) {
+    IterationList buildIterationList(List sccList, boolean isLoop) {
         IterationList list = new IterationList(isLoop);
-        while (scc != null) {
-            Collection c = innerSCCs.getValues(scc);
-            if (c.isEmpty()) {
-                for (Iterator it = scc.nodeSet().iterator(); it.hasNext();) {
+        for (Iterator a = sccList.iterator(); a.hasNext(); ) {
+            SCComponent scc = (SCComponent) a.next();
+            List c = (List) innerSccs.get(scc);
+            if (c == null || c.isEmpty()) {
+                IterationList list2;
+                if (!isLoop && scc.isLoop()) {
+                    list2 = new IterationList(true);
+                    list.addElement(list2);
+                } else {
+                    list2 = list;
+                }
+                for (Iterator it = scc.nodeSet().iterator(); it.hasNext(); ) {
                     Object o = it.next();
-                    if (o instanceof InferenceRule) {
-                        InferenceRule rule = (InferenceRule) o;
-                        list.addElement(rule);
-                        containedBy.add(rule, list);
+                    if (o instanceof PDGRuleNode) {
+                        InferenceRule r = ((PDGRuleNode)o).rule;
+                        if (r != null) {
+                            list2.addElement(r);
+                            containedBy.add(r, list2);
+                            if (list != list2)
+                                containedBy.add(r, list);
+                        }
                     }
                 }
             } else {
-                for (Iterator it = c.iterator(); it.hasNext();) {
-                    SCComponent scc2 = (SCComponent) it.next();
-                    IterationList childLoop = buildIterationList(scc2, scc.isLoop());
-                    list.addElement(childLoop);
-                    Collection childElems = childLoop.getAllNestedElements();
-                    for (Iterator it2 = childElems.iterator(); it2.hasNext();) {
-                        containedBy.add(it2.next(), list);
-                    }
+                IterationList childLoop = buildIterationList(c, scc.isLoop());
+                list.addElement(childLoop);
+                Collection childElems = childLoop.getAllNestedElements();
+                for (Iterator it2 = childElems.iterator(); it2.hasNext();) {
+                    containedBy.add(it2.next(), list);
                 }
             }
-            scc = scc.nextTopSort();
-        }
-        if (list.isLoop()) {
-            loops.add(list);
         }
         return list;
     }
