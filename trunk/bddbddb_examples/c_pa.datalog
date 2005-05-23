@@ -205,7 +205,7 @@ calledFromEntry(proc2) :- calledFromEntry(proc1), procCallsites(proc1,fp), calls
 assign(o_dst,p_dst,o_src,p_src) :- formalParam(proc,n,o_dst,p_dst), p_dst = p_src, callsProc(fp,proc), actualArg(fp,n,o_src). split
 
 ###### Actuals to Varargs ######
-pointsTo(o_vararg,1,o_arg,0) :- varArgsPtr(proc,o_vaptr), not_hasParam(proc,n), callsProc(fp,proc), actualArg(fp,n,o_arg). split
+pointsTo(o_vaptr,1,o_arg,0) :- varArgsPtr(proc,o_vaptr), not_hasParam(proc,n), callsProc(fp,proc), actualArg(fp,n,o_arg). split
 
 ###### Return to Destination ######
 assign(o_dst,p_dst,o_src,p_src) :- callDestination(fp,o_dst,p_dst), p_dst = p_src, callsProc(fp,proc), returnVal(proc,o_src). split
