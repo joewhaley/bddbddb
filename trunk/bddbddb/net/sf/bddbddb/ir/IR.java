@@ -13,7 +13,6 @@ import java.util.Set;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import jwutil.collections.MultiMap;
 import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
