@@ -62,8 +62,6 @@ public class EpisodeCollection {
 
     /**
      * Construct a new collection of trials.
-     * 
-     * @param n  test name
      */
     public EpisodeCollection(BDDInferenceRule rule, int opNum) {
         name = RULE_CONST + rule.id + SPACER + UPDATE_CONST + rule.updateCount + SPACER + OP_CONST + opNum;     
