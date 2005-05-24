@@ -6,7 +6,6 @@
  */
 package net.sf.bddbddb.order;
 
-import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -16,11 +15,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.io.PrintStream;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.SortedArraySet;
-import jwutil.collections.SortedArraySet.SortedArraySetFactory;
 import jwutil.util.Assert;
 import net.sf.bddbddb.BDDSolver;
 import net.sf.bddbddb.FindBestDomainOrder;
