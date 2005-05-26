@@ -187,6 +187,13 @@ public class Stratify {
             Assert._assert(!rule.bottom.relation.name.startsWith("!"));
             PDGRelationNode n = getRelationNode(rule.bottom.relation);
             List to = new ArrayList(1); to.add(n);
+            if (rule.extraDefines != null) {
+                for (Iterator i = rule.extraDefines.iterator(); i.hasNext(); ) {
+                    Relation r = (Relation) i.next();
+                    PDGRelationNode node = getRelationNode(r);
+                    to.add(node);
+                }
+            }
             p = new PDGRuleNode(rule, from, to);
             nodes.put(rule, p);
         }
