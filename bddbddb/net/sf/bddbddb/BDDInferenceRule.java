@@ -78,7 +78,6 @@ public class BDDInferenceRule extends InferenceRule {
     boolean find_best_order = !SystemProperties.getProperty("findbestorder", "no").equals("no");
     
     long FBO_CUTOFF = Long.parseLong(SystemProperties.getProperty("fbocutoff", "90"));
-    boolean learn_best_order = !SystemProperties.getProperty("learnbestorder", "no").equals("no");  
     
     /**
      * Construct a new BDDInferenceRule.
@@ -105,7 +104,6 @@ public class BDDInferenceRule extends InferenceRule {
         if (r instanceof BDDInferenceRule) {
             BDDInferenceRule that = (BDDInferenceRule) r;
             this.find_best_order = that.find_best_order;
-            this.learn_best_order = that.learn_best_order;
         }
     }
 

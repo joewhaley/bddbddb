@@ -60,8 +60,6 @@ public abstract class Solver {
     /** Print the IR before interpreting it. */
     boolean PRINT_IR = SystemProperties.getProperty("printir") != null;
     
-    boolean LEARN_ALL_RULES = !SystemProperties.getProperty("learnbestorder", "no").equals("no");
-    boolean LEARN_BEST_ORDER = !SystemProperties.getProperty("learnbestorder", "no").equals("no");
     /** Trace output stream. */
     public PrintStream out = System.out;
     public PrintStream err = System.err;
