@@ -33,6 +33,7 @@ import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
 import jwutil.io.SystemProperties;
+import jwutil.strings.Strings;
 import jwutil.util.Assert;
 import net.sf.bddbddb.order.AttribToDomainTranslator;
 import net.sf.bddbddb.order.CandidateSampler;
@@ -1564,7 +1565,6 @@ public class FindBestDomainOrder {
                     cachedScores[ruleNum] = new double[NUM_BEST_ORDERS_PER_RULE];
                     initialized = true;
                 }
-                
                 TrialGuess tg = tryNewGoodOrder(tc, vars, rule, -2, null, true);
                 if (tg == null) break;
                 OrderConstraintSet newOcs = new OrderConstraintSet();
@@ -1830,6 +1830,10 @@ public class FindBestDomainOrder {
         });
         sortedRules.addAll(filterRules(solver.rules));
         ArrayList list = new ArrayList(sortedRules);
+        for (Iterator i = list.iterator (); i.hasNext(); ) {
+            BDDInferenceRule rule = (BDDInferenceRule) i.next();
+            System.out.println(bestOrders(rule, 5));
+        }
         Collection domains = new FlattenedCollection(solver.getBDDDomains().values());
         out.println("BDD Domains: "+domains);
         OrderConstraintSet ocs = new OrderConstraintSet();
@@ -1837,6 +1841,32 @@ public class FindBestDomainOrder {
      //   printBestBDDOrders(sb, 0, domains, ocs, ruleToTrials, list);
         myPrintBestBDDOrders(sb, domains, list);
         out.println(sb);
+    }
+    
+    /**
+     * Generate the k best orders for the given inference rule and
+     * put the result in a string.
+     * 
+     * @param rule  inference rule
+     * @param k  number of orders
+     * @return  string result
+     */
+    public String bestOrders(BDDInferenceRule rule, int k) {
+        List vars = new LinkedList(rule.getNecessaryVariables());
+        Object[] arr = vars.toArray();
+        Arrays.sort(arr, rule.new VarOrderComparator(solver.VARORDER));
+        vars = Arrays.asList(arr);
+        EpisodeCollection tc = new EpisodeCollection(rule, 0);
+        StringBuffer sb = new StringBuffer();
+        sb.append(rule.toString());
+        sb.append(Strings.lineSep);
+        for (int i = 1; i <= k; ++i) {
+            TrialGuess tg = tryNewGoodOrder(tc, vars, rule, -2, null, true);
+            if (tg == null) break;
+            sb.append("    Order #").append(i).append(": ");
+            sb.append(tg.toString());
+        }
+        return sb.toString();
     }
     
     static Collection filterRules(Collection rules){

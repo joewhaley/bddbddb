@@ -380,33 +380,15 @@ public class BDDSolver extends Solver {
         if (USE_IR) {
             BDDInterpreter interpreter = new BDDInterpreter(ir);
             interpreter.interpret();
-            //stratify.solve();
         } else {
             IterationList list = ifg.getIterationList();
             System.out.println(list.dump());
             BDDInterpreter interpreter = new BDDInterpreter(null);
             long time = System.currentTimeMillis();
             interpreter.interpret(list);
-  /*          if (LEARN_BEST_ORDER) {
-                time = System.currentTimeMillis() - time;
-                out.println("SOLVE_TIME: " + time);
-                reportStats();
-                Learner learner = new IndividualRuleLearner(this, stratify);
-                learner.learn();
-            }
-    */
         }
     }
-    
-    public List rulesToLearn(){
-        List rulesToLearn = new LinkedList();
-        for(Iterator it = rules.iterator(); it.hasNext(); ){
-            BDDInferenceRule rule = (BDDInferenceRule) it.next();
-            if(LEARN_ALL_RULES || rule.learn_best_order) rulesToLearn.add(rule);     
-        }  
-        return rulesToLearn;
-    }
-    
+        
     /*
      * (non-Javadoc)
      * 

@@ -315,13 +315,6 @@ public class DatalogParser {
             String val = "";
             if (s.length() > index) val = s.substring(index).trim();
             System.setProperty("findbestorder", val);
-        } else if (s.startsWith(".learnbestorder")){
-            int index = ".learnbestorder".length() + 1;
-            String val = "";
-            if (s.length() > index) val = s.substring(index).trim();
-            solver.LEARN_BEST_ORDER = true;
-            solver.LEARN_ALL_RULES = true;
-            System.setProperty("learnbestorder", val);
         } else if (s.startsWith(".incremental")) {
             int index = ".incremental".length() + 1;
             String val = "";
