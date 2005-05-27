@@ -104,7 +104,7 @@ public class Stratify {
             this.rule = rule;
             this.from = from;
             this.to = to;
-            Assert._assert(rule == null || from.size() == rule.top.size());
+            //Assert._assert(rule == null || from.size() == rule.top.size());
             for (Iterator i = from.iterator(); i.hasNext(); ) {
                 PDGRelationNode n = (PDGRelationNode) i.next();
                 n.out.add(this);
