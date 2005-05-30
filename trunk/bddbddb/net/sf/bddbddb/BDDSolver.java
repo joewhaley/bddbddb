@@ -87,8 +87,7 @@ public class BDDSolver extends Solver {
                 for (Iterator i = this.getRelations().iterator(); i.hasNext(); ) {
                     BDDRelation r = (BDDRelation) i.next();
                     r.calculateDomainSet();
-                    if (!r.relation.isZero())
-                        out.println("Relation "+r+" domains "+BDDRelation.activeDomains(r.relation));
+                    //if (!r.relation.isZero()) out.println("Relation "+r+" domains "+BDDRelation.activeDomains(r.relation));
                 }
                 for (Iterator i = this.getRules().iterator(); i.hasNext(); ) {
                     BDDInferenceRule r = (BDDInferenceRule) i.next();
