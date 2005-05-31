@@ -98,6 +98,9 @@ public class BDDRelation extends Relation {
             for (Iterator i = attributes.iterator(); i.hasNext();) {
                 Attribute a = (Attribute) i.next();
                 Domain fd = a.attributeDomain;
+                if (fd == null) {
+                    throw new IllegalArgumentException("BDD relation "+name+" attribute "+a+" has no domain!");
+                }
                 Collection doms = solver.getBDDDomains(fd);
                 BDDDomain d = null;
                 String option = a.attributeOptions;
