@@ -160,7 +160,7 @@ public class Stratify {
     
     PDGRelationNode getRelationNode(Relation r) {
         if (r != null && r.name.startsWith("!")) {
-            Assert._assert(r.negated != null);
+            Assert._assert(r.negated != null, r.name);
             r = r.negated;
         }
         PDGRelationNode p = (PDGRelationNode) nodes.get(r);
