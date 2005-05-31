@@ -171,18 +171,26 @@ public class DatalogParser {
         int qIndex = s.indexOf('?');
         if (dotIndex > 0 && (braceIndex == -1 || dotIndex < braceIndex)) {
             // rule
-            InferenceRule ir = parseRule(lineNum, s);
-            if (TRACE) out.println("Parsed rule " + ir);
-            solver.rules.add(ir);
-            return Collections.singletonList(ir);
-        } else if (qIndex > 0 && (braceIndex == -1 || qIndex < braceIndex)) {
-            // query
-            List/*<InferenceRule>*/ ir = parseQuery(lineNum, s);
-            if (ir != null) {
-                if (TRACE) out.println("Parsed query " + ir);
-                solver.rules.addAll(ir);
+            try {
+                InferenceRule ir = parseRule(lineNum, s);
+                if (TRACE) out.println("Parsed rule " + ir);
+                solver.rules.add(ir);
+                return Collections.singletonList(ir);
+            } finally {
+                deleteUndeclaredRelations();
             }
-            return ir;
+        } else if (qIndex > 0 && (braceIndex == -1 || qIndex < braceIndex)) {
+            try {
+                // query
+                List/*<InferenceRule>*/ ir = parseQuery(lineNum, s);
+                if (ir != null) {
+                    if (TRACE) out.println("Parsed query " + ir);
+                    solver.rules.addAll(ir);
+                }
+                return ir;
+            } finally {
+                deleteUndeclaredRelations();
+            }
         } else {
             // relation
             Relation r = parseRelation(lineNum, s);
@@ -511,6 +519,7 @@ public class DatalogParser {
             } else {
                 outputError(lineNum, st.getPosition(), s,
                     "Unexpected option '" + option + "'");
+                solver.deleteRelation(r);
                 throw new IllegalArgumentException();
             }
         }
@@ -653,6 +662,14 @@ public class DatalogParser {
             outputError(lineNum, 0, s,
                 "Cannot infer attributes for undeclared relations "+undeclaredRelations);
             throw new IllegalArgumentException();
+        }
+    }
+    
+    void deleteUndeclaredRelations() {
+        for (Iterator i = undeclaredRelations.iterator(); i.hasNext(); ) {
+            Relation r = (Relation) i.next();
+            solver.deleteRelation(r);
+            i.remove();
         }
     }
     
