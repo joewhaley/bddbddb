@@ -251,7 +251,7 @@ public class DatalogParser {
             int index = ".split_all_rules".length() + 1;
             if (s.length() > index) {
                 String option = s.substring(index).trim();
-                b = !option.equals("false");
+                b = !option.equals("false") && !option.equals("no");
             }
             solver.SPLIT_ALL_RULES = b;
         } else if (s.startsWith(".report_stats")) {
@@ -259,7 +259,7 @@ public class DatalogParser {
             int index = ".report_stats".length() + 1;
             if (s.length() > index) {
                 String option = s.substring(index).trim();
-                b = !option.equals("false");
+                b = !option.equals("false") && !option.equals("no");
             }
             solver.REPORT_STATS = b;
         } else if (s.startsWith(".noisy")) {
@@ -267,7 +267,7 @@ public class DatalogParser {
             int index = ".noisy".length() + 1;
             if (s.length() > index) {
                 String option = s.substring(index).trim();
-                b = !option.equals("false");
+                b = !option.equals("false") && !option.equals("no");
             }
             solver.NOISY = b;
         } else if (s.startsWith(".trace")) {
@@ -275,7 +275,7 @@ public class DatalogParser {
             int index = ".trace".length() + 1;
             if (s.length() > index) {
                 String option = s.substring(index).trim();
-                b = !option.equals("false");
+                b = !option.equals("false") && !option.equals("no");
             }
             TRACE = b;
         } else if (s.startsWith(".bddvarorder")) {
