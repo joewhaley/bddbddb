@@ -1,10 +1,10 @@
 -injars bddbddb.jar(!**.java)
 -injars jwutil-1.0.jar(!**.java)
--injars javabdd.jar(!**.java,net/sf/javabdd/JFactory*,net/sf/javabdd/BuDDyFactory*,net/sf/javabdd/BDDFactory*,!net/sf/javabdd/*Factory*)
+-injars javabdd-1.0b2.jar(!**.java,net/sf/javabdd/JFactory*,net/sf/javabdd/BuDDyFactory*,net/sf/javabdd/BDDFactory*,!net/sf/javabdd/*Factory*)
 -outjars bddbddb-full.jar
 
--libraryjars C:\jdk1.3.1_15\jre\lib\rt.jar
-#-libraryjars /usr/java/j2sdk1.4.2_06/jre/lib/rt.jar
+#-libraryjars C:\jdk1.3.1_15\jre\lib\rt.jar
+-libraryjars /usr/java/j2sdk1.4.2_08/jre/lib/rt.jar
 
 -dontoptimize
 -dontobfuscate
