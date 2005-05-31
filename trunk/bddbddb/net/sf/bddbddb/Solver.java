@@ -586,7 +586,10 @@ public abstract class Solver {
         TRACE = TRACE || (SystemProperties.getProperty("traceComeFromQuery") != null);
 
         Relation r = rt.relation;
-        Relation r2 = createRelation(r.name+"_q", r.attributes);
+        //if (r.name.startsWith("!")) {
+        //    throw new IllegalArgumentException("Cannot do come-from query on negated relation");
+        //}
+        Relation r2 = createRelation("q_"+r.name, r.attributes);
         
         RuleTerm my_rt = new RuleTerm(r2, rt.variables);
         InferenceRule my_ir = createInferenceRule(Collections.singletonList(rt), my_rt);
@@ -632,11 +635,12 @@ public abstract class Solver {
                             if (TRACE) out.println("Skipping contribution relation "+r3);
                         }
                         else {
-                        // New relation, visit it.
-                        worklist.add(r3);
-                        r4 = createRelation(r3.name+"_q", r3.attributes);
-                        toQueryRelation.put(r3, r4);
-                        if (TRACE) out.println("Adding contribution relation "+r3+": "+r4);
+                            // New relation, visit it.
+                            worklist.add(r3);
+                            String newName = "q_"+r3.name;
+                            r4 = createRelation(newName, r3.attributes);
+                            toQueryRelation.put(r3, r4);
+                            if (TRACE) out.println("Adding contribution relation "+r3+": "+r4);
                         }
                     }
                 }
@@ -648,7 +652,7 @@ public abstract class Solver {
                     String name = (String) e.getValue();
                     attributes.add(new Attribute(name, v.getDomain(), ""));
                 }
-                Relation bottomr = createRelation(r.name+"_q"+ir.id, attributes);
+                Relation bottomr = createRelation("q"+ir.id+"_"+r.name, attributes);
                 RuleTerm bottom = new RuleTerm(bottomr, vars);
                 InferenceRule newrule = createInferenceRule(terms, bottom);
                 newrule.single = single;
@@ -673,7 +677,7 @@ public abstract class Solver {
                             if (TRACE) out.println("Excluding from non-context version: "+name);
                         }
                     }
-                    Relation bottomr_noC = createRelation(r.name+"_q"+ir.id+"_noC", attributes_noC);
+                    Relation bottomr_noC = createRelation("q"+ir.id+"_noC_"+r.name, attributes_noC);
                     RuleTerm bottom_noC = new RuleTerm(bottomr_noC, vars_noC);
                     InferenceRule newrule_noC = createInferenceRule(Collections.singletonList(bottom), bottom_noC);
                     newrule_noC.single = single;
