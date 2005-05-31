@@ -63,11 +63,11 @@ vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
 ovP(c,v1,h) :- A(v1,v2), ovP(c,v2,h), vPfilter(v1,h).
 
 # Stores.
-hP(h1,f,h2) :- S(v1,f,v2), ovP(c0,v1,h1), ovP(c0,v2,h2). pri=-100
+hP(h1,f,h2) :- S(v1,f,v2), ovP(c0,v1,h1), ovP(c0,v2,h2).
 
 # Loads.
 ovP(c0,v2,h2) :- L(v1,f,v2), ovP(c0,v1,h1), hP(h1,f,h2), \
-                 vPfilter(v2,h2). pri=-100
+                 vPfilter(v2,h2).
 
 # Statically-bound calls.
 staticCalls (i:I,m:M,v0:V)
