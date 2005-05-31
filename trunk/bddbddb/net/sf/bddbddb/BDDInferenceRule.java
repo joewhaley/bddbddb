@@ -592,7 +592,7 @@ public class BDDInferenceRule extends InferenceRule {
                         Relation r = ((RuleTerm) top.get(i)).relation;
                         solver.out.print("Diff relation #" + i + " ("+r+") : (" + allRelationValues[i].nodeCount() + "x" + oldRelationValues[i].nodeCount()
                             + "=");
-                        solver.out.println(oldRelationValues[i]);
+                        //solver.out.println(oldRelationValues[i]);
                         ttime = System.currentTimeMillis();
                     }
                     newRelationValues[i] = allRelationValues[i].apply(oldRelationValues[i], BDDFactory.diff);
