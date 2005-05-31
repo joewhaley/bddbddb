@@ -381,13 +381,13 @@ public class BDDSolver extends Solver {
             interpreter.interpret();
         } else {
             IterationList list = ifg.getIterationList();
-            System.out.println(list.dump());
+            if (NOISY) System.out.println(list.dump());
             BDDInterpreter interpreter = new BDDInterpreter(null);
             long time = System.currentTimeMillis();
             interpreter.interpret(list);
         }
     }
-        
+    
     /*
      * (non-Javadoc)
      * 
