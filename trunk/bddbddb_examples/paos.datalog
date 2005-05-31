@@ -29,6 +29,7 @@ ovP (vc0:H2, v:V0, h:H0) output
 hP (ha:H0, field:F0, hb:H1) output
 S (base:V0, field:F0, src:V1) input
 L (base:V0, field:F0, dest:V1) input
+A (dest:V0, src:V1) input
 vT (var:V0, type:T0) input
 hT (heap:H0, type:T1) input
 aT (type:T0, type:T1) input
@@ -46,30 +47,37 @@ IE (invoke:I0, target:M0, ic0:H2, mc0:H3) output
 
 ### Rules
 
-ovP(_,v,h) :- vP0(v,h).
+# Initial points-to relations.
+roots (method:M0) input
+mV (method:M0, v:V0) input
+reachable(m,c) :- IE(_,m,_,c).
+reachable(m,0) :- roots(m).
+ovP(c,v,h) :- vP0(v,h), mV(m,v), reachable(m,c).
+allmV(v) :- mV(_,v).
+ovP(_,v,h) :- vP0(v,h), !allmV(v).
+
+# Type filtering.
 vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
+
+# Assignments.
+ovP(c,v1,h) :- A(v1,v2), ovP(c,v2,h), vPfilter(v1,h).
 
 # Stores.
 hP(h1,f,h2) :- S(v1,f,v2), ovP(c0,v1,h1), ovP(c0,v2,h2).
 
 # Loads.
-ovP(c0,v2,h2) :- L(v1,f,v2), ovP(c0,v1,h1), hP(h1,f,h2), vPfilter(v2,h2). split
+ovP(c0,v2,h2) :- L(v1,f,v2), ovP(c0,v1,h1), hP(h1,f,h2), \
+                 vPfilter(v2,h2).
 
-# Statically-bound calls.
-staticCalls (i:I,m:M,v0:V)
-staticCalls(i,m,v0) :- mI(m1,i,0), IE0(i,m), actual(i,0,v0).
-IE(i,m,a0,b0) :- staticCalls(i,m,v0), ovP(a0,v0,b0).
-
-# Virtual calls.
-IE(i,m,a0,b0) :- mI(m1,i,n), actual(i,0,v0), ovP(a0,v0,b0), hT(b0,t), cha(t,n,m). split
+# Call graph edges.
+IE(i,m,a0,b0) :- IE0(i,m), actual(i,0,v0), ovP(a0,v0,b0). split
 
 # Return values and exceptions.
-ovP(a0,v,h) :- IE(i,m,a0,b0), Iret(i,v), Mret(m,v1), ovP(b0,v1,h). split
-ovP(a0,v,h) :- IE(i,m,a0,b0), Ithr(i,v), Mthr(m,v1), ovP(b0,v1,h). split
+ovP(a0,v,h) :- IE(i,m,a0,b0), Iret(i,v), Mret(m,v1), ovP(b0,v1,h), \
+               vPfilter(v,h). split
+#ovP(a0,v,h) :- IE(i,m,a0,b0), Ithr(i,v), Mthr(m,v1), ovP(b0,v1,h), \
+#               vPfilter(v,h). split
 
-# First parameter.
-ovP(b0,v,a0) :- IE(i,m,a0,b0), formal(m,0,v).
-
-# Parameters beyond 1.
-ovP(b0,v,h) :- formal(m,z,v), z != 0, IE(i,m,a0,b0), \
-               actual(i,z,v1), ovP(a0,v1,h). split
+# Parameters.
+ovP(b0,v,h) :- formal(m,z,v), IE(i,m,a0,b0), \
+               actual(i,z,v1), ovP(a0,v1,h), vPfilter(v,h). split
