@@ -631,8 +631,10 @@ public class DatalogParser {
                     if (solver.NOISY) out.println("Implicitly defining relation "+r.verboseToString());
                     i.remove();
                     // Handle other uses of this relation in this rule.
-                    for (Iterator j = new AppendIterator(terms.iterator(), Collections.singleton(bottom).iterator());
-                         j.hasNext(); ) {
+                    Iterator j = terms.iterator();
+                    if (bottom != null)
+                        j = new AppendIterator(j, Collections.singleton(bottom).iterator());
+                    while (j.hasNext()) {
                         RuleTerm rt = (RuleTerm) j.next();
                         if (rt.relation != r) continue;
                         for (int k = 0; k < r.numberOfAttributes(); ++k) {
@@ -976,6 +978,8 @@ public class DatalogParser {
         MyStringTokenizer st = new MyStringTokenizer(s, " \t(,/).=~!?<>", true);
         Map/*<String,Variable>*/ nameToVar = new HashMap();
         
+        undeclaredRelations.clear();
+        
         if (s.indexOf(":-") > 0) {
             RuleTerm rt = parseRuleTerm(lineNum, s, nameToVar, st);
             String sep = nextToken(st);
@@ -1005,6 +1009,7 @@ public class DatalogParser {
                     throw new IllegalArgumentException();
                 }
             }
+            handleUndeclaredRelations(lineNum, s, nameToVar, extras, rt);
             return solver.comeFromQuery(rt, extras, single);
         }
         List/*<RuleTerm>*/ terms = new LinkedList();
@@ -1042,6 +1047,7 @@ public class DatalogParser {
         }
         Relation r = solver.createRelation("query@"+lineNum, attributes);
         RuleTerm bottom = new RuleTerm(r, vars);
+        handleUndeclaredRelations(lineNum, s, nameToVar, terms, bottom);
         InferenceRule ir = solver.createInferenceRule(terms, bottom);
         Variable v = ir.checkUniversalVariables();
         if (v != null) {
