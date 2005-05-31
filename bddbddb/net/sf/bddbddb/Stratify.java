@@ -398,8 +398,10 @@ public class Stratify {
         
         // Output a warning if we have unused rules/relations.
         if (!unnecessary.isEmpty()) {
-            solver.out.println("Note: the following relations are unused:");
-            solver.out.println("    " + unnecessary);
+            if (NOISY) {
+                solver.out.println("Note: the following relations are unused:");
+                solver.out.println("    " + unnecessary);
+            }
             Set unusedRules = new HashSet();
             for (Iterator i = unnecessary.iterator(); i.hasNext(); ) {
                 Relation r = (Relation) i.next();
@@ -409,9 +411,11 @@ public class Stratify {
                 n.remove();
                 forwardRpo.remove(n);
             }
-            solver.out.println("Note: the following rules are unused:");
-            for (Iterator i = unusedRules.iterator(); i.hasNext(); ) {
-                solver.out.println("    " + i.next());
+            if (NOISY) {
+                solver.out.println("Note: the following rules are unused:");
+                for (Iterator i = unusedRules.iterator(); i.hasNext(); ) {
+                    solver.out.println("    " + i.next());
+                }
             }
         }
         
