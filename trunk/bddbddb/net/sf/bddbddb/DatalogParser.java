@@ -43,6 +43,7 @@ public class DatalogParser {
     
     /** Trace flag. */
     boolean TRACE = SystemProperties.getProperty("traceparse") != null;
+    boolean STRICT_DECLARATIONS = !SystemProperties.getProperty("strict", "no").equals("no");
     
     /** Trace output stream. */
     public PrintStream out;
@@ -270,6 +271,14 @@ public class DatalogParser {
                 b = !option.equals("false") && !option.equals("no");
             }
             solver.NOISY = b;
+        } else if (s.startsWith(".strict")) {
+            boolean b = true;
+            int index = ".strict".length() + 1;
+            if (s.length() > index) {
+                String option = s.substring(index).trim();
+                b = !option.equals("false") && !option.equals("no");
+            }
+            STRICT_DECLARATIONS = b;
         } else if (s.startsWith(".trace")) {
             boolean b = true;
             int index = ".trace".length() + 1;
@@ -277,7 +286,7 @@ public class DatalogParser {
                 String option = s.substring(index).trim();
                 b = !option.equals("false") && !option.equals("no");
             }
-            TRACE = b;
+            solver.TRACE = TRACE = b;
         } else if (s.startsWith(".bddvarorder")) {
             if (SystemProperties.getProperty("bddvarorder") == null) {
                 int index = ".bddvarorder".length() + 1;
@@ -894,11 +903,11 @@ public class DatalogParser {
             throw new IllegalArgumentException();
         }
         Relation r = solver.getRelation(relationName);
-        //if (r == null) {
-        //    outputError(lineNum, st.getPosition(), s,
-        //        "Unknown relation " + relationName);
-        //    throw new IllegalArgumentException();
-        //}
+        if (STRICT_DECLARATIONS && r == null) {
+            outputError(lineNum, st.getPosition(), s,
+                "Unknown relation " + relationName);
+            throw new IllegalArgumentException();
+        }
         if (negated && r != null) r = r.makeNegated(solver);
         List/*<Variable>*/ vars = new LinkedList();
         for (;;) {
@@ -935,7 +944,8 @@ public class DatalogParser {
         }
         if (r != null && r.attributes.size() != vars.size()) {
             outputError(lineNum, st.getPosition(), s,
-                "Wrong number of vars in rule term for " + relationName);
+                "Wrong number of vars in rule term for " + relationName +
+                " (expected "+r.attributes.size()+", found "+vars.size()+")");
             throw new IllegalArgumentException();
         }
         if (r == null) {
@@ -972,6 +982,9 @@ public class DatalogParser {
         if (firstChar >= '0' && firstChar <= '9') {
             var = new Constant(Long.parseLong(varName));
         } else if (firstChar == '"') {
+            if (fd == null) {
+                throw new IllegalArgumentException("Cannot use quoted constant "+varName+" in undeclared relation");
+            }
             String namedConstant = varName.substring(1, varName.length() - 1);
             var = new Constant(fd.namedConstant(namedConstant));
         } else if (!varName.equals("_")) {
