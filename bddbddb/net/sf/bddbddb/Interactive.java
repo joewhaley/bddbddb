@@ -79,10 +79,10 @@ public class Interactive {
         }
         dis.initializeBasedir(file);
         Interactive a = new Interactive(dis);
+        a.parser = new DatalogParser(dis);
         if (file.length() > 0) {
             MyReader in = new MyReader(new LineNumberReader(new FileReader(file)));
             out.println("Reading "+file+"...");
-            a.parser = new DatalogParser(dis);
             a.parser.readDatalogProgram(in);
             in.close();
         }
@@ -145,6 +145,15 @@ public class Interactive {
         }
     }
     
+    /**
+     * Print the log.
+     */
+    void printLog() {
+        for (Iterator i = log.iterator(); i.hasNext(); ) {
+            out.println(i.next());
+        }
+    }
+    
     public static void printHelp() {
         out.println("Using Datalog:");
         out.println();
@@ -168,6 +177,7 @@ public class Interactive {
         out.println("  save <relation>{,<relation>}\t: save relations");
         out.println("  solve    \t: solve current set of rules/relations");
         out.println("  dumplog  \t: dump the command log to a file");
+        out.println("  printlog \t: print the log to the screen");
         out.println("  .include <file>\t: include (interpret) a file");
     }
     
@@ -196,6 +206,10 @@ public class Interactive {
                 if (s.equalsIgnoreCase("dumplog")) {
                     dumpLog();
                     out.println("Log dumped. ("+log.size()+" lines)");
+                    continue;
+                }
+                if (s.equalsIgnoreCase("printlog")) {
+                    printLog();
                     continue;
                 }
                 if (s.equalsIgnoreCase("solve")) {
