@@ -298,7 +298,7 @@ public class BDDRelation extends Relation {
      * @return  whether the domains match
      */
     public boolean verify(BDD r) {
-        if(r == null) return true; /* trivially true? */
+        if (r == null) return true; /* trivially true? */
         BDD s = r.support();
         calculateDomainSet();
         BDD t = domainSet.and(s);
