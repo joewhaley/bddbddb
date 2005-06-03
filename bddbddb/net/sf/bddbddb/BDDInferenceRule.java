@@ -295,49 +295,23 @@ public class BDDInferenceRule extends InferenceRule {
         long ttime = 0L;
         if (solver.REPORT_STATS || TRACE) time = System.currentTimeMillis();
         BDD[] relationValues = new BDD[top.size()];
+        
         // Quantify out unnecessary fields in input relations.
-        if (TRACE) solver.out.println("Quantifying out unnecessary domains and restricting constants...");
-        if (TRACE) solver.out.println("Variables: necessary=" + necessaryVariables + " unnecessary=" + unnecessaryVariables);
-        for (int i = 0; i < top.size(); ++i) {
-            RuleTerm rt = (RuleTerm) top.get(i);
-            BDDRelation r = (BDDRelation) rt.relation;
-            relationValues[i] = r.relation.id();
-            for (int j = 0; j < rt.variables.size(); ++j) {
-                Variable v = (Variable) rt.variables.get(j);
-                BDDDomain d = (BDDDomain) r.domains.get(j);
-                if (v instanceof Constant) {
-                    if (TRACE) {
-                        solver.out.print("Constant: restricting " + d + " = " + v);
-                        ttime = System.currentTimeMillis();
-                    }
-                    relationValues[i].restrictWith(d.ithVar(((Constant) v).value));
-                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    continue;
-                }
-                if (unnecessaryVariables.contains(v)) {
-                    if (TRACE) {
-                        solver.out.print(v + " is unnecessary, quantifying out " + d);
-                        ttime = System.currentTimeMillis();
-                    }
-                    BDD dset = d.set();
-                    BDD q = relationValues[i].exist(dset);
-                    dset.free();
-                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    relationValues[i].free();
-                    relationValues[i] = q;
-                }
-            }
-            if (relationValues[i].isZero()) {
-                if (TRACE) solver.out.println("Relation " + r + " is now empty!  Stopping early.");
-                for (int j = 0; j <= i; ++j) {
-                    relationValues[j].free();
-                }
-                if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
-                if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
-                doPostUpdate(null);
-                return false;
-            }
+        if (!quantifyAndRestrict(relationValues)) {
+            if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
+            if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
+            doPostUpdate(null);
+            return false;
         }
+        
+        // Handling universal quantification.
+        if (!handleUniversalQuantification(relationValues)) {
+            if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
+            if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
+            doPostUpdate(null);
+            return false;
+        }
+        
         // If we are incrementalizing, cache copies of the input relations.
         // This happens after we have quantified away and restricted constants,
         // but before we do renaming.
@@ -528,6 +502,88 @@ public class BDDInferenceRule extends InferenceRule {
         return result;
     }
     
+    private boolean handleUniversalQuantification(BDD[] relationValues) {
+        if (TRACE) solver.out.println("Handling universal quantification...");
+        long ttime = 0L;
+        for (int i = 0; i < top.size(); ++i) {
+            RuleTerm rt = (RuleTerm) top.get(i);
+            BDDRelation r = (BDDRelation) rt.relation;
+            relationValues[i] = r.relation.id();
+            for (int j = 0; j < rt.variables.size(); ++j) {
+                Variable v = (Variable) rt.variables.get(j);
+                BDDDomain d = (BDDDomain) r.domains.get(j);
+                if (v instanceof Universe) {
+                    if (TRACE) {
+                        solver.out.print("Universe: for all " + d);
+                        ttime = System.currentTimeMillis();
+                    }
+                    BDD dset = d.set();
+                    BDD q = relationValues[i].forAll(dset);
+                    dset.free();
+                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    relationValues[i].free();
+                    relationValues[i] = q;
+                    continue;
+                }
+            }
+            if (relationValues[i].isZero()) {
+                if (TRACE) solver.out.println("Relation " + r + " is now empty!  Stopping early.");
+                for (int j = 0; j <= i; ++j) {
+                    relationValues[j].free();
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    private boolean quantifyAndRestrict(BDD[] relationValues) {
+        long ttime = 0L;
+        if (TRACE) solver.out.println("Quantifying out unnecessary domains and restricting constants...");
+        if (TRACE) solver.out.println("Variables: necessary=" + necessaryVariables + " unnecessary=" + unnecessaryVariables);
+        for (int i = 0; i < top.size(); ++i) {
+            RuleTerm rt = (RuleTerm) top.get(i);
+            BDDRelation r = (BDDRelation) rt.relation;
+            relationValues[i] = r.relation.id();
+            for (int j = 0; j < rt.variables.size(); ++j) {
+                Variable v = (Variable) rt.variables.get(j);
+                BDDDomain d = (BDDDomain) r.domains.get(j);
+                if (v instanceof Constant) {
+                    if (TRACE) {
+                        solver.out.print("Constant: restricting " + d + " = " + v);
+                        ttime = System.currentTimeMillis();
+                    }
+                    relationValues[i].restrictWith(d.ithVar(((Constant) v).value));
+                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    continue;
+                }
+                if (v instanceof Universe) {
+                    // Handled later.
+                    continue;
+                }
+                if (unnecessaryVariables.contains(v)) {
+                    if (TRACE) {
+                        solver.out.print(v + " is unnecessary, quantifying out " + d);
+                        ttime = System.currentTimeMillis();
+                    }
+                    BDD dset = d.set();
+                    BDD q = relationValues[i].exist(dset);
+                    dset.free();
+                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    relationValues[i].free();
+                    relationValues[i] = q;
+                }
+            }
+            if (relationValues[i].isZero()) {
+                if (TRACE) solver.out.println("Relation " + r + " is now empty!  Stopping early.");
+                for (int j = 0; j <= i; ++j)
+                    relationValues[i].free();
+                return false;
+            }
+        }
+        return true;
+    }
+    
     /**
      * Incremental version of update().
      * 
@@ -540,48 +596,23 @@ public class BDDInferenceRule extends InferenceRule {
         if (solver.REPORT_STATS || TRACE) time = System.currentTimeMillis();
         BDD[] allRelationValues = new BDD[top.size()];
         BDD[] newRelationValues = new BDD[top.size()];
+        
         // Quantify out unnecessary fields in input relations.
-        if (TRACE) solver.out.println("Quantifying out unnecessary domains and restricting constants...");
-        if (TRACE) solver.out.println("Variables: necessary=" + necessaryVariables + " unnecessary=" + unnecessaryVariables);
-        for (int i = 0; i < top.size(); ++i) {
-            RuleTerm rt = (RuleTerm) top.get(i);
-            BDDRelation r = (BDDRelation) rt.relation;
-            allRelationValues[i] = r.relation.id();
-            for (int j = 0; j < rt.variables.size(); ++j) {
-                Variable v = (Variable) rt.variables.get(j);
-                BDDDomain d = (BDDDomain) r.domains.get(j);
-                if (v instanceof Constant) {
-                    if (TRACE) {
-                        solver.out.print("Constant: restricting " + d + " = " + v);
-                        ttime = System.currentTimeMillis();
-                    }
-                    allRelationValues[i].restrictWith(d.ithVar(((Constant) v).value));
-                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    continue;
-                }
-                if (unnecessaryVariables.contains(v)) {
-                    if (TRACE) {
-                        solver.out.print(v + " is unnecessary, quantifying out " + d);
-                        ttime = System.currentTimeMillis();
-                    }
-                    BDD dset = d.set();
-                    BDD q = allRelationValues[i].exist(dset);
-                    dset.free();
-                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    allRelationValues[i].free();
-                    allRelationValues[i] = q;
-                }
-            }
-            if (allRelationValues[i].isZero()) {
-                if (TRACE) solver.out.println("Relation " + r + " is now empty!  Stopping early.");
-                for (int j = 0; j <= i; ++j)
-                    allRelationValues[i].free();
-                if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
-                if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
-                doPostUpdate(null);
-                return false;
-            }
+        if (!quantifyAndRestrict(allRelationValues)) {
+            if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
+            if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
+            doPostUpdate(null);
+            return false;
         }
+        
+        // Handling universal quantification.
+        if (!handleUniversalQuantification(allRelationValues)) {
+            if (solver.REPORT_STATS) totalTime += System.currentTimeMillis() - time;
+            if (TRACE) solver.out.println("Time spent: " + (System.currentTimeMillis() - time));
+            doPostUpdate(null);
+            return false;
+        }
+        
         // If we cached before renaming, diff with cache now.
         boolean[] needWholeRelation = null;
         if (cache_before_rename) {

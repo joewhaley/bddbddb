@@ -987,6 +987,8 @@ public class DatalogParser {
             }
             String namedConstant = varName.substring(1, varName.length() - 1);
             var = new Constant(fd.namedConstant(namedConstant));
+        } else if (varName.equals("*")) {
+            var = new Universe(fd);
         } else if (!varName.equals("_")) {
             var = (Variable) nameToVar.get(varName);
             if (var == null) nameToVar.put(varName, var = new Variable(varName));
@@ -1050,7 +1052,7 @@ public class DatalogParser {
             terms.add(rt);
             for (Iterator i = rt.variables.iterator(); i.hasNext(); ) {
                 Variable v = (Variable) i.next();
-                if (v.name.equals("_")) continue;
+                if (v.name.equals("_") || v.name.equals("*")) continue;
                 String name;
                 if (v instanceof Constant) {
                     name = rt.relation.getAttribute(rt.variables.indexOf(v)).attributeName;

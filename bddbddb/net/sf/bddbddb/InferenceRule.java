@@ -258,7 +258,7 @@ public abstract class InferenceRule implements IterationElement {
         for (Iterator i = unnecessaryVariables.iterator(); i.hasNext(); ) {
             Variable v = (Variable) i.next();
             if (v instanceof Constant) continue;
-            if (!"_".equals(v.name)) {
+            if (!"_".equals(v.name) && !"*".equals(v.name)) {
                 return v;
             }
         }
