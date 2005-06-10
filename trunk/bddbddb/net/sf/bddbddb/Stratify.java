@@ -538,6 +538,7 @@ public class Stratify {
         // Build a navigator just for the nodes within this SCC.
         PDGEdgeNavigator nav = new PDGEdgeNavigator(scc.nodeSet(), cutEdges);
         PDGRuleNode backEdge = chooseABackedge(scc, nav);
+        if (TRACE) solver.out.println("Cutting backedge "+backEdge);
         nav.cutRuleNodes.add(backEdge);
         
         // Calculate inner SCCs after ignoring back edge.
