@@ -418,11 +418,11 @@ public class Stratify {
                 n.remove();
                 forwardRpo.remove(n);
             }
-            if (NOISY) {
-                solver.out.println("Note: the following rules are unused:");
-                for (Iterator i = unusedRules.iterator(); i.hasNext(); ) {
-                    solver.out.println("    " + i.next());
-                }
+            if (NOISY) solver.out.println("Note: the following rules are unused:");
+            for (Iterator i = unusedRules.iterator(); i.hasNext(); ) {
+                InferenceRule ir = (InferenceRule) i.next();
+                if (NOISY) solver.out.println("    " + ir);
+                getRuleNode(ir).remove();
             }
         }
         
