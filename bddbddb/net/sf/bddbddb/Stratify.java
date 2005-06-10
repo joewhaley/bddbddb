@@ -495,6 +495,8 @@ public class Stratify {
                         if (TRACE) solver.out.println("Negated edge: "+pscc+" to "+scc);
                         continue outer;
                     }
+                } else {
+                    if (TRACE) solver.out.println("Predecessor "+pscc+" of "+scc+" already visited.");
                 }
             }
             if (TRACE) solver.out.println("Adding to stratum: "+scc);
