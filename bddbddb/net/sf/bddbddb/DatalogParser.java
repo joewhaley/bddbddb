@@ -607,13 +607,13 @@ public class DatalogParser {
         }
         handleUndeclaredRelations(lineNum, s, nameToVar, terms, bottom);
         InferenceRule ir = solver.createInferenceRule(terms, bottom);
-        Variable v = ir.checkUniversalVariables();
+        ir = parseRuleOptions(lineNum, s, ir, st);
+        Variable v = ir.checkUnnecessaryVariables();
         if (v != null) {
             outputError(lineNum, st.getPosition(), s,
                 "Variable "+v+" was only used once!  Use '_' instead.");
             throw new IllegalArgumentException();
         }
-        ir = parseRuleOptions(lineNum, s, ir, st);
         return ir;
     }
 
@@ -1081,13 +1081,13 @@ public class DatalogParser {
         RuleTerm bottom = new RuleTerm(r, vars);
         handleUndeclaredRelations(lineNum, s, nameToVar, terms, bottom);
         InferenceRule ir = solver.createInferenceRule(terms, bottom);
-        Variable v = ir.checkUniversalVariables();
+        ir = parseRuleOptions(lineNum, s, ir, st);
+        Variable v = ir.checkUnnecessaryVariables();
         if (v != null) {
             outputError(lineNum, st.getPosition(), s,
                 "Variable "+v+" was only used once!  Use '_' instead.");
             throw new IllegalArgumentException();
         }
-        ir = parseRuleOptions(lineNum, s, ir, st);
         solver.relationsToPrintTuples.add(r);
         return Collections.singletonList(ir);
     }
