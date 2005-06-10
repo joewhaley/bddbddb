@@ -539,7 +539,8 @@ public class Stratify {
         PDGEdgeNavigator nav = new PDGEdgeNavigator(scc.nodeSet(), cutEdges);
         PDGRuleNode backEdge = chooseABackedge(scc, nav);
         if (TRACE) solver.out.println("Cutting backedge "+backEdge);
-        nav.cutRuleNodes.add(backEdge);
+        boolean b = nav.cutRuleNodes.add(backEdge);
+        Assert._assert(b);
         if (TRACE) solver.out.println("Set of cut edges: "+nav.cutRuleNodes);
         
         // Calculate inner SCCs after ignoring back edge.
@@ -596,6 +597,7 @@ public class Stratify {
             }
         }
         if (TRACE) solver.out.println("Last node: "+last);
+        Assert._assert(!nav.cutRuleNodes.contains(last));
         Object last_next;
         List possible = new LinkedList(nav.next(last));
         if (possible.size() == 1) last_next = (Object) possible.iterator().next();
@@ -606,6 +608,7 @@ public class Stratify {
             if (!possible.isEmpty()) last_next = (Object) possible.iterator().next();
         }
         if (TRACE) solver.out.println("Successor of last node: "+last_next);
+        Assert._assert(!nav.cutRuleNodes.contains(last_next));
         if (last instanceof PDGRuleNode) {
             return (PDGRuleNode) last;
         } else {
