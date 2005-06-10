@@ -540,10 +540,12 @@ public class Stratify {
         PDGRuleNode backEdge = chooseABackedge(scc, nav);
         if (TRACE) solver.out.println("Cutting backedge "+backEdge);
         nav.cutRuleNodes.add(backEdge);
+        if (TRACE) solver.out.println("Set of cut edges: "+nav.cutRuleNodes);
         
         // Calculate inner SCCs after ignoring back edge.
         Collection entries = Arrays.asList(scc.entries());
         entries.remove(backEdge);
+        Assert._assert(!entries.isEmpty());
         Collection/*<SCComponent>*/ sccs = SCComponent.buildSCC(entries, nav);
         List inner = Traversals.reversePostOrder(SCComponent.SCC_NAVIGATOR, sccs);
         if (TRACE) solver.out.println("Inner sccs for SCC"+scc.getId()+":");
@@ -560,11 +562,14 @@ public class Stratify {
     PDGRuleNode chooseABackedge(SCComponent scc, PDGEdgeNavigator nav) {
         Object[] entries = scc.entries();
         Object entry;
-        if (entries.length > 0) {
-            entry = entries[0];
-        } else {
-            entry = scc.nodes()[0];
-        }
+        do {
+            if (entries.length > 0) {
+                entry = entries[0];
+            } else {
+                entry = scc.nodes()[0];
+            }
+        } while (!nav.cutRuleNodes.contains(entry));
+        if (TRACE) solver.out.println("Starting from entry point "+entry);
         // find longest path.
         Set visited = new HashSet();
         BinHeapPriorityQueue queue = new BinHeapPriorityQueue();
@@ -589,6 +594,7 @@ public class Stratify {
                 last = o; min = priority;
             }
         }
+        if (TRACE) solver.out.println("Last node: "+last);
         Object last_next;
         List possible = new LinkedList(nav.next(last));
         if (possible.size() == 1) last_next = (Object) possible.iterator().next();
@@ -598,6 +604,7 @@ public class Stratify {
             possible.retainAll(Arrays.asList(entries));
             if (!possible.isEmpty()) last_next = (Object) possible.iterator().next();
         }
+        if (TRACE) solver.out.println("Successor of last node: "+last_next);
         if (last instanceof PDGRuleNode) {
             return (PDGRuleNode) last;
         } else {
