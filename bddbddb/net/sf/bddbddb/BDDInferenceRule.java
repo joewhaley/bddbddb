@@ -510,7 +510,7 @@ public class BDDInferenceRule extends InferenceRule {
         for (int i = 0; i < top.size(); ++i) {
             RuleTerm rt = (RuleTerm) top.get(i);
             BDDRelation r = (BDDRelation) rt.relation;
-            relationValues[i] = r.relation.id();
+            //relationValues[i] = r.relation.id();
             for (int j = 0; j < rt.variables.size(); ++j) {
                 Variable v = (Variable) rt.variables.get(j);
                 BDDDomain d = (BDDDomain) r.domains.get(j);
@@ -556,8 +556,10 @@ public class BDDInferenceRule extends InferenceRule {
                         ttime = System.currentTimeMillis();
                     }
                     relationValues[i].restrictWith(d.ithVar(((Constant) v).value));
-                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    if (TRACE) solver.out.println(" (" + relationValues[i].nodeCount() + " nodes)");
+                    if (TRACE) {
+                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                        solver.out.println(" (" + relationValues[i].nodeCount() + " nodes)");
+                    }
                     continue;
                 }
                 if (v instanceof Universe) {
@@ -572,7 +574,10 @@ public class BDDInferenceRule extends InferenceRule {
                     BDD dset = d.set();
                     BDD q = relationValues[i].exist(dset);
                     dset.free();
-                    if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    if (TRACE) {
+                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                        solver.out.println(" (" + q.nodeCount() + " nodes)");
+                    }
                     relationValues[i].free();
                     relationValues[i] = q;
                 }
