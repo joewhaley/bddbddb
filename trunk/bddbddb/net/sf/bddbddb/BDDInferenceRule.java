@@ -552,11 +552,12 @@ public class BDDInferenceRule extends InferenceRule {
                 BDDDomain d = (BDDDomain) r.domains.get(j);
                 if (v instanceof Constant) {
                     if (TRACE) {
-                        solver.out.print("Constant: restricting " + d + " = " + v);
+                        solver.out.print("Constant: restricting " + r + " " + d + " = " + v);
                         ttime = System.currentTimeMillis();
                     }
                     relationValues[i].restrictWith(d.ithVar(((Constant) v).value));
                     if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    if (TRACE) solver.out.println(" (" + relationValues[i].nodeCount() + " nodes)");
                     continue;
                 }
                 if (v instanceof Universe) {
