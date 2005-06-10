@@ -42,6 +42,7 @@ public class Stratify {
     public Stratify(Solver solver) {
         this.solver = solver;
         this.NOISY = solver.NOISY;
+        this.TRACE = solver.TRACE;
         this.nodes = new HashMap();
         this.emptyRelationNode = getRelationNode(null);
     }
@@ -487,13 +488,16 @@ public class Stratify {
                 SCComponent pscc = scc.prev(j);
                 if (!visitedSccs.contains(pscc)) {
                     if (!stratumSet.contains(pscc)) {
+                        if (TRACE) solver.out.println("Predecessor "+pscc+" of "+scc+" not done yet.");
                         continue outer;
                     }
                     if (checkForNegatedEdge(pscc, scc)) {
+                        if (TRACE) solver.out.println("Negated edge: "+pscc+" to "+scc);
                         continue outer;
                     }
                 }
             }
+            if (TRACE) solver.out.println("Adding to stratum: "+scc);
             stratum.add(scc);
             boolean b = stratumSet.add(scc);
             Assert._assert(b);

@@ -377,7 +377,7 @@ public abstract class Solver {
         if (NOISY) out.println("done. (" + time + " ms)");
         out.println("Stratifying: ");
         time = System.currentTimeMillis();
-        stratify(true);
+        stratify(NOISY);
         time = System.currentTimeMillis() - time;
         out.println("done. (" + time + " ms)");
         out.println("Solving: ");
