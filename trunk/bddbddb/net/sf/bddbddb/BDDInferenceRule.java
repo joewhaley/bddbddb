@@ -161,10 +161,12 @@ public class BDDInferenceRule extends InferenceRule {
         }
         for (int i = 0; i < top.size(); ++i) {
             RuleTerm rt = (RuleTerm) top.get(i);
-            if (renames[i] != null) renames[i].reset();
+            // Don't reset, because it is shared across rules.
+            //if (renames[i] != null) renames[i].reset();
             renames[i] = calculateRenames(rt, true);
         }
-        if (bottomRename != null) bottomRename.reset();
+        // Don't reset, because it is shared across rules.
+        //if (bottomRename != null) bottomRename.reset();
         bottomRename = calculateRenames(bottom, false);
         initializeQuantifySet();
         if (variableSet == null) {
@@ -948,13 +950,15 @@ public class BDDInferenceRule extends InferenceRule {
         if (renames != null) {
             for (int i = 0; i < renames.length; ++i) {
                 if (renames[i] != null) {
-                    renames[i].reset();
+                    // Don't reset, because it is shared across rules.
+                    //renames[i].reset();
                     renames[i] = null;
                 }
             }
         }
         if (bottomRename != null) {
-            bottomRename.reset();
+            // Don't reset, because it is shared across rules.
+            //bottomRename.reset();
             bottomRename = null;
         }
     }
