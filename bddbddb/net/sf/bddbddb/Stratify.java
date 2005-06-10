@@ -561,15 +561,16 @@ public class Stratify {
     
     PDGRuleNode chooseABackedge(SCComponent scc, PDGEdgeNavigator nav) {
         Object[] entries = scc.entries();
-        Object entry;
-        do {
-            if (entries.length > 0) {
-                entry = entries[0];
-            } else {
-                entry = scc.nodes()[0];
-            }
-        } while (!nav.cutRuleNodes.contains(entry));
+        Object entry = null;
+        for (int i = 0; i < entries.length; ++i) {
+            entry = entries[i];
+            if (!nav.cutRuleNodes.contains(entry)) break;
+        }
+        if (entry != null) {
+            entry = scc.nodes()[0];
+        }
         if (TRACE) solver.out.println("Starting from entry point "+entry);
+        Assert._assert(!nav.cutRuleNodes.contains(entry));
         // find longest path.
         Set visited = new HashSet();
         BinHeapPriorityQueue queue = new BinHeapPriorityQueue();
