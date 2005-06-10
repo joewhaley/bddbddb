@@ -608,7 +608,7 @@ public class DatalogParser {
         handleUndeclaredRelations(lineNum, s, nameToVar, terms, bottom);
         InferenceRule ir = solver.createInferenceRule(terms, bottom);
         ir = parseRuleOptions(lineNum, s, ir, st);
-        Variable v = ir.checkUniversalVariables();
+        Variable v = ir.checkUnnecessaryVariables();
         if (v != null) {
             outputError(lineNum, st.getPosition(), s,
                 "Variable "+v+" was only used once!  Use '_' instead.");
@@ -1084,7 +1084,7 @@ public class DatalogParser {
         handleUndeclaredRelations(lineNum, s, nameToVar, terms, bottom);
         InferenceRule ir = solver.createInferenceRule(terms, bottom);
         ir = parseRuleOptions(lineNum, s, ir, st);
-        Variable v = ir.checkUniversalVariables();
+        Variable v = ir.checkUnnecessaryVariables();
         if (v != null) {
             outputError(lineNum, st.getPosition(), s,
                 "Variable "+v+" was only used once!  Use '_' instead.");
