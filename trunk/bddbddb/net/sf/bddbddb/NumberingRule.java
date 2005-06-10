@@ -110,6 +110,10 @@ public class NumberingRule extends InferenceRule {
         throw new InternalError("Cannot split a numbering rule!");
     }
 
+    public Variable checkUnnecessaryVariables() {
+        return null;
+    }
+
     /*
      * (non-Javadoc)
      * 
