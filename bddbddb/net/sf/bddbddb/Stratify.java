@@ -543,6 +543,7 @@ public class Stratify {
         
         // Calculate inner SCCs after ignoring back edge.
         Collection entries = Arrays.asList(scc.entries());
+        entries.remove(backEdge);
         Collection/*<SCComponent>*/ sccs = SCComponent.buildSCC(entries, nav);
         List inner = Traversals.reversePostOrder(SCComponent.SCC_NAVIGATOR, sccs);
         if (TRACE) solver.out.println("Inner sccs for SCC"+scc.getId()+":");
