@@ -196,6 +196,9 @@ public class Stratify {
                 }
             }
             p = new PDGRuleNode(rule, from, to);
+            if (TRACE) {
+                solver.out.println("Added PDG edges from "+from+" to "+to);
+            }
             nodes.put(rule, p);
         }
         return p;
@@ -356,6 +359,9 @@ public class Stratify {
             List from = new ArrayList(1); from.add(emptyRelationNode);
             List to = new ArrayList(1); to.add(n);
             PDGRuleNode edge = new PDGRuleNode(null, from, to);
+            if (TRACE) {
+                solver.out.println("Added PDG edges from "+from+" to "+to);
+            }
         }
         // Translate outputs from Relations to PDGRelationNodes
         Collection outputNodes = new ArrayList(outputs.size());
