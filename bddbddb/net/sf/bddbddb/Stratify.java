@@ -541,7 +541,7 @@ public class Stratify {
         if (TRACE) solver.out.println("Cutting backedge "+backEdge);
         boolean b = nav.cutRuleNodes.add(backEdge);
         Assert._assert(b);
-        if (TRACE) solver.out.println("Set of cut edges: "+nav.cutRuleNodes);
+        //if (TRACE) solver.out.println("Set of cut edges: "+nav.cutRuleNodes);
         
         // Calculate inner SCCs after ignoring back edge.
         Collection entries = Arrays.asList(scc.entries());
