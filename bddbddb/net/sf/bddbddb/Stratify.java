@@ -567,7 +567,7 @@ public class Stratify {
             entry = entries[i];
             if (!nav.cutRuleNodes.contains(entry)) break;
         }
-        if (entry != null) {
+        if (entry == null) {
             entry = scc.nodes()[0];
         }
         if (TRACE) solver.out.println("Starting from entry point "+entry);
@@ -592,20 +592,19 @@ public class Stratify {
                     any = true;
                 }
             }
-            if (!any && priority <= min) {
+            if (!any && priority <= min && !nav.cutRuleNodes.contains(last)) {
                 last = o; min = priority;
             }
         }
         if (TRACE) solver.out.println("Last node: "+last);
         Assert._assert(!nav.cutRuleNodes.contains(last));
-        Object last_next;
-        List possible = new LinkedList(nav.next(last));
-        if (possible.size() == 1) last_next = (Object) possible.iterator().next();
-        else if (possible.contains(entry)) last_next = entry;
-        else {
-            last_next = (Object) possible.iterator().next();
-            possible.retainAll(Arrays.asList(entries));
-            if (!possible.isEmpty()) last_next = (Object) possible.iterator().next();
+        Object last_next = null;
+        for (Iterator i = nav.next(last).iterator(); i.hasNext(); ) {
+            Object o = i.next();
+            if (!nav.cutRuleNodes.contains(o)) {
+                last_next = o;
+                break;
+            }
         }
         if (TRACE) solver.out.println("Successor of last node: "+last_next);
         Assert._assert(!nav.cutRuleNodes.contains(last_next));
