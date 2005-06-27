@@ -9,3 +9,4 @@ target
 velocity.log
 maven.log
 weka-src.jar
+proguard.jar
