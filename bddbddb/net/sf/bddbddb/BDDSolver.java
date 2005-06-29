@@ -98,6 +98,14 @@ public class BDDSolver extends Solver {
     }
     
     private boolean ensureCapacity(BDDDomain d, BigInteger range) {
+        if (true) {
+            int oldSize = d.varNum();
+            int newSize = range.bitLength();
+            if (newSize > oldSize) {
+                throw new IllegalArgumentException("value "+range+" is out of range for domain "+d);
+            }
+            return false;
+        }
         int oldSize = d.varNum();
         int newSize = d.ensureCapacity(range);
         if (oldSize != newSize) {
