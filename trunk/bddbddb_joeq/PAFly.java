@@ -75,12 +75,20 @@ import net.sf.javabdd.BDD.BDDIterator;
 public class PAFly {
     static BDD prev;
     
+    static boolean initialized = false;
+    
     static {
         HostedVM.initialize();
         CodeCache.AlwaysMap = true;
     }
     
     static void initialize(BDDSolver s) {
+        if (initialized) {
+            return;
+        }
+        
+        initialized = true;
+        
         Field[] f = PAFly.class.getDeclaredFields();
         for (int i = 0; i < f.length; ++i) {
             if (f[i].getType() != BDDRelation.class) continue;
@@ -321,6 +329,8 @@ public class PAFly {
     
     static BDD prevH;
     public static void addToHDomain(BDDRelation r) {
+        initialize(r.getSolver());
+        
         BDD newValues;
         if (prevH == null) {
             newValues = r.getBDD().id();
@@ -354,6 +364,8 @@ public class PAFly {
     
     static BDD prevC;
     public static void addToClassObjectType(BDDRelation r) {
+        initialize(r.getSolver());
+        
         Attribute a = r.getAttribute("heap");
         BDDDomain H = r.getBDDDomain(a);
         BDD Hset = H.set();
