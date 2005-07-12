@@ -247,6 +247,9 @@ public class CodeFragment {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
             // TODO Auto-generated catch block
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            }
             e.printStackTrace();
         }
     }
@@ -267,6 +270,9 @@ public class CodeFragment {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
             // TODO Auto-generated catch block
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            }
             e.printStackTrace();
         }
     }
