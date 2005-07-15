@@ -154,8 +154,8 @@ public abstract class Relation {
      * 
      * @return number of tuples in relation
      */
-    public int size() {
-        return (int) dsize();
+    public long size() {
+        return (long) dsize();
     }
 
     /**

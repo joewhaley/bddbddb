@@ -320,11 +320,11 @@ public class LSRelation extends Relation {
             BigInteger[] arr;
             { if (intSet != null) arr = new BigInteger[attributes.size()]; }
             public BigInteger[] nextTuple() {
-                if (k == size()) throw new NoSuchElementException();
+                if ((long)k == size()) throw new NoSuchElementException();
                 return getTuple(arr, k++);
             }
             public boolean hasNext() {
-                return k < size();
+                return (long)k < size();
             }
         };
     }
@@ -345,13 +345,13 @@ public class LSRelation extends Relation {
                 }
             }
             public BigInteger[] nextTuple() {
-                if (n == size()) throw new NoSuchElementException();
+                if ((long)n == size()) throw new NoSuchElementException();
                 arr = getTuple(arr, n);
                 gotoNext(arr[k]);
                 return new BigInteger[] { arr[k] };
             }
             public boolean hasNext() {
-                return n < size();
+                return (long)n < size();
             }
         };
     }
@@ -377,7 +377,7 @@ public class LSRelation extends Relation {
                 return arr;
             }
             public boolean hasNext() {
-                return n < size();
+                return (long)n < size();
             }
         };
     }
@@ -409,7 +409,7 @@ outer:
                 return arr;
             }
             public boolean hasNext() {
-                return n < size();
+                return (long)n < size();
             }
         };
     }
