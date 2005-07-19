@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -484,8 +485,9 @@ public class DatalogParser {
             }
         }
         if (solver.nameToRelation.containsKey(name)) {
-            err.println("Error, relation " + name + " redefined on line " + lineNum + ", ignoring.");
-            return null;
+            outputError(lineNum, st.getPosition(), s,"Relation " + name + " redefined");
+            throw new IllegalArgumentException();
+            //return null;
         }
         Relation r = solver.createRelation(name, attributes);
         Pattern constraintPattern = Pattern.compile("(\\w+)([=<])(\\w+)");
@@ -1071,13 +1073,39 @@ public class DatalogParser {
                 throw new IllegalArgumentException();
             }
         }
-        List vars = new ArrayList(varMap.keySet());
+        HashSet projections = new HashSet();
+        while (st.hasMoreTokens()) {
+            String option = nextToken(st);
+            if (option.equals("project")) {
+                boolean foundbrace = false;
+                while (st.hasMoreTokens()) {
+                    option = nextToken(st);
+                    if (option.equals(";")) {
+                        foundbrace = true;
+                        break;
+                    }
+                    projections.add(option);
+                }                    
+                if (!foundbrace) {
+                    outputError(lineNum, st.getPosition(), s, "Expected query projection list terminator \";\"");
+                    throw new IllegalArgumentException();                        
+                }
+            } else {
+                outputError(lineNum, st.getPosition(), s, "Unknown query option \"" + option + "\"");
+                throw new IllegalArgumentException();
+            }
+        }
+
+        List vars = new ArrayList(varMap.keySet().size());
         List attributes = new ArrayList(vars.size());
         for (Iterator i = varMap.entrySet().iterator(); i.hasNext(); ) {
             Map.Entry e = (Map.Entry) i.next();
             Variable v = (Variable) e.getKey();
             String name = (String) e.getValue();
-            attributes.add(new Attribute(name, v.getDomain(), ""));
+            if (!projections.contains(name)) {
+                vars.add(v);
+                attributes.add(new Attribute(name, v.getDomain(), ""));
+            }
         }
         Relation r = solver.createRelation("query@"+lineNum, attributes);
         RuleTerm bottom = new RuleTerm(r, vars);
