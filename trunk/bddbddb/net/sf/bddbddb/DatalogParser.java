@@ -281,7 +281,16 @@ public class DatalogParser {
                 b = !option.equals("false") && !option.equals("no");
             }
             STRICT_DECLARATIONS = b;
-        } else if (s.startsWith(".trace")) {
+        } else if (s.startsWith(".singleignore")) {
+            boolean b = true;
+            int index = ".singleignore".length() + 1;
+            if (s.length() > index) {
+                String option = s.substring(index).trim();
+                b = !option.equals("false") && !option.equals("no");
+            }
+            ALLOW_SINGLE_USE = b;
+        }
+        else if (s.startsWith(".trace")) {
             boolean b = true;
             int index = ".trace".length() + 1;
             if (s.length() > index) {
