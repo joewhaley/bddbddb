@@ -45,6 +45,7 @@ public class DatalogParser {
     /** Trace flag. */
     boolean TRACE = SystemProperties.getProperty("traceparse") != null;
     boolean STRICT_DECLARATIONS = !SystemProperties.getProperty("strict", "no").equals("no");
+    boolean ALLOW_SINGLE_USE = !SystemProperties.getProperty("singleignore", "no").equals("no");
     
     /** Trace output stream. */
     public PrintStream out;
@@ -611,7 +612,7 @@ public class DatalogParser {
         InferenceRule ir = solver.createInferenceRule(terms, bottom);
         ir = parseRuleOptions(lineNum, s, ir, st);
         Variable v = ir.checkUnnecessaryVariables();
-        if (v != null) {
+        if (!ALLOW_SINGLE_USE && v != null) {
             outputError(lineNum, st.getPosition(), s,
                 "Variable "+v+" was only used once!  Use '_' instead.");
             throw new IllegalArgumentException();
