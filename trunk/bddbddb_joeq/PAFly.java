@@ -1105,14 +1105,14 @@ public class PAFly {
             BufferedWriter w = null;
             try {
                 w = new BufferedWriter(new FileWriter(f));
-                w.write("V 1024 var.map\n");
-                w.write("H 512 heap.map\n");
-                w.write("T 256 type.map\n");
-                w.write("F 256 field.map\n");
-                w.write("I 512 invoke.map\n");
+                w.write("V 1048576 var.map\n");
+                w.write("H 262144 heap.map\n");
+                w.write("T 8192 type.map\n");
+                w.write("F 16384 field.map\n");
+                w.write("I 32768 invoke.map\n");
                 w.write("Z 32\n");
-                w.write("N 256 name.map\n");
-                w.write("M 512 method.map\n");
+                w.write("N 8192 name.map\n");
+                w.write("M 16384 method.map\n");
             } finally {
                 if (w != null) w.close();
             }
