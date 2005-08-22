@@ -1123,7 +1123,7 @@ public class DatalogParser {
         InferenceRule ir = solver.createInferenceRule(terms, bottom);
         ir = parseRuleOptions(lineNum, s, ir, st);
         Variable v = ir.checkUnnecessaryVariables();
-        if (v != null) {
+        if (v != null && !ALLOW_SINGLE_USE) {
             outputError(lineNum, st.getPosition(), s,
                 "Variable "+v+" was only used once!  Use '_' instead.");
             throw new IllegalArgumentException();
