@@ -362,6 +362,41 @@ public class PAFly {
         prevH = r.getBDD().id();
     }
     
+    /*
+     * <h, m, i>
+     * */
+    public static void addNewHToHDomain(BDDRelation r) {
+        BDD newValues;
+        if (prevH == null) {
+            newValues = r.getBDD().id();
+        } else {
+            newValues = r.getBDD().apply(prevH, BDDFactory.diff);
+            prevH.free();
+        }
+        Attribute a = r.getAttribute("i");
+        BDDDomain I = r.getBDDDomain(a);
+        List heaps = new LinkedList();
+        for (BDDIterator i = newValues.iterator(r.getDomainSet()); i.hasNext(); ) {
+            BDD b = (BDD) i.next();
+            BigInteger I_i = b.scanVar(I);
+            b.free();
+            // Don't add to mapIH here, as it may increase domain sizes
+            // which will screw up our iterator.  Instead, we add it to a list
+            // for later processing.
+            heaps.add(I_i);
+        }
+        for (Iterator i = heaps.iterator(); i.hasNext(); ) {
+            BigInteger I_i = (BigInteger) i.next();
+            String heapName = "clone of " + a.getDomain().toString(I_i);
+            if (TRACE) System.out.println("NEW ALLOC TO ADD TO HEAP: "+heapName);
+            int H_i = Hmap.get(heapName);
+            if (TRACE) out.println("Adding to mapIH: "+I_i+","+H_i);
+            mapIH.add(I_i.intValue(), H_i);
+        }
+        newValues.free();
+        prevH = r.getBDD().id();
+    }
+    
     static BDD prevC;
     public static void addToClassObjectType(BDDRelation r) {
         initialize(r.getSolver());
@@ -416,7 +451,7 @@ public class PAFly {
     public static boolean USE_CASTS_FOR_REFLECTION = !System.getProperty("pa.usecastsforreflection", "no").equals("no");
     public static boolean RESOLVE_FORNAME = !System.getProperty("pa.resolveforname", "no").equals("no");
     
-    static BDDRelation vP0, L, S, A, actual, formal, Mret, Iret, Mthr, Ithr, IE0, vT, hT, aT, cha, mI, roots, IE;
+    static BDDRelation vP0, L, S, A, actual, formal, Mret, Iret, Mthr, mV, Ithr, IE0, vT, hT, aT, cha, mI, roots, IE;
     static BDDRelation stringToType, stringToField, stringToMethod, defaultConstructor, allConstructors, mapIH, skipMethod;
     static BDDRelation subtypes;
     static IndexMap Vmap, Fmap, Hmap, Mmap, Imap, Tmap, Nmap;
@@ -520,6 +555,11 @@ public class PAFly {
         int V_i = Vmap.get(node.toString());
         if (TRACE_RELATIONS) out.println("Adding to Mthr: "+M_i+","+V_i);
         Mthr.add(M_i, V_i);
+    }
+    
+    static void addToMV(int M_i, int V_i) {
+        if (TRACE_RELATIONS) out.println("Adding to mV: "+M_i+","+V_i);
+        mV.add(M_i, V_i);
     }
     
     static void addToIret(int I_i, Node node) {
@@ -934,6 +974,9 @@ public class PAFly {
             
             if (FILTER_NULL && isNullConstant(node))
                 continue;
+
+            int V_i = Vmap.get(node);
+            addToMV(M_i, V_i);
             
             if (ms.getReturned().contains(node)) {
                 addToMret(M_i, node);
