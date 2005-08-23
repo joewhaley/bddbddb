@@ -975,6 +975,7 @@ public class PAFly {
             if (FILTER_NULL && isNullConstant(node))
                 continue;
 
+            // get a variable for this node
             int V_i = Vmap.get(node);
             addToMV(M_i, V_i);
             
