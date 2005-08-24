@@ -76,6 +76,8 @@ public class PAFly {
     static BDD prev;
     
     static boolean initialized = false;
+
+    private static OfflineSubtypeHelper subtypeHelper;
     
     static {
         HostedVM.initialize();
@@ -110,7 +112,7 @@ public class PAFly {
         Nmap = s.getDomain("N").getMap(); if (Nmap == null) Nmap = new IndexMap("name");
         
         if (subtypes != null) {
-            OfflineSubtypeHelper subtypeHelper = new OfflineSubtypeHelper();
+            subtypeHelper = new OfflineSubtypeHelper();
             for (Iterator i = subtypeHelper.allClasses().iterator(); i.hasNext(); ) {
                 String className = (String) i.next();
                 String cn = canonicalizeClassName(className.trim());
@@ -161,7 +163,7 @@ public class PAFly {
         public OfflineSubtypeHelper() {
         }
         
-        Collection allClasses() {
+        Set allClasses() {
             return allClasses;
         }
         
@@ -451,7 +453,7 @@ public class PAFly {
     public static boolean USE_CASTS_FOR_REFLECTION = !System.getProperty("pa.usecastsforreflection", "no").equals("no");
     public static boolean RESOLVE_FORNAME = !System.getProperty("pa.resolveforname", "no").equals("no");
     
-    static BDDRelation vP0, L, S, A, actual, formal, Mret, Iret, Mthr, mV, Ithr, IE0, vT, hT, aT, cha, mI, roots, IE;
+    static BDDRelation vP0, L, S, A, actual, formal, Mret, Iret, Mthr, /*mV, */ Ithr, IE0, vT, hT, aT, cha, mI, roots, IE;
     static BDDRelation stringToType, stringToField, stringToMethod, defaultConstructor, allConstructors, mapIH, skipMethod;
     static BDDRelation subtypes;
     static IndexMap Vmap, Fmap, Hmap, Mmap, Imap, Tmap, Nmap;
@@ -557,10 +559,11 @@ public class PAFly {
         Mthr.add(M_i, V_i);
     }
     
+    /*
     static void addToMV(int M_i, int V_i) {
         if (TRACE_RELATIONS) out.println("Adding to mV: "+M_i+","+V_i);
         mV.add(M_i, V_i);
-    }
+    }*/
     
     static void addToIret(int I_i, Node node) {
         int V_i = Vmap.get(node.toString());
@@ -976,8 +979,8 @@ public class PAFly {
                 continue;
 
             // get a variable for this node
-            int V_i = Vmap.get(node);
-            addToMV(M_i, V_i);
+            //int V_i = Vmap.get(node);
+            //addToMV(M_i, V_i);
             
             if (ms.getReturned().contains(node)) {
                 addToMret(M_i, node);
