@@ -309,7 +309,7 @@ public class PAFly {
             BDD b = (BDD) i.next();
             BigInteger M_i = b.scanVar(M);
             String methodName = a.getDomain().toString(M_i);
-            System.out.println("NEW REACHABLE METHOD: "+methodName);
+            if(TRACE) System.out.println("NEW REACHABLE METHOD: "+methodName);
             jq_Method m = (jq_Method) jq_Member.parseMember(methodName);
             if (m != null) {
                 // Don't call visitMethod here, as it may increase domain sizes
