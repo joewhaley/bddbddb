@@ -923,6 +923,7 @@ public class PAFly {
                 
                     for (Iterator iter = targets.iterator(); iter.hasNext();){
                         jq_Method newTarget = (jq_Method) iter.next();
+                        if(newTarget == null) continue;
                         
                         if (newTarget instanceof jq_Initializer){
                             jq_Initializer constructor = (jq_Initializer) newTarget;
