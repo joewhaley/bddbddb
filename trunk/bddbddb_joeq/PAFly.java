@@ -713,7 +713,12 @@ public class PAFly {
     
     static void visitType(jq_Reference t1) {
         int T1_i = Tmap.get(""+t1);
-        if (t1 != null) t1.prepare();
+        try {
+            if (t1 != null) t1.prepare();
+        } catch(NoClassDefFoundError _) {
+            System.out.println("Cannot load "+t1);
+            return;
+        }
         if (t1 != null && !t1.isPrepared()) {
             System.out.println("Cannot load "+t1);
             return;
