@@ -470,7 +470,7 @@ public class PAFly {
             if (s != null) {
                 stringNodes.add(h);
                 if (TRACE) out.println("String Node: "+h+" = \""+s+"\"");
-                jq_Class t = tryLoadingClass(s);
+                jq_Type t = tryLoadingType(s);
                 if (t != null) {
                     int T_i = Tmap.get(t.toString());
                     if (true) out.println("Adding to stringToType: "+H_i+","+T_i+" "+t);
@@ -1107,6 +1107,8 @@ public class PAFly {
         HostedVM.initialize();
         CodeCache.AlwaysMap = true;
         
+        jq_Type clazz = tryLoadingType("[C");
+        
         Collection rootMethods = null;
         if (args[0].startsWith("@")) {
             rootMethods = readClassesFromFile(args[0].substring(1));
@@ -1186,13 +1188,17 @@ public class PAFly {
         
     }
     
-    static boolean isWellFormed(String stringConst) {
-        if(stringConst.equals(".")) {
+    static boolean isWellFormed(String typeName) {
+        // handle primitive arrays
+        if(typeName.charAt(0) == '[' && typeName.length() == 2) {
+            return true;
+        }
+        if(typeName.equals(".")) {
             return false;
         }
         int dotCount = 0;
-        for(int i = 0; i < stringConst.length(); i++){
-            char ch = stringConst.charAt(i);
+        for(int i = 0; i < typeName.length(); i++){
+            char ch = typeName.charAt(i);
             
             if(ch == '.'){
                 dotCount++;                
@@ -1208,22 +1214,17 @@ public class PAFly {
         return true;
     }
     
-    static jq_Class tryLoadingClass(String stringConst) {
+    static jq_Type tryLoadingType(String stringConst) {
         if(!isWellFormed(stringConst)) {
             if (TRACE) System.out.println("Not well formed.");
             return null;
         }
         try {
-            jq_Type clazz = jq_Type.parseType(stringConst);
-            if (TRACE) System.out.println("parseType returned: "+clazz);
-            if (clazz instanceof jq_Class) {
-                jq_Class c = (jq_Class) clazz;
-                c.load();
-                c.prepare();
-                return c;
-            } else {
-                return null;
-            }
+            jq_Type type = jq_Type.parseType(stringConst);
+            if (TRACE) System.out.println("parseType returned: "+type);
+            type.load();
+            type.prepare();
+            return type;
         } catch (NoClassDefFoundError e) {
             //System.out.println(stringConst+" : "+e);
         } catch (java.lang.ClassCircularityError e) {
