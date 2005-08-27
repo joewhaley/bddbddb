@@ -1107,7 +1107,7 @@ public class PAFly {
         HostedVM.initialize();
         CodeCache.AlwaysMap = true;
         
-        jq_Type clazz = tryLoadingType("[C");
+        //jq_Type clazz = tryLoadingType("[C");
         
         Collection rootMethods = null;
         if (args[0].startsWith("@")) {
