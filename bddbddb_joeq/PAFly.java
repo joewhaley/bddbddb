@@ -19,13 +19,16 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import joeq.Class.PrimordialClassLoader;
+import joeq.Class.jq_Array;
 import joeq.Class.jq_Class;
 import joeq.Class.jq_FakeInstanceMethod;
 import joeq.Class.jq_Field;
 import joeq.Class.jq_Initializer;
+import joeq.Class.jq_InstanceMethod;
 import joeq.Class.jq_Member;
 import joeq.Class.jq_Method;
 import joeq.Class.jq_NameAndDesc;
@@ -359,6 +362,52 @@ public class PAFly {
             int H_i = Hmap.get(invokeName);
             if (TRACE) out.println("Adding to mapIH: "+I_i+","+H_i);
             mapIH.add(I_i.intValue(), H_i);
+        }
+        newValues.free();
+        prevH = r.getBDD().id();
+    }
+    
+    static BDD prevCast;    
+    public static void addToCast(BDDRelation r) {
+        initialize(r.getSolver());
+        
+        BDD newValues;
+        if (prevCast == null) {
+            newValues = r.getBDD().id();
+        } else {
+            newValues = r.getBDD().apply(prevCast, BDDFactory.diff);
+            prevCast.free();
+        }
+        Attribute a = r.getAttribute("type");
+        BDDDomain T = r.getBDDDomain(a);
+        List types = new LinkedList();
+        for (BDDIterator i = newValues.iterator(r.getDomainSet()); i.hasNext(); ) {
+            BDD b = (BDD) i.next();
+            BigInteger I_i = b.scanVar(T);
+            b.free();
+            // Don't add to mapIH here, as it may increase domain sizes
+            // which will screw up our iterator.  Instead, we add it to a list
+            // for later processing.
+            types.add(I_i);
+        }
+        for (Iterator i = types.iterator(); i.hasNext(); ) {
+            BigInteger T_i = (BigInteger) i.next();
+            String typeName = a.getDomain().toString(T_i);
+            
+            jq_Type t1 = jq_Type.parseType(typeName);
+            if (t1 instanceof jq_Class) {
+                Collection st = subtypeHelper.getSubtypes((jq_Class) t1);
+                if (st == null){
+                    System.err.println("No subtypes for class " + t1.getName());
+                    continue;
+                }
+                for (Iterator typeIter = st.iterator(); typeIter.hasNext();){
+                    jq_Class t2 = (jq_Class) typeIter.next();
+                    int T2_i = Tmap.get(t2.toString());
+                    if (TRACE_RELATIONS) out.println("Adding to subtypes: "+T_i+","+T2_i);
+                    subtypes.add(T_i.intValue(), T2_i);
+                }
+            }
         }
         newValues.free();
         prevH = r.getBDD().id();
@@ -764,6 +813,22 @@ public class PAFly {
                 String s = (String) MethodSummary.stringNodes2Values.get(n);
                 int H_i = Hmap.get(n.toString());
                 handleString(H_i, s, c);
+            }
+        } else
+        if(t1 instanceof jq_Array) {
+            jq_Array a = (jq_Array) t1;
+            //Array.newInstance(c);
+            jq_Class array = (jq_Class) jq_Type.parseType("java.lang.reflect.Array");
+            Assert._assert(array != null);
+            jq_Method m = array.getDeclaredInstanceMethod(new jq_NameAndDesc("newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;")); 
+            if (m != null) {
+                int M_i = Mmap.get(m.toString());
+                if (TRACE_RELATIONS) out.println("Adding to defaultConstructor: "+T1_i+","+M_i);
+                defaultConstructor.add(T1_i, M_i);
+                if (TRACE_RELATIONS) out.println("Adding to allConstructors: "+T1_i+","+M_i);
+                allConstructors.add(T1_i, M_i);
+            } else {
+                System.err.println("No constructor for " + a);
             }
         }
         for (int N_i = 0; N_i < Nmap.size(); ++N_i) {
