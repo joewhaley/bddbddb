@@ -6,15 +6,13 @@ package net.sf.bddbddb.ir;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import jwutil.collections.LinearMap;
 import jwutil.collections.Pair;
-import jwutil.collections.UnionFind;
+import jwutil.collections.UnionFindWithConstraints;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
@@ -43,14 +41,12 @@ import net.sf.javabdd.BDDDomain;
  */
 public class UFDomainAssignment extends DomainAssignment {
     
-    UnionFind uf;
-    LinkedHashSet neq_constraints;
+    UnionFindWithConstraints uf;
     Map physicalDomains;
     
     public UFDomainAssignment(Solver s){
         super(s);
-        uf = new UnionFind(65536);
-        neq_constraints = new LinkedHashSet();
+        uf = new UnionFindWithConstraints(65536);
         this.initialize();
     }
     /**
@@ -58,8 +54,7 @@ public class UFDomainAssignment extends DomainAssignment {
      */
     protected UFDomainAssignment(Solver s, Constraints[] constraintMap) {
         super(s, constraintMap);
-        uf = new UnionFind(65536);
-        neq_constraints = new LinkedHashSet();
+        uf = new UnionFindWithConstraints(65536);
         this.initialize();
     }
 
@@ -208,7 +203,7 @@ public class UFDomainAssignment extends DomainAssignment {
                     solver.out.println("Warning: "+p2+" != "+uf.find(p2));
                     p2 = (Pair) uf.find(p2);
                 }
-                boolean b = neq_constraints.add(new Pair(p1, p2));
+                boolean b = uf.disjoint(p1, p2);
                 Assert._assert(b);
             }
         }
@@ -216,65 +211,24 @@ public class UFDomainAssignment extends DomainAssignment {
 
     boolean forceNotEqual(Object a1, Object a2) {
         if (TRACE) solver.out.println("Forcing " + a1 + " != " + a2);
-        Object rep1 = uf.find(a1);
-        Object rep2 = uf.find(a2);
-        if (rep1.equals(rep2)) {
-            if (TRACE) solver.out.println("Cannot force, " + a1 + " = " + a2);
-            return false;
+        boolean b = uf.disjoint(a1, a2);
+        if (!b) {
+            if (TRACE) solver.out.println("Cannot force, " + a1 + " != " + a2);
         }
-        LinkedList toAdd = new LinkedList();
-        for (Iterator i = neq_constraints.iterator(); i.hasNext(); ) {
-            Pair c = (Pair) i.next();
-            Object crep1 = uf.find(c.left);
-            Object crep2 = uf.find(c.right);
-            Assert._assert(!crep1.equals(crep2));
-            if (!crep1.equals(c.left) || !crep2.equals(c.right)) {
-                i.remove();
-                c.left = crep1; c.right = crep2;
-                toAdd.add(c);
-            }
-            if (crep1.equals(rep1) && crep2.equals(rep2) ||
-                crep1.equals(rep2) && crep2.equals(rep1)) {
-                if (TRACE) solver.out.println("Already " + a1 + " != " + a2);
-                neq_constraints.addAll(toAdd);
-                return true;
-            }
-        }
-        neq_constraints.addAll(toAdd);
-        neq_constraints.add(new Pair(rep1, rep2));
-        return true;
+        return b;
     }
     
     boolean wouldBeLegal(Object a1, Object a2) {
-        Object rep_1 = uf.find(a1);
-        Object rep_2 = uf.find(a2);
-        if (rep_1.equals(rep_2)) {
-            // Already match.
-            if (TRACE) solver.out.println("Already " + a1 + " = " + a2);
-            return true;
-        }
-        for (Iterator i = neq_constraints.iterator(); i.hasNext();) {
-            Pair p = (Pair) i.next();
-            Object repa = uf.find(p.left);
-            Object repb = uf.find(p.right);
-            Assert._assert(!repa.equals(repb));
-            if (repa.equals(rep_1) && repb.equals(rep_2) || repa.equals(rep_2) && repb.equals(rep_1)) {
-                // Merging will cause these to be merged! Bad!
-                if (TRACE) solver.out.println("Cannot, would violate constraint " + p.left + " != " + p.right);
-                return false;
-            }
-        }
-        return true;
+        return uf.union(a1, a2, false);
     }
     
     boolean forceEqual(Object a1, Object a2) {
         if (TRACE) solver.out.println("Forcing " + a1 + " = " + a2);
-        boolean result = wouldBeLegal(a1, a2);
-        if (result) {
-            // Merging a1 and a2 is ok.
-            uf.union(a1, a2);
+        boolean b = uf.union(a1, a2);
+        if (!b) {
+            if (TRACE) solver.out.println("Cannot force, " + a1 + " = " + a2);
         }
-        return result;
+        return b;
     }
 
     /*

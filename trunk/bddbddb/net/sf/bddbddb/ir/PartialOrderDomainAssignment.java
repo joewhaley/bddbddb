@@ -17,7 +17,7 @@ import java.io.PrintStream;
 import jwutil.collections.GenericMultiMap;
 import jwutil.collections.MultiMap;
 import jwutil.collections.Pair;
-import jwutil.collections.UnionFind;
+import jwutil.collections.UnionFindWithConstraints;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDSolver;
 import net.sf.bddbddb.Relation;
@@ -202,7 +202,7 @@ public class PartialOrderDomainAssignment extends UFDomainAssignment {
         s.setVariableOrdering();
     }
 
-    public static String graphToOrder(boolean trace, ConstraintGraph graph, UnionFind uf, MultiMap ileavedDomains, Map domainMap){
+    public static String graphToOrder(boolean trace, ConstraintGraph graph, UnionFindWithConstraints uf, MultiMap ileavedDomains, Map domainMap){
         
         PrintStream out = System.out;
         Set visited = new HashSet();
