@@ -67,6 +67,7 @@ import net.sf.bddbddb.BDDSolver;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
+import net.sf.javabdd.BDDPairing;
 import net.sf.javabdd.BDD.BDDIterator;
 
 /**
@@ -406,6 +407,9 @@ public class PAFly {
                     int T2_i = Tmap.get(t2.toString());
                     if (TRACE_RELATIONS) out.println("Adding to subtypes: "+T_i+","+T2_i);
                     subtypes.add(T_i.intValue(), T2_i);
+                    BDD v1 = subtypes.getBDDDomain(0).ithVar(T_i);
+                    BDD v2 = subtypes.getBDDDomain(1).ithVar(T2_i);
+                    subtypes.getBDD().orWith(v1.andWith(v2));
                 }
             }
         }
@@ -503,7 +507,7 @@ public class PAFly {
     public static boolean RESOLVE_FORNAME = !System.getProperty("pa.resolveforname", "no").equals("no");
     
     static BDDRelation vP0, L, S, A, actual, formal, Mret, Iret, Mthr, /*mV, */ Ithr, IE0, vT, hT, aT, cha, mI, roots, IE;
-    static BDDRelation stringToType, stringToField, stringToMethod, defaultConstructor, allConstructors, mapIH, skipMethod;
+    static BDDRelation stringToType, stringToField, stringToMethod, defaultConstructor, classConstructor, allConstructors, mapIH, skipMethod;
     static BDDRelation subtypes;
     static IndexMap Vmap, Fmap, Hmap, Mmap, Imap, Tmap, Nmap;
     static Collection stringNodes = new LinkedList();
@@ -798,6 +802,12 @@ public class PAFly {
                 int M_i = Mmap.get(m.toString());
                 if (TRACE_RELATIONS) out.println("Adding to defaultConstructor: "+T1_i+","+M_i);
                 defaultConstructor.add(T1_i, M_i);
+            }
+            m = c.getClassInitializer();
+            if (m != null) {
+                int M_i = Mmap.get(m.toString());
+                if (TRACE_RELATIONS) out.println("Adding to classConstructor: "+T1_i+","+M_i);
+                classConstructor.add(T1_i, M_i);
             }
             jq_Method[] ms = c.getDeclaredInstanceMethods();
             Utf8 init = Utf8.get("<init>");
