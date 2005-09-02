@@ -2,6 +2,8 @@ bddbddb.jar
 bddbddb-full.jar
 buddy.dll
 libbuddy.so
+cudd.dll
+libcudd.so
 .class_list
 .source_list
 *.class
