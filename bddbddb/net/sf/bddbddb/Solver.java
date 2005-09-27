@@ -403,7 +403,6 @@ public abstract class Solver {
         doCallbacks(onSave);
         time = System.currentTimeMillis() - time;
         if (NOISY) out.println("done. (" + time + " ms)");
-        cleanup();
     }
     
     Collection onSave = new LinkedList();
@@ -428,12 +427,12 @@ public abstract class Solver {
      * @throws IllegalAccessException
      * @throws ClassNotFoundException
      */
-    public static void main2(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+    public static Solver main2(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         String inputFilename = SystemProperties.getProperty("datalog");
         if (args.length > 0) inputFilename = args[0];
         if (inputFilename == null) {
             printUsage();
-            return;
+            return null; 
         }
         String solverName = SystemProperties.getProperty("solver", "net.sf.bddbddb.BDDSolver");
         Solver dis;
@@ -441,6 +440,7 @@ public abstract class Solver {
         dis.load(inputFilename);
         dis.run();
         dis.save();
+        return dis;
     }
 
     /**
@@ -1072,7 +1072,21 @@ class RuleSorter implements Comparator {
     public Collection getRelationsToSave() {
         return relationsToDump;
     }
-    
+
+    public static Solver execSolver(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+        // Make sure we have the BDD library in our classpath.
+        try {
+            Class.forName("net.sf.javabdd.BDD");
+        } catch (ClassNotFoundException x) {
+            ClassLoader cl = addBDDLibraryToClasspath(args);
+            // Reflective invocation under the new class loader.
+            Reflect.invoke(cl, Solver.class.getName(), "main2", new Class[] {String[].class}, new Object[] {args});
+            return null;
+        }
+        // Just call it directly.
+        return main2(args);
+    }
+
     /**
      * Replacement main() function that checks if we have the BDD library in the
      * classpath.
@@ -1091,7 +1105,8 @@ class RuleSorter implements Comparator {
             return;
         }
         // Just call it directly.
-        main2(args);
+        Solver s = main2(args);
+        if (s != null) s.cleanup();
     }
     
     public static ClassLoader addBDDLibraryToClasspath(String[] args) throws IOException {
