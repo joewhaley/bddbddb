@@ -341,8 +341,7 @@ public class BDDRelation extends Relation {
                 // Parse BDD information.
                 List fileDomains = checkInfoLine(filename, s, false, true);
                 in.mark(4096);
-                List fileDomainList = new ArrayList(fileDomains.size());
-                BDDPairing rename = null;
+                int[] translate = null;
                 BDD mask = null;
                 for (Iterator i = fileDomains.iterator(); i.hasNext(); ) {
                     BDDDomain d = (BDDDomain) i.next();
@@ -377,9 +376,14 @@ public class BDDRelation extends Relation {
                             }
                             if (k >= solver.bdd.varNum())
                                 solver.bdd.setVarNum(k+1);
-                            if (rename == null) rename = solver.bdd.makePair();
+                            if (translate == null || translate.length < solver.bdd.varNum()) {
+                                int[] t = new int[solver.bdd.varNum()];
+                                for (int x = 0; x < t.length; ++x) t[x] = x;
+                                if (translate != null) System.arraycopy(translate, 0, t, 0, translate.length);
+                                translate = t;
+                            }
                             if (solver.TRACE) solver.out.println("Rename "+k+" to "+vars[j]);
-                            rename.set(k, vars[j]);
+                            translate[k] = vars[j];
                         }
                     }
                     if (st.hasMoreTokens()) {
@@ -400,19 +404,20 @@ public class BDDRelation extends Relation {
                             int k = Integer.parseInt(st.nextToken());
                             if (k >= solver.bdd.varNum())
                                 solver.bdd.setVarNum(k+1);
-                            if (rename == null) rename = solver.bdd.makePair();
+                            if (translate == null || translate.length < solver.bdd.varNum()) {
+                                int[] t = new int[solver.bdd.varNum()];
+                                for (int x = 0; x < t.length; ++x) t[x] = x;
+                                if (translate != null) System.arraycopy(translate, 0, t, 0, translate.length);
+                                translate = t;
+                            }
                             if (solver.TRACE) solver.out.println("Rename "+k+" to "+d.vars()[j]);
-                            rename.set(k, d.vars()[j]);
+                            translate[k] = d.vars()[j];
                             ++j;
                         }
                         Assert._assert(!st.hasMoreTokens());
                     }
                 }
-                r2 = solver.bdd.load(in);
-                if (rename != null) {
-                    r2.replaceWith(rename);
-                    rename.reset();
-                }
+                r2 = solver.bdd.load(in, translate);
                 if (mask != null) {
                     r2.andWith(mask);
                 }
