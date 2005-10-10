@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
 import jwutil.collections.LinearMap;
 import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
@@ -78,6 +79,8 @@ public class BDDInferenceRule extends InferenceRule {
     boolean find_best_order = !SystemProperties.getProperty("findbestorder", "no").equals("no");
     
     long FBO_CUTOFF = Long.parseLong(SystemProperties.getProperty("fbocutoff", "90"));
+    
+    long DUMP_CUTOFF = Long.parseLong(SystemProperties.getProperty("fbocutoff", "5000"));
     
     /**
      * Construct a new BDDInferenceRule.
@@ -442,54 +445,45 @@ public class BDDInferenceRule extends InferenceRule {
             BDD canNowQuantify = canQuantifyAfter[j];
             if (TRACE) solver.out.print(" x " + rt.relation);
             BDD b = relationValues[j];
-            if (!canNowQuantify.isOne()) {
-                if (TRACE) {
-                    solver.out.print(" (relprod " + b.nodeCount());
-                    solver.out.print(" ("+domainsOf(b)+")/");
-                    solver.out.print("("+domainsOf(canNowQuantify)+")");
-                }
-                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                BDD topBdd = result.relprod(b, canNowQuantify);
-                if (find_best_order && !result.isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                    long ftime = System.currentTimeMillis();
-                    FindBestDomainOrder.findBestDomainOrder(solver,this, j,solver.bdd, result, b, canNowQuantify,
-                            (RuleTerm) top.get(j-1), rt,
-                            variableSet[j], rt.variables);
-                    //correct for learning time
-                    this.totalTime -= (System.currentTimeMillis() - ftime);
-                }
-                b.free();
-                if (TRACE) {
-                    solver.out.print("=" + topBdd.nodeCount());
-                    solver.out.print(" (" + domainsOf(topBdd) + ")");
-                    solver.out.print(") (" + (System.currentTimeMillis() - ttime) + " ms)");
-                }
-                result.free();
-                result = topBdd;
-            } else {
-                if (TRACE) {
-                    solver.out.print(" (and " + b.nodeCount());
-                }
-                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                if (find_best_order && !result.isOne()) {
-                    BDD res = result.and(b);
-                    if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                        long ftime = System.currentTimeMillis();
-                        FindBestDomainOrder.findBestDomainOrder(solver,this, j, solver.bdd, result, b, canNowQuantify,
-                                (RuleTerm) top.get(j-1), rt,
-                                variableSet[j], rt.variables);
-                        this.totalTime -= (System.currentTimeMillis() - ftime);
-                    }
-                    result.free(); result = res;
-                } else {
-                    result.andWith(b);
-                }
-                if (TRACE) {
-                    solver.out.print("=" + result.nodeCount() + ")");
-                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                }
+            if (TRACE) {
+                solver.out.print(" (relprod " + b.nodeCount());
+                solver.out.print(" ("+domainsOf(b)+")/");
+                solver.out.print("("+domainsOf(canNowQuantify)+")");
             }
-            
+            if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+            BDD topBdd = result.relprod(b, canNowQuantify);
+            if ((System.currentTimeMillis() - ttime) >= DUMP_CUTOFF &&
+                SystemProperties.getPropertyFromFile("dumpslow") != null) {
+                long ftime = System.currentTimeMillis();
+                // Dump this operation to disk so we can analyze it later.
+                try {
+                    String baseName = solver.getBaseName()+"rule"+id+"_subgoal"+j+"_update"+updateCount;
+                    BDDRelation.save(solver, baseName+"_op1.bdd", result);
+                    BDDRelation.save(solver, baseName+"_op2.bdd", b);
+                    BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify);
+                } catch (IOException x) {
+                    System.err.println("Error dumping BDD: "+x);
+                }
+                ftime = System.currentTimeMillis() - ftime;
+                ttime += ftime;
+                this.totalTime -= ftime;
+            }
+            if (find_best_order && !result.isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                long ftime = System.currentTimeMillis();
+                FindBestDomainOrder.findBestDomainOrder(solver,this, j,solver.bdd, result, b, canNowQuantify,
+                        (RuleTerm) top.get(j-1), rt,
+                        variableSet[j], rt.variables);
+                // Correct for learning time.
+                this.totalTime -= (System.currentTimeMillis() - ftime);
+            }
+            b.free();
+            if (TRACE) {
+                solver.out.print("=" + topBdd.nodeCount());
+                solver.out.print(" (" + domainsOf(topBdd) + ")");
+                solver.out.print(") (" + (System.currentTimeMillis() - ttime) + " ms)");
+            }
+            result.free();
+            result = topBdd;
             if (result.isZero()) {
                 if (TRACE) solver.out.println(" Became empty, stopping.");
                 for (++j; j < relationValues.length; ++j) {
@@ -845,49 +839,42 @@ public class BDDInferenceRule extends InferenceRule {
                     if (TRACE) solver.out.print("'");
                 }
                 
-                if (!canNowQuantify.isOne()) {
-                    if (TRACE) {
-                        solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
-                    }
-                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                    BDD topBdd = results[i].relprod(b, canNowQuantify);
-                    if (TRACE) {
-                        solver.out.print("=" + topBdd.nodeCount() + ")");
-                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    }
-                    if (find_best_order && !results[i].isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                        long ftime = System.currentTimeMillis();
-                        FindBestDomainOrder.findBestDomainOrder(solver,this, top.size() + i*j,solver.bdd, results[i], b, canNowQuantify,
-                            (RuleTerm) top.get(j-1), rt,
-                            variableSet[j], rt.variables);
-                        this.totalTime -= (System.currentTimeMillis() - ftime);
-                    }
-                    b.free();
-                    results[i].free();
-                    results[i] = topBdd;
-                } else {
-                    if (TRACE) {
-                        solver.out.print(" (and " + b.nodeCount());
-                    }
-                    if (TRACE || find_best_order) ttime = System.currentTimeMillis();
-                    if (find_best_order && !results[i].isOne()) {
-                        BDD res = results[i].and(b);
-                        if ((System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
-                            long ftime = System.currentTimeMillis();
-                            FindBestDomainOrder.findBestDomainOrder(solver,this, top.size() + i*j,solver.bdd, results[i], b, canNowQuantify,
-                                (RuleTerm) top.get(j-1), rt,
-                                variableSet[j], rt.variables);
-                            this.totalTime -= (System.currentTimeMillis() - ftime);
-                        }
-                        results[i].free(); results[i] = res;
-                    } else {
-                        results[i].andWith(b);
-                    }
-                    if (TRACE) {
-                        solver.out.print("=" + results[i].nodeCount() + ")");
-                        solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
-                    }
+                if (TRACE) {
+                    solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
                 }
+                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                BDD topBdd = results[i].relprod(b, canNowQuantify);
+                if (TRACE) {
+                    solver.out.print("=" + topBdd.nodeCount() + ")");
+                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                }
+                if ((System.currentTimeMillis() - ttime) >= DUMP_CUTOFF &&
+                    SystemProperties.getPropertyFromFile("dumpslow") != null) {
+                    long ftime = System.currentTimeMillis();
+                    // Dump this operation to disk so we can analyze it later.
+                    try {
+                        String baseName = solver.getBaseName()+"rule"+id+"_subgoal"+i+","+j+"_update"+updateCount;
+                        BDDRelation.save(solver, baseName+"_op1.bdd", results[i]);
+                        BDDRelation.save(solver, baseName+"_op2.bdd", b);
+                        BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify);
+                    } catch (IOException x) {
+                        System.err.println("Error dumping BDD: "+x);
+                    }
+                    ftime = System.currentTimeMillis() - ftime;
+                    ttime += ftime;
+                    this.totalTime -= ftime;
+                }
+                if (find_best_order && !results[i].isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                    long ftime = System.currentTimeMillis();
+                    FindBestDomainOrder.findBestDomainOrder(solver,this, top.size() + i*j,solver.bdd, results[i], b, canNowQuantify,
+                        (RuleTerm) top.get(j-1), rt,
+                        variableSet[j], rt.variables);
+                    // Correct for learning time.
+                    this.totalTime -= (System.currentTimeMillis() - ftime);
+                }
+                b.free();
+                results[i].free();
+                results[i] = topBdd;
                 if (results[i].isZero()) {
                     if (TRACE) solver.out.println(" Became empty, skipping.");
                     if (j < i) newRelationValues[i].free();

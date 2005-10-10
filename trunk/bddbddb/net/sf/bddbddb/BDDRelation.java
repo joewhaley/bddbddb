@@ -21,7 +21,6 @@ import jwutil.util.Assert;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
-import net.sf.javabdd.BDDPairing;
 import net.sf.javabdd.BDD.BDDIterator;
 
 /**
@@ -460,6 +459,10 @@ public class BDDRelation extends Relation {
      * @return  domain info line
      */
     String makeInfoLine() {
+        return makeInfoLine(domains);
+    }
+    
+    static String makeInfoLine(Collection domains) {
         StringBuffer sb = new StringBuffer();
         sb.append("#");
         for (Iterator i = domains.iterator(); i.hasNext();) {
@@ -478,7 +481,7 @@ public class BDDRelation extends Relation {
      * @param d  domain
      * @return  BDD variable info line
      */
-    String makeBDDVarInfoLine(BDDDomain d) {
+    static String makeBDDVarInfoLine(BDDDomain d) {
         StringBuffer sb = new StringBuffer();
         sb.append("#");
         int[] vars = d.vars();
@@ -620,6 +623,45 @@ public class BDDRelation extends Relation {
         save(solver.basedir + name + ".bdd");
     }
 
+    /**
+     * Save a BDD with a valid header.
+     * 
+     * @param solver  solver object
+     * @param filename  filename to save into
+     * @param relation  BDD to save
+     * @throws IOException
+     */
+    public static void save(BDDSolver solver, String filename, BDD relation) throws IOException {
+        BDD s = relation.support();
+        BigInteger[] a = s.scanAllVar();
+        List domains = new ArrayList(a == null ? 0 : a.length);
+        BDD dom = solver.bdd.one();
+        if (a != null) {
+            for (int i = 0; i < a.length; ++i) {
+                if (!BigInteger.ZERO.equals(a[i])) {
+                    domains.add(solver.bdd.getDomain(i));
+                    dom.andWith(solver.bdd.getDomain(i).set());
+                }
+            }
+        }
+        solver.out.println("Saving " + filename + ": " + relation.nodeCount() + " nodes, " +
+                           relation.satCount(dom) + " elements ("+domains+")");
+        BufferedWriter out = null;
+        try {
+            out = new BufferedWriter(new FileWriter(filename));
+            out.write(makeInfoLine(domains));
+            out.write('\n');
+            for (Iterator i = domains.iterator(); i.hasNext(); ) {
+                BDDDomain d = (BDDDomain) i.next();
+                out.write(makeBDDVarInfoLine(d));
+                out.write('\n');
+            }
+            solver.bdd.save(out, relation);
+        } finally {
+            if (out != null) try { out.close(); } catch (IOException x) { }
+        }
+    }
+    
     /**
      * Save the value of this relation to the given file.
      * 
