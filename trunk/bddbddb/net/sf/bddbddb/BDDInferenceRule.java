@@ -9,7 +9,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import jwutil.collections.LinearMap;
 import jwutil.io.SystemProperties;
 import jwutil.util.Assert;
@@ -80,7 +82,7 @@ public class BDDInferenceRule extends InferenceRule {
     
     long FBO_CUTOFF = Long.parseLong(SystemProperties.getProperty("fbocutoff", "90"));
     
-    long DUMP_CUTOFF = Long.parseLong(SystemProperties.getProperty("fbocutoff", "5000"));
+    long DUMP_CUTOFF = Long.parseLong(SystemProperties.getProperty("dumpcutoff", "5000"));
     
     /**
      * Construct a new BDDInferenceRule.
@@ -436,7 +438,7 @@ public class BDDInferenceRule extends InferenceRule {
         return changed;
     }
 
-    public BDD evalRelations(BDDFactory bdd, BDD[] relationValues, BDD[] canQuantifyAfter, long time){
+    public BDD evalRelations(BDDFactory bdd, BDD[] relationValues, BDD[] canQuantifyAfter, long time) {
         
         long ttime = 0;
         BDD result = bdd.one();
@@ -452,12 +454,17 @@ public class BDDInferenceRule extends InferenceRule {
             }
             if (TRACE || find_best_order) ttime = System.currentTimeMillis();
             BDD topBdd = result.relprod(b, canNowQuantify);
-            if ((System.currentTimeMillis() - ttime) >= DUMP_CUTOFF &&
+            if (TRACE || find_best_order) ttime = System.currentTimeMillis() - ttime;
+            if (ttime >= DUMP_CUTOFF &&
                 SystemProperties.getPropertyFromFile("dumpslow") != null) {
                 long ftime = System.currentTimeMillis();
                 // Dump this operation to disk so we can analyze it later.
                 try {
                     String baseName = solver.getBaseName()+"rule"+id+"_subgoal"+j+"_update"+updateCount;
+                    Writer w = new FileWriter(baseName+".info");
+                    w.write("Rule: "+this+"\n");
+                    w.write("Time: "+ttime+" ms\n");
+                    w.close();
                     BDDRelation.save(solver, baseName+"_op1.bdd", result);
                     BDDRelation.save(solver, baseName+"_op2.bdd", b);
                     BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify);
@@ -465,16 +472,16 @@ public class BDDInferenceRule extends InferenceRule {
                     System.err.println("Error dumping BDD: "+x);
                 }
                 ftime = System.currentTimeMillis() - ftime;
-                ttime += ftime;
                 this.totalTime -= ftime;
             }
-            if (find_best_order && !result.isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+            if (find_best_order && !result.isOne() && ttime >= FBO_CUTOFF) {
                 long ftime = System.currentTimeMillis();
                 FindBestDomainOrder.findBestDomainOrder(solver,this, j,solver.bdd, result, b, canNowQuantify,
                         (RuleTerm) top.get(j-1), rt,
                         variableSet[j], rt.variables);
                 // Correct for learning time.
-                this.totalTime -= (System.currentTimeMillis() - ftime);
+                ftime = System.currentTimeMillis() - ftime;
+                this.totalTime -= ftime;
             }
             b.free();
             if (TRACE) {
@@ -844,16 +851,21 @@ public class BDDInferenceRule extends InferenceRule {
                 }
                 if (TRACE || find_best_order) ttime = System.currentTimeMillis();
                 BDD topBdd = results[i].relprod(b, canNowQuantify);
+                if (TRACE || find_best_order) ttime = System.currentTimeMillis() - ttime;
                 if (TRACE) {
                     solver.out.print("=" + topBdd.nodeCount() + ")");
-                    solver.out.print(" (" + (System.currentTimeMillis() - ttime) + " ms)");
+                    solver.out.print(" (" + ttime + " ms)");
                 }
-                if ((System.currentTimeMillis() - ttime) >= DUMP_CUTOFF &&
+                if (ttime >= DUMP_CUTOFF &&
                     SystemProperties.getPropertyFromFile("dumpslow") != null) {
                     long ftime = System.currentTimeMillis();
                     // Dump this operation to disk so we can analyze it later.
                     try {
                         String baseName = solver.getBaseName()+"rule"+id+"_subgoal"+i+","+j+"_update"+updateCount;
+                        Writer w = new FileWriter(baseName+".info");
+                        w.write("Rule: "+this+"\n");
+                        w.write("Time: "+ttime+" ms\n");
+                        w.close();
                         BDDRelation.save(solver, baseName+"_op1.bdd", results[i]);
                         BDDRelation.save(solver, baseName+"_op2.bdd", b);
                         BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify);
@@ -861,7 +873,6 @@ public class BDDInferenceRule extends InferenceRule {
                         System.err.println("Error dumping BDD: "+x);
                     }
                     ftime = System.currentTimeMillis() - ftime;
-                    ttime += ftime;
                     this.totalTime -= ftime;
                 }
                 if (find_best_order && !results[i].isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
@@ -870,7 +881,8 @@ public class BDDInferenceRule extends InferenceRule {
                         (RuleTerm) top.get(j-1), rt,
                         variableSet[j], rt.variables);
                     // Correct for learning time.
-                    this.totalTime -= (System.currentTimeMillis() - ftime);
+                    ftime = System.currentTimeMillis() - ftime;
+                    this.totalTime -= ftime;
                 }
                 b.free();
                 results[i].free();
