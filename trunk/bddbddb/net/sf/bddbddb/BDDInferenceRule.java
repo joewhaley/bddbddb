@@ -452,10 +452,10 @@ public class BDDInferenceRule extends InferenceRule {
                 solver.out.print(" ("+domainsOf(b)+")/");
                 solver.out.print("("+domainsOf(canNowQuantify)+")");
             }
-            if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+            if (TRACE || find_best_order || DUMP_CUTOFF > 0) ttime = System.currentTimeMillis();
             BDD topBdd = result.relprod(b, canNowQuantify);
-            if (TRACE || find_best_order) ttime = System.currentTimeMillis() - ttime;
-            if (ttime >= DUMP_CUTOFF &&
+            if (TRACE || find_best_order || DUMP_CUTOFF > 0) ttime = System.currentTimeMillis() - ttime;
+            if (DUMP_CUTOFF > 0 && ttime >= DUMP_CUTOFF &&
                 SystemProperties.getPropertyFromFile("dumpslow") != null) {
                 long ftime = System.currentTimeMillis();
                 // Dump this operation to disk so we can analyze it later.
@@ -849,14 +849,14 @@ public class BDDInferenceRule extends InferenceRule {
                 if (TRACE) {
                     solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
                 }
-                if (TRACE || find_best_order) ttime = System.currentTimeMillis();
+                if (TRACE || find_best_order || DUMP_CUTOFF > 0) ttime = System.currentTimeMillis();
                 BDD topBdd = results[i].relprod(b, canNowQuantify);
-                if (TRACE || find_best_order) ttime = System.currentTimeMillis() - ttime;
+                if (TRACE || find_best_order || DUMP_CUTOFF > 0) ttime = System.currentTimeMillis() - ttime;
                 if (TRACE) {
                     solver.out.print("=" + topBdd.nodeCount() + ")");
                     solver.out.print(" (" + ttime + " ms)");
                 }
-                if (ttime >= DUMP_CUTOFF &&
+                if (DUMP_CUTOFF > 0 && ttime >= DUMP_CUTOFF && 
                     SystemProperties.getPropertyFromFile("dumpslow") != null) {
                     long ftime = System.currentTimeMillis();
                     // Dump this operation to disk so we can analyze it later.
