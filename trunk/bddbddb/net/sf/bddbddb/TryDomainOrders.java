@@ -181,7 +181,7 @@ public class TryDomainOrders {
     
     void doApplyEx(BDDFactory.BDDOp op, BDD b1, BDD b2, BDD b3) {
         long time = System.currentTimeMillis();
-        FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, solver.BDDNODES / 2, Long.MAX_VALUE, 5000);
+        FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, 0, Long.MAX_VALUE, 5000);
         try {
             fbo.init(b1, b2, b3, op);
         } catch (IOException x) {
