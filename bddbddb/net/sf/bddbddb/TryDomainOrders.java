@@ -202,7 +202,7 @@ public class TryDomainOrders {
             time = fbo.tryOrder(true, vOrder);
             time = Math.min(time, BDDInferenceRule.LONG_TIME);
             solver.out.println("Order "+o+" time: "+time+" ms");
-            orderTimes.put(o, Long.valueOf(time));
+            orderTimes.put(o, new Long(time));
         }
         fbo.cleanup();
         
