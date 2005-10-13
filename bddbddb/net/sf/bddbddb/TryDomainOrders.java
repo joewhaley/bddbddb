@@ -191,8 +191,20 @@ public class TryDomainOrders {
         }
         solver.out.println("Time to initialize FindBestOrder: "+(System.currentTimeMillis()-time));
         
-        OrderIterator i = new OrderIterator(domList);
         Map orderTimes = new HashMap();
+        if (true) {
+            Order o = loaded_varorder.generateRandomOrder(domList);
+            String vOrder = o.toVarOrderString(null);
+            solver.out.println("Trying initial order "+vOrder);
+            vOrder = solver.fixVarOrder(vOrder, false);
+            solver.out.println("Complete order "+vOrder);
+            time = fbo.tryOrder(true, vOrder);
+            time = Math.min(time, BDDInferenceRule.LONG_TIME);
+            solver.out.println("Order "+o+" time: "+time+" ms");
+            orderTimes.put(o, new Long(time));
+        }
+        
+        OrderIterator i = new OrderIterator(domList);
         while (i.hasNext()) {
             Order o = i.nextOrder();
             String vOrder = o.toVarOrderString(null);
@@ -212,6 +224,7 @@ public class TryDomainOrders {
             Map.Entry e = (Map.Entry) it.next();
             Order o = (Order) e.getKey();
             Long t = (Long) e.getValue();
+            if (t.longValue() >= BDDInferenceRule.LONG_TIME) break;
             solver.out.println("Order: "+o+" "+t+" ms");
         }
     }
