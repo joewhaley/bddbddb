@@ -232,15 +232,23 @@ public class TryDomainOrders {
     void handleCommand(String[] args) throws IOException {
         if (args.length > 1) {
             if (args[0].equals("relprod")) {
-                if (args.length == 4) {
-                    BDDRelation r1 = parseRelation(args[1]);
-                    BDDRelation r2 = parseRelation(args[2]);
-                    BDDRelation r3 = parseRelation(args[3]);
+                if (args.length == 4 || args.length == 2) {
+                    String rn1, rn2, rn3;
+                    if (args.length == 4) {
+                        rn1 = args[1]; rn2 = args[2]; rn3 = args[3];
+                    } else {
+                        rn1 = args[1]+"_op1.bdd";
+                        rn2 = args[1]+"_op2.bdd";
+                        rn3 = args[1]+"_op3.bdd";
+                    }
+                    BDDRelation r1 = parseRelation(rn1);
+                    BDDRelation r2 = parseRelation(rn2);
+                    BDDRelation r3 = parseRelation(rn3);
                     setVarOrder(loaded_varorder);
                     solver.initialize();
-                    r1.load(args[1]);
-                    r2.load(args[2]);
-                    r3.load(args[3]);
+                    r1.load(rn1);
+                    r2.load(rn2);
+                    r3.load(rn3);
                     doApplyEx(BDDFactory.and, r1.getBDD(), r2.getBDD(), r3.getBDD());
                     return;
                 }
