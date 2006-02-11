@@ -1,0 +1,92 @@
+
+### Java context-insensitive inclusion-based pointer analysis
+### Handles hash map contents specially
+### Author Chris Unkel
+### Modified from pa.datalog
+
+### Domains
+
+.include "fielddomains.pa"
+
+# stolen from pa.datalog; need fbo again?
+.bddvarorder N0_F0_I0_M1_M0_V1_V0_T0_Z0_T1_H0_H1_STR0
+
+### Relations
+
+vP0 (v:V0, h:H0) input
+vP (v:V0, h:H0) output
+A (dest:V0, source:V1) input
+hP0 (ha:H0, field:F0, hb:H1) input
+hP (ha:H0, field:F0, hb:H1) output
+S (base:V0, field:F0, src:V1) input
+L (base:V0, field:F0, dest:V1) input
+vT (var:V0, type:T0) input
+hT (heap:H0, type:T1) input
+aT (type:T0, type:T1) input
+vPfilter (v:V0, h:H0)
+actual (invoke:I0, num:Z0, actualparam:V1) input
+formal (method:M0, num:Z0, formalparam:V0) input
+Mret (method:M0, v:V1) input
+Mthr (method:M0, v:V1) input
+Iret (invoke:I0, v:V0) input
+Ithr (invoke:I0, v:V0) input
+IE0 (invoke:I0, target:M0) input
+IE (invoke:I0, target:M0) output
+
+## Additional relations for special map handling
+stringConstant(heap:H0, string:STR0) input
+overridesEqualsOrHashcode(type:T0) input
+
+# Methods handled specially.  Should not be hooked up via Mret as normal.
+handledSpecially(method:M0)
+
+# java.lang.String.
+stringClass(type:T0)
+
+# h0.equals(h1) might be true.
+mayEqual(h0:H0, h1:H1)
+
+mapContents (map:H0, key:H0, value:H0) output
+
+
+### Rules
+
+vP(v,h) :- vP0(v,h).
+hP(h,f,h2) :- hP0(h,f,h2).
+IE(i,m) :- IE0(i,m).
+vPfilter(v,h) :- vT(v,tv), aT(tv,th), hT(h,th).
+vP(v1,h) :- A(v1,v2), vP(v2,h), vPfilter(v1,h).
+hP(h1,f,h2) :- S(v1,f,v2), vP(v1,h1), vP(v2,h2).
+vP(v2,h2) :- L(v1,f,v2), vP(v1,h1), hP(h1,f,h2), vPfilter(v2,h2). split
+A(v1,v2) :- formal(m,z,v1), IE(i,m), actual(i,z,v2).
+# This rule is modified from base algorithm:
+A(v2,v1) :- !handledSpecially(m), Mret(m,v1), IE(i,m), Iret(i,v2).
+A(v2,v1) :- Mthr(m,v1), IE(i,m), Ithr(i,v2).
+
+## Additional rules for special map handling
+
+# Eclipse mangling here, ick.
+handledSpecially("java/util/HashMap/java/lang/Object/get(java/lang/Object)").
+stringClass("java.lang.String").
+
+mayEqual(h1, h2) :- h1=h2.
+mayEqual(h1, h2) :- hT(h1, t1), overridesEqualsOrHashcode(t1), !stringClass(t1), \
+                    hT(h2, t2), overridesEqualsOrHashcode(t2), !stringClass(t2).
+mayEqual(h1, h2) :- stringConstant(h1, str), stringConstant(h2, str).
+# 0 is the special "non-constant" string constant.
+mayEqual(h1, h2) :- stringConstant(h1, 0), stringConstant(h2, _).
+mayEqual(h2, h1) :- stringConstant(h1, 0), stringConstant(h2, _).
+
+# java.util.HashMap.put handling
+mapContents(map, key, value) :- IE(i, "java/util/HashMap/java/lang/Object/put(java/lang/Objectjava/lang/Object)"), \
+                                actual(i, 0, v0), vP(v0, map), \
+                                actual(i, 1, v1), vP(v1, key), \
+                                actual(i, 2, v2), vP(v2, value).
+                                
+# java.util.HashMap.get handling
+vP(v,value) :- IE(i, "java/util/HashMap/java/lang/Object/get(java/lang/Object)"), \
+               actual(i, 0, v0), vP(v0, map), \
+               actual(i, 0, v1), vP(v1, key), \
+               mayEqual(key, containedKey), \
+               mapContents(map, containedKey, value), \
+               Iret(i, v).
