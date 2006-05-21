@@ -81,9 +81,9 @@
   <siteDirectory>/home/groups/b/bd/bddbddb/htdocs/</siteDirectory>
   <distributionDirectory>/home/groups/b/bd/bddbddb/</distributionDirectory>
   <repository>
-    <connection>scm:cvs:pserver:anonymous@cvs.sourceforge.net:/cvsroot/bddbddb:bddbddb</connection>
-    <developerConnection>scm:cvs:ext:joewhaley@cvs.sourceforge.net:/cvsroot/bddbddb:bddbddb</developerConnection>
-    <url>http://cvs.sourceforge.net/viewcvs.py/bddbddb/</url>
+    <connection>scm:cvs:pserver:anonymous@bddbddb.cvs.sourceforge.net:/cvsroot/bddbddb:bddbddb</connection>
+    <developerConnection>scm:cvs:ext:joewhaley@bddbddb.cvs.sourceforge.net:/cvsroot/bddbddb:bddbddb</developerConnection>
+    <url>http://bddbddb.cvs.sourceforge.net/bddbddb/</url>
   </repository>
   <versions>
     <version>
