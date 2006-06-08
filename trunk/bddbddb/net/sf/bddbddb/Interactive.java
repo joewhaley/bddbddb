@@ -188,7 +188,6 @@ public class Interactive {
         log = new LinkedList();
         LineNumberReader lin = new LineNumberReader(new InputStreamReader(in));
         MyReader in = new MyReader(lin);
-        outer:
         for (;;) {
             try {
                 out.print("> ");

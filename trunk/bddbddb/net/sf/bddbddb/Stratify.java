@@ -442,7 +442,6 @@ public class Stratify {
         // Calculate each stratum.
         strata = new LinkedList();
         Set visitedSccs = new HashSet();
-    outer:
         while (!sortedSccs.isEmpty()) {
             List stratum = discoverStratum(sortedSccs, visitedSccs);
             Assert._assert(!stratum.isEmpty());
