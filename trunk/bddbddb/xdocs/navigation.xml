@@ -14,6 +14,8 @@
             href="index.html"/>
       <item name="Links"
             href="links.html"/>
+      <item name="NEW! PLDI'06 tutorial"
+            href="http://www.stanford.edu/~jwhaley/PLDITutorial.ppt"/>
       <item name="PLDI'04 paper"
             href="http://www.stanford.edu/~jwhaley/papers/pldi04.pdf"/>
       <item name="PODS'05 paper"
