@@ -24,6 +24,7 @@ import net.sf.bddbddb.order.OrderIterator;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
+import net.sf.javabdd.BDDVarSet;
 import net.sf.javabdd.FindBestOrder;
 
 public class TryDomainOrders {
@@ -179,7 +180,7 @@ public class TryDomainOrders {
         solver.setVariableOrdering();
     }
     
-    void doApplyEx(BDDFactory.BDDOp op, BDD b1, BDD b2, BDD b3) {
+    void doApplyEx(BDDFactory.BDDOp op, BDD b1, BDD b2, BDDVarSet b3) {
         long time = System.currentTimeMillis();
         FindBestOrder fbo = new FindBestOrder(solver.BDDNODES, solver.BDDCACHE, 0, Long.MAX_VALUE, 5000);
         try {
@@ -249,7 +250,7 @@ public class TryDomainOrders {
                     r1.load(rn1);
                     r2.load(rn2);
                     r3.load(rn3);
-                    doApplyEx(BDDFactory.and, r1.getBDD(), r2.getBDD(), r3.getBDD());
+                    doApplyEx(BDDFactory.and, r1.getBDD(), r2.getBDD(), r3.getBDD().toVarSet());
                     return;
                 }
             } else if (args[0].equals("and")) {

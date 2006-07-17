@@ -63,6 +63,7 @@ import net.sf.bddbddb.order.WekaInterface.OrderAttribute;
 import net.sf.bddbddb.order.WekaInterface.OrderInstance;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDFactory;
+import net.sf.javabdd.BDDVarSet;
 import net.sf.javabdd.FindBestOrder;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -2051,7 +2052,7 @@ public class FindBestDomainOrder {
      * @param vars1  variables of b1
      * @param vars2  variables of b2
      */
-    static void findBestDomainOrder(BDDSolver solver, BDDInferenceRule rule, int opNum, BDDFactory bdd, BDD b1, BDD b2, BDD b3, RuleTerm r1, RuleTerm r2, Collection vars1, Collection vars2) {
+    static void findBestDomainOrder(BDDSolver solver, BDDInferenceRule rule, int opNum, BDDFactory bdd, BDD b1, BDD b2, BDDVarSet b3, RuleTerm r1, RuleTerm r2, Collection vars1, Collection vars2) {
         Set allVarSet = new HashSet(vars1); allVarSet.addAll(vars2);
         allVarSet.removeAll(rule.unnecessaryVariables);
         Object[] a = allVarSet.toArray();

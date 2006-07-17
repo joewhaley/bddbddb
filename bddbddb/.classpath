@@ -7,6 +7,6 @@
 	<classpathentry kind="src" path="/jwutil"/>
 	<classpathentry kind="src" path="/JavaBDD"/>
 	<classpathentry kind="lib" path="jwutil-1.0.jar"/>
-	<classpathentry kind="lib" path="javabdd-1.0b2.jar"/>
+	<classpathentry kind="lib" path="javabdd-2.0.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>
