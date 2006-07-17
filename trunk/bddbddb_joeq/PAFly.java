@@ -19,7 +19,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import joeq.Class.PrimordialClassLoader;
@@ -28,7 +27,6 @@ import joeq.Class.jq_Class;
 import joeq.Class.jq_FakeInstanceMethod;
 import joeq.Class.jq_Field;
 import joeq.Class.jq_Initializer;
-import joeq.Class.jq_InstanceMethod;
 import joeq.Class.jq_Member;
 import joeq.Class.jq_Method;
 import joeq.Class.jq_NameAndDesc;
@@ -67,7 +65,7 @@ import net.sf.bddbddb.BDDSolver;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
-import net.sf.javabdd.BDDPairing;
+import net.sf.javabdd.BDDVarSet;
 import net.sf.javabdd.BDD.BDDIterator;
 
 /**
@@ -458,7 +456,7 @@ public class PAFly {
         
         Attribute a = r.getAttribute("heap");
         BDDDomain H = r.getBDDDomain(a);
-        BDD Hset = H.set();
+        BDDVarSet Hset = H.set();
         BDD newValues;
         if (prevC == null) {
             newValues = r.getBDD().exist(Hset);
@@ -468,7 +466,7 @@ public class PAFly {
         }
         a = r.getAttribute("type");
         BDDDomain T = r.getBDDDomain(a);
-        BDD Tset = T.set();
+        BDDVarSet Tset = T.set();
         List types = new LinkedList();
         for (BDDIterator i = newValues.iterator(Tset); i.hasNext(); ) {
             BDD b = (BDD) i.next();
@@ -1354,7 +1352,7 @@ public class PAFly {
          */
         public Collection getAllMethods() {
             BDD b = roots.getBDD().id();
-            BDD s = IE.getBDDDomain(0).set();
+            BDDVarSet s = IE.getBDDDomain(0).set();
             b.orWith(IE.getBDD().exist(s));
             s.free();
             BDD c = roots.getBDDDomain(0).ithVar(Mmap.get("null"));
