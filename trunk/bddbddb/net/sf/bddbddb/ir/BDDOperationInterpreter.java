@@ -38,6 +38,7 @@ import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.BDDPairing;
+import net.sf.javabdd.BDDVarSet;
 import net.sf.javabdd.BDDFactory.BDDOp;
 
 /**
@@ -116,24 +117,24 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         return dd;
     }
     
-    BDD getProjectSet(Map m, BDDRelation r1, BDDRelation r2, BDDRelation r3) {
-        BDD b = factory.one();
+    BDDVarSet getProjectSet(Map m, BDDRelation r1, BDDRelation r2, BDDRelation r3) {
+        BDDVarSet b = factory.emptySet();
         for (Iterator i = r2.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
             if (r1.getAttributes().contains(a)) continue;
             BDDDomain d = (m != null)?(BDDDomain)m.get(a):r2.getBDDDomain(a);
-            b.andWith(d.set());
+            b.unionWith(d.set());
         }
         for (Iterator i = r3.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
             if (r1.getAttributes().contains(a)) continue;
             BDDDomain d = (m != null)?(BDDDomain)m.get(a):r3.getBDDDomain(a);
-            b.andWith(d.set());
+            b.unionWith(d.set());
         }
         return b;
     }
     
-    protected BDD makeDomainsMatch(BDD b2, BDD b3, BDDRelation r1, BDDRelation r2, BDDRelation r3) {
+    protected BDDVarSet makeDomainsMatch(BDD b2, BDD b3, BDDRelation r1, BDDRelation r2, BDDRelation r3) {
         if (CHECK) {
             r1.verify();
             r2.verify();
@@ -227,11 +228,11 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         List attributes = op.getAttributes();
-        BDD b = factory.one();
+        BDDVarSet b = factory.emptySet();
         for (Iterator i = attributes.iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
             BDDDomain d = r1.getBDDDomain(a);
-            b.andWith(d.set());
+            b.unionWith(d.set());
             if (TRACE) solver.out.println("   Projecting " + d);
         }
         if (TRACE) solver.out.println("   Exist " + r1);
@@ -251,10 +252,10 @@ public class BDDOperationInterpreter implements OperationInterpreter {
         BDDRelation r0 = (BDDRelation) op.getRelationDest();
         BDDRelation r1 = (BDDRelation) op.getSrc();
         List domains = op.getDomains();
-        BDD b = factory.one();
+        BDDVarSet b = factory.emptySet();
         for (Iterator i = domains.iterator(); i.hasNext();) {
             BDDDomain d = (BDDDomain) i.next();
-            b.andWith(d.set());
+            b.unionWith(d.set());
             if (TRACE) solver.out.println("   Projecting " + d);
         }
         if (TRACE) solver.out.println("   Exist " + r1);
@@ -520,7 +521,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
      
         BDD b1 = r1.getBDD().id();
         BDD b2 = r2.getBDD().id();
-        BDD b3 = needsDomainMatch ? makeDomainsMatch(b1, b2, r0, r1, r2) : op.getProjectSet();
+        BDDVarSet b3 = needsDomainMatch ? makeDomainsMatch(b1, b2, r0, r1, r2) : op.getProjectSet();
         //if (TRACE) solver.out.println("   " + op.toString());
         BDD b = b1.applyEx(b2, bddop, b3);
         b1.free();

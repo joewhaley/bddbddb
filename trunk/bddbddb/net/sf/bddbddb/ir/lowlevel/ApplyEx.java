@@ -6,16 +6,15 @@ package net.sf.bddbddb.ir.lowlevel;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import jwutil.collections.Pair;
 import jwutil.util.Assert;
 import net.sf.bddbddb.Attribute;
 import net.sf.bddbddb.BDDRelation;
 import net.sf.bddbddb.Relation;
 import net.sf.bddbddb.ir.Operation;
-import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
+import net.sf.javabdd.BDDVarSet;
 import net.sf.javabdd.BDDFactory.BDDOp;
 
 /**
@@ -111,12 +110,12 @@ public class ApplyEx extends LowLevelOperation {
     /**
      * @return  the set to project
      */
-    public BDD getProjectSet() {
+    public BDDVarSet getProjectSet() {
         Assert._assert(domainProjectSet != null);
-        BDD b = r1.getBDD().getFactory().one();
+        BDDVarSet b = r1.getBDD().getFactory().emptySet();
         for (Iterator i = domainProjectSet.iterator(); i.hasNext();) {
             BDDDomain d = (BDDDomain) i.next();
-            if (d != null) b.andWith(d.set());
+            if (d != null) b.unionWith(d.set());
         }
         return b;
     }

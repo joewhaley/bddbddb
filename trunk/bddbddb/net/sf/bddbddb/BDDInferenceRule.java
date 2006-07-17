@@ -19,6 +19,7 @@ import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDDomain;
 import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.BDDPairing;
+import net.sf.javabdd.BDDVarSet;
 
 /**
  * An implementation of InferenceRule that uses BDDs.
@@ -55,7 +56,7 @@ public class BDDInferenceRule extends InferenceRule {
     /**
      * BDD variables that can be quantified away after each step.
      */
-    BDD[] canQuantifyAfter;
+    BDDVarSet[] canQuantifyAfter;
     
     /**
      * Collection of variables that are still active after each step.
@@ -211,12 +212,12 @@ public class BDDInferenceRule extends InferenceRule {
 
     void initializeQuantifySet() {
         if (canQuantifyAfter == null) {
-            canQuantifyAfter = new BDD[top.size()];
+            canQuantifyAfter = new BDDVarSet[top.size()];
         }
         for (int i = 0; i < top.size(); ++i) {
             RuleTerm rt = (RuleTerm) top.get(i);
             if (canQuantifyAfter[i] != null) canQuantifyAfter[i].free();
-            canQuantifyAfter[i] = solver.bdd.one();
+            canQuantifyAfter[i] = solver.bdd.emptySet();
             outer : for (Iterator k = rt.variables.iterator(); k.hasNext();) {
                 Variable v = (Variable) k.next();
                 if (bottom.variables.contains(v)) continue;
@@ -225,7 +226,7 @@ public class BDDInferenceRule extends InferenceRule {
                     if (rt2.variables.contains(v)) continue outer;
                 }
                 BDDDomain d2 = (BDDDomain) variableToBDDDomain.get(v);
-                canQuantifyAfter[i].andWith(d2.set());
+                canQuantifyAfter[i].unionWith(d2.set());
             }
         }
     }
@@ -438,13 +439,13 @@ public class BDDInferenceRule extends InferenceRule {
         return changed;
     }
 
-    public BDD evalRelations(BDDFactory bdd, BDD[] relationValues, BDD[] canQuantifyAfter, long time) {
+    public BDD evalRelations(BDDFactory bdd, BDD[] relationValues, BDDVarSet[] canQuantifyAfter, long time) {
         
         long ttime = 0;
         BDD result = bdd.one();
         for (int j = 0; j < relationValues.length; ++j) {
             RuleTerm rt = (RuleTerm) top.get(j);
-            BDD canNowQuantify = canQuantifyAfter[j];
+            BDDVarSet canNowQuantify = canQuantifyAfter[j];
             if (TRACE) solver.out.print(" x " + rt.relation);
             BDD b = relationValues[j];
             if (TRACE) {
@@ -467,7 +468,7 @@ public class BDDInferenceRule extends InferenceRule {
                     w.close();
                     BDDRelation.save(solver, baseName+"_op1.bdd", result);
                     BDDRelation.save(solver, baseName+"_op2.bdd", b);
-                    BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify);
+                    BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify.toBDD());
                 } catch (IOException x) {
                     System.err.println("Error dumping BDD: "+x);
                 }
@@ -520,7 +521,7 @@ public class BDDInferenceRule extends InferenceRule {
                         solver.out.print("Universe: for all " + d);
                         ttime = System.currentTimeMillis();
                     }
-                    BDD dset = d.set();
+                    BDDVarSet dset = d.set();
                     BDD q = relationValues[i].forAll(dset);
                     dset.free();
                     if (TRACE) solver.out.println(" (" + (System.currentTimeMillis() - ttime) + " ms)");
@@ -572,7 +573,7 @@ public class BDDInferenceRule extends InferenceRule {
                         solver.out.print(v + " is unnecessary, quantifying out " + d);
                         ttime = System.currentTimeMillis();
                     }
-                    BDD dset = d.set();
+                    BDDVarSet dset = d.set();
                     BDD q = relationValues[i].exist(dset);
                     dset.free();
                     if (TRACE) {
@@ -807,12 +808,12 @@ public class BDDInferenceRule extends InferenceRule {
 
     BDD limitToSingle(BDD result) {
         // Limit the result tuples to a single one.
-        BDD set = solver.bdd.one();
+        BDDVarSet set = solver.bdd.emptySet();
         for (Iterator k = bottom.variables.iterator(); k.hasNext(); ) {
             Variable v = (Variable) k.next();
             if (unnecessaryVariables.contains(v)) continue;
             BDDDomain d2 = (BDDDomain) variableToBDDDomain.get(v);
-            set.andWith(d2.set());
+            set.unionWith(d2.set());
         }
         BDD singleResult = result.satOne(set, false);
         result.free();
@@ -823,7 +824,7 @@ public class BDDInferenceRule extends InferenceRule {
         return singleResult;
     }
     
-    public BDD[] evalRelationsIncremental(BDDFactory bdd, BDD[] newRelationValues, BDD[] rallRelationValues, BDD[] canQuantifyAfter){
+    public BDD[] evalRelationsIncremental(BDDFactory bdd, BDD[] newRelationValues, BDD[] rallRelationValues, BDDVarSet[] canQuantifyAfter){
         long ttime = 0;
         BDD[] results = new BDD[newRelationValues.length];
         outer : for (int i = 0; i < newRelationValues.length; ++i) {
@@ -836,7 +837,7 @@ public class BDDInferenceRule extends InferenceRule {
             results[i] = bdd.one();
             for (int j = 0; j < rallRelationValues.length; ++j) {
                 RuleTerm rt = (RuleTerm) top.get(j);
-                BDD canNowQuantify = canQuantifyAfter[j];
+                BDDVarSet canNowQuantify = canQuantifyAfter[j];
                 if (TRACE) solver.out.print(" x " + rt.relation);
                 BDD b;
                 if (i != j) {
@@ -847,7 +848,7 @@ public class BDDInferenceRule extends InferenceRule {
                 }
                 
                 if (TRACE) {
-                    solver.out.print(" (relprod " + b.nodeCount() + "x" + canNowQuantify.nodeCount());
+                    solver.out.print(" (relprod " + b.nodeCount());
                 }
                 if (TRACE || find_best_order || DUMP_CUTOFF > 0) ttime = System.currentTimeMillis();
                 BDD topBdd = results[i].relprod(b, canNowQuantify);
@@ -868,7 +869,7 @@ public class BDDInferenceRule extends InferenceRule {
                         w.close();
                         BDDRelation.save(solver, baseName+"_op1.bdd", results[i]);
                         BDDRelation.save(solver, baseName+"_op2.bdd", b);
-                        BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify);
+                        BDDRelation.save(solver, baseName+"_op3.bdd", canNowQuantify.toBDD());
                     } catch (IOException x) {
                         System.err.println("Error dumping BDD: "+x);
                     }
@@ -917,18 +918,23 @@ public class BDDInferenceRule extends InferenceRule {
      * @return  string representation of the domains
      */
     private String domainsOf(BDD b) {
-        BDD s = b.support();
-        int[] a = s.scanSetDomains();
+        BDDVarSet s = b.support();
+        String result = domainsOf(s);
         s.free();
-        if (a == null) return "(none)";
+        return result;
+    }
+
+    private String domainsOf(BDDVarSet s) {
+        BDDDomain[] a = s.getDomains();
+        if (a.length == 0) return "(none)";
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i < a.length; ++i) {
-            sb.append(solver.bdd.getDomain(a[i]));
+            sb.append(a[i]);
             if (i < a.length - 1) sb.append(',');
         }
         return sb.toString();
     }
-
+    
     /*
      * (non-Javadoc)
      * 
