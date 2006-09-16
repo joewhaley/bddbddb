@@ -936,7 +936,7 @@ public class DatalogParser {
             }
             String varName = nextToken(st);
             Variable var = parseVariable(fd, nameToVar, varName);
-            if (vars.contains(var)) {
+            if (vars.contains(var) && !varName.equals("*")) {
                 hasDuplicateVars = true;
             }
             vars.add(var);

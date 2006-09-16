@@ -587,7 +587,7 @@ public class BDDInferenceRule extends InferenceRule {
             if (relationValues[i].isZero()) {
                 if (TRACE) solver.out.println("Relation " + r + " is now empty!  Stopping early.");
                 for (int j = 0; j <= i; ++j)
-                    relationValues[i].free();
+                    relationValues[j].free();
                 return false;
             }
         }
