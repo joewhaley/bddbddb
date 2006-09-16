@@ -179,12 +179,11 @@ public class LSRelation extends Relation {
             } else {
                 checkInfoLine(filename, s, true, true);
             }
-            for (;;) {
-                s = in.readLine();
-                if (s == null) break;
+            while (s != null) {
                 if (s.length() == 0) continue;
                 if (s.startsWith("#")) continue;
                 parseTuple(s);
+                s = in.readLine();
             }
         } finally {
             if (in != null) in.close();
