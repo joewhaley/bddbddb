@@ -155,7 +155,7 @@ public class BDDRelation extends Relation {
         }
         if (negated != null && !negated.isInitialized) {
             BDDRelation bddn = (BDDRelation) negated;
-            bddn.relation = solver.bdd.one();
+            bddn.relation = solver.bdd.universe();
             bddn.domains = this.domains;
             bddn.domainSet = this.domainSet.id();
             bddn.isInitialized = true;
@@ -229,7 +229,7 @@ public class BDDRelation extends Relation {
      * @return BDD that is true iff d1 < d2.
      */
     private BDD buildLessThan(BDDDomain d1, BDDDomain d2) {
-        BDD leftwardBitsEqual = solver.bdd.one();
+        BDD leftwardBitsEqual = solver.bdd.universe();
         BDD result = solver.bdd.zero();
         for (int i=d1.varNum()-1; i>=0; i--) {
             BDD v1 = d1.getFactory().ithVar(d1.vars()[i]);
@@ -590,7 +590,7 @@ public class BDDRelation extends Relation {
      */
     BDD parseTuple(String s) {
         StringTokenizer st = new StringTokenizer(s);
-        BDD b = solver.bdd.one();
+        BDD b = solver.bdd.universe();
         for (int i = 0; i < domains.size(); ++i) {
             BDDDomain d = (BDDDomain) domains.get(i);
             String v = st.nextToken();
@@ -718,7 +718,7 @@ public class BDDRelation extends Relation {
             if (relation.isZero()) {
                 return;
             }
-            BDD allDomains = solver.bdd.one();
+            BDD allDomains = solver.bdd.universe();
             dos.write("#");
             solver.out.print(fileName + " domains {");
             int[] domIndices = new int[domains.size()];
@@ -966,7 +966,7 @@ public class BDDRelation extends Relation {
      * @see net.sf.bddbddb.Relation#add(java.math.BigInteger[])
      */
     public boolean add(BigInteger[] tuple) {
-        BDD val = solver.bdd.one();
+        BDD val = solver.bdd.universe();
         for (int i = 0; i < tuple.length; ++i) {
             final BDDDomain d = (BDDDomain) domains.get(i);
             Domain dd = getAttribute(i).getDomain();

@@ -442,7 +442,7 @@ public class BDDInferenceRule extends InferenceRule {
     public BDD evalRelations(BDDFactory bdd, BDD[] relationValues, BDDVarSet[] canQuantifyAfter, long time) {
         
         long ttime = 0;
-        BDD result = bdd.one();
+        BDD result = bdd.universe();
         for (int j = 0; j < relationValues.length; ++j) {
             RuleTerm rt = (RuleTerm) top.get(j);
             BDDVarSet canNowQuantify = canQuantifyAfter[j];
@@ -488,7 +488,7 @@ public class BDDInferenceRule extends InferenceRule {
             if (TRACE) {
                 solver.out.print("=" + topBdd.nodeCount());
                 solver.out.print(" (" + domainsOf(topBdd) + ")");
-                solver.out.print(") (" + (System.currentTimeMillis() - ttime) + " ms)");
+                solver.out.print(") (" + ttime + " ms)");
             }
             result.free();
             result = topBdd;
@@ -834,7 +834,7 @@ public class BDDInferenceRule extends InferenceRule {
             }
             Assert._assert(!newRelationValues[i].isZero());
             RuleTerm rt_new = (RuleTerm) top.get(i);
-            results[i] = bdd.one();
+            results[i] = bdd.universe();
             for (int j = 0; j < rallRelationValues.length; ++j) {
                 RuleTerm rt = (RuleTerm) top.get(j);
                 BDDVarSet canNowQuantify = canQuantifyAfter[j];
@@ -876,7 +876,7 @@ public class BDDInferenceRule extends InferenceRule {
                     ftime = System.currentTimeMillis() - ftime;
                     this.totalTime -= ftime;
                 }
-                if (find_best_order && !results[i].isOne() && (System.currentTimeMillis() - ttime) >= FBO_CUTOFF) {
+                if (find_best_order && !results[i].isOne() && ttime >= FBO_CUTOFF) {
                     long ftime = System.currentTimeMillis();
                     FindBestDomainOrder.findBestDomainOrder(solver,this, top.size() + i*j,solver.bdd, results[i], b, canNowQuantify,
                         (RuleTerm) top.get(j-1), rt,

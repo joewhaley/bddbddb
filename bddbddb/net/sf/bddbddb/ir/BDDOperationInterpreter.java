@@ -422,7 +422,7 @@ public class BDDOperationInterpreter implements OperationInterpreter {
      */
     public Object visit(Universe op) {
         BDDRelation r = (BDDRelation) op.getRelationDest();
-        BDD b = factory.one();
+        BDD b = factory.universe();
         for (Iterator i = r.getAttributes().iterator(); i.hasNext();) {
             Attribute a = (Attribute) i.next();
             BDDDomain d = r.getBDDDomain(a);
