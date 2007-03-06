@@ -299,7 +299,7 @@ public class BDDSolver extends Solver {
             } catch (OutOfMemoryError x) {
                 out.println("Not enough memory, cannot grow node table size.");
                 bdd.setCacheSize(bdd.getNodeTableSize());
-                bdd.setCacheRatio(0.25);
+                bdd.setCacheRatio(4);
             }
             //bdd.setMaxIncrease(BDDNODES/2);
             bdd.setIncreaseFactor(2);
