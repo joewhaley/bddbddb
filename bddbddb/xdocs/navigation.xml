@@ -15,11 +15,11 @@
       <item name="Links"
             href="links.html"/>
       <item name="NEW! PLDI'06 tutorial"
-            href="http://www.stanford.edu/~jwhaley/PLDITutorial.ppt"/>
+            href="http://suif.stanford.edu/~jwhaley/PLDITutorial.ppt"/>
       <item name="PLDI'04 paper"
-            href="http://www.stanford.edu/~jwhaley/papers/pldi04.pdf"/>
+            href="http://suif.stanford.edu/~jwhaley/papers/pldi04.pdf"/>
       <item name="PODS'05 paper"
-            href="http://www.stanford.edu/~jwhaley/papers/pods05.pdf"/>
+            href="http://suif.stanford.edu/~jwhaley/papers/pods05.pdf"/>
       <item name="Datalog examples"
             href="http://bddbddb.cvs.sourceforge.net/bddbddb/bddbddb_examples/"/>
     </menu>
